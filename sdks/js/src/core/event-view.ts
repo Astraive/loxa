@@ -1,0 +1,85 @@
+import type { Event } from './event.ts';
+import type { Checkpoint } from './event.ts';
+import type { ProcessEntry, GroupEntry, TimerEntry } from './timing.ts';
+import type { ErrorInfo } from './errors.ts';
+import type { EventState } from './event.ts';
+import type { Level } from './level.ts';
+
+/** Immutable read-only view of an Event, passed to Schema.encode(). */
+export class EventView {
+  readonly schemaVersion: string;
+  readonly eventVersion: string;
+  readonly eventId: string;
+  readonly requestId: string;
+  readonly traceId: string;
+  readonly spanId: string;
+  readonly parentId: string;
+  readonly timestamp: string;
+  readonly service: string;
+  readonly event: string;
+  readonly kind: string;
+  readonly level: Level;
+  readonly message: string;
+  readonly outcome: string;
+  readonly version: string;
+  readonly environment: string;
+  readonly deploymentId: string;
+  readonly region: string;
+  readonly host: string;
+  readonly runtime: string;
+  readonly method: string;
+  readonly path: string;
+  readonly route: string;
+  readonly statusCode: number;
+  readonly durationMs: number;
+  readonly startedAt: number;
+  readonly finishedAt: number;
+  readonly attrs: Readonly<Record<string, any>>;
+  readonly checkpoints: ReadonlyArray<Checkpoint>;
+  readonly processes: ReadonlyArray<ProcessEntry>;
+  readonly groups: ReadonlyArray<GroupEntry>;
+  readonly timers: ReadonlyArray<TimerEntry>;
+  readonly error: ErrorInfo | null;
+  readonly state: EventState;
+  readonly sensitiveKeys: ReadonlySet<string>;
+  readonly hashKeys: ReadonlySet<string>;
+
+  constructor(event: Event) {
+    this.schemaVersion = event.schemaVersion;
+    this.eventVersion = event.eventVersion;
+    this.eventId = event.eventId;
+    this.requestId = event.requestId;
+    this.traceId = event.traceId;
+    this.spanId = event.spanId;
+    this.parentId = event.parentId;
+    this.timestamp = event.timestamp;
+    this.service = event.service;
+    this.event = event.event;
+    this.kind = event.kind;
+    this.level = event.level;
+    this.message = event.message;
+    this.outcome = event.outcome;
+    this.version = event.version;
+    this.environment = event.environment;
+    this.deploymentId = event.deploymentId;
+    this.region = event.region;
+    this.host = event.host;
+    this.runtime = event.runtime;
+    this.method = event.method;
+    this.path = event.path;
+    this.route = event.route;
+    this.statusCode = event.statusCode;
+    this.durationMs = event.durationMs;
+    this.startedAt = event.startedAt;
+    this.finishedAt = event.finishedAt;
+    this.attrs = Object.freeze({ ...event.attrs });
+    this.checkpoints = Object.freeze([...event.checkpoints]);
+    this.processes = Object.freeze([...(event.processes || [])]);
+    this.groups = Object.freeze([...(event.groups || [])]);
+    this.timers = Object.freeze([...(event.timers || [])]);
+    this.error = event.error ? { ...event.error } : null;
+    this.state = event.state;
+    this.sensitiveKeys = event.sensitiveKeys;
+    this.hashKeys = event.hashKeys;
+  }
+}

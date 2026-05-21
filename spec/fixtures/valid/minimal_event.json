@@ -1,0 +1,15 @@
+{
+  "schema_version": "v1",
+  "event_version": "v1",
+  "timestamp": "2026-05-15T10:00:00Z",
+  "event_id": "evt_base_minimal",
+  "service": "sdk-test",
+  "event": "test.minimal",
+  "kind": "event",
+  "level": "info",
+  "outcome": "success",
+  "duration_ms": 1,
+  "request_id": "req_minimal",
+  "trace_id": "trace_minimal",
+  "span_id": "span_minimal"
+}

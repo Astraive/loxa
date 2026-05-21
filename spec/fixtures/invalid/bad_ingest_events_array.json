@@ -1,0 +1,8 @@
+{
+  "api_version": "v1",
+  "source": {
+    "sdk": "loxa-py",
+    "service": "my-service"
+  },
+  "events": "not_an_array"
+}

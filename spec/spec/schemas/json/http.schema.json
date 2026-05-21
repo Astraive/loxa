@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Astraive/loxa-spec/spec/schemas/json/http.schema.json",
+  "title": "LOXA HTTP Shape",
+  "type": "object",
+  "properties": {
+    "method": {
+      "type": "string"
+    },
+    "route": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string"
+    },
+    "host": {
+      "type": "string"
+    },
+    "scheme": {
+      "type": "string"
+    },
+    "status_code": {
+      "$ref": "./common.schema.json#/$defs/status_code"
+    },
+    "request_content_length": {
+      "$ref": "./common.schema.json#/$defs/non_negative_integer"
+    },
+    "response_content_length": {
+      "$ref": "./common.schema.json#/$defs/non_negative_integer"
+    },
+    "user_agent": {
+      "type": "string"
+    },
+    "client_ip": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

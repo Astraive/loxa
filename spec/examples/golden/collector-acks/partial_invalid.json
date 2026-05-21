@@ -1,0 +1,32 @@
+{
+  "name": "partial_invalid",
+  "http_status": 207,
+  "response": {
+    "status": "partial",
+    "accepted": 1,
+    "rejected": 0,
+    "invalid": 1,
+    "acks": [
+      {
+        "event_id": "evt_1",
+        "status": "accepted",
+        "reason": "accepted",
+        "retryable": false,
+        "code": "accepted",
+        "message": "event accepted"
+      },
+      {
+        "event_id": "evt_2",
+        "status": "invalid",
+        "reason": "schema_invalid",
+        "retryable": false,
+        "code": "schema_invalid",
+        "message": "schema validation failed"
+      }
+    ]
+  },
+  "expected": {
+    "outcome": "failure",
+    "message_contains": "schema"
+  }
+}

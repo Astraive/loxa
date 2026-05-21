@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package loxa.v1;
+
+option go_package = "github.com/astraive/loxa-spec/proto/loxa/v1;loxav1";
+
+message CollectorStatusRequest {}
+
+message CollectorStatusResponse {
+  string status = 1;
+}
+
+service CollectorService {
+  rpc Health(CollectorStatusRequest) returns (CollectorStatusResponse);
+  rpc Ready(CollectorStatusRequest) returns (CollectorStatusResponse);
+}

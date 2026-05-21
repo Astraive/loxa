@@ -1,0 +1,14 @@
+{
+  "schema_version": "v1",
+  "event_version": "v1",
+  "service": "checkout",
+  "event": "payment.completed",
+  "kind": "event",
+  "level": "info",
+  "outcome": "success",
+  "attrs": {
+    "amount": 99.99,
+    "currency": "USD",
+    "user.id": "u_123"
+  }
+}

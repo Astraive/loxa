@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cortex
+      POSTGRES_USER: cortex
+      POSTGRES_PASSWORD: cortex
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./configs/sql:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cortex"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cortex:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    environment:
+      CORTEX_STORAGE_BACKEND: postgres
+      CORTEX_POSTGRES_HOST: postgres
+      CORTEX_POSTGRES_PORT: 5432
+      CORTEX_POSTGRES_DATABASE: cortex
+      CORTEX_POSTGRES_USER: cortex
+      CORTEX_POSTGRES_PASSWORD: cortex
+      CORTEX_AUTH_ENABLED: "false"
+      CORTEX_LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./configs:/app/configs
+
+  cortex-cli:
+    image: astraive/loxa-cli:latest
+    environment:
+      LOXA_CORTEX_URL: http://cortex:8080
+    depends_on:
+      - cortex
+
+volumes:
+  postgres_data:

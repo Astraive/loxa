@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loxa-stager-config
+  labels:
+    app.kubernetes.io/name: stager
+    app.kubernetes.io/part-of: loxa
+data:
+  STAGER_QUEUE_BACKEND: kafka
+  STAGER_QUEUE_DIR: /var/loxa/ingest-queue
+  STAGER_STAGING_DIR: /var/loxa/staging
+  STAGER_BATCH_SIZE: "100"
+  STAGER_LOOP: "true"
+  STAGER_COMPRESS: "true"
+  STAGER_POLL_INTERVAL_SECONDS: "2"
+  STAGER_HEARTBEAT_FILE: /app/health/stager.heartbeat
+  STAGER_HEARTBEAT_MAX_AGE_SECONDS: "120"
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  KAFKA_TOPIC: loxa-events
+  KAFKA_GROUP_ID: loxa-stager
+  KAFKA_DLQ_TOPIC: loxa-events.dlq
+  KAFKA_AUTO_OFFSET_RESET: earliest
+  KAFKA_POLL_TIMEOUT_SECONDS: "1"
+  KAFKA_FLUSH_TIMEOUT_SECONDS: "10"

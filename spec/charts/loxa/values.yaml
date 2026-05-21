@@ -1,0 +1,94 @@
+nameOverride: ""
+fullnameOverride: ""
+
+imagePullSecrets: []
+
+schemaService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/astraive/loxa-schema-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+  config:
+    SCHEMA_SERVICE_HOST: "0.0.0.0"
+    SCHEMA_SERVICE_PORT: "8080"
+  secretRefs: []
+  podSecurityContext: {}
+  containerSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+  readinessProbe:
+    path: /health
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  livenessProbe:
+    path: /health
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 2
+    failureThreshold: 3
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+stager:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/astraive/loxa-stager
+    tag: latest
+    pullPolicy: IfNotPresent
+  config:
+    STAGER_QUEUE_BACKEND: kafka
+    STAGER_QUEUE_DIR: /var/loxa/ingest-queue
+    STAGER_STAGING_DIR: /var/loxa/staging
+    STAGER_BATCH_SIZE: "100"
+    STAGER_LOOP: "true"
+    STAGER_COMPRESS: "true"
+    STAGER_POLL_INTERVAL_SECONDS: "2"
+    STAGER_HEARTBEAT_FILE: /app/health/stager.heartbeat
+    STAGER_HEARTBEAT_MAX_AGE_SECONDS: "120"
+    KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    KAFKA_TOPIC: loxa-events
+    KAFKA_GROUP_ID: loxa-stager
+    KAFKA_DLQ_TOPIC: loxa-events.dlq
+    KAFKA_AUTO_OFFSET_RESET: earliest
+    KAFKA_POLL_TIMEOUT_SECONDS: "1"
+    KAFKA_FLUSH_TIMEOUT_SECONDS: "10"
+  secretRefs: []
+  podSecurityContext: {}
+  containerSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 3
+    failureThreshold: 3
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  storage:
+    queue:
+      existingClaim: ""
+    staging:
+      existingClaim: ""

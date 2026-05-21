@@ -1,0 +1,17 @@
+apiVersion: v2
+name: cortex
+description: Loxa Cortex — incident reconstruction and operational memory engine
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - observability
+  - incident-response
+  - operational-memory
+  - wide-events
+home: https://github.com/astraive/loxa
+sources:
+  - https://github.com/astraive/loxa/loxa-cortex
+maintainers:
+  - name: Loxa Team
+    email: dev@loxa.io

@@ -1,0 +1,42 @@
+{
+  "name": "wrapped_batch_json",
+  "mode": "wrapped_batch",
+  "content_type": "application/json",
+  "input_events": [
+    {
+      "event_id": "evt_wrap_001",
+      "timestamp": "2026-05-12T00:00:00Z",
+      "service": "checkout",
+      "event": "checkout.request",
+      "kind": "http",
+      "schema_version": "v1",
+      "event_version": "v1"
+    }
+  ],
+  "body": {
+    "api_version": "v1",
+    "source": {
+      "sdk": "loxa-py",
+      "version": "0.1.0",
+      "service": "checkout"
+    },
+    "events": [
+      {
+        "event_id": "evt_wrap_001",
+        "timestamp": "2026-05-12T00:00:00Z",
+        "service": "checkout",
+        "event": "checkout.request",
+        "kind": "http",
+        "schema_version": "v1",
+        "event_version": "v1"
+      }
+    ]
+  },
+  "expected": {
+    "api_version": "v1",
+    "source.service": "checkout",
+    "events_count": 1,
+    "first_event.event": "checkout.request",
+    "first_event.service": "checkout"
+  }
+}

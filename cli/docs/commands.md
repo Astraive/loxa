@@ -1,0 +1,36 @@
+# Commands
+
+- `loxa init`
+- `loxa dev`
+- `loxa collector run`
+- `loxa collector version`
+- `loxa collector config print`
+- `loxa collector config validate`
+- `loxa worker run`
+- `loxa worker version`
+- `loxa config print`
+- `loxa config validate`
+- `loxa schema validate`
+- `loxa schema fetch`
+- `loxa emit`
+- `loxa query`
+- `loxa tail`
+- `loxa watch`
+- `loxa status`
+- `loxa sinks`
+- `loxa dlq`
+- `loxa replay`
+- `loxa delete tenant <tenant_id>`
+- `loxa delete user <user_id>`
+- `loxa delete event <event_id>`
+- `loxa audit`
+- `loxa export`
+- `loxa cortex`
+- `loxa incident`
+- `loxa graph`
+- `loxa signatures`
+- `loxa doctor`
+- `loxa debug`
+- `loxa bench`
+- `loxa deploy`
+- `loxa dashboard`

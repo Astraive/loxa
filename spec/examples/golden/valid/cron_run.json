@@ -1,0 +1,15 @@
+{
+  "schema_version": "v1",
+  "event_version": "v1",
+  "timestamp": "2026-05-12T00:04:00Z",
+  "event_id": "evt_cron_run_001",
+  "service": "scheduler",
+  "event": "nightly.cleanup",
+  "kind": "cron",
+  "level": "info",
+  "outcome": "success",
+  "duration_ms": 6401,
+  "attrs": {
+    "schedule": "0 2 * * *"
+  }
+}

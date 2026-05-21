@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Astraive/loxa-spec/schema/collector-response.schema.json",
+  "title": "LOXA Collector Response",
+  "type": "object",
+  "required": ["request_id", "status", "accepted", "rejected"],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "pattern": "^ing_"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["accepted", "partial", "rejected", "invalid"]
+    },
+    "accepted": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "rejected": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "duplicates": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "deduped": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "invalid": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "error": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "retry_after_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index", "code", "message", "retryable"],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "retryable": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "acks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["status", "reason", "retryable"],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["accepted", "rejected", "invalid"]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

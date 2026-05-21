@@ -1,0 +1,22 @@
+name: Protobuf generation
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install protoc
+        run: |
+          sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - name: Run proto generator script
+        run: |
+          chmod +x ./tools/generate_protos.sh
+          ./tools/generate_protos.sh
+      - name: Upload generated protos
+        uses: actions/upload-artifact@v3
+        with:
+          name: protos-generated
+          path: generated/proto

@@ -1,0 +1,88 @@
+{
+  "spec_version": "v1",
+  "api_version": "v1",
+  "schemas": {
+    "event": "spec/cortex/schemas/json/cortex-event.schema.json",
+    "graph_node": "spec/cortex/schemas/json/cortex-graph-node.schema.json",
+    "graph_edge": "spec/cortex/schemas/json/cortex-graph-edge.schema.json",
+    "reconstruct_response": "spec/cortex/schemas/json/cortex-reconstruct-response.schema.json",
+    "feedback": "spec/cortex/schemas/json/cortex-feedback.schema.json"
+  },
+  "event_kinds": [
+    "event",
+    "http",
+    "job",
+    "queue",
+    "cli",
+    "cron",
+    "log",
+    "checkpoint",
+    "deploy",
+    "metric",
+    "trace",
+    "topology",
+    "incident_signal",
+    "remediation",
+    "loxa_event",
+    "otel_log",
+    "otel_span",
+    "collector_event"
+  ],
+  "event_levels": [
+    "debug",
+    "info",
+    "warning",
+    "error",
+    "critical"
+  ],
+  "event_outcomes": [
+    "success",
+    "failure",
+    "partial",
+    "unknown"
+  ],
+  "provenance": [
+    "loxa",
+    "collector",
+    "otlp",
+    "jsonl",
+    "manual",
+    "replay"
+  ],
+  "graph_node_types": [
+    "service",
+    "event",
+    "trace",
+    "span",
+    "request",
+    "deployment",
+    "metric",
+    "log",
+    "incident",
+    "remediation",
+    "resource"
+  ],
+  "graph_edge_types": [
+    "depends_on",
+    "same_trace",
+    "same_incident",
+    "parent_span",
+    "calls",
+    "deployed_before",
+    "metric_spiked_after",
+    "log_error_after",
+    "caused_probably",
+    "remediated_by",
+    "similar_shape"
+  ],
+  "routes": {
+    "ingest_event": "POST /v1/events",
+    "ingest_batch": "POST /v1/events/batch",
+    "ingest_jsonl": "POST /v1/events/jsonl",
+    "reconstruct": "POST /v1/incidents/{incident_id}/reconstruct",
+    "service_graph": "GET /v1/graph/service/{service}",
+    "incident_graph": "GET /v1/graph/incident/{incident_id}",
+    "record_feedback": "POST /v1/feedback/remediation",
+    "stream_events": "GET /v1/ws"
+  }
+}

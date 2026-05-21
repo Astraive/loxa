@@ -1,0 +1,10 @@
+{
+  "events": [
+    {
+      "event_id": "evt_wrap_001",
+      "timestamp": "2026-05-12T00:00:00Z",
+      "service": "checkout",
+      "event": "checkout.request"
+    }
+  ]
+}

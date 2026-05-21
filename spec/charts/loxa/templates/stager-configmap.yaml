@@ -1,0 +1,13 @@
+{{- if .Values.stager.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "loxa.fullname" . }}-stager
+  labels:
+    {{- include "loxa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: stager
+data:
+  {{- range $key, $value := .Values.stager.config }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}

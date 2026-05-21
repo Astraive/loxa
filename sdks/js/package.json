@@ -1,0 +1,38 @@
+{
+  "name": "loxa-js",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "LOXA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loxa-collector",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./middleware/express": "./dist/middleware/express.js",
+    "./middleware/koa": "./dist/middleware/koa.js",
+    "./middleware/fastify": "./dist/middleware/fastify.js",
+    "./middleware/http": "./dist/middleware/http.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test --experimental-strip-types tests/*.test.ts",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "loxa",
+    "wide-event",
+    "observability",
+    "structured-logging"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "typescript": "^6.0.3"
+  }
+}

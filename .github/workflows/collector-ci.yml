@@ -1,0 +1,69 @@
+name: Collector CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/collector-ci.yml"
+      - "loxa-collector/**"
+      - "loxa-spec/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/collector-ci.yml"
+      - "loxa-collector/**"
+      - "loxa-spec/**"
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: loxa-collector
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: loxa-collector/go.mod
+
+      - name: Run unit tests
+        run: go test ./...
+
+  integration:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: loxa-collector
+    services:
+      kafka:
+        image: bitnami/kafka:latest
+        ports:
+          - 9092:9092
+        env:
+          KAFKA_CFG_NODE_ID: 0
+          KAFKA_CFG_PROCESS_ROLES: broker,controller
+          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9092
+          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@127.0.0.1:9093
+          KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+          ALLOW_PLAINTEXT_LISTENER: "yes"
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: loxa-collector/go.mod
+
+      - name: Run queue and Redis integration tests
+        run: go test -tags=integration -run TestCollectorIntegration_ ./cmd/loxa-collector

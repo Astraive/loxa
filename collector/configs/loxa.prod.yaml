@@ -1,0 +1,16 @@
+collector:
+  addr: ":9090"
+auth:
+  enabled: true
+  header: "X-API-Key"
+  value_env: "COLLECTOR_API_KEY"
+rate_limit:
+  enabled: true
+  rps: 5000
+  burst: 5000
+reliability:
+  mode: "queue"
+kafka:
+  brokers:
+    - "kafka-1:9092"
+  topic: "loxa-events"

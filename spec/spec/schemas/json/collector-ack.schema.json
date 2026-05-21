@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Astraive/loxa-spec/spec/schemas/json/collector-ack.schema.json",
+  "title": "LOXA Collector Ack",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["accepted", "duplicate", "invalid", "rejected"]
+    },
+    "retryable": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

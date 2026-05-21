@@ -1,0 +1,28 @@
+{{- if .Values.collector.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "loxa.fullname" . }}-collector-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "loxa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: collector
+data:
+  config.yaml: |
+    {{- toYaml .Values.collector.config | nindent 4 }}
+{{- end }}
+
+{{- if .Values.worker.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "loxa.fullname" . }}-worker-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "loxa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+data:
+  config.yaml: |
+    {{- toYaml .Values.worker.config | nindent 4 }}
+{{- end }}

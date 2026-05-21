@@ -1,0 +1,166 @@
+server:
+  host: "0.0.0.0"
+  port: 9100
+  read_timeout: 30s
+  write_timeout: 30s
+  shutdown_timeout: 10s
+  max_body_bytes: 10485760  # 10MB
+
+storage:
+  backend: "postgres"
+  duckdb:
+    path: "./cortex.duckdb"
+  postgresql:
+    host: "localhost"
+    port: 5432
+    database: "cortex"
+    user: "cortex"
+    password: ""
+    ssl_mode: "disable"
+    max_connections: 50
+    max_idle_conns: 10
+    conn_max_lifetime: 1h
+
+matcher:
+  mode: "go"
+  parallelism: 0
+  cache_size: 1024
+  cache_ttl: 30s
+  min_similarity_threshold: 0.5
+  find_similar_limit: 5
+  topk_default: 5
+  weights:
+    feature: 0.4
+    symptom: 0.4
+    temporal: 0.2
+  weights_topo:
+    symptom: 0.5
+    temporal: 0.3
+    resolution: 0.2
+  temporal:
+    default_similarity: 0.5
+    same_speed_score: 0.8
+    zero_duration_score: 0.5
+    fast_threshold_ms: 60000
+    slow_threshold_ms: 300000
+
+authentication:
+  enabled: false
+  api_keys: []
+
+rate_limit:
+  enabled: false
+  per_api_key_rpm: 1000
+  per_ip_rpm: 100
+
+tls:
+  enabled: false
+  cert_file: ""
+  key_file: ""
+  min_version: "1.2"
+  mutual_tls: false
+  client_ca_file: ""
+
+pii_redaction:
+  enabled: false
+  mode: "enforce"
+
+logging:
+  level: "info"
+  format: "json"
+
+collector:
+  mode: "pull"
+  url: "http://localhost:8081"
+  source_of_truth: true
+  api_key: ""
+  api_key_header: "X-API-Key"
+  poll_interval: 30s
+  batch_size: 1000
+  tail_transport: "http"
+  tail_enabled: true
+  tail_buffer_size: 2048
+  tail_batch_size: 256
+  tail_flush_interval: 500ms
+  tail_reconnect_backoff: 2s
+  query_table: "events"
+  raw_column: "raw"
+  timestamp_column: "timestamp"
+  cursor_path: "./cortex-collector.cursor"
+
+ingestion:
+  async_workers: 4
+  channel_size: 8192
+  micro_batch_size: 256
+  flush_interval: 500ms
+
+correlation:
+  enabled: true
+  analysis_interval: 60s
+  co_occurrence_window: 5m
+  deployment_adjacency_window: 30m
+  min_co_occurrence_count: 3
+
+reconstructor:
+  fast:
+    max_depth: 3
+    max_events: 20
+    time_window: 30m
+  deep:
+    max_depth: 10
+    max_events: 200
+    time_window: 2h
+  confidence:
+    base: 0.5
+    causal_chain_bonus: 0.1
+    symptom_bonus: 0.1
+    similarity_weight: 0.1
+    remediation_weight: 0.1
+    max_confidence: 1.0
+    min_confidence: 0.0
+  graph:
+    default_max_depth: 3
+  explain:
+    max_key_findings: 3
+    max_alternatives: 3
+  signal_score:
+    incident: 1.0
+    deployment: 0.6
+    metric_anomaly: 0.9
+    metric_threshold: 0.85
+    metric_normal: 0.3
+    log_error: 0.8
+    log_warn: 0.4
+    severity_error: 0.8
+    log_default: 0.1
+    service: 0.2
+    default: 0.1
+
+storage:
+  min_similarity_threshold: 0.5
+  similarity:
+    shape_partial: 0.7
+    shape_mismatch: 0.3
+    weights:
+      shape: 0.4
+      symptom: 0.3
+      vector: 0.3
+
+memory:
+  decay_period: 2160h    # 90 days
+  decay_rate: 0.1
+  archive_threshold: 0.1
+  merge_tolerance: 0.3
+  feature_vector_alpha: 0.1
+
+learner:
+  learning_rate: 0.1
+  feature_weight_min: 0.1
+  feature_weight_max: 2.0
+
+salience:
+  learning_rate: 0.1
+  default_score: 0.5
+
+eventbus:
+  subscriber_buffer_size: 128

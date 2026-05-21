@@ -1,0 +1,7 @@
+{
+  "id": "edge_bad",
+  "from_node_id": "node_1",
+  "to_node_id": "node_2",
+  "type": "unknown_edge_type",
+  "weight": 0.5
+}

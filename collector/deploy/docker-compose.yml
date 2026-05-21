@@ -1,0 +1,72 @@
+services:
+  collector:
+    build:
+      context: ..
+      dockerfile: build/Dockerfile.collector
+    command: ["./loxa-collector", "run", "-c", "/app/build/loxa-collector.yaml"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../:/app
+
+  sample-app:
+    image: curlimages/curl:8.12.1
+    depends_on:
+      - collector
+    volumes:
+      - ../build:/payload
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        sleep 3
+        curl -sS -X POST http://collector:9090/ingest \
+          --data-binary @/payload/sample-events.ndjson \
+          -H "Content-Type: application/x-ndjson"
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - collector
+
+  loki:
+    image: grafana/loki:3.5.0
+    command:
+      - -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+
+  loki-seed:
+    image: curlimages/curl:8.12.1
+    depends_on:
+      - loki
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        sleep 4
+        NOW=$(date +%s%N)
+        curl -sS -X POST http://loki:3100/loki/api/v1/push \
+          -H "Content-Type: application/json" \
+          --data "{\"streams\":[{\"stream\":{\"source\":\"loxa-demo\",\"service\":\"sample-app\"},\"values\":[[\"$NOW\",\"{\\\"event\\\":\\\"checkout.request\\\",\\\"outcome\\\":\\\"success\\\"}\"]]}]}"
+
+  grafana:
+    image: grafana/grafana:12.1.2
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+      - loki

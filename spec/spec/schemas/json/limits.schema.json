@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Astraive/loxa-spec/spec/schemas/json/limits.schema.json",
+  "title": "LOXA Limits",
+  "type": "object",
+  "properties": {
+    "max_event_size_bytes": {
+      "$ref": "./common.schema.json#/$defs/non_negative_integer"
+    },
+    "max_attrs_keys": {
+      "$ref": "./common.schema.json#/$defs/non_negative_integer"
+    },
+    "max_attr_key_length": {
+      "$ref": "./common.schema.json#/$defs/non_negative_integer"
+    },
+    "max_attr_value_length": {
+      "$ref": "./common.schema.json#/$defs/non_negative_integer"
+    },
+    "max_batch_events": {
+      "$ref": "./common.schema.json#/$defs/non_negative_integer"
+    },
+    "max_batch_bytes": {
+      "$ref": "./common.schema.json#/$defs/non_negative_integer"
+    },
+    "max_stack_length": {
+      "$ref": "./common.schema.json#/$defs/non_negative_integer"
+    },
+    "max_error_message_length": {
+      "$ref": "./common.schema.json#/$defs/non_negative_integer"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,11 @@
+collector_url: http://127.0.0.1:9090
+service_version: unknown
+environment: development
+batch_size: 100
+flush_interval: 5s
+max_buffer_size: 10000
+max_retries: 3
+max_backoff: 30s
+timeout: 10s
+connection_timeout: 5s
+enable_compression: true

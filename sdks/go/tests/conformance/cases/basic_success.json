@@ -1,0 +1,8 @@
+{
+  "event": "checkout.request",
+  "outcome": "success",
+  "attrs": {
+    "tenant.id": "t-1",
+    "workspace.id": "w-1"
+  }
+}

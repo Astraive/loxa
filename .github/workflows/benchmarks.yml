@@ -1,0 +1,21 @@
+name: Benchmarks
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'
+
+jobs:
+  duckdb-bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Go benchmarks
+        run: |
+          cd lo xa-collector
+          go test ./... -bench=. -benchmem | tee ../bench-results.txt
+      - name: Upload bench results
+        uses: actions/upload-artifact@v3
+        with:
+          name: bench-results
+          path: bench-results.txt

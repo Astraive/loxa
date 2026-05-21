@@ -1,0 +1,148 @@
+package server
+
+import (
+	"context"
+	"crypto/subtle"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/gorilla/websocket"
+)
+
+type TailFilters struct {
+	Since        time.Time
+	AfterEventID string
+	Service      string
+	Kind         string
+	TraceID      string
+	IncidentID   string
+	Limit        int
+}
+
+type TailState interface {
+	TailHistory(context.Context, TailFilters) ([][]byte, error)
+	TailMatches([]byte, TailFilters) bool
+	AddTailSubscriber(chan []byte)
+	RemoveTailSubscriber(chan []byte)
+}
+
+var websocketUpgrader = websocket.Upgrader{
+	ReadBufferSize:  16 * 1024,
+	WriteBufferSize: 16 * 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+func ParseTailFilters(r *http.Request) (TailFilters, error) {
+	filters := TailFilters{Limit: 1000}
+	q := r.URL.Query()
+	if raw := strings.TrimSpace(q.Get("since")); raw != "" {
+		ts, err := time.Parse(time.RFC3339Nano, raw)
+		if err != nil {
+			return TailFilters{}, fmt.Errorf("invalid since: %w", err)
+		}
+		filters.Since = ts.UTC()
+	}
+	filters.AfterEventID = strings.TrimSpace(q.Get("after_event_id"))
+	filters.Service = strings.TrimSpace(q.Get("service"))
+	filters.Kind = strings.TrimSpace(q.Get("kind"))
+	filters.TraceID = strings.TrimSpace(q.Get("trace_id"))
+	filters.IncidentID = strings.TrimSpace(q.Get("incident_id"))
+	if raw := strings.TrimSpace(q.Get("limit")); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil || n <= 0 {
+			return TailFilters{}, fmt.Errorf("invalid limit %q", raw)
+		}
+		if n > 10000 {
+			n = 10000
+		}
+		filters.Limit = n
+	}
+	return filters, nil
+}
+
+func NewTailWebSocketHandler(cfg HTTPConfig, state TailState) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if cfg.AuthEnabled {
+			if subtle.ConstantTimeCompare([]byte(r.Header.Get(cfg.AuthHeader)), []byte(cfg.AuthValue)) != 1 {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+		filters, err := ParseTailFilters(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		conn, err := websocketUpgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+
+		history, err := state.TailHistory(r.Context(), filters)
+		if err != nil {
+			_ = conn.WriteJSON(map[string]any{"error": err.Error()})
+			return
+		}
+		for _, raw := range history {
+			if err := conn.WriteMessage(websocket.TextMessage, raw); err != nil {
+				return
+			}
+		}
+
+		ch := make(chan []byte, 128)
+		state.AddTailSubscriber(ch)
+		defer state.RemoveTailSubscriber(ch)
+		for {
+			select {
+			case <-r.Context().Done():
+				return
+			case raw, ok := <-ch:
+				if !ok {
+					return
+				}
+				if !state.TailMatches(raw, filters) {
+					continue
+				}
+				if err := conn.WriteMessage(websocket.TextMessage, raw); err != nil {
+					return
+				}
+			}
+		}
+	})
+}
+
+func RawMatchesTailFilters(raw []byte, filters TailFilters) bool {
+	if filters.Service == "" && filters.Kind == "" && filters.TraceID == "" && filters.IncidentID == "" {
+		return true
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return false
+	}
+	if filters.Service != "" && stringValue(payload["service"]) != filters.Service {
+		return false
+	}
+	if filters.Kind != "" && stringValue(payload["kind"]) != filters.Kind {
+		return false
+	}
+	if filters.TraceID != "" && stringValue(payload["trace_id"]) != filters.TraceID {
+		return false
+	}
+	if filters.IncidentID != "" && stringValue(payload["incident_id"]) != filters.IncidentID {
+		return false
+	}
+	return true
+}
+
+func stringValue(v any) string {
+	s, _ := v.(string)
+	return s
+}

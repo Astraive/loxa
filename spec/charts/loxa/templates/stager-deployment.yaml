@@ -1,0 +1,99 @@
+{{- if .Values.stager.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "loxa.fullname" . }}-stager
+  labels:
+    {{- include "loxa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: stager
+spec:
+  replicas: {{ .Values.stager.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "loxa.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: stager
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "loxa.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: stager
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.stager.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: stager
+          image: "{{ .Values.stager.image.repository }}:{{ .Values.stager.image.tag }}"
+          imagePullPolicy: {{ .Values.stager.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "loxa.fullname" . }}-stager
+            {{- range .Values.stager.secretRefs }}
+            - secretRef:
+                name: {{ . | quote }}
+                optional: true
+            {{- end }}
+          volumeMounts:
+            - name: ingest-queue
+              mountPath: /var/loxa/ingest-queue
+            - name: staging
+              mountPath: /var/loxa/staging
+            - name: health
+              mountPath: /app/health
+          {{- with .Values.stager.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          readinessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - >-
+                  import os,time,pathlib,sys; p=pathlib.Path(os.environ.get("STAGER_HEARTBEAT_FILE","/app/health/stager.heartbeat"));
+                  max_age=float(os.environ.get("STAGER_HEARTBEAT_MAX_AGE_SECONDS","120"));
+                  sys.exit(0 if p.exists() and (time.time()-p.stat().st_mtime) <= max_age else 1)
+            initialDelaySeconds: {{ .Values.stager.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.stager.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.stager.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.stager.readinessProbe.failureThreshold }}
+          livenessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - >-
+                  import os,time,pathlib,sys; p=pathlib.Path(os.environ.get("STAGER_HEARTBEAT_FILE","/app/health/stager.heartbeat"));
+                  max_age=float(os.environ.get("STAGER_HEARTBEAT_MAX_AGE_SECONDS","120"));
+                  sys.exit(0 if p.exists() and (time.time()-p.stat().st_mtime) <= max_age else 1)
+            initialDelaySeconds: {{ .Values.stager.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.stager.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.stager.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.stager.livenessProbe.failureThreshold }}
+          resources:
+            {{- toYaml .Values.stager.resources | nindent 12 }}
+      volumes:
+        - name: ingest-queue
+          {{- if .Values.stager.storage.queue.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.stager.storage.queue.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: staging
+          {{- if .Values.stager.storage.staging.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.stager.storage.staging.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: health
+          emptyDir: {}
+{{- end }}

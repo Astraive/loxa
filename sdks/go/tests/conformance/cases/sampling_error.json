@@ -1,0 +1,7 @@
+{
+  "event": "sampling.error",
+  "outcome": "error",
+  "attrs": {
+    "status_code": "500"
+  }
+}

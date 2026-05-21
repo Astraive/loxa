@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "event_version": "v1",
+  "timestamp": "2026-05-12T00:02:00Z",
+  "event_id": "evt_queue_retry_001",
+  "service": "shipment-worker",
+  "event": "shipment.consume",
+  "kind": "queue",
+  "level": "warn",
+  "outcome": "success",
+  "duration_ms": 91,
+  "attrs": {
+    "queue": {
+      "name": "shipments",
+      "attempt": 2
+    }
+  }
+}

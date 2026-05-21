@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Astraive/loxa-spec/spec/schemas/json/event.strict.schema.json",
+  "title": "LOXA Event (Strict)",
+  "allOf": [
+    {
+      "$ref": "./event.schema.json"
+    },
+    {
+      "unevaluatedProperties": false
+    }
+  ]
+}

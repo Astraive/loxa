@@ -1,0 +1,45 @@
+{
+  "$id": "https://spec.loxa.dev/schemas/cortex-feedback.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LOXA Cortex Feedback",
+  "type": "object",
+  "required": ["incident_id", "remediation_id", "success"],
+  "properties": {
+    "feedback_id": {
+      "type": "string",
+      "description": "Unique feedback ID (generated if not provided)"
+    },
+    "incident_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "remediation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "success": {
+      "type": "boolean",
+      "description": "Whether the remediation resolved the incident"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["success", "failed", "partial", "unknown"],
+      "description": "Outcome classification"
+    },
+    "time_to_resolve_seconds": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Time from incident start to resolution"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Human notes on the remediation"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When feedback was recorded"
+    }
+  },
+  "additionalProperties": false
+}

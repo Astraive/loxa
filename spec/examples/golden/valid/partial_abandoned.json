@@ -1,0 +1,19 @@
+{
+  "schema_version": "v1",
+  "event_version": "v1",
+  "event_id": "evt_partial_abandoned",
+  "timestamp": "2026-05-11T13:00:00Z",
+  "service": "checkout",
+  "event": "checkout.request",
+  "kind": "http",
+  "level": "warn",
+  "outcome": "abandoned",
+  "duration_ms": 30000,
+  "partial": true,
+  "partial_reason": "timeout",
+  "event_state": "finished",
+  "delivery_attempts": 0,
+  "user": {
+    "id": "u_123"
+  }
+}

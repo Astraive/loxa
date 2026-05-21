@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "event_version": "v1",
+  "timestamp": "2026-05-12T00:00:00Z",
+  "event_id": "evt_invalid_enum_001",
+  "service": "checkout",
+  "event": "checkout.request",
+  "kind": "not-a-kind",
+  "level": "verbose",
+  "outcome": "maybe"
+}

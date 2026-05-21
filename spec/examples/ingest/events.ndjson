@@ -1,0 +1,2 @@
+{"event_id":"evt_ndjson_001","timestamp":"2026-05-12T00:00:00Z","service":"checkout","event":"checkout.request"}
+{"event_id":"evt_ndjson_002","timestamp":"2026-05-12T00:00:01Z","service":"checkout","event":"checkout.request"}

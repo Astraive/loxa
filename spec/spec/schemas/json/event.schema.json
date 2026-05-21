@@ -1,0 +1,364 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Astraive/loxa-spec/spec/schemas/json/event.schema.json",
+  "title": "LOXA Event",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_version",
+    "event_id",
+    "timestamp",
+    "service",
+    "event",
+    "kind"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "minLength": 1,
+      "x-loxa-since": "v1"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "schema_version": {
+      "type": "string",
+      "enum": ["v1"]
+    },
+    "event_version": {
+      "type": "string",
+      "enum": ["v1"]
+    },
+    "service": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        }
+      ],
+      "x-loxa-since": "v1"
+    },
+    "version": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string",
+      "x-loxa-deprecated": "use deployment.environment",
+      "x-loxa-since": "v1"
+    },
+    "deployment": {
+      "type": "object",
+      "properties": {
+        "environment": {
+          "type": "string"
+        },
+        "region": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true,
+      "x-loxa-since": "v1"
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "sdk": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          ]
+        },
+        "instance_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true,
+      "x-loxa-since": "v1"
+    },
+    "event": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["event", "http", "job", "queue", "cli", "cron", "log", "checkpoint"]
+    },
+    "message": {
+      "type": "string"
+    },
+    "level": {
+      "type": "string",
+      "enum": ["debug", "info", "warn", "error", "fatal"]
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["success", "error", "timeout", "cancelled", "rejected", "abandoned", "partial", "unknown"]
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "partial": {
+      "type": "boolean"
+    },
+    "partial_reason": {
+      "type": "string",
+      "enum": ["not_finished", "process_exit", "timeout", "panic", "collector_unavailable"]
+    },
+    "event_state": {
+      "type": "string",
+      "enum": [
+        "created",
+        "active",
+        "finished",
+        "emitting",
+        "emitted",
+        "failed_validation",
+        "delivery_failed"
+      ],
+      "x-loxa-since": "v1"
+    },
+    "delivery_attempts": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "trace_id": {
+      "type": "string"
+    },
+    "span_id": {
+      "type": "string"
+    },
+    "method": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "route": {
+      "type": "string"
+    },
+    "status_code": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 599
+    },
+    "http": {
+      "type": "object",
+      "properties": {
+        "method": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        },
+        "status_code": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599
+        },
+        "client_ip": {
+          "type": "string"
+        },
+        "user_agent": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "retriable": {
+          "type": "boolean"
+        },
+        "cause": {
+          "type": "string"
+        },
+        "stack": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "user": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "plan": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "tenant": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "workspace": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true,
+      "x-loxa-since": "v1"
+    },
+    "organization": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true,
+      "x-loxa-since": "v1"
+    },
+    "pii": {
+      "type": "object",
+      "properties": {
+        "classification": {
+          "type": "string",
+          "enum": ["none", "low", "moderate", "high", "restricted"]
+        },
+        "redacted": {
+          "type": "boolean"
+        },
+        "redaction_policy": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true,
+      "x-loxa-since": "v1"
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "attrs": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "at_ms": { "type": "integer", "minimum": 0 }
+        },
+        "required": ["name", "at_ms"],
+        "additionalProperties": true
+      },
+      "x-loxa-since": "v1"
+    },
+    "process": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step": { "type": "integer", "minimum": 1 },
+          "name": { "type": "string" },
+          "started_at_ms": { "type": "integer" },
+          "ended_at_ms": { "type": "integer" },
+          "duration_ms": { "type": "integer" },
+          "status_code": { "type": "integer" }
+        },
+        "required": ["step", "name", "started_at_ms", "ended_at_ms", "duration_ms"],
+        "additionalProperties": true
+      },
+      "x-loxa-since": "v1"
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "started_at_ms": { "type": "integer" },
+          "ended_at_ms": { "type": "integer" },
+          "duration_ms": { "type": "integer" },
+          "status_code": { "type": "integer" }
+        },
+        "required": ["name", "started_at_ms", "ended_at_ms", "duration_ms"],
+        "additionalProperties": true
+      },
+      "x-loxa-since": "v1"
+    },
+    "timers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "duration_ms": { "type": "integer" },
+          "status_code": { "type": "integer" }
+        },
+        "required": ["name", "duration_ms"],
+        "additionalProperties": true
+      },
+      "x-loxa-since": "v1"
+    }
+  },
+  "additionalProperties": true
+}

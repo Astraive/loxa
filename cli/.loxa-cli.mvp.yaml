@@ -1,0 +1,7 @@
+collector_repo_path: ..\loxa-collector
+spec_repo_path: ..\loxa-spec
+collector_url: http://127.0.0.1:9090
+duckdb_path: loxa.db
+spool_dir: loxa-spool
+spool_file: spool.ndjson
+dlq_path: loxa-dlq.ndjson

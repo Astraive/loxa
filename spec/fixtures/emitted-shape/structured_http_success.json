@@ -1,0 +1,63 @@
+{
+  "name": "structured_http_success",
+  "params": {
+    "service": "checkout",
+    "event": "checkout.request",
+    "kind": "http",
+    "method": "POST",
+    "path": "/checkout",
+    "route": "/checkout",
+    "status_code": 200
+  },
+  "attrs": {
+    "user.id": "user_001",
+    "tenant.id": "tenant_001",
+    "cart.id": "cart_001",
+    "http.client_ip": "127.0.0.1",
+    "resource.id": "order_123",
+    "request.method": "POST"
+  },
+  "finish": {
+    "outcome": "success"
+  },
+  "expected": {
+    "present": [
+      "schema_version",
+      "event_version",
+      "event_id",
+      "timestamp",
+      "request_id",
+      "service",
+      "event",
+      "kind",
+      "level",
+      "outcome",
+      "event_state",
+      "http",
+      "user",
+      "tenant",
+      "resource",
+      "attrs"
+    ],
+    "equals": {
+      "schema_version": "v1",
+      "event_version": "v1",
+      "service": "checkout",
+      "event": "checkout.request",
+      "kind": "http",
+      "level": "info",
+      "outcome": "success",
+      "event_state": "finished",
+      "http.method": "POST",
+      "http.path": "/checkout",
+      "http.route": "/checkout",
+      "http.status_code": 200,
+      "http.client_ip": "127.0.0.1",
+      "user.id": "user_001",
+      "tenant.id": "tenant_001",
+      "resource.id": "order_123",
+      "attrs.cart.id": "cart_001",
+      "attrs.request.method": "POST"
+    }
+  }
+}

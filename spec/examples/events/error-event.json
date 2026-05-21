@@ -1,0 +1,18 @@
+{
+  "event_id": "evt_err_001",
+  "timestamp": "2026-05-12T00:05:00Z",
+  "schema_version": "v1",
+  "event_version": "v1",
+  "service": "checkout",
+  "event": "checkout.request",
+  "kind": "http",
+  "outcome": "error",
+  "duration_ms": 17,
+  "status_code": 402,
+  "error": {
+    "message": "card declined",
+    "type": "payment_error",
+    "code": "card_declined",
+    "retriable": false
+  }
+}

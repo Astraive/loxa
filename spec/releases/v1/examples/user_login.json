@@ -1,0 +1,37 @@
+{
+  "event_id": "01934a5e-8f2c-7b3d-9e4f-5a6b7c8d9e0f",
+  "event_type": "user.login",
+  "timestamp": "2024-01-15T10:30:00.123Z",
+  "service": {
+    "name": "auth-service",
+    "version": "2.1.0"
+  },
+  "deployment": {
+    "environment": "production",
+    "region": "us-east-1"
+  },
+  "tenant": {
+    "id": "tenant-acme-corp"
+  },
+  "trace": {
+    "trace_id": "0af7651916cd43dd8448eb211c80319c",
+    "span_id": "b7ad6b7169203331"
+  },
+  "user": {
+    "id": "user-12345",
+    "email": "john.doe@example.com"
+  },
+  "host": {
+    "name": "auth-prod-01",
+    "container_id": "abc123def456"
+  },
+  "data": {
+    "login_method": "password",
+    "success": true,
+    "ip_address": "192.168.1.100",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "session_id": "sess-xyz789",
+    "mfa_enabled": true,
+    "login_duration_ms": 245
+  }
+}

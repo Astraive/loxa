@@ -1,0 +1,6 @@
+collector:
+  addr: ":9090"
+duckdb:
+  path: "loxa-local.db"
+reliability:
+  mode: "direct"

@@ -1,0 +1,111 @@
+name: loxa-spec CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "spec/**"
+      - "codegen/**"
+      - "fixtures/**"
+      - "conformance/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "spec/**"
+      - "codegen/**"
+      - "fixtures/**"
+      - "conformance/**"
+
+jobs:
+  generation-check:
+    name: Verify generated artifacts are up-to-date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: loxa-spec
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Check generated artifacts
+        working-directory: loxa-spec
+        run: python codegen/generate.py --check
+
+  mirror-check:
+    name: Verify mirror folders are in sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: loxa-spec
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Check mirror consistency
+        working-directory: loxa-spec
+        run: python scripts/check_mirrors.py
+
+  conformance-check:
+    name: Verify grouped SDK conformance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: loxa-spec
+      - uses: actions/checkout@v4
+        with:
+          repository: Astraive/loxa-go
+          path: loxa-go
+      - uses: actions/checkout@v4
+        with:
+          repository: Astraive/loxa-py
+          path: loxa-py
+      - uses: actions/checkout@v4
+        with:
+          repository: Astraive/loxa-rs
+          path: loxa-rs
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: loxa-go/go.mod
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install conformance dependencies
+        run: python -m pip install --upgrade pip jsonschema
+      - name: Check fixture conformance
+        working-directory: loxa-spec
+        run: python scripts/check_conformance.py
+      - name: Run grouped SDK conformance
+        working-directory: loxa-spec
+        run: python conformance/runner.py --sdk all --group all
+
+  release-protection:
+    name: Protect release folder
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          path: loxa-spec
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Verify release folder structure
+        working-directory: loxa-spec
+        run: python scripts/check_releases.py
+      - name: Check release folder changes (PR only)
+        if: github.event_name == 'pull_request'
+        working-directory: loxa-spec
+        run: |
+          echo "Checking for changes in releases/..."
+          if git diff origin/main...HEAD -- releases/ | grep -q .; then
+            echo "❌ Changes detected in releases/"
+            echo "Release snapshots are immutable. To modify:"
+            echo "1. Update CHANGELOG.md with version notes"
+            echo "2. Explain changes in commit message"
+            echo "3. Request approval from maintainers"
+            exit 1
+          fi
+          echo "✓ releases/ unchanged"

@@ -1,0 +1,36 @@
+name: Collector Integration
+
+on:
+  pull_request:
+    paths:
+      - "cmd/loxa-collector/**"
+      - "internal/processing/**"
+      - "internal/sinks/kafka/**"
+      - "configs/loxa.queue.kafka.yaml"
+      - "loxa-collector.defaults.yaml"
+      - ".github/workflows/collector-integration.yml"
+  push:
+    branches: [main]
+    paths:
+      - "cmd/loxa-collector/**"
+      - "internal/processing/**"
+      - "internal/sinks/kafka/**"
+      - "configs/loxa.queue.kafka.yaml"
+      - "loxa-collector.defaults.yaml"
+      - ".github/workflows/collector-integration.yml"
+
+jobs:
+  collector-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Run collector integration tests
+        run: go test -tags integration ./cmd/loxa-collector -run '^TestCollectorIntegration_' -count=1

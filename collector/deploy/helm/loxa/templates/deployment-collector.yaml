@@ -1,0 +1,99 @@
+{{- if .Values.collector.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "loxa.fullname" . }}-collector
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "loxa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: collector
+spec:
+  replicas: {{ .Values.collector.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "loxa.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: collector
+  template:
+    metadata:
+      annotations:
+        {{- toYaml .Values.collector.podAnnotations | nindent 8 }}
+      labels:
+        {{- include "loxa.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: collector
+        {{- toYaml .Values.collector.podLabels | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "loxa.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.collector.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.collector.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.collector.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: collector
+          image: {{ include "loxa.collector.image" . }}
+          imagePullPolicy: {{ .Values.collector.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 9090
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.collector.resources | nindent 12 }}
+          env:
+            - name: LOXA_CONFIG_FILE
+              value: /app/config/config.yaml
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+            {{- if .Values.persistence.enabled }}
+            - name: data
+              mountPath: /data
+            {{- end }}
+          {{- if .Values.collector.config.collector.max_body_bytes }}
+          args:
+            - --max-body-bytes
+            - {{ .Values.collector.config.collector.max_body_bytes | quote }}
+          {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "loxa.fullname" . }}-collector-config
+        {{- if .Values.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "loxa.fullname" . }}-collector
+        {{- end }}
+{{- end }}

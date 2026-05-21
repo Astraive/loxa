@@ -1,0 +1,8 @@
+{
+  "event_id": "evt_001",
+  "timestamp": "2026-05-18T01:44:00Z",
+  "event": "user.login",
+  "kind": "event",
+  "outcome": "success",
+  "provenance": "loxa"
+}

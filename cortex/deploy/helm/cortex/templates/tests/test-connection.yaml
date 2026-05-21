@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "cortex.fullname" . }}-test-connection"
+  labels:
+    {{- include "cortex.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  containers:
+    - name: health-check
+      image: curlimages/curl:latest
+      command:
+        - sh
+        - -c
+        - |
+          set -e
+          echo "Testing cortex health endpoint..."
+          curl -sf http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/healthz
+          echo ""
+          echo "Testing cortex ready endpoint..."
+          curl -sf http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/readyz
+          echo ""
+          echo "All checks passed!"
+  restartPolicy: Never

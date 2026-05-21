@@ -1,0 +1,7 @@
+{
+  "event": "custom.params",
+  "outcome": "success",
+  "attrs": {
+    "feature_flags.new_checkout": "true"
+  }
+}

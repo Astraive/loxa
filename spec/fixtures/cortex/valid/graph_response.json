@@ -1,0 +1,43 @@
+{
+  "nodes": [
+    {
+      "id": "svc_api",
+      "type": "service",
+      "label": "api-server",
+      "service": "api-server",
+      "attributes": {}
+    },
+    {
+      "id": "svc_db",
+      "type": "service",
+      "label": "db-service",
+      "service": "db-service",
+      "attributes": {}
+    },
+    {
+      "id": "svc_cache",
+      "type": "service",
+      "label": "redis-cache",
+      "service": "redis-cache",
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_1",
+      "from_node_id": "svc_api",
+      "to_node_id": "svc_db",
+      "type": "calls",
+      "weight": 0.95,
+      "attributes": {}
+    },
+    {
+      "id": "edge_2",
+      "from_node_id": "svc_api",
+      "to_node_id": "svc_cache",
+      "type": "calls",
+      "weight": 0.85,
+      "attributes": {}
+    }
+  ]
+}

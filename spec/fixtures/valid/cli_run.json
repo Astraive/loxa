@@ -1,0 +1,15 @@
+{
+  "schema_version": "v1",
+  "event_version": "v1",
+  "timestamp": "2026-05-12T00:03:00Z",
+  "event_id": "evt_cli_run_001",
+  "service": "ops-cli",
+  "event": "config.validate",
+  "kind": "cli",
+  "level": "info",
+  "outcome": "success",
+  "duration_ms": 13,
+  "attrs": {
+    "command": "config validate"
+  }
+}

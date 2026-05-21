@@ -1,0 +1,94 @@
+{{- if .Values.worker.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "loxa.fullname" . }}-worker
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "loxa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "loxa.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      annotations:
+        {{- toYaml .Values.worker.podAnnotations | nindent 8 }}
+      labels:
+        {{- include "loxa.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+        {{- toYaml .Values.worker.podLabels | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "loxa.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: worker
+          image: {{ include "loxa.worker.image" . }}
+          imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+          env:
+            - name: LOXA_CONFIG_FILE
+              value: /app/config/config.yaml
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+            {{- if .Values.persistence.enabled }}
+            - name: data
+              mountPath: /data
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "loxa.fullname" . }}-worker-config
+        {{- if .Values.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "loxa.fullname" . }}-worker
+        {{- end }}
+{{- end }}

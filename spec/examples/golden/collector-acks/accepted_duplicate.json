@@ -1,0 +1,25 @@
+{
+  "name": "accepted_duplicate",
+  "http_status": 202,
+  "response": {
+    "status": "accepted",
+    "accepted": 1,
+    "rejected": 0,
+    "invalid": 0,
+    "deduped": 1,
+    "acks": [
+      {
+        "event_id": "evt_1",
+        "status": "accepted",
+        "reason": "duplicate_event_id",
+        "retryable": false,
+        "duplicate": true,
+        "code": "duplicate_event_id",
+        "message": "duplicate event accepted by idempotency"
+      }
+    ]
+  },
+  "expected": {
+    "outcome": "success"
+  }
+}

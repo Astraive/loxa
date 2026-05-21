@@ -1,0 +1,29 @@
+{
+  "schema_version": "v1",
+  "event_version": "v1",
+  "timestamp": "2026-05-15T10:00:00Z",
+  "event_id": "evt_trace_ctx",
+  "service": "payment-service",
+  "event": "payment.charged",
+  "kind": "event",
+  "level": "info",
+  "outcome": "success",
+  "duration_ms": 2000,
+  "request_id": "req_payment_001",
+  "trace_id": "trace_distributed_001",
+  "span_id": "span_payment_001",
+  "user": {
+    "id": "user_payment_001"
+  },
+  "tenant": {
+    "id": "tenant_payment_001"
+  },
+  "attrs": {
+    "amount_cents": 9999,
+    "currency": "USD",
+    "payment_method": "card",
+    "gateway_trace_id": "gateway_trace_distributed_001",
+    "parent_request_id": "req_checkout_001",
+    "w3c_traceparent": "00-trace_distributed_001-span_payment_001-01"
+  }
+}

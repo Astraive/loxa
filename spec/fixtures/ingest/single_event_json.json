@@ -1,0 +1,19 @@
+{
+  "name": "single_event_json",
+  "mode": "single_event",
+  "content_type": "application/json",
+  "body": {
+    "event_id": "evt_single_001",
+    "timestamp": "2026-05-12T00:00:00Z",
+    "service": "checkout",
+    "event": "checkout.request",
+    "kind": "http",
+    "schema_version": "v1",
+    "event_version": "v1"
+  },
+  "expected": {
+    "accepted_event_count": 1,
+    "first_event.event": "checkout.request",
+    "first_event.service": "checkout"
+  }
+}

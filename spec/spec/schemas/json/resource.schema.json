@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Astraive/loxa-spec/spec/schemas/json/resource.schema.json",
+  "title": "LOXA Resource",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

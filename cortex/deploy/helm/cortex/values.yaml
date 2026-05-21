@@ -1,0 +1,152 @@
+global:
+  imageRegistry: ghcr.io/astraive
+  imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 2
+
+image:
+  repository: loxa-cortex
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  httpPort: 9100
+  grpcPort: 9101
+  annotations: {}
+
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s
+  labels: {}
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: cortex.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+podAnnotations: {}
+podLabels: {}
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+containerSecurityContext:
+  capabilities:
+    drop:
+      - ALL
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+
+storage:
+  backend: postgres
+  duckdb:
+    path: ./cortex.duckdb
+  postgresql:
+    host: postgres.default.svc.cluster.local
+    port: 5432
+    database: cortex
+    user: cortex
+    password: ""
+    ssl_mode: disable
+    max_connections: 50
+
+authentication:
+  enabled: false
+  api_keys: []
+
+rate_limit:
+  enabled: false
+  per_api_key_rpm: 1000
+  per_ip_rpm: 100
+
+tls:
+  enabled: false
+  cert_file: ""
+  key_file: ""
+
+pii_redaction:
+  enabled: false
+  mode: enforce
+
+logging:
+  level: info
+  format: json
+
+ingestion:
+  async_workers: 4
+  channel_size: 8192
+  micro_batch_size: 256
+  flush_interval: 500ms
+
+correlation:
+  enabled: true
+  analysis_interval: 60s
+
+reconstructor:
+  fast:
+    max_depth: 3
+    max_events: 20
+    time_window: 30m
+  deep:
+    max_depth: 10
+    max_events: 200
+    time_window: 2h
+
+matcher:
+  mode: go
+  parallelism: 0
+  cache_size: 1024
+  cache_ttl: 30s
+  min_similarity_threshold: 0.5
+
+memory:
+  decay_period: 2160h
+  decay_rate: 0.1
+  archive_threshold: 0.1
+
+learner:
+  learning_rate: 0.1
+
+eventbus:
+  subscriber_buffer_size: 128

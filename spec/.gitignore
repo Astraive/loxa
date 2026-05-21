@@ -1,0 +1,33 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.so
+
+# Python virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Generated temporary files
+*.tmp
+*.log

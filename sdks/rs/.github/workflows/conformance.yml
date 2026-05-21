@@ -1,0 +1,35 @@
+name: conformance
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: loxa-rs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: loxa-rs
+      - uses: actions/checkout@v4
+        with:
+          repository: Astraive/loxa-spec
+          path: loxa-spec
+      - uses: actions/checkout@v4
+        with:
+          repository: Astraive/loxa-go
+          path: loxa-go
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run conformance tests
+        working-directory: loxa-spec
+        run: python conformance/runner.py --sdk rust --group all
+
+      - name: Run spec contract tests
+        run: cargo test --test spec_contract_test --test conformance_fixtures --test ingest_envelope_fixture

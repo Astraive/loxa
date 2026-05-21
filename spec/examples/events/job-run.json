@@ -1,0 +1,16 @@
+{
+  "event_id": "evt_job_001",
+  "timestamp": "2026-05-12T00:01:00Z",
+  "schema_version": "v1",
+  "event_version": "v1",
+  "service": "billing-worker",
+  "event": "billing.reconcile",
+  "kind": "job",
+  "outcome": "success",
+  "duration_ms": 1850,
+  "attrs": {
+    "job": {
+      "name": "billing.reconcile"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "event_id": "evt_002",
+  "timestamp": "not-a-valid-timestamp",
+  "service": "api-server",
+  "event": "user.login",
+  "kind": "event",
+  "outcome": "success",
+  "provenance": "loxa"
+}

@@ -1,0 +1,57 @@
+{
+  "$id": "https://spec.loxa.dev/schemas/cortex-graph-edge.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LOXA Cortex Graph Edge",
+  "type": "object",
+  "required": ["id", "from_node_id", "to_node_id", "type"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique edge ID"
+    },
+    "from_node_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Source node ID"
+    },
+    "to_node_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Target node ID"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "depends_on",
+        "same_trace",
+        "same_incident",
+        "parent_span",
+        "calls",
+        "deployed_before",
+        "metric_spiked_after",
+        "log_error_after",
+        "caused_probably",
+        "remediated_by",
+        "similar_shape"
+      ],
+      "description": "Edge type"
+    },
+    "weight": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Confidence or evidence weight"
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Additional attributes"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

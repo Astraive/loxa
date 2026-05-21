@@ -1,0 +1,10 @@
+{
+  "feedback_id": "fb_001",
+  "incident_id": "inc_001",
+  "remediation_id": "rem_001",
+  "success": true,
+  "outcome": "success",
+  "time_to_resolve_seconds": 300,
+  "notes": "Scaling up database connections resolved the incident",
+  "timestamp": "2026-05-18T01:54:00Z"
+}

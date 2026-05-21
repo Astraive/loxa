@@ -1,0 +1,41 @@
+*.exe
+
+# Local database/cache files
+*.db
+*.db-*
+*.db.wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.wal
+*.shm
+# Build outputs / caches
+cortex.exe
+*.exe
+*.dll
+*.pdb
+*.lib
+*.exp
+
+# Rust / Cargo
+target/
+**/target/
+Cargo.lock
+# keep Cargo.lock for apps if needed; remove this line if you want lock committed
+
+# Go
+bin/
+dist/
+*.test
+*.out
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Env / local config
+.env
+.env.*
+*.local

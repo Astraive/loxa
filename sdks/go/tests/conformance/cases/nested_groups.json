@@ -1,0 +1,8 @@
+{
+  "event": "group.test",
+  "outcome": "success",
+  "attrs": {
+    "user.id": "u-1",
+    "user.subscription": "pro"
+  }
+}

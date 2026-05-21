@@ -1,0 +1,123 @@
+openapi: 3.1.0
+info:
+  title: LOXA Collector API
+  version: v1
+  description: |
+    HTTP ingest contract for LOXA-compatible collectors.
+
+    Authentication is typically enforced via an API key header. HTTP is the
+    canonical wire contract; gRPC and GraphQL surfaces are expected to expose
+    the same readiness and ingest semantics when enabled.
+paths:
+  /ingest:
+    post:
+      summary: Ingest LOXA events
+      description: |
+        Accepts a single JSON object, a JSON array, a wrapped `{ "events": [...] }`
+        payload, NDJSON, and gzip-compressed equivalents.
+
+        Successful responses return a collector response object with
+        `accepted`, `rejected`, `invalid`, `deduped`, and per-event `acks`.
+      parameters:
+        - name: X-LOXA-API-Key
+          in: header
+          required: false
+          description: Example API key header when auth is enabled.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: ../schemas/json/event.schema.json
+                - type: array
+                  items:
+                    $ref: ../schemas/json/event.schema.json
+                - $ref: ../schemas/json/ingest-envelope.schema.json
+          application/x-ndjson:
+            schema:
+              type: string
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "202":
+          description: accepted
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/json/collector-response.schema.json
+        "207":
+          description: partial success
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/json/collector-response.schema.json
+        "400":
+          description: invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/json/collector-response.schema.json
+        "401":
+          description: auth error
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/json/collector-response.schema.json
+        "429":
+          description: rate limited
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/json/collector-response.schema.json
+        "503":
+          description: unavailable
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/json/collector-response.schema.json
+  /healthz:
+    get:
+      summary: Liveness probe
+      responses:
+        "200":
+          description: healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+  /readyz:
+    get:
+      summary: Readiness probe
+      responses:
+        "200":
+          description: ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+        "503":
+          description: not ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+  /metrics:
+    get:
+      summary: Metrics endpoint
+      responses:
+        "200":
+          description: Prometheus metrics

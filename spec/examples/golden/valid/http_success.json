@@ -1,0 +1,35 @@
+{
+  "schema_version": "v1",
+  "event_version": "v1",
+  "timestamp": "2026-05-12T00:00:00Z",
+  "event_id": "evt_http_success_001",
+  "service": "checkout",
+  "event": "checkout.request",
+  "kind": "http",
+  "level": "info",
+  "outcome": "success",
+  "duration_ms": 42,
+  "request_id": "req_http_success_001",
+  "trace_id": "trace_http_success_001",
+  "span_id": "span_http_success_001",
+  "method": "POST",
+  "path": "/checkout",
+  "route": "/checkout",
+  "status_code": 200,
+  "http": {
+    "method": "POST",
+    "path": "/checkout",
+    "route": "/checkout",
+    "status_code": 200,
+    "user_agent": "loxa-test/1.0"
+  },
+  "user": {
+    "id": "user_001"
+  },
+  "tenant": {
+    "id": "tenant_001"
+  },
+  "attrs": {
+    "cart_id": "cart_001"
+  }
+}

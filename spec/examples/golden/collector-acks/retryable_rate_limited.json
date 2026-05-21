@@ -1,0 +1,31 @@
+{
+  "name": "retryable_rate_limited",
+  "http_status": 429,
+  "response": {
+    "status": "rejected",
+    "accepted": 0,
+    "rejected": 1,
+    "invalid": 0,
+    "errors": [
+      {
+        "code": "rate_limited",
+        "message": "retry later",
+        "retryable": true
+      }
+    ],
+    "acks": [
+      {
+        "event_id": "evt_1",
+        "status": "rejected",
+        "reason": "rate_limited",
+        "retryable": true,
+        "code": "rate_limited",
+        "message": "retry later"
+      }
+    ]
+  },
+  "expected": {
+    "outcome": "failure",
+    "message_contains": "retry"
+  }
+}

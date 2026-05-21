@@ -1,0 +1,7 @@
+{
+  "event": "checkout.request",
+  "outcome": "error",
+  "attrs": {
+    "error.code": "PAYMENT_FAILED"
+  }
+}

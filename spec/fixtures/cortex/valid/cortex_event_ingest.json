@@ -1,0 +1,13 @@
+{
+  "event_id": "evt_cortex_002",
+  "timestamp": "2026-05-18T01:44:00Z",
+  "service": "api-server",
+  "event": "http.request.start",
+  "kind": "http",
+  "level": "info",
+  "outcome": "success",
+  "method": "POST",
+  "path": "/api/v1/users",
+  "status_code": 201,
+  "provenance": "collector"
+}

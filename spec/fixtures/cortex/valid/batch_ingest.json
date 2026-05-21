@@ -1,0 +1,29 @@
+[
+  {
+    "event_id": "evt_batch_001",
+    "timestamp": "2026-05-18T01:44:00Z",
+    "service": "api-server",
+    "event": "request.start",
+    "kind": "event",
+    "outcome": "success",
+    "provenance": "loxa"
+  },
+  {
+    "event_id": "evt_batch_002",
+    "timestamp": "2026-05-18T01:44:01Z",
+    "service": "db-service",
+    "event": "query.execute",
+    "kind": "event",
+    "outcome": "success",
+    "provenance": "loxa"
+  },
+  {
+    "event_id": "evt_batch_003",
+    "timestamp": "2026-05-18T01:44:02Z",
+    "service": "api-server",
+    "event": "request.complete",
+    "kind": "event",
+    "outcome": "success",
+    "provenance": "loxa"
+  }
+]

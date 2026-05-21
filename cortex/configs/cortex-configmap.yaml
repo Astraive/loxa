@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cortex-config
+  labels:
+    app.kubernetes.io/name: cortex
+    app.kubernetes.io/component: cortex
+data:
+  CORTEX_STORAGE_BACKEND: "postgres"
+  CORTEX_POSTGRES_HOST: "postgres.default.svc.cluster.local"
+  CORTEX_POSTGRES_PORT: "5432"
+  CORTEX_POSTGRES_DATABASE: "cortex"
+  CORTEX_POSTGRES_USER: "cortex"
+  CORTEX_POSTGRES_SSL_MODE: "disable"
+  CORTEX_LOG_LEVEL: "info"
+  CORTEX_LOG_FORMAT: "json"
+  CORTEX_MATCHER_MODE: "go"
+  CORTEX_CORRELATION_ENABLED: "true"
+  CORTEX_PII_REDACTION_ENABLED: "false"
+  CORTEX_RATE_LIMIT_ENABLED: "false"
+  CORTEX_AUTH_ENABLED: "false"

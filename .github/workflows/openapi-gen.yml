@@ -1,0 +1,19 @@
+name: OpenAPI generation
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run OpenAPI generator script
+        run: |
+          chmod +x ./tools/generate_openapi.sh
+          ./tools/generate_openapi.sh
+      - name: Upload generated clients
+        uses: actions/upload-artifact@v3
+        with:
+          name: openapi-generated
+          path: generated/openapi

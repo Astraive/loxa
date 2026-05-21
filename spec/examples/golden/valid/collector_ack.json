@@ -1,0 +1,48 @@
+{
+  "request_id": "ing_1770000000000000000",
+  "status": "partial",
+  "accepted": 1,
+  "rejected": 1,
+  "duplicates": 1,
+  "invalid": 0,
+  "deduped": 1,
+  "errors": [
+    {
+      "index": 2,
+      "event_id": "evt_2",
+      "code": "schema_invalid",
+      "message": "field service.name is required",
+      "retryable": false
+    }
+  ],
+  "acks": [
+    {
+      "index": 0,
+      "event_id": "evt_1",
+      "status": "accepted",
+      "reason": "accepted",
+      "retryable": false,
+      "code": "accepted",
+      "message": "event accepted"
+    },
+    {
+      "index": 1,
+      "event_id": "evt_1",
+      "status": "accepted",
+      "reason": "duplicate_event_id",
+      "retryable": false,
+      "duplicate": true,
+      "code": "duplicate_event_id",
+      "message": "duplicate event accepted by idempotency"
+    },
+    {
+      "index": 2,
+      "event_id": "evt_2",
+      "status": "invalid",
+      "reason": "schema_invalid",
+      "retryable": false,
+      "code": "schema_invalid",
+      "message": "field service.name is required"
+    }
+  ]
+}

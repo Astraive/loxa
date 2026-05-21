@@ -1,0 +1,23 @@
+Loxa Cortex has been deployed.
+
+Service:
+  HTTP: {{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}
+  gRPC: {{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.grpcPort }}
+
+Endpoints:
+  Health:    http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/healthz
+  Ready:     http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/readyz
+  Ingest:    http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/v1/events/batch
+  Reconstruct: http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/v1/reconstruct
+  Graph:     http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/v1/graph/service/{name}
+  Metrics:   http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/metrics
+
+{{- if .Values.ingress.enabled }}
+
+Ingress:
+  {{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+  {{- end }}
+{{- end }}
+
+For more information, see: https://github.com/astraive/loxa

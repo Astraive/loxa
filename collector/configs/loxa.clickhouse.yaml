@@ -1,0 +1,13 @@
+collector:
+  addr: ":9090"
+fanout:
+  outputs:
+    - name: "clickhouse-copy"
+      role: "secondary"
+      type: "clickhouse"
+      enabled: true
+      clickhouse:
+        addrs:
+          - "127.0.0.1:9000"
+        database: "default"
+        table: "events"

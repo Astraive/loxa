@@ -1,0 +1,27 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: loxa-py
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: loxa-py
+      - uses: actions/checkout@v4
+        with:
+          repository: Astraive/loxa-spec
+          path: loxa-spec
+      - uses: actions/checkout@v4
+        with:
+          repository: Astraive/loxa-go
+          path: loxa-go
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - run: pip install -e . pytest
+      - run: pytest
+      - run: pytest tests/test_spec_conformance.py tests/test_collector_ack_fixture.py tests/test_emitted_shape_fixture.py tests/test_parity.py
+      - working-directory: loxa-spec
+        run: python conformance/runner.py --sdk python --group all

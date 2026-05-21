@@ -1,0 +1,42 @@
+{
+  "incident_id": "inc_001",
+  "status": "resolved",
+  "severity": "high",
+  "primary_service": "api-server",
+  "affected_services": ["api-server", "db-service"],
+  "nodes": [
+    {
+      "id": "svc_api",
+      "type": "service",
+      "label": "api-server",
+      "service": "api-server",
+      "attributes": {}
+    },
+    {
+      "id": "svc_db",
+      "type": "service",
+      "label": "db-service",
+      "service": "db-service",
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_1",
+      "from_node_id": "svc_api",
+      "to_node_id": "svc_db",
+      "type": "calls",
+      "weight": 0.95,
+      "attributes": {}
+    }
+  ],
+  "evidence": [
+    {
+      "event_id": "evt_001",
+      "reason": "First error in sequence",
+      "confidence": 0.9
+    }
+  ],
+  "summary": "Database connection pool exhaustion caused API latency",
+  "confidence": 0.85
+}

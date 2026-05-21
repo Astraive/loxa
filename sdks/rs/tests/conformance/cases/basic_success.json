@@ -1,0 +1,6 @@
+{
+  "event": "checkout.request",
+  "service": "checkout",
+  "outcome": "success"
+}
+

@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-05-12T00:00:00Z",
+  "event_id": "evt_missing_versions_001",
+  "service": "checkout",
+  "event": "checkout.request",
+  "kind": "http"
+}

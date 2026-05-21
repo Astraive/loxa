@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "cortex.fullname" . }}-config
+  labels:
+    {{- include "cortex.labels" . | nindent 4 }}
+data:
+  CORTEX_STORAGE_BACKEND: {{ .Values.storage.backend | quote }}
+  CORTEX_POSTGRES_HOST: {{ .Values.storage.postgresql.host | quote }}
+  CORTEX_POSTGRES_PORT: {{ .Values.storage.postgresql.port | quote }}
+  CORTEX_POSTGRES_DATABASE: {{ .Values.storage.postgresql.database | quote }}
+  CORTEX_POSTGRES_USER: {{ .Values.storage.postgresql.user | quote }}
+  CORTEX_POSTGRES_SSL_MODE: {{ .Values.storage.postgresql.ssl_mode | quote }}
+  CORTEX_LOG_LEVEL: {{ .Values.logging.level | quote }}
+  CORTEX_LOG_FORMAT: {{ .Values.logging.format | quote }}
+  CORTEX_MATCHER_MODE: {{ .Values.matcher.mode | quote }}
+  CORTEX_CORRELATION_ENABLED: {{ .Values.correlation.enabled | quote }}
+  CORTEX_PII_REDACTION_ENABLED: {{ .Values.pii_redaction.enabled | quote }}
+  CORTEX_RATE_LIMIT_ENABLED: {{ .Values.rate_limit.enabled | quote }}
+  CORTEX_AUTH_ENABLED: {{ .Values.authentication.enabled | quote }}

@@ -1,0 +1,10 @@
+collector:
+  addr: ":9090"
+fanout:
+  outputs:
+    - name: "loki-copy"
+      role: "secondary"
+      type: "loki"
+      enabled: true
+      loki:
+        url: "http://127.0.0.1:3100"

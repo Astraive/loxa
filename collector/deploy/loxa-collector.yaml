@@ -1,0 +1,128 @@
+collector:
+  addr: ":9090"
+  read_header_timeout: 5s
+  shutdown_timeout: 10s
+  max_body_bytes: 10485760
+  max_events_per_request: 5000
+
+auth:
+  enabled: false
+  header: "X-API-Key"
+  value_env: "COLLECTOR_API_KEY"
+
+rate_limit:
+  enabled: true
+  rps: 1000
+  burst: 1000
+
+routes:
+  ingest: "/ingest"
+  health: "/healthz"
+  ready: "/readyz"
+  metrics: "/metrics"
+
+storage:
+  primary: duckdb
+
+duckdb:
+  path: "/app/data/loxa.db"
+  driver: "duckdb"
+  table: "events"
+  raw_column: "raw"
+  store_raw: true
+  checkpoint_on_shutdown: true
+  max_open_conns: 1
+  max_idle_conns: 1
+  batch_size: 100
+  flush_interval: 500ms
+  writer_loop: false
+  writer_queue_size: 0
+  checkpoint_interval: 0s
+  export:
+    enabled: false
+    format: parquet
+    interval: 1h
+    path: "/app/data/exports"
+  schema:
+    event_id: "event_id"
+    event_type: "event"
+    service: "service"
+    status_code: "http.status"
+    duration_ms: "duration_ms"
+    timestamp: "timestamp"
+  column_types:
+    status_code: "INTEGER"
+    http.status: "INTEGER"
+    duration_ms: "DOUBLE"
+    timestamp: "TIMESTAMP"
+
+kafka:
+  brokers:
+    - "kafka:9092"
+  topic: "loxa-events"
+
+worker:
+  consumer_group: "loxa-worker"
+  poll_timeout: 2s
+
+logging:
+  level: "info"
+  format: "json"
+
+metrics:
+  prometheus: true
+
+reliability:
+  mode: "direct" # "direct" | "spool" | "queue"
+  spool_dir: "/app/data/spool"
+  spool_file: "spool.ndjson"
+  max_spool_bytes: 10737418240
+  fsync: true
+  delivery_queue_size: 4096
+
+retry:
+  enabled: true
+  max_attempts: 10
+  initial_backoff: 100ms
+  max_backoff: 30s
+  jitter: true
+
+dead_letter:
+  enabled: false
+  path: "/app/data/dlq.ndjson"
+
+fanout:
+  outputs:
+    - name: "loki"
+      type: "loki"
+      enabled: false
+      loki:
+        url: "http://loki:3100/loki/api/v1/push"
+        labels:
+          source: "loxa"
+          env: "dev"
+    - name: "otlp"
+      type: "otlp"
+      enabled: false
+      otlp:
+        endpoint: "http://otel-collector:4317"
+        protocol: "grpc"
+        insecure: true
+  delivery:
+    policy: "require_primary" # "best_effort" | "require_primary" | "require_all"
+    fallback:
+      enabled: false
+      on_primary_failure: false
+      on_secondary_failure: false
+      on_policy_failure: true
+    dlq:
+      on_primary_failure: true
+      on_secondary_failure: false
+      on_fallback_failure: true
+      on_policy_failure: true
+
+dedupe:
+  enabled: false
+  key: "event_id"
+  window: 24h
+  backend: "memory"

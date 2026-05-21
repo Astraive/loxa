@@ -1,0 +1,54 @@
+{
+  "$id": "https://spec.loxa.dev/schemas/cortex-graph-node.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LOXA Cortex Graph Node",
+  "type": "object",
+  "required": ["id", "type", "label"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique node ID"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "service",
+        "event",
+        "trace",
+        "span",
+        "request",
+        "deployment",
+        "metric",
+        "log",
+        "incident",
+        "remediation",
+        "resource"
+      ],
+      "description": "Node type"
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable label"
+    },
+    "service": {
+      "type": "string",
+      "description": "Service this node belongs to"
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Additional attributes"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

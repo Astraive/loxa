@@ -1,0 +1,7 @@
+{
+  "event": "redaction.test",
+  "outcome": "success",
+  "attrs": {
+    "password": "secret"
+  }
+}

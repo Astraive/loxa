@@ -1,0 +1,14 @@
+{
+  "name": "ndjson_ingest",
+  "mode": "ndjson",
+  "content_type": "application/x-ndjson",
+  "body_lines": [
+    "{\"event_id\":\"evt_ndjson_001\",\"timestamp\":\"2026-05-12T00:00:00Z\",\"service\":\"checkout\",\"event\":\"checkout.request\",\"kind\":\"http\",\"schema_version\":\"v1\",\"event_version\":\"v1\"}",
+    "{\"event_id\":\"evt_ndjson_002\",\"timestamp\":\"2026-05-12T00:00:01Z\",\"service\":\"checkout\",\"event\":\"checkout.request\",\"kind\":\"http\",\"schema_version\":\"v1\",\"event_version\":\"v1\"}"
+  ],
+  "expected": {
+    "accepted_event_count": 2,
+    "first_event.event": "checkout.request",
+    "first_event.service": "checkout"
+  }
+}

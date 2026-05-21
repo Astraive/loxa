@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: loxa-schema-service
+  labels:
+    app.kubernetes.io/name: schema-service
+    app.kubernetes.io/part-of: loxa
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: schema-service
+    app.kubernetes.io/part-of: loxa
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

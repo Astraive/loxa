@@ -1,0 +1,640 @@
+package main
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"math/rand"
+	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+
+	collectorevent "github.com/astraive/loxa-collector/internal/event"
+	processing "github.com/astraive/loxa-collector/internal/processing"
+	serverruntime "github.com/astraive/loxa-collector/internal/server"
+	"github.com/astraive/loxa-collector/internal/sinks/duckdb"
+	kafkasink "github.com/astraive/loxa-collector/internal/sinks/kafka"
+	storagepath "github.com/astraive/loxa-collector/internal/storage"
+	publichttp "github.com/astraive/loxa-collector/server/http"
+	_ "github.com/marcboeker/go-duckdb"
+	"golang.org/x/time/rate"
+)
+
+func runCollector(cfg collectorConfig) error {
+	var (
+		db              *sql.DB
+		err             error
+		sink            collectorevent.Sink
+		hybridQueueSink collectorevent.Sink
+		secondarySinks  []namedSink
+		fallbackSink    *namedSink
+		fanoutDBs       []*sql.DB
+		schedulersStop  chan struct{}
+		schedWG         sync.WaitGroup
+		errCh           = make(chan error, 4)
+	)
+
+	if cfg.reliabilityMode == "queue" {
+		sink, err = kafkasink.New(kafkasink.Config{
+			Brokers:           cfg.kafkaBrokers,
+			Topic:             cfg.kafkaTopic,
+			Acks:              cfg.kafkaAcks,
+			RequestTimeout:    cfg.kafkaRequestTimeout,
+			EnableIdempotence: cfg.kafkaIdempotence,
+			MaxRetries:        cfg.kafkaMaxRetries,
+			RetryBackoff:      cfg.kafkaRetryBackoff,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create kafka sink: %w", err)
+		}
+		logJSON("info", "kafka_sink_initialized", map[string]any{
+			"brokers":     cfg.kafkaBrokers,
+			"topic":       cfg.kafkaTopic,
+			"reliability": "at-least-once (configure broker/producer for exactly-once)",
+		})
+	} else {
+		db, err = sql.Open(cfg.duckDBDriver, cfg.duckDBPath)
+		if err != nil {
+			return fmt.Errorf("failed to open duckdb: %w", err)
+		}
+		defer db.Close()
+		db.SetMaxOpenConns(cfg.duckDBMaxOpenConns)
+		db.SetMaxIdleConns(cfg.duckDBMaxIdleConns)
+
+		if err := ensureSchema(db, cfg); err != nil {
+			return fmt.Errorf("failed to initialize schema: %w", err)
+		}
+
+		if cfg.cortexSchemaEnabled {
+			if err := ensureCortexSchema(db); err != nil {
+				return fmt.Errorf("failed to initialize cortex schema: %w", err)
+			}
+		}
+
+		sink, err = duckdb.New(duckdb.Config{
+			DB:              db,
+			Driver:          cfg.duckDBDriver,
+			Table:           cfg.duckDBTable,
+			StoreRaw:        cfg.duckDBStoreRaw,
+			RawColumn:       cfg.duckDBRawColumn,
+			Schema:          cfg.duckDBSchema,
+			BatchSize:       cfg.duckDBBatchSize,
+			FlushInterval:   cfg.duckDBFlushInterval,
+			WriterLoop:      cfg.duckDBWriterLoop,
+			WriterQueueSize: cfg.duckDBWriterQueueSize,
+			EncryptRaw:      true,
+			EncryptKey:      cfg.storageEncryptionKey,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create duckdb sink: %w", err)
+		}
+		if cfg.reliabilityMode == "hybrid" {
+			hybridQueueSink, err = kafkasink.New(kafkasink.Config{
+				Brokers:           cfg.kafkaBrokers,
+				Topic:             cfg.kafkaTopic,
+				Acks:              cfg.kafkaAcks,
+				RequestTimeout:    cfg.kafkaRequestTimeout,
+				EnableIdempotence: cfg.kafkaIdempotence,
+				MaxRetries:        cfg.kafkaMaxRetries,
+				RetryBackoff:      cfg.kafkaRetryBackoff,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to create hybrid kafka sink: %w", err)
+			}
+		}
+		secondarySinks, fallbackSink, fanoutDBs, err = createFanoutSinks(cfg)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			for _, fanoutDB := range fanoutDBs {
+				_ = fanoutDB.Close()
+			}
+		}()
+
+		schedulersStop = make(chan struct{})
+		if cfg.duckDBCheckpointIntvl > 0 {
+			schedWG.Add(1)
+			go runPeriodicCheckpoint(db, cfg.duckDBCheckpointIntvl, schedulersStop, &schedWG)
+		}
+		if cfg.duckDBExportEnabled {
+			schedWG.Add(1)
+			go runPeriodicExport(db, cfg, schedulersStop, &schedWG)
+		}
+	}
+
+	rateLimiter := rate.NewLimiter(rate.Inf, 0)
+	if cfg.rateLimitEnabled {
+		rateLimiter = rate.NewLimiter(rate.Limit(cfg.rateLimitRPS), cfg.rateLimitBurst)
+	}
+	dedupeStore, err := newRedisDedupeStore(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to initialize dedupe store: %w", err)
+	}
+
+	state := &collectorState{
+		cfg:             cfg,
+		ingestSink:      sink,
+		hybridQueueSink: hybridQueueSink,
+		secondarySinks:  secondarySinks,
+		fallbackSink:    fallbackSink,
+		rateLimiter:     rateLimiter,
+		rng:             rand.New(rand.NewSource(time.Now().UnixNano())),
+		dedupeSeenAt:    make(map[string]time.Time),
+		dedupeStore:     dedupeStore,
+		queryDB:         db,
+	}
+	state.ready.Store(true)
+	state.sinkHealthy.Store(true)
+	state.spoolHealthy.Store(true)
+	state.diskHealthy.Store(true)
+
+	if err := state.initReliability(); err != nil {
+		return err
+	}
+	defer state.closeReliability()
+	if state.cortexBridge, err = newCortexBridgeClient(cfg, &state.metrics); err != nil {
+		return fmt.Errorf("failed to initialize cortex bridge: %w", err)
+	}
+	defer func() {
+		if state.cortexBridge != nil {
+			_ = state.cortexBridge.Close()
+		}
+	}()
+
+	state.initRetention()
+
+	state.processor, err = processing.New(processing.Config{
+		DeliveryPolicy:          cfg.deliveryPolicy,
+		RetryEnabled:            cfg.retryEnabled,
+		RetryMaxAttempts:        cfg.retryMaxAttempts,
+		RetryInitialBackoff:     cfg.retryInitialBackoff,
+		RetryMaxBackoff:         cfg.retryMaxBackoff,
+		RetryJitter:             cfg.retryJitter,
+		FallbackEnabled:         cfg.fallbackEnabled,
+		FallbackOnPrimaryFail:   cfg.fallbackOnPrimaryFail,
+		FallbackOnSecondaryFail: cfg.fallbackOnSecondaryFail,
+		FallbackOnPolicyFail:    cfg.fallbackOnPolicyFail,
+		DLQEnabled:              cfg.dlqEnabled,
+		DLQPath:                 cfg.dlqPath,
+		DLQOnPrimaryFail:        cfg.dlqOnPrimaryFail,
+		DLQOnSecondaryFail:      cfg.dlqOnSecondaryFail,
+		DLQOnFallbackFail:       state.cfg.dlqOnFallbackFail,
+		DLQOnPolicyFail:         state.cfg.dlqOnPolicyFail,
+		DedupeEnabled:           state.dedupeEnabled(),
+		DedupeKey:               cfg.dedupeKey,
+		DedupeWindow:            cfg.dedupeWindow,
+		DedupeBackend:           cfg.dedupeBackend,
+		DedupeRedisAddr:         cfg.dedupeRedisAddr,
+		DedupeRedisPassword:     cfg.dedupeRedisPassword,
+		DedupeRedisDB:           cfg.dedupeRedisDB,
+		DedupeRedisPrefix:       cfg.dedupeRedisPrefix,
+		OnDiskFull: func() {
+			state.diskHealthy.Store(false)
+		},
+		OnDLQWriteFail: func(n int64) {
+			state.metrics.sinkWriteErrors.Add(n)
+		},
+		OnSchemaWarn: func(err error) {
+			logJSON("warn", "schema_validation_warning", map[string]any{"error": err.Error()})
+		},
+		Schema: processing.SchemaConfig{
+			Mode:           schemaModeForProcessor(state),
+			SchemaVersion:  state.cfg.schemaSchemaVersion,
+			EventVersion:   state.cfg.schemaEventVersion,
+			QuarantinePath: state.cfg.schemaQuarantinePath,
+			Registry:       state.convertSchemaRegistry(),
+		},
+	}, sink, secondarySinks, fallbackSink, state.rng)
+	if err != nil {
+		return err
+	}
+
+	mux := buildMux(state)
+	muxWithCompression := withResponseCompression(mux)
+
+	server := &http.Server{
+		Addr:              cfg.addr,
+		Handler:           muxWithCompression,
+		ReadHeaderTimeout: cfg.readHeaderTimeout,
+		ReadTimeout:       cfg.readHeaderTimeout,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       cfg.serverConfig.HTTP.IdleTimeout,
+	}
+	if err := configureHTTPServerTLS(server, cfg); err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	auxServers := make([]serverruntime.Server, 0, 2)
+	if cfg.serverConfig.GRPC.Enabled {
+		auxServers = append(auxServers, serverruntime.NewGRPCServer(cfg.serverConfig.GRPC, state))
+	}
+	if cfg.serverConfig.GraphQL.Enabled {
+		auxServers = append(auxServers, serverruntime.NewGraphQLServer(cfg.serverConfig.GraphQL, state))
+	}
+	for _, srv := range auxServers {
+		srv := srv
+		go func() {
+			if err := srv.Start(ctx); err != nil {
+				select {
+				case errCh <- fmt.Errorf("%s server: %w", srv.Name(), err):
+				default:
+				}
+			}
+		}()
+	}
+
+	go func() {
+		var err error
+		if cfg.serverConfig.HTTP.TLSEnabled {
+			err = server.ListenAndServeTLS(cfg.serverConfig.HTTP.TLSCertFile, cfg.serverConfig.HTTP.TLSKeyFile)
+		} else {
+			err = server.ListenAndServe()
+		}
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			select {
+			case errCh <- fmt.Errorf("listen: %w", err):
+			default:
+			}
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	for {
+		select {
+		case startErr := <-errCh:
+			shutdownCollector(server, auxServers, state, db, cfg, schedulersStop, &schedWG)
+			return startErr
+		case sig := <-quit:
+			if sig == syscall.SIGHUP {
+				if err := reloadCollectorState(state); err != nil {
+					logJSON("error", "collector_reload_failed", map[string]any{"error": err.Error()})
+				} else {
+					logJSON("info", "collector_reload_complete", map[string]any{"config": state.cfg.configFile})
+				}
+				continue
+			}
+			shutdownCollector(server, auxServers, state, db, cfg, schedulersStop, &schedWG)
+			return nil
+		}
+	}
+}
+
+func shutdownCollector(server *http.Server, auxServers []serverruntime.Server, state *collectorState, db *sql.DB, cfg collectorConfig, schedulersStop chan struct{}, schedWG *sync.WaitGroup) {
+	logJSON("info", "collector_shutdown_begin", nil)
+	state.ready.Store(false)
+
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.shutdownTimeout)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		logJSON("error", "collector_http_shutdown_failed", map[string]any{"error": err.Error()})
+	}
+	for _, srv := range auxServers {
+		if err := srv.Stop(ctx); err != nil {
+			logJSON("error", "collector_aux_shutdown_failed", map[string]any{"server": srv.Name(), "error": err.Error()})
+		}
+	}
+	for _, sink := range state.sinksForShutdown() {
+		if err := sink.Sink.Flush(ctx); err != nil {
+			logJSON("error", "collector_sink_flush_failed", map[string]any{"sink": sink.Name, "error": err.Error()})
+		}
+		if err := sink.Sink.Close(ctx); err != nil {
+			logJSON("error", "collector_sink_close_failed", map[string]any{"sink": sink.Name, "error": err.Error()})
+		}
+	}
+	if state.processor != nil {
+		if err := state.processor.Close(); err != nil {
+			logJSON("error", "collector_processor_close_failed", map[string]any{"error": err.Error()})
+		}
+	}
+	if state.dedupeStore != nil {
+		if err := state.dedupeStore.Close(); err != nil {
+			logJSON("error", "collector_dedupe_store_close_failed", map[string]any{"error": err.Error()})
+		}
+	}
+	if state.cortexBridge != nil {
+		if err := state.cortexBridge.Close(); err != nil {
+			logJSON("error", "collector_cortex_bridge_close_failed", map[string]any{"error": err.Error()})
+		}
+	}
+	if db != nil && cfg.duckDBCheckpointOnStop {
+		if _, err := db.ExecContext(ctx, "CHECKPOINT"); err != nil {
+			logJSON("error", "collector_duckdb_checkpoint_failed", map[string]any{"error": err.Error()})
+		}
+	}
+	if schedulersStop != nil {
+		close(schedulersStop)
+		schedWG.Wait()
+	}
+	logJSON("info", "collector_shutdown_complete", nil)
+}
+
+func reloadCollectorState(state *collectorState) error {
+	if len(state.cfg.configArgs) == 0 {
+		return fmt.Errorf("collector reload requires original startup arguments")
+	}
+	next, err := loadCollectorConfigFromArgs(state.cfg.configArgs)
+	if err != nil {
+		return err
+	}
+	// Keep transport/storage topology stable during hot reload; only update mutable runtime policy.
+	next.addr = state.cfg.addr
+	next.serverConfig = state.cfg.serverConfig
+	next.duckDBPath = state.cfg.duckDBPath
+	next.duckDBDriver = state.cfg.duckDBDriver
+	next.duckDBTable = state.cfg.duckDBTable
+	next.duckDBRawColumn = state.cfg.duckDBRawColumn
+	next.duckDBStoreRaw = state.cfg.duckDBStoreRaw
+	next.reliabilityMode = state.cfg.reliabilityMode
+	next.spoolDir = state.cfg.spoolDir
+	next.spoolFile = state.cfg.spoolFile
+	next.queueDir = state.cfg.queueDir
+	next.kafkaBrokers = append([]string(nil), state.cfg.kafkaBrokers...)
+	next.kafkaTopic = state.cfg.kafkaTopic
+
+	state.cfg = next
+	if state.rateLimiter != nil {
+		if next.rateLimitEnabled {
+			state.rateLimiter.SetLimit(rate.Limit(next.rateLimitRPS))
+			state.rateLimiter.SetBurst(next.rateLimitBurst)
+		} else {
+			state.rateLimiter.SetLimit(rate.Inf)
+			state.rateLimiter.SetBurst(0)
+		}
+	}
+	state.processorMu.Lock()
+	if state.processor != nil {
+		_ = state.processor.Close()
+		state.processor = nil
+	}
+	state.processorMu.Unlock()
+	return nil
+}
+
+func buildMux(state *collectorState) *http.ServeMux {
+	tailWSHandler := serverruntime.NewTailWebSocketHandler(state.cfg.serverConfig.HTTP, state)
+	return publichttp.BuildMux(state.cfg.ingestPath, state.cfg.healthPath, state.cfg.readyPath, state.cfg.metricsPath, state.cfg.metricsPrometheus, state.metricsHandler(), tailWSHandler, state)
+}
+
+func ensureSchema(db *sql.DB, cfg collectorConfig) error {
+	columns := make([]string, 0, len(cfg.duckDBSchema)+1)
+	for col, path := range cfg.duckDBSchema {
+		colIdent, err := quoteSQLIdent(col)
+		if err != nil {
+			return err
+		}
+		if typ, ok := cfg.duckDBColumnTypes[path]; ok {
+			columns = append(columns, fmt.Sprintf("%s %s", colIdent, typ))
+		} else {
+			columns = append(columns, fmt.Sprintf("%s TEXT", colIdent))
+		}
+	}
+	if cfg.duckDBStoreRaw {
+		rawIdent, err := quoteSQLIdent(cfg.duckDBRawColumn)
+		if err != nil {
+			return err
+		}
+		columns = append(columns, fmt.Sprintf("%s TEXT", rawIdent))
+	}
+	tableIdent, err := quoteSQLIdent(cfg.duckDBTable)
+	if err != nil {
+		return err
+	}
+	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (%s)", tableIdent, strings.Join(columns, ", "))
+	if _, err := db.Exec(query); err != nil {
+		return err
+	}
+
+	// Auto-migrate: add any missing blueprint columns via ALTER TABLE
+	if err := autoMigrateBlueprintColumns(db, cfg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func autoMigrateBlueprintColumns(db *sql.DB, cfg collectorConfig) error {
+	rows, err := db.Query("SELECT column_name FROM information_schema.columns WHERE table_name = ?", cfg.duckDBTable)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	existing := map[string]bool{}
+	for rows.Next() {
+		var col string
+		if err := rows.Scan(&col); err != nil {
+			return err
+		}
+		existing[col] = true
+	}
+
+	for col, path := range cfg.duckDBSchema {
+		if existing[col] {
+			continue
+		}
+		colIdent, err := quoteSQLIdent(col)
+		if err != nil {
+			return err
+		}
+		typ := "TEXT"
+		if t, ok := cfg.duckDBColumnTypes[path]; ok {
+			typ = t
+		}
+		query := fmt.Sprintf("ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s %s", cfg.duckDBTable, colIdent, typ)
+		if _, err := db.Exec(query); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ensureCortexSchema(db *sql.DB) error {
+	tables := []string{
+		// Graph nodes
+		`CREATE TABLE IF NOT EXISTS graph_nodes (
+			id TEXT PRIMARY KEY,
+			type TEXT NOT NULL,
+			label TEXT NOT NULL,
+			attributes JSON,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+		// Graph edges
+		`CREATE TABLE IF NOT EXISTS graph_edges (
+			id TEXT PRIMARY KEY,
+			from_node_id TEXT NOT NULL,
+			to_node_id TEXT NOT NULL,
+			type TEXT NOT NULL,
+			weight DOUBLE DEFAULT 1.0,
+			attributes JSON,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+		// Incidents
+		`CREATE TABLE IF NOT EXISTS incidents (
+			id TEXT PRIMARY KEY,
+			timestamp TIMESTAMP NOT NULL,
+			signature_id TEXT,
+			status TEXT NOT NULL,
+			severity TEXT NOT NULL,
+			primary_service TEXT NOT NULL,
+			affected_services JSON,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			resolved_at TIMESTAMP
+		)`,
+		// Incident signatures (ALL 17 columns - fix schema drift)
+		`CREATE TABLE IF NOT EXISTS incident_signatures (
+			signature_id TEXT PRIMARY KEY,
+			shape TEXT NOT NULL,
+			service_roles JSON,
+			symptoms JSON,
+			temporal_pattern JSON,
+			remediation JSON,
+			feature_vector JSON,
+			feature_weights JSON,
+			occurrence_count INTEGER DEFAULT 0,
+			avg_resolution_time_seconds BIGINT DEFAULT 0,
+			version INTEGER DEFAULT 1,
+			parent_signature_id TEXT,
+			decay_factor DOUBLE DEFAULT 1.0,
+			last_matched_at TIMESTAMP,
+			behavioral_hash TEXT,
+			embedding FLOAT[768],
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+		// Remediations
+		`CREATE TABLE IF NOT EXISTS remediations (
+			remediation_id TEXT PRIMARY KEY,
+			incident_id TEXT NOT NULL,
+			signature_id TEXT,
+			action TEXT NOT NULL,
+			timestamp TIMESTAMP NOT NULL,
+			operator TEXT,
+			attributes JSON
+		)`,
+		// Remediation feedback (HTTP-style outcome codes)
+		`CREATE TABLE IF NOT EXISTS remediation_feedback (
+			feedback_id TEXT PRIMARY KEY,
+			remediation_id TEXT NOT NULL,
+			incident_id TEXT NOT NULL,
+			outcome_code INTEGER NOT NULL,
+			outcome_category TEXT NOT NULL,
+			time_to_resolve_seconds BIGINT,
+			timestamp TIMESTAMP NOT NULL,
+			notes TEXT
+		)`,
+		// Topology aliases
+		`CREATE TABLE IF NOT EXISTS topology_aliases (
+			id TEXT PRIMARY KEY,
+			alias TEXT NOT NULL,
+			canonical TEXT NOT NULL,
+			valid_from TIMESTAMP NOT NULL,
+			valid_to TIMESTAMP,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+	}
+
+	for _, ddl := range tables {
+		if _, err := db.Exec(ddl); err != nil {
+			return fmt.Errorf("create cortex table: %w", err)
+		}
+	}
+
+	// Indexes
+	indexes := []string{
+		"CREATE INDEX IF NOT EXISTS idx_graph_nodes_type ON graph_nodes(type)",
+		"CREATE INDEX IF NOT EXISTS idx_graph_edges_from ON graph_edges(from_node_id)",
+		"CREATE INDEX IF NOT EXISTS idx_graph_edges_to ON graph_edges(to_node_id)",
+		"CREATE INDEX IF NOT EXISTS idx_graph_edges_type ON graph_edges(type)",
+		"CREATE INDEX IF NOT EXISTS idx_graph_edges_from_type ON graph_edges(from_node_id, type)",
+		"CREATE INDEX IF NOT EXISTS idx_incidents_ts ON incidents(timestamp)",
+		"CREATE INDEX IF NOT EXISTS idx_incidents_svc ON incidents(primary_service)",
+		"CREATE INDEX IF NOT EXISTS idx_incidents_sig ON incidents(signature_id)",
+		"CREATE INDEX IF NOT EXISTS idx_signatures_hash ON incident_signatures(behavioral_hash)",
+		"CREATE INDEX IF NOT EXISTS idx_topology_alias ON topology_aliases(alias)",
+		"CREATE INDEX IF NOT EXISTS idx_topology_canonical ON topology_aliases(canonical)",
+	}
+	for _, idx := range indexes {
+		if _, err := db.Exec(idx); err != nil {
+			return fmt.Errorf("create cortex index: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func runPeriodicCheckpoint(db *sql.DB, interval time.Duration, stop <-chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	for {
+		select {
+		case <-stop:
+			return
+		case <-t.C:
+			if _, err := db.Exec("CHECKPOINT"); err != nil {
+				logJSON("error", "collector_duckdb_periodic_checkpoint_failed", map[string]any{"error": err.Error()})
+			}
+		}
+	}
+}
+
+func runPeriodicExport(db *sql.DB, cfg collectorConfig, stop <-chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
+	t := time.NewTicker(cfg.duckDBExportInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-stop:
+			return
+		case <-t.C:
+			if err := exportDuckDBParquet(db, cfg); err != nil {
+				logJSON("error", "collector_duckdb_export_failed", map[string]any{"error": err.Error()})
+			}
+		}
+	}
+}
+
+func exportDuckDBParquet(db *sql.DB, cfg collectorConfig) error {
+	if err := os.MkdirAll(cfg.duckDBExportPath, 0o755); err != nil {
+		return err
+	}
+	target := storagepath.LocalParquetExportPath(cfg.duckDBExportPath, cfg.duckDBTable, time.Now().UTC())
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		return err
+	}
+	tableIdent, err := quoteSQLIdent(cfg.duckDBTable)
+	if err != nil {
+		return err
+	}
+	query := fmt.Sprintf("COPY %s TO %s (FORMAT PARQUET)", tableIdent, quoteSQLString(strings.ReplaceAll(target, "\\", "/")))
+	_, execErr := db.Exec(query)
+	return execErr
+}
+
+func quoteSQLIdent(ident string) (string, error) {
+	ident = strings.TrimSpace(ident)
+	if ident == "" {
+		return "", fmt.Errorf("sql identifier cannot be empty")
+	}
+	if !configIdentPattern.MatchString(ident) {
+		return "", fmt.Errorf("invalid sql identifier %q", ident)
+	}
+	return `"` + strings.ReplaceAll(ident, `"`, `""`) + `"`, nil
+}
+
+func quoteSQLString(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
+}

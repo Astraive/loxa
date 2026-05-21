@@ -1,0 +1,163 @@
+{
+  "title": "LOXA Event Schema v1",
+  "description": "Canonical event schema for LOXA observability system",
+  "type": "object",
+  "required": [
+    "event_id",
+    "event_type",
+    "timestamp",
+    "service",
+    "deployment"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique event identifier (UUID v7 or ULID)",
+      "examples": ["01234567-89ab-cdef-0123-456789abcdef"]
+    },
+    "event_type": {
+      "type": "string",
+      "description": "Type of event in dot notation (e.g., user.login, api.request)",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$",
+      "examples": ["user.login", "api.request", "job.completed"]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Event timestamp in ISO 8601 format (RFC 3339)",
+      "examples": ["2024-01-15T10:30:00Z", "2024-01-15T10:30:00.123Z"]
+    },
+    "service": {
+      "type": "object",
+      "description": "Service identity information",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Service name",
+          "examples": ["user-service", "api-gateway"]
+        },
+        "version": {
+          "type": "string",
+          "description": "Service version (semantic versioning recommended)",
+          "examples": ["1.0.0", "2.1.3-beta"]
+        }
+      },
+      "additionalProperties": true
+    },
+    "deployment": {
+      "type": "object",
+      "description": "Deployment context information",
+      "required": ["environment"],
+      "properties": {
+        "environment": {
+          "type": "string",
+          "enum": ["production", "staging", "development"],
+          "description": "Deployment environment"
+        },
+        "region": {
+          "type": "string",
+          "description": "Deployment region or availability zone",
+          "examples": ["us-east-1", "eu-west-1"]
+        }
+      },
+      "additionalProperties": true
+    },
+    "tenant": {
+      "type": "object",
+      "description": "Tenant information for multi-tenant systems",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Tenant identifier",
+          "x-pii": "internal"
+        }
+      },
+      "additionalProperties": true
+    },
+    "trace": {
+      "type": "object",
+      "description": "Distributed tracing context (W3C Trace Context)",
+      "properties": {
+        "trace_id": {
+          "type": "string",
+          "description": "W3C trace ID",
+          "pattern": "^[0-9a-f]{32}$",
+          "examples": ["0af7651916cd43dd8448eb211c80319c"]
+        },
+        "span_id": {
+          "type": "string",
+          "description": "W3C span ID",
+          "pattern": "^[0-9a-f]{16}$",
+          "examples": ["b7ad6b7169203331"]
+        },
+        "parent_span_id": {
+          "type": "string",
+          "description": "Parent span ID",
+          "pattern": "^[0-9a-f]{16}$",
+          "examples": ["00f067aa0ba902b7"]
+        }
+      },
+      "additionalProperties": true
+    },
+    "user": {
+      "type": "object",
+      "description": "User context information",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "User identifier",
+          "x-pii": "internal"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User email address",
+          "x-pii": "confidential"
+        }
+      },
+      "additionalProperties": true
+    },
+    "host": {
+      "type": "object",
+      "description": "Host or container information",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Hostname"
+        },
+        "container_id": {
+          "type": "string",
+          "description": "Container ID"
+        }
+      },
+      "additionalProperties": true
+    },
+    "data": {
+      "type": "object",
+      "description": "Event-specific data payload",
+      "additionalProperties": true
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when collector received the event (enriched by collector)"
+    },
+    "collector_version": {
+      "type": "string",
+      "description": "Version of the collector that processed the event (enriched by collector)"
+    },
+    "collector_hostname": {
+      "type": "string",
+      "description": "Hostname of the collector that processed the event (enriched by collector)"
+    },
+    "ingestion_latency_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Latency between event timestamp and received_at in milliseconds (enriched by collector)"
+    }
+  },
+  "additionalProperties": true
+}
