@@ -11,7 +11,7 @@
 - 14-key safety-net redactor
 - Full sampler suite (random, errors, status codes, routes, etc.)
 - DefaultSchema and FlatSchema
-- Spec contract from loxa-spec
+- Spec contract from spec
 - Express middleware
 - Node.js http middleware
 - AsyncLocalStorage context propagation

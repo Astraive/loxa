@@ -33,8 +33,8 @@ func firstMatch(patterns ...string) []string {
 
 func TestCollectorAckBehaviorFixtures(t *testing.T) {
 	files := firstMatch(
-		filepath.Join("..", "..", "..", "loxa-spec", "fixtures", "collector-responses", "*.json"),
-		filepath.Join("..", "..", "..", "loxa-spec", "examples", "golden", "collector-acks", "*.json"),
+		filepath.Join("..", "..", "..", "..", "spec", "fixtures", "collector-responses", "*.json"),
+		filepath.Join("..", "..", "..", "..", "spec", "examples", "golden", "collector-acks", "*.json"),
 	)
 	if len(files) == 0 {
 		t.Fatalf("no collector ack fixtures found")

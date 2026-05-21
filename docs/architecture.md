@@ -73,7 +73,7 @@ LOXA is a five-tier event observability system designed for high-volume, reliabl
 
 ## Component Details
 
-### 1. Application SDKs (loxa-go, loxa-py, loxa-rs)
+### 1. Application SDKs (sdks/go, sdks/py, sdks/rs, sdks/js)
 
 **Responsibilities:**
 - Provide simple, intuitive API for creating and emitting events

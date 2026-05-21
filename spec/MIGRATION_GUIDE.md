@@ -9,8 +9,7 @@ This guide helps you migrate to the new structure.
 ## New Directory Structure
 
 ```
-loxa-spec/
-├── spec/
+spec/
 │   ├── schemas/json/          # ← NEW: Canonical LOXA JSON schemas
 │   ├── openapi/               # ← NEW: Canonical LOXA OpenAPI specs
 │   ├── proto/                 # ← NEW: Canonical LOXA protocol buffers
@@ -221,7 +220,7 @@ python scripts/check_mirrors.py
 
 ## Related Documentation
 
-- [loxa-spec README](README.md)
+- [Spec README](README.md)
 - [Compatibility Policy](compatibility.md)
 - [LOXA docs](spec/docs/)
 - [Cortex Architecture](spec/cortex/CORTEX_ARCHITECTURE.md)

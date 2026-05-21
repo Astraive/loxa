@@ -16,7 +16,7 @@ type parityManifest struct {
 }
 
 func TestParityManifestMatchesStableLifecycleDoc(t *testing.T) {
-	manifestPath := filepath.Join("..", "..", "..", "loxa-spec", "docs", "sdk-parity-manifest.json")
+	manifestPath := filepath.Join("..", "..", "..", "..", "spec", "docs", "sdk-parity-manifest.json")
 	raw, err := os.ReadFile(manifestPath)
 	if err != nil {
 		t.Fatalf("read parity manifest: %v", err)

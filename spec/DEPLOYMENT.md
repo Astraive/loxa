@@ -6,10 +6,10 @@ This repository includes production-ready container assets for:
 
 Docker
 
-Build images from the loxa-spec context:
+Build images from the spec context:
 
-  docker build -f loxa-spec/docker/schema-service/Dockerfile -t ghcr.io/astraive/loxa-schema-service:latest loxa-spec
-  docker build -f loxa-spec/docker/stager/Dockerfile -t ghcr.io/astraive/loxa-stager:latest loxa-spec
+  docker build -f spec/docker/schema-service/Dockerfile -t ghcr.io/astraive/loxa-schema-service:latest spec
+  docker build -f spec/docker/stager/Dockerfile -t ghcr.io/astraive/loxa-stager:latest spec
 
 Run local compose stack:
 
@@ -24,11 +24,11 @@ The compose stack configures the stager for Kafka by default:
 
 Kubernetes manifests (raw YAML)
 
-Manifests are in loxa-spec/deploy/k8s and include ConfigMap + Deployment (+ Service for schema-service),
+Manifests are in spec/deploy/k8s and include ConfigMap + Deployment (+ Service for schema-service),
 resource requests/limits, and readiness/liveness probes. These are thin examples that should stay aligned
 with the Helm chart.
 
-  kubectl apply -k loxa-spec/deploy/k8s
+  kubectl apply -k spec/deploy/k8s
 
 Optional secrets referenced by Deployments:
 - loxa-schema-service-secrets
@@ -36,19 +36,19 @@ Optional secrets referenced by Deployments:
 
 Helm chart
 
-Canonical chart path: loxa-spec/charts/loxa
+Canonical chart path: spec/charts/loxa
 
 Install or upgrade:
 
-  helm upgrade --install loxa .\loxa-spec\charts\loxa --namespace loxa --create-namespace
+  helm upgrade --install loxa .\spec\charts\loxa --namespace loxa --create-namespace
 
 Override image tags during rollout:
 
-  helm upgrade --install loxa .\loxa-spec\charts\loxa --namespace loxa --set schemaService.image.tag=v1.2.3 --set stager.image.tag=v1.2.3
+  helm upgrade --install loxa .\spec\charts\loxa --namespace loxa --set schemaService.image.tag=v1.2.3 --set stager.image.tag=v1.2.3
 
 Render templates without installing:
 
-  helm template loxa .\loxa-spec\charts\loxa --namespace loxa
+  helm template loxa .\spec\charts\loxa --namespace loxa
 
 Kafka-backed stager path (Python)
 

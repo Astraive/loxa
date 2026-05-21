@@ -72,7 +72,7 @@ Add new section at the top:
 ### Step 3: Generate Release Artifacts
 
 ```bash
-cd loxa-spec
+cd spec
 
 # Ensure generated artifacts are up-to-date
 python codegen/generate.py

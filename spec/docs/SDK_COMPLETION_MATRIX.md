@@ -41,7 +41,7 @@ These remain collector-owned and are not part of stable-v1 SDK parity:
 
 ## Public Surface Policy
 
-- `loxa-spec/docs/sdk-parity-manifest.json` defines the cross-language stable-v1 API surface.
+- `spec/docs/sdk-parity-manifest.json` defines the cross-language stable-v1 API surface.
 - Go, Python, Rust, and JavaScript must match the stable-v1 superset manifest for parity-gated APIs.
 - Language-specific helpers outside that manifest are allowed, but they are not part of the cross-language stable-v1 promise unless added to the manifest and documented here.
 

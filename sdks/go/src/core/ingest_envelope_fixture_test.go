@@ -29,8 +29,8 @@ func firstExistingPath(paths ...string) string {
 
 func TestCollectorWrappedBatchEnvelopeFixture(t *testing.T) {
 	path := firstExistingPath(
-		filepath.Join("..", "..", "..", "loxa-spec", "fixtures", "ingest", "wrapped_batch_json.json"),
-		filepath.Join("..", "..", "..", "loxa-spec", "examples", "golden", "ingest-envelopes", "wrapped_batch_json.json"),
+		filepath.Join("..", "..", "..", "..", "spec", "fixtures", "ingest", "wrapped_batch_json.json"),
+		filepath.Join("..", "..", "..", "..", "spec", "examples", "golden", "ingest-envelopes", "wrapped_batch_json.json"),
 	)
 	raw, err := os.ReadFile(path)
 	if err != nil {

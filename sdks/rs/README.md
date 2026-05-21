@@ -2,12 +2,12 @@
 
 **Status**: 🟢 **STABLE** (v1.0.0) - Production-ready, full feature conformance
 
-Full API conformance with specification is complete. See [SDK_CONFORMANCE_CONTRACT.md](../loxa-spec/docs/SDK_CONFORMANCE_CONTRACT.md) for detailed guarantees.
+Full API conformance with specification is complete. See [SDK_CONFORMANCE_CONTRACT.md](../../spec/docs/SDK_CONFORMANCE_CONTRACT.md) for detailed guarantees.
 
 Stable-v1 parity and release gates are tracked through:
 
-- [SDK_CONFORMANCE_TEST_SUITE.md](../loxa-spec/docs/SDK_CONFORMANCE_TEST_SUITE.md)
-- [SDK_COMPLETION_MATRIX.md](../loxa-spec/docs/SDK_COMPLETION_MATRIX.md)
+- [SDK_CONFORMANCE_TEST_SUITE.md](../../spec/docs/SDK_CONFORMANCE_TEST_SUITE.md)
+- [SDK_COMPLETION_MATRIX.md](../../spec/docs/SDK_COMPLETION_MATRIX.md)
 
 `loxa-rs` is a collector-first Rust SDK for wide events.
 
@@ -64,5 +64,5 @@ This crate emits events to the collector. Heavy delivery and storage remain coll
 
 ```bash
 cargo test
-python ../loxa-spec/conformance/runner.py --sdk rust --group all
+python ../../spec/conformance/runner.py --sdk rust --group all
 ```

@@ -6,9 +6,9 @@ LOXA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector t
 
 Stable-v1 parity and release gates are tracked through:
 
-- `../loxa-spec/docs/sdk-parity-manifest.json`
+- `../../spec/docs/sdk-parity-manifest.json`
 - `docs/sdk-parity-manifest.json`
-- `../loxa-spec/docs/SDK_CONFORMANCE_CONTRACT.md`
+- `../../spec/docs/SDK_CONFORMANCE_CONTRACT.md`
 
 ## Installation
 
@@ -82,7 +82,7 @@ await logger.shutdown();
 - **Redaction** — sensitive attr sanitization + safety-net key redaction
 - **Sampling** — client-side traffic reduction
 - **Middleware** — Express
-- **Spec-backed** — generated from loxa-spec JSON Schema
+- **Spec-backed** — generated from spec JSON Schema
 
 ## Architecture
 
@@ -99,7 +99,7 @@ Collector-owned sinks and storage (`Kafka`, `DuckDB`, `ClickHouse`, `Postgres`, 
 ```bash
 npm test
 npm run build
-python ../loxa-spec/conformance/runner.py --sdk javascript --group all
+python ../../spec/conformance/runner.py --sdk javascript --group all
 ```
 
 ## License

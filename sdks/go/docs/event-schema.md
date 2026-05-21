@@ -10,4 +10,4 @@ The SDK can emit:
 - Datadog-style schema
 - custom schema via `loxa.CustomSchema`
 
-Contract ownership lives in `Astraive/loxa-spec`.
+Contract ownership lives in `spec/`.

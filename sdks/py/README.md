@@ -2,12 +2,12 @@
 
 **Status**: 🟢 **STABLE** (v1.0.0) - Production-ready, full feature conformance
 
-Full API conformance with specification is complete. See [SDK_CONFORMANCE_CONTRACT.md](../loxa-spec/docs/SDK_CONFORMANCE_CONTRACT.md) for detailed guarantees.
+Full API conformance with specification is complete. See [SDK_CONFORMANCE_CONTRACT.md](../../spec/docs/SDK_CONFORMANCE_CONTRACT.md) for detailed guarantees.
 
 Stable-v1 parity and release gates are tracked through:
 
-- [SDK_CONFORMANCE_TEST_SUITE.md](../loxa-spec/docs/SDK_CONFORMANCE_TEST_SUITE.md)
-- [SDK_COMPLETION_MATRIX.md](../loxa-spec/docs/SDK_COMPLETION_MATRIX.md)
+- [SDK_CONFORMANCE_TEST_SUITE.md](../../spec/docs/SDK_CONFORMANCE_TEST_SUITE.md)
+- [SDK_COMPLETION_MATRIX.md](../../spec/docs/SDK_COMPLETION_MATRIX.md)
 
 `loxa-py` is a collector-first Python SDK for wide events.
 
@@ -15,7 +15,7 @@ It is intentionally lightweight:
 
 - build one canonical event per operation
 - emit that event to the collector with `HTTPBatchSink`
-- keep heavy delivery concerns such as Kafka, OTLP, ClickHouse, Postgres, and S3/GCS in `loxa-collector`
+- keep heavy delivery concerns such as Kafka, OTLP, ClickHouse, Postgres, and S3/GCS in `collector/`
 
 ## Install
 
@@ -58,12 +58,12 @@ export LOXA_COLLECTOR_API_KEY_HEADER=X-API-Key
 
 ## Examples
 
-- [examples/basic/README.md](E:/astraive/loxa/loxa-py/examples/basic/README.md)
-- [examples/custom_schema/README.md](E:/astraive/loxa/loxa-py/examples/custom_schema/README.md)
-- [examples/fastapi/README.md](E:/astraive/loxa/loxa-py/examples/fastapi/README.md)
-- [examples/flask/README.md](E:/astraive/loxa/loxa-py/examples/flask/README.md)
-- [examples/httpbatch_to_collector/README.md](E:/astraive/loxa/loxa-py/examples/httpbatch_to_collector/README.md)
-- [examples/logging_bridge/README.md](E:/astraive/loxa/loxa-py/examples/logging_bridge/README.md)
+- [examples/basic/README.md](examples/basic/README.md)
+- [examples/custom_schema/README.md](examples/custom_schema/README.md)
+- [examples/fastapi/README.md](examples/fastapi/README.md)
+- [examples/flask/README.md](examples/flask/README.md)
+- [examples/httpbatch_to_collector/README.md](examples/httpbatch_to_collector/README.md)
+- [examples/logging_bridge/README.md](examples/logging_bridge/README.md)
 
 ## Scope
 
@@ -83,14 +83,14 @@ Collector-owned features stay out of this SDK:
 
 ## Docs
 
-- [docs/README.md](E:/astraive/loxa/loxa-py/docs/README.md)
-- [docs/SDK.md](E:/astraive/loxa/loxa-py/docs/SDK.md)
-- [docs/MIDDLEWARE.md](E:/astraive/loxa/loxa-py/docs/MIDDLEWARE.md)
-- [docs/INTEGRATIONS.md](E:/astraive/loxa/loxa-py/docs/INTEGRATIONS.md)
+- [docs/README.md](docs/README.md)
+- [docs/SDK.md](docs/SDK.md)
+- [docs/MIDDLEWARE.md](docs/MIDDLEWARE.md)
+- [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)
 
 ## Testing
 
 ```bash
 python -m pytest -q
-python ../loxa-spec/conformance/runner.py --sdk python --group all
+python ../../spec/conformance/runner.py --sdk python --group all
 ```

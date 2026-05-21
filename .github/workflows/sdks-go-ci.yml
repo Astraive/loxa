@@ -1,0 +1,119 @@
+name: Go SDK CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Build/Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: sdks/go
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: sdks/go/go.mod
+          check-latest: true
+          cache: true
+
+      - name: Setup Python
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build (all modules)
+        shell: pwsh
+        run: |
+          $modules = @(".", "src/middleware", "src/integrations", "bench", "tests/integration")
+          foreach ($module in $modules) {
+            Push-Location $module
+            go build ./...
+            Pop-Location
+          }
+
+      - name: Vet (all modules)
+        shell: pwsh
+        run: |
+          $modules = @(".", "src/middleware", "src/integrations", "bench", "tests/integration")
+          foreach ($module in $modules) {
+            Push-Location $module
+            go vet ./...
+            Pop-Location
+          }
+
+      - name: Tests (all modules)
+        shell: pwsh
+        run: |
+          $modules = @(".", "src/middleware", "src/integrations", "bench", "tests/integration")
+          foreach ($module in $modules) {
+            Push-Location $module
+            go test ./... -count=1 -race
+            Pop-Location
+          }
+
+      - name: Install govulncheck
+        if: matrix.os == 'ubuntu-latest'
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Vulnerability check
+        if: matrix.os == 'ubuntu-latest'
+        shell: pwsh
+        run: |
+          $govuln = Join-Path (go env GOPATH) "bin/govulncheck"
+          $modules = @(".", "middleware", "integrations", "sinks")
+          foreach ($module in $modules) {
+            Push-Location $module
+            & $govuln ./...
+            Pop-Location
+          }
+
+      - name: Install golangci-lint
+        if: matrix.os == 'ubuntu-latest'
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+      - name: Lint
+        if: matrix.os == 'ubuntu-latest'
+        run: $(go env GOPATH)/bin/golangci-lint run
+
+      - name: Stress tests (queue reliability)
+        working-directory: sdks/go/tests/integration
+        run: go test ./... -run "TestAsyncPipelineDrain|TestAsyncPipelineNoLossConcurrent|TestConfigureDrainsPreviousLogger" -count=10
+
+      - name: Benchmarks
+        working-directory: sdks/go/bench
+        run: go test ./... -run ^$ -bench . -count=1
+
+      - name: Grouped conformance
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: spec
+        run: python conformance/runner.py --sdk go --group all
+
+  required-checks:
+    name: Required Checks
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [build-test]
+    steps:
+      - name: Enforce job success
+        shell: pwsh
+        run: |
+          if ("${{ needs.build-test.result }}" -ne "success") {
+            throw "build-test: ${{ needs.build-test.result }}"
+          }

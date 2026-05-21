@@ -8,7 +8,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-replace github.com/astraive/loxa-spec => ../loxa-spec
+replace github.com/astraive/loxa-spec => ../spec
 
 require (
 	github.com/apache/arrow-go/v18 v18.1.0 // indirect

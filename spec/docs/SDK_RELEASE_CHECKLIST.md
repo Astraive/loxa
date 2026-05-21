@@ -1,17 +1,17 @@
 # SDK Release Checklist
 
-Use this checklist before keeping `loxa-go`, `loxa-py`, `loxa-rs`, and `loxa-js` labeled stable-v1.
+Use this checklist before keeping `sdks/go`, `sdks/py`, `sdks/rs`, and `sdks/js` labeled stable-v1.
 
 ## Contract
 
 - `SDK_CONFORMANCE_CONTRACT.md` matches the current stable-v1 behavior.
 - `SDK_CONFORMANCE_TEST_SUITE.md` matches the current grouped runner categories.
 - `SDK_COMPLETION_MATRIX.md` matches the stable-v1 public surface and exclusions.
-- `loxa-spec/docs/sdk-parity-manifest.json` is current, intentionally versioned, and mirrored into each SDK docs folder.
+- `spec/docs/sdk-parity-manifest.json` is current, intentionally versioned, and mirrored into each SDK docs folder.
 
 ## Verification
 
-- `python conformance/runner.py --sdk all --group all` passes from `loxa-spec`.
+- `python conformance/runner.py --sdk all --group all` passes from `spec`.
 - Shared fixture validation passes.
 - Each SDK passes its repo-local fast test suite.
 - Each SDK passes collector delivery and emitted-shape checks.
@@ -20,7 +20,7 @@ Use this checklist before keeping `loxa-go`, `loxa-py`, `loxa-rs`, and `loxa-js`
 ## CI
 
 - SDK repo CI checks out required sibling repos for parity and fixture tests.
-- `loxa-spec` CI runs codegen, mirror, fixture validation, and grouped SDK conformance.
+- `spec` CI runs codegen, mirror, fixture validation, and grouped SDK conformance.
 - Failures are reported by category, not only as coarse package failures.
 
 ## Docs

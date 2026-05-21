@@ -239,7 +239,7 @@ Every SDK MUST pass:
 
 ### 9.2 Test Fixtures
 All SDKs test against golden fixtures in:
-- `loxa-spec/examples/golden/valid/`
+- `spec/examples/golden/valid/`
   - http_success.json
   - error_event.json
   - duplicate_fields.json

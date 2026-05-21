@@ -38,7 +38,7 @@ try:
 except Exception:
     # Fallback: try importing from sibling loxa-spec directory (for development/monorepo)
     try:
-        spec_dir = Path(__file__).parent.parent.parent.parent.parent / "loxa-spec" / "generated" / "python"
+        spec_dir = Path(__file__).parent.parent.parent.parent.parent.parent / "spec" / "generated" / "python"
         if spec_dir.exists():
             sys.path.insert(0, str(spec_dir))
             from loxa_contract import (
@@ -72,7 +72,7 @@ except Exception:
         backup_path = Path(__file__).with_name("spec_contract.py.bak")
         if not backup_path.exists():
             raise ImportError(
-                "Cannot import loxa contract. Install loxa-spec as a dependency or ensure it's available at ../loxa-spec/generated/python/"
+                "Cannot import loxa contract. Install loxa-spec as a dependency or ensure it's available at spec/generated/python/"
             ) from e
         loader = importlib.machinery.SourceFileLoader(
             "loxa_generated_spec_contract_backup", str(backup_path)

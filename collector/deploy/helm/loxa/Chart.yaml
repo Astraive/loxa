@@ -9,9 +9,9 @@ keywords:
   - events
   - observability
   - wide-events
-home: https://github.com/astraive/loxa-collector
+home: https://github.com/astraive/loxa
 sources:
-  - https://github.com/astraive/loxa-collector
+  - https://github.com/astraive/loxa
 maintainers:
   - name: Loxa Team
     email: dev@loxa.io

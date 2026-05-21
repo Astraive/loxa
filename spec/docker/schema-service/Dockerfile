@@ -3,7 +3,7 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-WORKDIR /app/loxa-spec
+WORKDIR /app/spec
 
 COPY requirements-service.txt ./
 COPY services ./services
@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements-service.txt \
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD python /app/loxa-spec/docker/schema-service/healthcheck.py
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD python /app/spec/docker/schema-service/healthcheck.py
 
 USER loxa
 

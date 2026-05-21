@@ -168,5 +168,5 @@ Example:
 ## Contact
 
 For compatibility questions:
-- GitHub Issues: https://github.com/Astraive/loxa-spec/issues
-- Documentation: https://github.com/Astraive/loxa-spec/docs
+- GitHub Issues: https://github.com/astraive/loxa/issues
+- Documentation: https://github.com/astraive/loxa/tree/main/spec/docs

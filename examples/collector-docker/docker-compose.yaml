@@ -1,0 +1,24 @@
+services:
+  collector:
+    build:
+      context: ../../collector
+      dockerfile: Dockerfile
+    command: ["./loxa-collector", "run", "-c", "/app/configs/loxa.local.yaml"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../../collector/configs:/app/configs:ro
+      - collector-data:/app/data
+
+  grafana:
+    image: grafana/grafana:12.1.2
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+    volumes:
+      - ../../collector/deploy/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+
+volumes:
+  collector-data:

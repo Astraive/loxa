@@ -17,7 +17,7 @@
 | loxa-collector | PASS | 18/18 packages PASS | N/A | STABLE |
 | loxa-cortex | PASS | 14/14 packages PASS | N/A | STABLE |
 | loxa-cli | PASS | 4/4 packages PASS | N/A | STABLE |
-| loxa-spec | N/A | N/A | 105/105 subchecks | STABLE |
+| spec | N/A | N/A | 105/105 subchecks | STABLE |
 | **Overall** | **ALL PASS** | **ALL PASS** | **48/48 matrix** | **STABLE** |
 
 ---
@@ -276,7 +276,7 @@ BenchmarkDuckDBPointLookup-20    4665    493819 ns/op    3069 B/op    72 allocs/
 
 ## 11. Files Changed (This Session)
 
-### loxa-spec
+### spec
 - `spec/schemas/json/event.schema.json` — Added checkpoints, process, groups, timers properties
 - `generated/contract/loxa-contract.json` — Added 4 timing fields to canonical_fields
 - `proto/loxa/v1/event.proto` — Added EventProcess, EventGroup, EventTimer, EventCheckpoint messages
@@ -367,10 +367,10 @@ To reproduce this report:
 
 ```bash
 # Conformance matrix
-cd loxa-spec && python conformance/runner.py --matrix
+cd spec && python conformance/runner.py --matrix
 
 # Comprehensive conformance (105 subchecks)
-cd loxa-spec && python conformance/verify.py --verbose
+cd spec && python conformance/verify.py --verbose
 
 # Per-SDK tests
 cd loxa-go && go test ./... -count=1

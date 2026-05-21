@@ -9,9 +9,9 @@
 ## Quick Navigation
 
 ### For SDK Developers
-- **[SDK Conformance Contract](loxa-spec/docs/SDK_CONFORMANCE_CONTRACT.md)** - What all SDKs MUST implement
-- **[SDK Conformance Test Suite](loxa-spec/docs/SDK_CONFORMANCE_TEST_SUITE.md)** - 36 required tests with test cases
-- **[Canonical Duplicate Policy](loxa-spec/docs/CANONICAL_DUPLICATE_POLICY.md)** - Duplicate field handling specification
+- **[SDK Conformance Contract](spec/docs/SDK_CONFORMANCE_CONTRACT.md)** - What all SDKs MUST implement
+- **[SDK Conformance Test Suite](spec/docs/SDK_CONFORMANCE_TEST_SUITE.md)** - 36 required tests with test cases
+- **[Canonical Duplicate Policy](spec/docs/CANONICAL_DUPLICATE_POLICY.md)** - Duplicate field handling specification
 
 ### For Users
 - **[CLI Command Maturity](README.md#cli-command-maturity)** - Use `loxa maturity` to see command stability
@@ -24,9 +24,9 @@
 - **[Configuration Reference](docs/configuration.md)** - Complete config documentation
 
 ### For QA/Testing
-- **[Golden Fixtures](loxa-spec/examples/golden)** - 12 valid + 5 invalid test cases
-- **[Conformance Runner](loxa-spec/conformance_runner.py)** - Run all SDK conformance tests
-- **[Testing Report](testing-report.md)** - Current test coverage and results
+- **[Golden Fixtures](spec/examples/golden)** - 12 valid + 5 invalid test cases
+- **[Conformance Runner](spec/conformance_runner.py)** - Run all SDK conformance tests
+- **[Test Report](../TEST_REPORT.md)** - Current test coverage and results
 
 ---
 
@@ -42,21 +42,21 @@ All 7 P0 items from the release roadmap have been implemented:
 
 ### 2. Canonical Duplicate Field Policy ✅
 - **Status**: Defined and enforced across all SDKs
-- **Location**: `loxa-spec/docs/CANONICAL_DUPLICATE_POLICY.md`
+- **Location**: `spec/docs/CANONICAL_DUPLICATE_POLICY.md`
 - **Policies**: CanonicalWins (default), AttrWins, Error
 - **Test Coverage**: 6+ test cases per SDK
 - **Implementation**: Go, Python, Rust all conforming
 
 ### 3. Golden JSON Fixtures ✅
 - **Status**: 12 valid fixtures + 5 invalid fixtures
-- **Location**: `loxa-spec/examples/golden/`
+- **Location**: `spec/examples/golden/`
 - **Coverage**: HTTP, errors, jobs, queues, crons, traces, minimal, duplicate handling
 - **Manifest**: Updated with fixture descriptions in `manifest.json`
 - **Usage**: Validate SDKs and collectors against canonical examples
 
 ### 4. SDK Conformance Test Suite ✅
 - **Status**: Complete spec + Python runner script
-- **Location**: `loxa-spec/docs/SDK_CONFORMANCE_TEST_SUITE.md`
+- **Location**: `spec/docs/SDK_CONFORMANCE_TEST_SUITE.md`
 - **Test Categories**: 10 categories, 36 total tests
 - **Coverage**:
   - State Machine (6 tests)
@@ -104,8 +104,8 @@ All 7 P0 items from the release roadmap have been implemented:
 ```
 loxa/
 ├── README.md                           # Main entry point (updated)
-├── loxa-v1-0-0-p0-release-artifacts.md # This release summary
-├── loxa-spec/
+├── TEST_REPORT.md                      # Test coverage and results
+├── spec/
 │   ├── docs/
 │   │   ├── SDK_CONFORMANCE_CONTRACT.md        ✅ NEW
 │   │   ├── CANONICAL_DUPLICATE_POLICY.md      ✅ NEW
@@ -223,7 +223,7 @@ After v1.0.0 P0 release, P1 focuses on **production-credible collector**:
 7. Redaction/privacy tests
 8. Loadgen + benchmark reports
 
-See [MVP_CUT.md](loxa-spec/docs/MVP_CUT.md) for full v1.0 contract.
+See [MVP_CUT.md](spec/docs/MVP_CUT.md) for full v1.0 contract.
 
 ---
 
@@ -232,8 +232,8 @@ See [MVP_CUT.md](loxa-spec/docs/MVP_CUT.md) for full v1.0 contract.
 ### For Application Developers
 1. Choose SDK: Go (production), Python/Rust (non-critical)
 2. Read SDK README for quick start
-3. Review [Conformance Contract](loxa-spec/docs/SDK_CONFORMANCE_CONTRACT.md) to understand guarantees
-4. Run conformance tests: `loxa-spec/conformance_runner.py`
+3. Review [Conformance Contract](spec/docs/SDK_CONFORMANCE_CONTRACT.md) to understand guarantees
+4. Run conformance tests: `spec/conformance_runner.py`
 
 ### For Operations
 1. Choose deployment mode: direct/spool/queue/fanout
@@ -243,16 +243,16 @@ See [MVP_CUT.md](loxa-spec/docs/MVP_CUT.md) for full v1.0 contract.
 5. Monitor with `loxa query`, `loxa tail`, `loxa tail --dlq`
 
 ### For SDK Contributors
-1. Review [SDK Conformance Contract](loxa-spec/docs/SDK_CONFORMANCE_CONTRACT.md)
-2. Implement all tests from [Test Suite](loxa-spec/docs/SDK_CONFORMANCE_TEST_SUITE.md)
-3. Validate against [Golden Fixtures](loxa-spec/examples/golden/)
-4. Run conformance runner: `python loxa-spec/conformance_runner.py`
+1. Review [SDK Conformance Contract](spec/docs/SDK_CONFORMANCE_CONTRACT.md)
+2. Implement all tests from [Test Suite](spec/docs/SDK_CONFORMANCE_TEST_SUITE.md)
+3. Validate against [Golden Fixtures](spec/examples/golden/)
+4. Run conformance runner: `python spec/conformance_runner.py`
 
 ---
 
 ## Support & Resources
 
-- **Documentation**: See `docs/` and `loxa-spec/docs/`
+- **Documentation**: See `docs/` and `spec/docs/`
 - **Examples**: See `loxa-go/examples/`, `loxa-py/examples/`, `loxa-rs/examples/`
 - **Issues**: GitHub issues for bugs and feature requests
 - **Discussions**: GitHub discussions for questions and design decisions

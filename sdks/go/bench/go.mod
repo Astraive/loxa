@@ -27,4 +27,4 @@ replace github.com/astraive/loxa-go => ../
 
 replace github.com/astraive/loxa-go/src/middleware => ../src/middleware
 
-replace github.com/astraive/loxa-spec => ../../loxa-spec
+replace github.com/astraive/loxa-spec => ../../../spec

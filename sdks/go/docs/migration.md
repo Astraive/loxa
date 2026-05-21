@@ -1,7 +1,12 @@
 # Repository Migration
 
-Collector code is moving to `Astraive/loxa-collector`.
+All components are now consolidated in the `Astraive/loxa` monorepo:
 
-Shared protocol docs and canonical contract assets are moving to `Astraive/loxa-spec`.
-
-The Go SDK remains in `Astraive/loxa-go`.
+- Collector code: `collector/`
+- Shared protocol docs and contract: `spec/`
+- Go SDK: `sdks/go/`
+- Python SDK: `sdks/py/`
+- Rust SDK: `sdks/rs/`
+- JavaScript SDK: `sdks/js/`
+- CLI: `cli/`
+- Cortex: `cortex/`

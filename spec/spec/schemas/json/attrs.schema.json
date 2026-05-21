@@ -1,7 +1,0 @@
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Astraive/loxa-spec/spec/schemas/json/attrs.schema.json",
-  "title": "LOXA Attrs",
-  "type": "object",
-  "additionalProperties": true
-}

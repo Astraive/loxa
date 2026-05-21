@@ -40,8 +40,8 @@ func firstFixtureMatch(patterns ...string) []string {
 
 func TestIngestEnvelopeFixturesAreAcceptedByCollectorParser(t *testing.T) {
 	files := firstFixtureMatch(
-		filepath.Join("..", "..", "..", "loxa-spec", "fixtures", "ingest", "*.json"),
-		filepath.Join("..", "..", "..", "loxa-spec", "examples", "golden", "ingest-envelopes", "*.json"),
+		filepath.Join("..", "..", "..", "spec", "fixtures", "ingest", "*.json"),
+		filepath.Join("..", "..", "..", "spec", "examples", "golden", "ingest-envelopes", "*.json"),
 	)
 	if len(files) == 0 {
 		t.Fatalf("no ingest fixtures found")

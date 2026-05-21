@@ -2,7 +2,7 @@ services:
   collector:
     build:
       context: ..
-      dockerfile: build/Dockerfile.collector
+      dockerfile: deploy/Dockerfile.collector
     command: ["./loxa-collector", "run", "-c", "/app/build/loxa-collector.yaml"]
     ports:
       - "9090:9090"

@@ -33,7 +33,7 @@ cd loxa-rs && cargo test --all-features -- --nocapture
 
 **All SDKs** (via grouped conformance runner):
 ```bash
-cd loxa-spec
+cd spec
 python conformance_runner.py --sdk all --group all
 ```
 
@@ -57,7 +57,7 @@ The stable-v1 runner executes named groups across all SDKs:
 Example:
 
 ```bash
-cd loxa-spec
+cd spec
 python conformance_runner.py --sdk python --group delivery_semantics
 python conformance_runner.py --matrix
 ```
@@ -435,7 +435,7 @@ Verify:
 
 ### Test 9.1: Valid Fixtures Pass
 ```
-For each file in loxa-spec/examples/golden/valid/:
+For each file in spec/examples/golden/valid/:
   Load JSON
   Parse as Event
   Validate against strict schema
@@ -459,7 +459,7 @@ For each file in loxa-spec/examples/golden/valid/:
 
 ### Test 9.2: Invalid Fixtures Fail
 ```
-For each file in loxa-spec/examples/golden/invalid/:
+For each file in spec/examples/golden/invalid/:
   Load JSON
   Parse as Event
   Verify validation fails with appropriate error
@@ -557,7 +557,7 @@ cd loxa-rs && cargo test --all-features -- --nocapture
 
 ### All SDKs via Runner
 ```bash
-cd loxa-spec
+cd spec
 python conformance_runner.py --sdk all --group all --verbose
 ```
 

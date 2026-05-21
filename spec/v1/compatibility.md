@@ -233,5 +233,5 @@ Example:
 ## Contact
 
 For compatibility questions or concerns:
-- GitHub Issues: https://github.com/Astraive/loxa-spec/issues
-- Documentation: https://github.com/Astraive/loxa-spec/docs
+- GitHub Issues: https://github.com/Astraive/loxa/issues
+- Documentation: https://github.com/Astraive/loxa/docs

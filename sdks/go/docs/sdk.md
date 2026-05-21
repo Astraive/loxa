@@ -17,4 +17,4 @@ Core lifecycle:
 - `Flush`
 - `Shutdown`
 
-See `Astraive/loxa-spec` for the shared contract and `Astraive/loxa-collector` for the runtime ingest service.
+See `spec/` for the shared contract and `collector/` for the runtime ingest service.

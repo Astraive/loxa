@@ -2,15 +2,15 @@
 
 LOXA is a collector-first wide-event stack:
 
-- `loxa-collector`: the ingest runtime, query surface, durability layer, and sink fanout
-- `loxa-go`: the reference SDK for emitting canonical events
-- `loxa-py`: a lightweight Python SDK that emits to the collector through `HTTPBatchSink`
-- `loxa-rs`: a lightweight Rust SDK that emits to the collector through `HttpBatch`
-- `loxa-js`: a lightweight JavaScript/TypeScript SDK that emits to the collector through `HTTPBatchSink`
-- `loxa-cli`: the local operator CLI
-- `loxa-spec`: the shared wire and schema contract
+- `collector/`: the ingest runtime, query surface, durability layer, and sink fanout
+- `sdks/go/`: the reference SDK for emitting canonical events
+- `sdks/py/`: a lightweight Python SDK that emits to the collector through `HTTPBatchSink`
+- `sdks/rs/`: a lightweight Rust SDK that emits to the collector through `HttpBatch`
+- `sdks/js/`: a lightweight JavaScript/TypeScript SDK that emits to the collector through `HTTPBatchSink`
+- `cli/`: the local operator CLI
+- `spec/`: the shared wire and schema contract
 
-For the current release contract, treat [loxa-spec/docs/MVP_CUT.md](E:/astraive/loxa/loxa-spec/docs/MVP_CUT.md) plus the package READMEs as authoritative. The `.kiro` specs and roadmap files are backlog material unless a feature is also claimed in a package README or runnable example.
+For the current release contract, treat [spec/docs/MVP_CUT.md](spec/docs/MVP_CUT.md) plus the package READMEs as authoritative. The `.kiro` specs and roadmap files are backlog material unless a feature is also claimed in a package README or runnable example.
 
 ## Quick Start
 
@@ -19,14 +19,14 @@ For the current release contract, treat [loxa-spec/docs/MVP_CUT.md](E:/astraive/
 From this repo:
 
 ```bash
-cd loxa-collector
+cd collector
 go run ./cmd/loxa-collector run -c configs/loxa.local.yaml
 ```
 
-Or through the CLI when `collector_repo_path` points at `loxa-collector`:
+Or through the CLI when `collector_repo_path` points at `collector`:
 
 ```bash
-cd loxa-cli
+cd cli
 go run ./cmd/loxa collector run -c configs/loxa.local.yaml
 ```
 
@@ -120,7 +120,7 @@ await logger.emit(ctx);
 ### 3. Query stored events
 
 ```bash
-cd loxa-cli
+cd cli
 go run ./cmd/loxa query --sql "SELECT * FROM events LIMIT 10"
 ```
 
@@ -141,7 +141,7 @@ Applications emit canonical events to the collector. Heavy production sinks stay
 - **Collector**: 🟢 **STABLE** - Direct/spool/queue modes, gzip ingestion, query/tail/DLQ/delete endpoints
 - **CLI**: Mixed maturity - use `loxa maturity` to see per-command status
 
-For conformance guarantees and required SDK behaviors, see [loxa-spec/docs/SDK_CONFORMANCE_CONTRACT.md](loxa-spec/docs/SDK_CONFORMANCE_CONTRACT.md).
+For conformance guarantees and required SDK behaviors, see [spec/docs/SDK_CONFORMANCE_CONTRACT.md](spec/docs/SDK_CONFORMANCE_CONTRACT.md).
 
 See [CLI Command Maturity](#cli-command-maturity) below for per-command stability levels.
 
@@ -155,18 +155,18 @@ Not current release guarantees:
 
 ## Documentation
 
-- [docs/architecture.md](E:/astraive/loxa/docs/architecture.md)
-- [docs/configuration.md](E:/astraive/loxa/docs/configuration.md)
-- [docs/deployment.md](E:/astraive/loxa/docs/deployment.md)
-- [loxa-collector/README.md](E:/astraive/loxa/loxa-collector/README.md)
-- [loxa-go/README.md](E:/astraive/loxa/loxa-go/README.md)
-- [loxa-py/README.md](E:/astraive/loxa/loxa-py/README.md)
-- [loxa-rs/README.md](E:/astraive/loxa/loxa-rs/README.md)
-- [loxa-js/README.md](E:/astraive/loxa/loxa-js/README.md)
-- [loxa-cli/README.md](E:/astraive/loxa/loxa-cli/README.md)
-- [loxa-spec/docs/MVP_CUT.md](E:/astraive/loxa/loxa-spec/docs/MVP_CUT.md) - Release contract
-- [loxa-spec/docs/SDK_CONFORMANCE_CONTRACT.md](E:/astraive/loxa/loxa-spec/docs/SDK_CONFORMANCE_CONTRACT.md) - SDK canonical behaviors
-- [loxa-spec/docs/DUPLICATE_FIELDS.md](E:/astraive/loxa/loxa-spec/docs/DUPLICATE_FIELDS.md) - Reserved field policies
+- [docs/architecture.md](docs/architecture.md)
+- [docs/configuration.md](docs/configuration.md)
+- [docs/deployment.md](docs/deployment.md)
+- [collector/README.md](collector/README.md)
+- [sdks/go/README.md](sdks/go/README.md)
+- [sdks/py/README.md](sdks/py/README.md)
+- [sdks/rs/README.md](sdks/rs/README.md)
+- [sdks/js/README.md](sdks/js/README.md)
+- [cli/README.md](cli/README.md)
+- [spec/docs/MVP_CUT.md](spec/docs/MVP_CUT.md) - Release contract
+- [spec/docs/SDK_CONFORMANCE_CONTRACT.md](spec/docs/SDK_CONFORMANCE_CONTRACT.md) - SDK canonical behaviors
+- [spec/docs/DUPLICATE_FIELDS.md](spec/docs/DUPLICATE_FIELDS.md) - Reserved field policies
 
 ## CLI Command Maturity
 
@@ -202,8 +202,8 @@ Use `loxa maturity` to view current command stability levels:
 
 Current verification baseline after this closure pass:
 
-- `cd loxa-go && go test ./...`
-- `cd loxa-py && python -m pytest -q`
-- `cd loxa-rs && cargo test -q`
-- `cd loxa-js && npm test && npm run build`
-- `cd loxa-collector && go test ./...`
+- `cd sdks/go && go test ./...`
+- `cd sdks/py && python -m pytest -q`
+- `cd sdks/rs && cargo test -q`
+- `cd sdks/js && npm test && npm run build`
+- `cd collector && go test ./...`

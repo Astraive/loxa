@@ -13,19 +13,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r loxa-spec/requirements.txt || true
+          pip install -r spec/requirements.txt || true
           pip install boto3 || true
 
       - name: Generate contract
         run: |
-          python loxa-spec/codegen/generate.py
+          python spec/codegen/generate.py
 
       - name: Publish registry artifact
         env:
@@ -34,5 +34,5 @@ jobs:
           CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          python loxa-spec/scripts/publish_contract.py
-          python loxa-spec/scripts/publish_contract_s3.py
+          python spec/scripts/publish_contract.py
+          python spec/scripts/publish_contract_s3.py

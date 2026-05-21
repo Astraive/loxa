@@ -1,21 +1,21 @@
 # LOXA-Go
 
-[![CI](https://github.com/Astraive/loxa-go/actions/workflows/ci.yml/badge.svg)](https://github.com/Astraive/loxa-go/actions/workflows/ci.yml)
+[![CI](https://github.com/Astraive/loxa/actions/workflows/sdks-go-ci.yml/badge.svg)](https://github.com/Astraive/loxa/actions/workflows/sdks-go-ci.yml)
 
 **Status**: 🟢 **STABLE** (v1.0.0) - Production-ready, collector-first stable-v1 SDK
 
-Full emitter SDK conformance is tracked through `Astraive/loxa-spec`:
+Full emitter SDK conformance is tracked through `spec/`:
 
-- `docs/SDK_CONFORMANCE_CONTRACT.md`
-- `docs/SDK_CONFORMANCE_TEST_SUITE.md`
-- `docs/SDK_COMPLETION_MATRIX.md`
+- `spec/docs/SDK_CONFORMANCE_CONTRACT.md`
+- `spec/docs/SDK_CONFORMANCE_TEST_SUITE.md`
+- `spec/docs/SDK_COMPLETION_MATRIX.md`
 
 LOXA-Go is a canonical wide-event SDK for Go.  
 It builds one structured event per operation (request, job, queue message, CLI run, cron run), then emits to your log/analytics backend.
 
-For the shared event contract, see `Astraive/loxa-spec`.
-For the collector runtime, see `Astraive/loxa-collector`.
-For the operations CLI, see `Astraive/loxa-cli`.
+For the shared event contract, see `spec/`.
+For the collector runtime, see `collector/`.
+For the operations CLI, see `cli/`.
 
 `slog`/`zap`/`zerolog` still fit: LOXA is the operation event layer above line-by-line logs.
 
@@ -115,9 +115,9 @@ For cross-language stable-v1 parity, treat `docs/sdk-parity-manifest.json` as th
 
 Repository boundaries:
 
-- `Astraive/loxa-spec`: protocol, schemas, compatibility rules
-- `Astraive/loxa-collector`: ingest server, worker, durability, fanout, deployment, and heavy sinks
-- `Astraive/loxa-cli`: operator and developer CLI
+- `spec/`: protocol, schemas, compatibility rules
+- `collector/`: ingest server, worker, durability, fanout, deployment, and heavy sinks
+- `cli/`: operator and developer CLI
 
 ## Migration Pattern
 
@@ -140,8 +140,8 @@ Heavy production sinks such as Kafka, ClickHouse, Postgres, DuckDB, OTLP, S3, GC
 - [docs/public-api.md](docs/public-api.md)
 - [docs/event-lifecycle.md](docs/event-lifecycle.md)
 - [docs/migration.md](docs/migration.md)
-- `Astraive/loxa-spec/docs/SDK_CONFORMANCE_CONTRACT.md`
-- `Astraive/loxa-spec/docs/SDK_CONFORMANCE_TEST_SUITE.md`
+- `../../spec/docs/SDK_CONFORMANCE_CONTRACT.md`
+- `../../spec/docs/SDK_CONFORMANCE_TEST_SUITE.md`
 
 ## Breaking Changes in Current Refactor
 

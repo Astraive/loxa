@@ -83,8 +83,8 @@ func TestSharedEmittedShapeFixture(t *testing.T) {
 func loadEmittedShapeFixture(t *testing.T) emittedShapeFixture {
 	t.Helper()
 	path := firstFixturePath(
-		filepath.Join("..", "..", "..", "loxa-spec", "fixtures", "emitted-shape", "structured_http_success.json"),
-		filepath.Join("..", "..", "..", "loxa-spec", "examples", "golden", "emitted-shape", "structured_http_success.json"),
+		filepath.Join("..", "..", "..", "..", "spec", "fixtures", "emitted-shape", "structured_http_success.json"),
+		filepath.Join("..", "..", "..", "..", "spec", "examples", "golden", "emitted-shape", "structured_http_success.json"),
 	)
 	raw, err := os.ReadFile(path)
 	if err != nil {

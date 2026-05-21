@@ -1,2 +1,46 @@
 .openclaude
 .vscode
+.idea
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+dist/
+build/
+
+# Database artifacts
+*.db
+*.db.wal
+
+# Go
+*.test
+*.out
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+
+# JavaScript/TypeScript
+node_modules/
+
+# Rust
+target/
+
+# Go cache
+.gocache/
+
+# Temp directories
+tmp_*/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db

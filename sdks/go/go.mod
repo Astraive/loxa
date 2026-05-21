@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.43.0
 )
 
-replace github.com/astraive/loxa-spec => ../loxa-spec
+replace github.com/astraive/loxa-spec => ../../spec
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

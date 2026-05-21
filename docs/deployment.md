@@ -7,21 +7,21 @@ This guide documents the deployment paths that are implemented in this repo toda
 Run the collector directly:
 
 ```bash
-cd loxa-collector
+cd collector
 go run ./cmd/loxa-collector run -c configs/loxa.local.yaml
 ```
 
 Run the worker when you are testing queue mode:
 
 ```bash
-cd loxa-collector
+cd collector
 go run ./cmd/loxa-worker run
 ```
 
 Run the CLI against the same workspace:
 
 ```bash
-cd loxa-cli
+cd cli
 go run ./cmd/loxa query --sql "SELECT * FROM events LIMIT 10"
 ```
 
@@ -29,11 +29,11 @@ go run ./cmd/loxa query --sql "SELECT * FROM events LIMIT 10"
 
 Current deployment assets are split by ownership:
 
-- Collector runtime assets live under [loxa-collector/deploy](E:/astraive/loxa/loxa-collector/deploy)
-- `schema-service` and `stager` container and Helm assets live under [loxa-spec](E:/astraive/loxa/loxa-spec), with the canonical chart at [loxa-spec/charts/loxa](E:/astraive/loxa/loxa-spec/charts/loxa)
-- Root-level [docker-compose.yml](E:/astraive/loxa/docker-compose.yml) is the local Kafka/Redis/schema-service/stager integration stack
+- Collector runtime assets live under [collector/deploy](collector/deploy)
+- `schema-service` and `stager` container and Helm assets live under [spec](spec), with the canonical chart at [spec/charts/loxa](spec/charts/loxa)
+- Root-level [docker-compose.yml](docker-compose.yml) is the local Kafka/Redis/schema-service/stager integration stack
 
-Treat `loxa-spec/deploy/k8s` as thin example manifests that mirror the chart-managed deploy path.
+Treat `spec/deploy/k8s` as thin example manifests that mirror the chart-managed deploy path.
 
 ## Health and Metrics
 

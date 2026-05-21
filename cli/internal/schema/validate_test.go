@@ -89,7 +89,7 @@ func specRepoRoot(t *testing.T) string {
 	if !ok {
 		t.Fatal("runtime.Caller failed")
 	}
-	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", "..", "loxa-spec"))
+	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", "..", "spec"))
 	if _, err := os.Stat(root); err != nil {
 		t.Fatalf("spec repo path not found: %v", err)
 	}

@@ -23,7 +23,7 @@ from pathlib import Path
 
 LOXA_SPEC_ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE_ROOT = LOXA_SPEC_ROOT.parent
-LOXA_PY_ROOT = WORKSPACE_ROOT / "loxa-py"
+LOXA_PY_ROOT = WORKSPACE_ROOT / "sdks" / "py"
 
 # Add loxa-py to path and set CWD so the SDK can find its defaults file
 sys.path.insert(0, str(LOXA_PY_ROOT / "src"))

@@ -5,21 +5,21 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/collector-ci.yml"
-      - "loxa-collector/**"
-      - "loxa-spec/**"
+      - "collector/**"
+      - "spec/**"
   pull_request:
     branches: [main]
     paths:
       - ".github/workflows/collector-ci.yml"
-      - "loxa-collector/**"
-      - "loxa-spec/**"
+      - "collector/**"
+      - "spec/**"
 
 jobs:
   unit:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: loxa-collector
+        working-directory: collector
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: loxa-collector/go.mod
+          go-version-file: collector/go.mod
 
       - name: Run unit tests
         run: go test ./...
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: loxa-collector
+        working-directory: collector
     services:
       kafka:
         image: bitnami/kafka:latest
@@ -63,7 +63,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: loxa-collector/go.mod
+          go-version-file: collector/go.mod
 
       - name: Run queue and Redis integration tests
         run: go test -tags=integration -run TestCollectorIntegration_ ./cmd/loxa-collector

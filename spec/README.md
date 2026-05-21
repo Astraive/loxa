@@ -2,9 +2,9 @@
 
 LOXA Spec defines the shared contract between SDKs and collectors.
 
-- `loxa-go`, `loxa-py`, and `loxa-rs` emit LOXA events that follow this spec.
-- `loxa-collector` accepts LOXA events that follow this spec.
-- This repository is the source of truth for schemas, ingest payload formats, compatibility rules, and wire-level examples.
+- `sdks/go`, `sdks/py`, `sdks/rs`, and `sdks/js` emit LOXA events that follow this spec.
+- `collector` accepts LOXA events that follow this spec.
+- This directory is the source of truth for schemas, ingest payload formats, compatibility rules, and wire-level examples.
 
 ## Current Versions
 
@@ -28,8 +28,7 @@ The SDK scope is collector-first. Kafka, DuckDB, ClickHouse, Postgres, Loki, OTL
 The specification is now organized under `spec/` with deterministic contract generation:
 
 ```
-loxa-spec/
-├── spec/                        # ← Canonical sources
+spec/                          # ← Canonical sources
 │   ├── schemas/json/            # LOXA JSON schemas
 │   ├── openapi/                 # LOXA OpenAPI specs
 │   ├── proto/                   # LOXA protocol buffers
@@ -259,9 +258,9 @@ loxa schema check-compatibility --base v1.0.0 --target v1.1.0
 
 ## License
 
-See [LICENSE](LICENSE) file.
+See [LICENSE](../LICENSE) file.
 
 ## Contact
 
-- GitHub Issues: https://github.com/Astraive/loxa-spec/issues
-- Documentation: https://github.com/Astraive/loxa-spec/docs
+- GitHub Issues: https://github.com/Astraive/loxa/issues
+- Documentation: https://github.com/Astraive/loxa/tree/main/spec/docs

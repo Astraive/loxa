@@ -12,7 +12,7 @@ import (
 
 func TestSDKOutputEquivalence(t *testing.T) {
 	// Load canonical fixture
-	fixturePath := filepath.Join("..", "..", "..", "loxa-spec", "fixtures", "sdk-equivalence", "canonical_event.json")
+	fixturePath := filepath.Join("..", "..", "..", "..", "spec", "fixtures", "sdk-equivalence", "canonical_event.json")
 	fixtureData, err := os.ReadFile(fixturePath)
 	if err != nil {
 		t.Skipf("fixture not found: %v", err)

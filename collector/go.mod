@@ -2,7 +2,7 @@ module github.com/astraive/loxa-collector
 
 go 1.25.0
 
-replace github.com/astraive/loxa-spec => ../loxa-spec
+replace github.com/astraive/loxa-spec => ../spec
 
 require (
 	cloud.google.com/go/storage v1.62.1
