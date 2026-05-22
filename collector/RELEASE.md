@@ -29,7 +29,7 @@ go test ./bench/... -bench=. -benchmem
 4. Verify Docker build:
 
 ```bash
-docker build -t loxa-collector:$(git describe --tags --always) .
+docker build -t loxa:$(git describe --tags --always) .
 ```
 
 5. Update `CHANGELOG.md` with the new version and date.
@@ -55,8 +55,8 @@ git push origin collector/v1.0.0
 ## Docker Release
 
 ```bash
-docker build -t ghcr.io/astraive/loxa-collector:1.0.0 .
-docker push ghcr.io/astraive/loxa-collector:1.0.0
+docker build -t ghcr.io/astraive/loxa:1.0.0 .
+docker push ghcr.io/astraive/loxa:1.0.0
 ```
 
 ## Kubernetes Deployment

@@ -15,11 +15,11 @@
 
 ### For Users
 - **[CLI Command Maturity](README.md#cli-command-maturity)** - Use `loxa maturity` to see command stability
-- **[SDK Maturity Status](README.md#current-status)** - Go (stable), Python/Rust (alpha)
+- **[SDK Maturity Status](README.md#current-status)** - Go, Python, Rust, JavaScript (all stable)
 - **[Quick Start Guide](README.md#quick-start)** - Get started in 5 minutes
 
 ### For Operations
-- **[Collector Reference Configs](loxa-collector/configs)** - 4 production patterns (direct/spool/queue/fanout)
+- **[Collector Reference Configs](../collector/configs)** - 4 production patterns (direct/spool/queue/fanout)
 - **[Deployment Guide](docs/deployment.md)** - Docker, Helm, Kubernetes
 - **[Configuration Reference](docs/configuration.md)** - Complete config documentation
 
@@ -36,7 +36,7 @@ All 7 P0 items from the release roadmap have been implemented:
 
 ### 1. Go OnEmit Delivery Metrics ✅
 - **Status**: Already implemented in v1.0.0
-- **Location**: `loxa-go/internal/core/metrics.go`
+- **Location**: `sdks/go/internal/core/metrics.go`
 - **Metrics**: `events_emitted_total{status="success|failure"}`
 - **Callback**: `OnEventEmitted(success bool)` + `OnDeliveryFailed(event, error)`
 
@@ -70,16 +70,15 @@ All 7 P0 items from the release roadmap have been implemented:
   - Golden Fixtures (2 tests)
   - Integration E2E (3 tests)
 
-### 5. Python/Rust Alpha Labels ✅
-- **Status**: Status banners added to README files
-- **Location**: `loxa-py/README.md`, `loxa-rs/README.md`
-- **Message**: "🔵 **ALPHA** (v1.0.0) - Ready for non-critical workloads, API may change"
-- **Link**: Points to SDK_CONFORMANCE_CONTRACT.md for upgrade path
-- **Impact**: Clear communication of maturity level to users
+### 5. Python/Rust Stable Labels ✅
+- **Status**: All 4 SDKs marked as STABLE in README files
+- **Location**: `sdks/py/README.md`, `sdks/rs/README.md`, `sdks/go/README.md`, `sdks/js/README.md`
+- **Message**: "STABLE (v1.0.0) - Production-ready, full feature conformance"
+- **Impact**: All SDKs production-ready
 
 ### 6. CLI Command Maturity Labels ✅
 - **Status**: 9 stable, 6 beta, 3 experimental commands
-- **Location**: `loxa-cli/internal/cli/root.go`
+- **Location**: `cli/internal/cli/root.go`
 - **Commands**: `loxa maturity` shows all command stability levels
 - **Documentation**: Maturity table added to main README
 - **Stability Definitions**:
@@ -89,7 +88,7 @@ All 7 P0 items from the release roadmap have been implemented:
 
 ### 7. Collector Reference Configs ✅
 - **Status**: 4 production-grade reference configurations
-- **Location**: `loxa-collector/configs/`
+- **Location**: `collector/configs/`
 - **Configs**:
   - `loxa.direct.duckdb.yaml` - Direct delivery (no durability)
   - `loxa.spool.duckdb.yaml` - Spool mode (local crash recovery)
@@ -123,15 +122,18 @@ loxa/
 │       │   └── ... (8 existing)
 │       └── invalid/
 │           └── ... (5 existing)
-├── loxa-go/
-│   ├── README.md
-│   └── internal/core/
-│       └── metrics.go (already has OnEmit delivery metrics)
-├── loxa-py/
-│   └── README.md                      ✅ UPDATED (alpha label)
-├── loxa-rs/
-│   └── README.md                      ✅ UPDATED (alpha label)
-└── loxa-cli/
+├── sdks/
+│   ├── go/
+│   │   ├── README.md
+│   │   └── internal/core/
+│   │       └── metrics.go (already has OnEmit delivery metrics)
+│   ├── py/
+│   │   └── README.md                      ✅ STABLE (v1.0.0)
+│   ├── rs/
+│   │   └── README.md                      ✅ STABLE (v1.0.0)
+│   └── js/
+│       └── README.md
+└── cli/
     └── internal/cli/
         └── root.go                    ✅ UPDATED (maturity command)
 ```
@@ -153,7 +155,7 @@ loxa/
 - [x] Duplicate policy documented with examples (9.4KB)
 - [x] Test suite spec covers all 36 tests (13.8KB)
 - [x] Golden fixtures include duplicate handling
-- [x] Alpha labels clear and prominent
+- [x] Stable labels in all SDK READMEs
 - [x] CLI maturity levels documented
 - [x] Reference configs verified
 
@@ -190,7 +192,7 @@ loxa/
 | Golden Fixtures | ✅ | 12 valid + 5 invalid fixtures |
 | Go SDK Metrics | ✅ | events_emitted_total{status=success/failure} |
 | Go SDK Tests | ✅ | 50+ tests passing |
-| Python/Rust Status | ✅ | Alpha labels in README |
+| Python/Rust Status | ✅ | Stable labels in README |
 | CLI Maturity | ✅ | `loxa maturity` command + table |
 | Collector Configs | ✅ | 4 reference configs (direct/spool/queue/fanout) |
 | Documentation | ✅ | ~50KB of spec + examples |
@@ -205,8 +207,8 @@ loxa/
 | SDK | Maturity | Conformance | Production Ready | Notes |
 |-----|----------|-------------|------------------|-------|
 | Go | 🟢 Stable | ✅ Complete | ✅ Yes | Strongest implementation, best test coverage |
-| Python | 🔵 Alpha | 🟡 In Progress | 🟡 Non-critical only | Conformance being improved, API may change |
-| Rust | 🔵 Alpha | 🟡 In Progress | 🟡 Non-critical only | Conformance being improved, API may change |
+| Python | 🟢 Stable | ✅ Complete | ✅ Yes | Full conformance, production-ready |
+| Rust | 🟢 Stable | ✅ Complete | ✅ Yes | Full conformance, production-ready |
 
 ---
 
@@ -237,7 +239,7 @@ See [MVP_CUT.md](spec/docs/MVP_CUT.md) for full v1.0 contract.
 
 ### For Operations
 1. Choose deployment mode: direct/spool/queue/fanout
-2. Use appropriate reference config from `loxa-collector/configs/`
+2. Use appropriate reference config from `collector/configs/`
 3. See [Deployment Guide](docs/deployment.md) for setup
 4. Check [Configuration Reference](docs/configuration.md) for tuning
 5. Monitor with `loxa query`, `loxa tail`, `loxa tail --dlq`
@@ -253,7 +255,7 @@ See [MVP_CUT.md](spec/docs/MVP_CUT.md) for full v1.0 contract.
 ## Support & Resources
 
 - **Documentation**: See `docs/` and `spec/docs/`
-- **Examples**: See `loxa-go/examples/`, `loxa-py/examples/`, `loxa-rs/examples/`
+- **Examples**: See `sdks/go/examples/`, `sdks/py/examples/`, `sdks/rs/examples/`, `sdks/js/examples/`
 - **Issues**: GitHub issues for bugs and feature requests
 - **Discussions**: GitHub discussions for questions and design decisions
 

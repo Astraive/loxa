@@ -236,10 +236,10 @@ await error('payment failed', string('provider', 'stripe'));
 ## Logger Instances
 
 ```typescript
-import { Logger, production, dev, test, configure, defaultLogger } from 'loxa-js';
+import { createLoxa, production, dev, test, configure, defaultLogger } from 'loxa-js';
 
 // Create logger
-const logger = new Logger(production('checkout'));
+const logger = createLoxa({ service: 'checkout', apiKey: process.env.LOXA_API_KEY });
 
 // Configure default
 configure(production('checkout'));
@@ -276,7 +276,7 @@ import {
 } from 'loxa-js';
 
 const cfg = production('checkout')
-  .withVersion('1.2.0')
+  .withVersion('1.0.0')
   .withEnvironment('prod')
   .withSink(stdoutSink())
   .withSampler(sampleErrors())
@@ -307,7 +307,7 @@ const cfg3 = production('checkout').withSink(httpBatchSink({
 
 // For testing
 const sink = memorySink();
-const logger = new Logger(test('checkout').withSink(sink));
+const logger = createLoxa({ service: 'checkout', sink });
 // ... use logger ...
 const events = sink.getEvents();
 ```

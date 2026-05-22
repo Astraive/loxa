@@ -86,7 +86,7 @@ echo '{"event_id":"...","event_type":"user.login",...}' | loxa schema validate
 loxa schema list
 
 # Show differences between versions
-loxa schema diff --from v1.0.0 --to v1.1.0
+loxa schema diff --from v1.0.0 --to v1.0.0
 ```
 
 ## Schema Overview
@@ -223,7 +223,7 @@ See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for detailed integration steps.
 LOXA schemas follow [Semantic Versioning](https://semver.org/):
 
 - **MAJOR** (v1 → v2): Breaking changes (field removal, type changes)
-- **MINOR** (v1.0 → v1.1): Backward-compatible additions (new optional fields)
+- **MINOR** (v1.0.0): Backward-compatible additions (new optional fields)
 - **PATCH** (v1.0.0 → v1.0.1): Documentation updates
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
@@ -253,7 +253,7 @@ python scripts/check_conformance.py
 loxa schema validate-schema --file v1/event.schema.json
 
 # Check backward compatibility
-loxa schema check-compatibility --base v1.0.0 --target v1.1.0
+loxa schema check-compatibility --base v1.0.0 --target v1.0.0
 ```
 
 ## License

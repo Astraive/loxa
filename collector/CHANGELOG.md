@@ -31,4 +31,4 @@ All notable changes to this project are documented in this file.
 
 ### Breaking
 
-- Collector sink implementations now use `github.com/astraive/loxa-collector/internal/event` instead of SDK-owned interfaces.
+- Collector sink implementations now use `github.com/Astraive/loxa/collector/internal/event` instead of SDK-owned interfaces.

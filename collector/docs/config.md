@@ -10,7 +10,7 @@ Collector config precedence:
 Core sections:
 
 - `collector`
-- `auth`
+- `auth` (see [Authentication](../../docs/authentication.md) and [Authorization](../../docs/authorization.md))
 - `rate_limit`
 - `routes`
 - `storage`

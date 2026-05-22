@@ -1,5 +1,7 @@
 # LOXA v1.0.0 — End-to-End Test Report
 
+> **Note**: Paths in this report reflect the pre-monorepo directory structure (e.g., `loxa-go/`, `loxa-py/`). The current monorepo layout uses `sdks/go/`, `sdks/py/`, `collector/`, `cli/`, etc.
+
 **Date**: 2026-05-21
 **Platform**: Windows 11 (10.0.26200), Intel i7-13650HX
 **Go**: 1.25.0 | **Python**: 3.14 | **Node.js**: 22+ | **Rust**: stable

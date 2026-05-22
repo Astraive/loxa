@@ -122,9 +122,9 @@ See [Security](../../docs/security.md) for key types and RBAC roles.
 Instead of the module-level facade, you can use a Logger instance:
 
 ```typescript
-import { Logger, production, stdoutSink } from 'loxa-js';
+import { createLoxa, production, stdoutSink } from 'loxa-js';
 
-const logger = new Logger(production('my-service').withSink(stdoutSink()));
+const logger = createLoxa({ service: 'my-service', sink: stdoutSink() });
 
 const ctx = logger.startEvent({ event: 'my.event' });
 logger.enrich(ctx, string('key', 'value'));

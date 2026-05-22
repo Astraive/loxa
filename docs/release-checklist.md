@@ -23,9 +23,9 @@
 ### Code & Binaries
 
 ✅ **SDKs** (Production Ready)
-- loxa-go: 8 packages, all tests passing ✅
-- loxa-py: 94 tests passing ✅
-- loxa-rs: Clean (0 regressions) ✅
+- Go SDK (sdks/go): 8 packages, all tests passing ✅
+- Python SDK (sdks/py): 94 tests passing ✅
+- Rust SDK (sdks/rs): Clean (0 regressions) ✅
 
 ✅ **Collector** (Production Ready)
 - 50+ unit tests passing ✅
@@ -47,7 +47,7 @@
 ## Quality Gates Verified
 
 ### Testing
-- ✅ 24 collector tests passing (cmd/loxa-collector)
+- ✅ 24 collector tests passing (collector/cmd/loxa-collector)
 - ✅ 18 collector packages passing (all subpackages)
 - ✅ 8 Go SDK packages passing
 - ✅ 94 Python SDK tests passing
@@ -207,16 +207,16 @@
 3. Publish Helm charts
 4. Announce release
 5. Collect user feedback
-6. Plan v1.1 enhancements
+6. Plan v1.0.0 enhancements
 
 ---
 
 ## Support & Resources
 
 - **Documentation**: https://docs.loxa.dev
-- **GitHub**: https://github.com/astraive/loxa
-- **Issues**: https://github.com/astraive/loxa/issues
-- **Discussions**: https://github.com/astraive/loxa/discussions
+- **GitHub**: https://github.com/Astraive/loxa
+- **Issues**: https://github.com/Astraive/loxa/issues
+- **Discussions**: https://github.com/Astraive/loxa/discussions
 
 ---
 

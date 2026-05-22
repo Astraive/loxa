@@ -15,14 +15,14 @@ pip install -e .
 ## Quick Start
 
 ```python
-from loxa import Config, Logger, Params, StartHTTPEvent, Enrich, Finish, Emit
-from loxa import UserID, String, Int, HTTPBatchSink
+from loxa import CollectorClient, HTTPBatchSink, Params, StartHTTPEvent, Enrich, Finish, Emit
+from loxa import UserID, String, Int
 
 # Configure
-logger = Logger(
-    Config.production("checkout").with_sink(
-        HTTPBatchSink("http://127.0.0.1:9090/v1/events")
-    )
+client = CollectorClient(
+    service="checkout",
+    sink=HTTPBatchSink("http://127.0.0.1:9090/v1/events"),
+    api_key=os.environ["LOXA_API_KEY"],
 )
 
 # Or use the default facade
@@ -239,10 +239,10 @@ error("payment failed", provider="stripe", amount=4999)
 ## Logger Instances
 
 ```python
-from loxa import Logger, new, configure, default, Config, dev, production, test
+from loxa import CollectorClient, HTTPBatchSink, configure, default, Config, dev, production, test
 
-# Create logger
-logger = Logger(Config.production("checkout"))
+# Create client
+client = CollectorClient(service="checkout", sink=HTTPBatchSink("http://127.0.0.1:9090/v1/events"))
 
 # Or use factory
 logger = new(production("checkout"))
@@ -328,7 +328,7 @@ cfg = production("checkout").with_sink(HTTPBatchSink("http://collector:9090/v1/e
 
 # For testing
 sink, store = MemorySink()
-logger = Logger(test("checkout").with_sink(sink))
+client = CollectorClient(service="checkout", sink=sink)
 # ... use logger ...
 events = store.events()
 ```

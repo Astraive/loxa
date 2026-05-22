@@ -61,7 +61,7 @@ package bench
 import (
 	"testing"
 
-	"github.com/astraive/loxa-go"
+	"github.com/Astraive/loxa/sdks/go"
 )
 
 func BenchmarkMyFeature(b *testing.B) {

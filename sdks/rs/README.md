@@ -223,7 +223,7 @@ use loxa::{
 };
 
 let cfg = Config::production("checkout")
-    .with_version("1.2.0")
+    .with_version("1.0.0")
     .with_environment("prod")
     .with_sink(loxa::StdoutSink)
     .with_sampler(loxa::SampleErrors)

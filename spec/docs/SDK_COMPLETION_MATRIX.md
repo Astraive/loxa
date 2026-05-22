@@ -2,10 +2,10 @@
 
 This matrix is the authoritative stable-v1 completion bar for the LOXA emission SDKs:
 
-- `loxa-go`
-- `loxa-py`
-- `loxa-rs`
-- `loxa-js`
+- Go SDK (`sdks/go`)
+- Python SDK (`sdks/py`)
+- Rust SDK (`sdks/rs`)
+- JavaScript SDK (`sdks/js`)
 
 The scope is intentionally **collector-first**. SDKs emit canonical events and deliver them to the collector over the documented HTTP ingest contract. Heavy sinks and storage remain collector-owned.
 

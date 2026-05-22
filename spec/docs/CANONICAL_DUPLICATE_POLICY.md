@@ -167,8 +167,8 @@ loxa.Configure(loxa.Production().
 
 ### Python SDK
 ```python
-logger = Logger(Config.production("api")
-    .with_duplicate_field_policy("canonical_wins"))
+client = CollectorClient(service="api", sink=sink,
+    duplicate_field_policy="canonical_wins")
 ```
 
 ### Rust SDK
@@ -277,9 +277,7 @@ The collector MUST:
 
 | Version | Behavior |
 |---------|----------|
-| 1.0.x | CanonicalWins default, support all 3 policies |
-| 1.1.x | Consider deprecating AttrWins, warn on use |
-| 2.0.0 | Enforce CanonicalWins only (breaking change) |
+| 1.0.0 | CanonicalWins default, support all 3 policies |
 
 ---
 
@@ -317,8 +315,11 @@ logger.Emit(ctx)
 
 ### Example 3: Strict Mode (Error Policy)
 ```go
-logger := Logger(Config.production("api")
-    .with_duplicate_field_policy("error"))
+client, _ := loxa.New(loxa.Config{
+    Service: "api",
+    Sink:    sink,
+    DuplicateFieldPolicy: loxa.ErrorPolicy,
+})
 
 ctx := logger.StartEvent(Params{Event: "test"})
 logger.Enrich(ctx, String("trace_id", "override"))  // ❌ Error!
@@ -344,7 +345,7 @@ A: Yes. `method` is canonical, but `http.method` (nested) is separate. Only cust
 A: Use AttrWins policy (not recommended), but understand the risks.
 
 **Q: When will strict Error policy be default?**  
-A: v2.0.0 (breaking change). v1.x defaults to CanonicalWins.
+A: v1.0.0 defaults to CanonicalWins.
 
 ---
 

@@ -23,7 +23,7 @@ Edit `Cargo.toml` to set the new version:
 ```toml
 [package]
 name = "loxa"
-version = "1.1.0"
+version = "1.0.0"
 ```
 
 ### 3. Verify the Build
@@ -47,23 +47,23 @@ cargo publish             # publish to crates.io
 Create a Git tag following the `rs/vX.Y.Z` convention:
 
 ```bash
-git tag -a rs/v1.1.0 -m "loxa-rs v1.1.0"
-git push origin rs/v1.1.0
+git tag -a rs/v1.0.0 -m "loxa-rs v1.0.0"
+git push origin rs/v1.0.0
 ```
 
 ### 6. Create a GitHub Release
 
 ```bash
-gh release create rs/v1.1.0 --title "loxa-rs v1.1.0" --notes-file release-notes.md
+gh release create rs/v1.0.0 --title "loxa-rs v1.0.0" --notes-file release-notes.md
 ```
 
 ## Version Policy
 
 The Rust SDK follows Semantic Versioning:
 
-- **Major** (v2.0.0): Breaking changes to the public API.
-- **Minor** (v1.1.0): New features, backward-compatible.
-- **Patch** (v1.0.1): Bug fixes, backward-compatible.
+- **Major** (v1.0.0): Breaking changes to the public API.
+- **Minor** (v1.0.0): New features, backward-compatible.
+- **Patch** (v1.0.0): Bug fixes, backward-compatible.
 
 ## crates.io Notes
 

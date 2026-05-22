@@ -498,7 +498,7 @@ __all__ = [
     # Levels
     "LevelDebug", "LevelInfo", "LevelWarn", "LevelError", "LevelFatal", "ParseLevel",
     # Lowercase facade
-    "configure", "default", "new", "dev", "production", "test",
+    "configure", "default", "new", "create_loxa", "alias", "dev", "production", "test",
     "start_event", "start_http_event", "start_job_event", "start_queue_event", "start_cli_event", "start_cron_event",
     "start_event_from",
     "append", "enrich", "set", "merge", "delete", "get", "get_group",
@@ -507,7 +507,7 @@ __all__ = [
     "debug", "info", "warn", "error", "fatal",
     # Uppercase aliases
     "Configure", "Default", "New", "Dev", "Production", "Test",
-    "TryNew", "NewClient",
+    "TryNew", "NewClient", "CreateLoxa", "Alias",
     "StartEvent", "StartHTTPEvent", "StartJobEvent", "StartQueueEvent", "StartCLIEvent", "StartCronEvent",
     "Append", "Enrich", "Set", "Merge", "Delete", "Get", "GetGroup",
     "Checkpoint", "Finish", "FinishError", "Emit", "EmitEvent",

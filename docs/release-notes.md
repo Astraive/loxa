@@ -36,7 +36,7 @@ LOXA v1.0.0 is the first stable release of the canonical event observability sys
   - Age-based and size-based retention policies
   - Comprehensive audit logging
   - Metrics export (Prometheus)
-  - API key authentication on all endpoints
+  - API key authentication on all endpoints (see [Authentication](authentication.md) and [Authorization](authorization.md))
 - **Reliability Features**
   - Automatic retry with exponential backoff
   - Circuit breaker for sink failures
@@ -142,13 +142,13 @@ loxa query --sql "SELECT * FROM events LIMIT 10"
 
 ### From Binary
 ```bash
-go install github.com/astraive/loxa/loxa-collector/cmd/loxa-collector@v1.0.0
-go install github.com/astraive/loxa/loxa-cli/cmd/loxa@v1.0.0
+go install github.com/Astraive/loxa/collector/cmd/loxa-collector@v1.0.0
+go install github.com/Astraive/loxa/cli/cmd/loxa@v1.0.0
 ```
 
 ### From Docker
 ```bash
-docker pull astraive/loxa-collector:1.0.0
+docker pull astraive/loxa:1.0.0
 docker pull astraive/loxa-cli:1.0.0
 ```
 
@@ -160,7 +160,7 @@ helm install loxa loxa/loxa --version 1.0.0
 
 ## SDK Versions
 
-- **Go**: `github.com/astraive/loxa-go/core v1.0.0`
+- **Go**: `github.com/Astraive/loxa/sdks/go v1.0.0`
 - **Python**: `loxa==1.0.0` (PyPI)
 - **Rust**: `loxa = "1.0.0"` (Crates.io)
 
@@ -192,10 +192,10 @@ None (initial release)
 
 ## Support & Documentation
 
-- **GitHub**: https://github.com/astraive/loxa
+- **GitHub**: https://github.com/Astraive/loxa
 - **Documentation**: https://docs.loxa.dev
-- **Issues**: https://github.com/astraive/loxa/issues
-- **Discussions**: https://github.com/astraive/loxa/discussions
+- **Issues**: https://github.com/Astraive/loxa/issues
+- **Discussions**: https://github.com/Astraive/loxa/discussions
 
 ## Acknowledgments
 

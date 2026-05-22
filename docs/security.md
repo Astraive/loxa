@@ -3,7 +3,7 @@
 ## Architecture
 
 ```
-loxa-go SDK
+Go SDK
   |  HTTPS
   |  Authorization: Bearer lx_sec_live_k_xxx_yyyy
   |  X-Loxa-Service: checkout-api
@@ -111,6 +111,8 @@ All auth decisions follow default-deny. Unknown roles, missing permissions, miss
 
 All auth-sensitive actions emit audit events: `key.authenticated`, `key.failed`, `key.rate_limited`, `key.permission_denied`, `key.env_denied`, `key.origin_denied`, `key.payload_too_large`.
 
-## Full Spec
+## Further Reading
 
-See [spec/auth/spec.md](../spec/auth/spec.md) for the complete authentication specification.
+- [Authentication](authentication.md) — Key types, format, SDK configuration, and token storage
+- [Authorization](authorization.md) — RBAC roles, permissions, ABAC restrictions, and audit events
+- [Full Spec](../spec/auth/spec.md) — Complete authentication specification

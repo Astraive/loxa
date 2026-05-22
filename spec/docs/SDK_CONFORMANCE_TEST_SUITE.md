@@ -18,17 +18,17 @@ This document specifies the conformance test suite ALL SDKs MUST implement to pa
 
 **Go SDK**:
 ```bash
-cd loxa-go && go test ./... -v
+cd sdks/go && go test ./... -v
 ```
 
 **Python SDK**:
 ```bash
-cd loxa-py && python -m pytest -v
+cd sdks/py && python -m pytest -v
 ```
 
 **Rust SDK**:
 ```bash
-cd loxa-rs && cargo test --all-features -- --nocapture
+cd sdks/rs && cargo test --all-features -- --nocapture
 ```
 
 **All SDKs** (via grouped conformance runner):
@@ -546,13 +546,13 @@ For an SDK to be marked **STABLE** (not alpha):
 ### Individual SDK Tests
 ```bash
 # Go
-cd loxa-go && go test ./... -v
+cd sdks/go && go test ./... -v
 
 # Python
-cd loxa-py && python -m pytest -v
+cd sdks/py && python -m pytest -v
 
 # Rust
-cd loxa-rs && cargo test --all-features -- --nocapture
+cd sdks/rs && cargo test --all-features -- --nocapture
 ```
 
 ### All SDKs via Runner

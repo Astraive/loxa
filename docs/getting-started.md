@@ -84,8 +84,8 @@ package main
 
 import (
     "context"
-    loxa "github.com/astraive/loxa-go/src"
-    "github.com/astraive/loxa-go/src/sinks/httpbatch"
+    loxa "github.com/Astraive/loxa/sdks/go"
+    "github.com/Astraive/loxa/sdks/go/sinks/httpbatch"
 )
 
 func main() {
@@ -285,6 +285,7 @@ loxa tail --event order.created
 
 ## 4. Next Steps
 
+- **Authentication**: [Authentication](authentication.md) and [Authorization](authorization.md) for API keys, RBAC, and ABAC
 - **SDK Documentation**: See `sdks/go/docs`, `sdks/py/docs`, `sdks/rs/docs`, `sdks/js/docs` for framework-specific guides
 - **Collector Configuration**: Review `collector/configs/` for production, queue, and fanout configurations
 - **CLI Reference**: Run `loxa --help` or see `cli/docs/` for all available commands

@@ -63,10 +63,10 @@ Create a new file `sdks/js/bench/<name>.bench.ts`:
 
 ```typescript
 import { bench, describe } from 'vitest';
-import { Logger, production, memorySink, string } from '../src';
+import { createLoxa, production, memorySink, string } from '../src';
 
 describe('my feature', () => {
-  const logger = new Logger(production('bench').withSink(memorySink()));
+  const logger = createLoxa({ service: 'bench', sink: memorySink() });
 
   bench('my benchmark', () => {
     const ctx = logger.startEvent({ event: 'bench.test' });

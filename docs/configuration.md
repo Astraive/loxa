@@ -62,19 +62,28 @@ collector:
 
 ### `auth`
 
-API key authentication (optional).
+API key authentication using `Authorization: Bearer` header (optional).
 
 ```yaml
 auth:
-  enabled: false                       # Enable API key auth
-  header: X-API-Key                    # Header name
-  value_env: COLLECTOR_API_KEY         # Environment variable for key
+  enabled: true
+  server_secret: "${COLLECTOR_SERVER_SECRET}"
+  cache_ttl: 60s
+  negative_cache_ttl: 10s
+  keys:
+    - name: "default"
+      key_id: "k2M9aQp"
+      secret_env: "COLLECTOR_API_KEY_SECRET"
+      kind: "sec"
+      roles: ["collector_ingest_server"]
 ```
 
 When enabled, all requests must include the API key:
 ```bash
-curl -H "X-API-Key: secret123" http://localhost:9090/ingest -d '[...]'
+curl -H "Authorization: Bearer lx_sec_live_k2M9aQp_your_secret" http://localhost:9090/v1/events -d '[...]'
 ```
+
+See [Authentication](authentication.md) and [Authorization](authorization.md) for full details.
 
 ### `routes`
 
@@ -456,13 +465,20 @@ schema_governance:
 ### Go SDK
 
 ```go
-import "github.com/astraive/loxa-go/core"
+import loxa "github.com/Astraive/loxa/sdks/go"
 
-sdk, err := core.NewSDK()
+client, err := loxa.New(loxa.Config{
+    Service: "my-service",
+    Sink:    sink,
+    APIKey:  os.Getenv("LOXA_API_KEY"),
+})
 if err != nil {
     panic(err)
 }
-defer sdk.Close(context.Background())
+defer client.Close(context.Background())
+```
+
+See [Authentication](authentication.md) for key configuration.
 
 // Configuration precedence:
 // 1. Code (NewSDK options)
@@ -499,7 +515,7 @@ All configuration can be overridden via environment variables:
 ```bash
 # Collector
 export LOXA_COLLECTOR_ADDR=":9091"
-export LOXA_COLLECTOR_API_KEY="secret123"
+export LOXA_API_KEY="secret123"
 export LOXA_DUCKDB_PATH="/data/loxa.db"
 export LOXA_RETENTION_DAYS=30
 export LOXA_RETENTION_MAX_SIZE=10737418240
@@ -556,8 +572,13 @@ collector:
 
 auth:
   enabled: true
-  header: X-API-Key
-  value_env: COLLECTOR_API_KEY
+  server_secret: "${COLLECTOR_SERVER_SECRET}"
+  keys:
+    - name: "prod"
+      key_id: "k2M9aQp"
+      secret_env: "PROD_KEY_SECRET"
+      kind: "sec"
+      roles: ["collector_ingest_server"]
 
 duckdb:
   path: /data/loxa.db                  # Persistent volume

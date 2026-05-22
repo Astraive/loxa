@@ -692,7 +692,7 @@ loxa-js includes a drop-in Express middleware that instruments every request:
 
 ```typescript
 import express from "express";
-import { loxaMiddleware } from "loxa-js/middleware";
+import { loxaMiddleware } from "loxa-js/middleware/express";
 
 const app = express();
 

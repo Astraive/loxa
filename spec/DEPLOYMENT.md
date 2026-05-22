@@ -44,7 +44,7 @@ Install or upgrade:
 
 Override image tags during rollout:
 
-  helm upgrade --install loxa .\spec\charts\loxa --namespace loxa --set schemaService.image.tag=v1.2.3 --set stager.image.tag=v1.2.3
+  helm upgrade --install loxa .\spec\charts\loxa --namespace loxa --set schemaService.image.tag=v1.0.0 --set stager.image.tag=v1.0.0
 
 Render templates without installing:
 

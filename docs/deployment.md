@@ -53,9 +53,16 @@ Example:
 ```yaml
 auth:
   enabled: true
-  header: X-API-Key
-  value_env: COLLECTOR_API_KEY
+  server_secret: "${COLLECTOR_SERVER_SECRET}"
+  keys:
+    - name: "prod"
+      key_id: "k2M9aQp"
+      secret_env: "PROD_KEY_SECRET"
+      kind: "sec"
+      roles: ["collector_ingest_server"]
 ```
+
+See [Authentication](authentication.md) and [Authorization](authorization.md) for full auth configuration.
 
 JWT and mTLS appear in configuration and backlog material, but they are not the current HTTP ingest contract to rely on for release usage.
 

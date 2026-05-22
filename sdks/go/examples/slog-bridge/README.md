@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/astraive/loxa-go"
-	loxaslog "github.com/astraive/loxa-go/integrations/slog"
+	"github.com/Astraive/loxa/sdks/go"
+	loxaslog "github.com/Astraive/loxa/sdks/go/integrations/slog"
 )
 
 func main() {

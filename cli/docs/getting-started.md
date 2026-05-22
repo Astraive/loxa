@@ -14,7 +14,7 @@ go build -o loxa.exe ./cmd/loxa
 ### Go Install
 
 ```bash
-go install github.com/astraive/loxa/cli/cmd/loxa@latest
+go install github.com/Astraive/loxa/cli/cmd/loxa@latest
 ```
 
 ## Configure

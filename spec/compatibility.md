@@ -13,8 +13,8 @@ This document provides an overview of schema compatibility policies across all v
 LOXA schemas follow [Semantic Versioning](https://semver.org/):
 
 - **MAJOR** version (v1 → v2): Breaking changes
-- **MINOR** version (v1.0 → v1.1): Backward-compatible additions
-- **PATCH** version (v1.0.0 → v1.0.1): Documentation updates
+- **MINOR** version (v1.0.0): Backward-compatible additions
+- **PATCH** version (v1.0.0 → v1.0.0): Documentation updates
 
 ## Version-Specific Compatibility
 
@@ -56,7 +56,7 @@ SDKs should:
 loxa schema validate --file event.json --schema-version v1
 
 # Check compatibility between versions
-loxa schema diff --from v1.0.0 --to v1.1.0
+loxa schema diff --from v1.0.0 --to v1.0.0
 
 # List all available versions
 loxa schema list
@@ -147,8 +147,8 @@ Example:
   "old_field": {
     "type": "string",
     "x-loxa-deprecated": "use new_field instead",
-    "x-loxa-deprecated-since": "v1.2.0",
-    "x-loxa-removed-in": "v2.0.0"
+    "x-loxa-deprecated-since": "v1.0.0",
+    "x-loxa-removed-in": "v1.0.0"
   }
 }
 ```
@@ -168,5 +168,5 @@ Example:
 ## Contact
 
 For compatibility questions:
-- GitHub Issues: https://github.com/astraive/loxa/issues
-- Documentation: https://github.com/astraive/loxa/tree/main/spec/docs
+- GitHub Issues: https://github.com/Astraive/loxa/issues
+- Documentation: https://github.com/Astraive/loxa/tree/main/spec/docs

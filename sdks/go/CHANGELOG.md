@@ -17,10 +17,10 @@ All notable changes to the LOXA Go SDK are documented in this file.
 ### Added
 
 - Lightweight SDK boundary:
-  - core (`github.com/astraive/loxa-go`)
-  - middleware (`github.com/astraive/loxa-go/middleware`)
-  - integrations (`github.com/astraive/loxa-go/integrations`)
-  - collector transport (`github.com/astraive/loxa-go/sinks/httpbatch`)
+  - core (`github.com/Astraive/loxa/sdks/go`)
+  - middleware (`github.com/Astraive/loxa/sdks/go/middleware`)
+  - integrations (`github.com/Astraive/loxa/sdks/go/integrations`)
+  - collector transport (`github.com/Astraive/loxa/sdks/go/sinks/httpbatch`)
   - heavy production sinks are collector-owned
 - New `testkit` package for test capture/assert helpers.
 - Dependency boundary conformance test for root module.
@@ -35,5 +35,5 @@ All notable changes to the LOXA Go SDK are documented in this file.
 
 ### Breaking
 
-- Removed `loxa.Capture` and `loxa.AssertEvent`; use `github.com/astraive/loxa-go/testkit`.
-- Removed root middleware wrapper; use `github.com/astraive/loxa-go/middleware/nethttp`.
+- Removed `loxa.Capture` and `loxa.AssertEvent`; use `github.com/Astraive/loxa/sdks/go/testkit`.
+- Removed root middleware wrapper; use `github.com/Astraive/loxa/sdks/go/middleware/nethttp`.

@@ -15,13 +15,13 @@ Compatibility matrix:
 
 | Package | Compatibility |
 |---|---|
-| `loxa-go 1.0.x` | supports ingest API v1 and stable-v1 SDK parity |
-| `loxa-py 1.0.x` | supports ingest API v1 and stable-v1 SDK parity |
-| `loxa-rs 1.0.x` | supports ingest API v1 and stable-v1 SDK parity |
-| `loxa-js 1.0.x` | supports ingest API v1 and stable-v1 SDK parity |
-| `loxa-collector 1.0.x` | accepts ingest API v1 |
-| `loxa-cli 1.0.x` | operates collector/cortex API v1 surfaces |
-| `loxa-cortex 1.0.x` | accepts cortex API v1 surfaces |
+| Go SDK 1.0.x (`sdks/go`) | supports ingest API v1 and stable-v1 SDK parity |
+| Python SDK 1.0.x (`sdks/py`) | supports ingest API v1 and stable-v1 SDK parity |
+| Rust SDK 1.0.x (`sdks/rs`) | supports ingest API v1 and stable-v1 SDK parity |
+| JavaScript SDK 1.0.x (`sdks/js`) | supports ingest API v1 and stable-v1 SDK parity |
+| Collector 1.0.x (`collector/`) | accepts ingest API v1 |
+| CLI 1.0.x (`cli/`) | operates collector/cortex API v1 surfaces |
+| Cortex 1.0.x (`cortex/`) | accepts cortex API v1 surfaces |
 
 Current required SDKs are Go, Python, Rust, and JavaScript.
 

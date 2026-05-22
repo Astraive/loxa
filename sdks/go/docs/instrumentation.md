@@ -44,7 +44,7 @@ import (
     "fmt"
     "time"
 
-    loxa "github.com/astraive/loxa-go"
+    loxa "github.com/Astraive/loxa/sdks/go"
 )
 
 func main() {
@@ -734,7 +734,7 @@ The `net/http` middleware automatically instruments HTTP request handlers.
 ### Basic Usage
 
 ```go
-import loxamw "github.com/astraive/loxa-go/src/middleware/nethttp"
+import loxamw "github.com/Astraive/loxa/sdks/go/src/middleware/nethttp"
 
 func main() {
     mux := http.NewServeMux()

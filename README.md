@@ -40,8 +40,8 @@ package main
 import (
 	"context"
 
-	"github.com/astraive/loxa-go"
-	"github.com/astraive/loxa-go/sinks/httpbatch"
+	"github.com/Astraive/loxa/sdks/go"
+	"github.com/Astraive/loxa/sdks/go/sinks/httpbatch"
 )
 
 func main() {
@@ -71,12 +71,12 @@ func main() {
 Python:
 
 ```python
-from loxa import Config, HTTPBatchSink, Logger, Params
+from loxa import CollectorClient, HTTPBatchSink
 
-logger = Logger(
-    Config.production("checkout").with_sink(
-        HTTPBatchSink("http://127.0.0.1:9090/v1/events")
-    )
+client = CollectorClient(
+    service="checkout",
+    sink=HTTPBatchSink("http://127.0.0.1:9090/v1/events"),
+    api_key=os.environ["LOXA_API_KEY"],
 )
 
 ctx = logger.start_event(Params(event="checkout.request", method="POST", path="/checkout"))
@@ -88,14 +88,14 @@ logger.emit(ctx)
 Rust:
 
 ```rust
-use loxa::{Config, Logger, Params, SinkConfig};
+use loxa::{Config, HTTPBatchSink};
 
-fn main() {
-    let logger = Logger::new(
-        Config::production("checkout").with_sink(SinkConfig::HttpBatch {
-            endpoint: "http://127.0.0.1:9090/v1/events".to_string(),
-        }),
-    );
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let sink = HTTPBatchSink::new("http://127.0.0.1:9090/v1/events")?;
+    let client = Config::new("checkout")
+        .with_sink(sink)
+        .with_api_key(std::env::var("LOXA_API_KEY")?)
+        .build()?;
 
     let mut ctx = logger.start_event(Params::new("checkout.request").with_kind("http"));
     logger.finish(&mut ctx, "success").unwrap();
@@ -106,10 +106,10 @@ fn main() {
 JavaScript:
 
 ```ts
-import { Logger, HTTPBatchSink, UserID } from 'loxa-js';
+import { CollectorClient, HTTPBatchSink } from 'loxa-js';
 
 const sink = new HTTPBatchSink({ endpoint: 'http://127.0.0.1:9090/v1/events' });
-const logger = new Logger({ service: 'checkout', sink });
+const client = new CollectorClient({ service: 'checkout', sink, apiKey: process.env.LOXA_API_KEY });
 
 const ctx = logger.startEvent({ event: 'checkout.request', kind: 'http' });
 logger.enrich(ctx, UserID('u-1'));
