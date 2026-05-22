@@ -75,6 +75,11 @@ class Logger:
     def _is_default_terminal_sink(sink: object) -> bool:
         return sink.__class__.__name__ in {"StdoutSink", "StderrSink"}
 
+    def alias(self, service: str) -> "Logger":
+        """Create a new Logger with the same config but a different service name."""
+        cfg = replace(self._config, service=service)
+        return Logger(cfg)
+
     def start_event(self, params: Params) -> EventContext:
         params = replace(params, custom=list(params.custom))
         if not params.service and self._config.service:

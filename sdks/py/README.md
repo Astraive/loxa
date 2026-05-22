@@ -521,6 +521,7 @@ python ../../spec/conformance/runner.py --sdk python --group all
 
 ## Docs
 
+- [Instrumentation Guide](docs/business-instrumentation.md) — instrumenting checkout, payments, auth, jobs, queues, cron
 - [docs/public-api.md](docs/public-api.md)
 - [docs/getting-started.md](docs/getting-started.md)
 - [docs/middleware.md](docs/middleware.md)

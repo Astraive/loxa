@@ -48,6 +48,11 @@ export class Logger {
     return new Logger(withOptions(this.cfg, opts));
   }
 
+  /** Create a new Logger with the same config but a different service name. */
+  alias(service: string): Logger {
+    return this.child({ service });
+  }
+
   /** Get the current config. */
   getConfig(): Config { return { ...this.cfg }; }
 

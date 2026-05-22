@@ -494,6 +494,11 @@ func MustShutdown(timeout time.Duration) {
 	}
 }
 
+// Alias creates a new Logger with the same config as Default() but a different service name.
+func Alias(service string) (*Logger, error) {
+	return Default().Alias(service)
+}
+
 // ── Immediate logging API ─────────────────────────────────────────────────────
 
 func Debug(msg string, attrs ...Attr) { Default().Debug(msg, attrs...) }
@@ -674,6 +679,16 @@ func Capture(fn func()) ([]*Event, error) { return core.Capture(fn) }
 // AssertEvent checks that ev has the expected value at the given key.
 func AssertEvent(t testing.TB, ev *Event, key string, expected any) {
 	core.AssertEvent(t, ev, key, expected)
+}
+
+// AssertRedacted checks that ev has "[REDACTED]" at the given key.
+func AssertRedacted(t testing.TB, ev *Event, key string) {
+	core.AssertRedacted(t, ev, key)
+}
+
+// AssertHasCheckpoint checks that ev contains a checkpoint with the given name.
+func AssertHasCheckpoint(t testing.TB, ev *Event, name string) {
+	core.AssertHasCheckpoint(t, ev, name)
 }
 func NoopSink() Sink                                      { return core.NoopSink() }
 func CollectorSink(cfg CollectorSinkConfig) (Sink, error) { return core.CollectorSink(cfg) }

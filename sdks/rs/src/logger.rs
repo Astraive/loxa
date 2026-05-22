@@ -89,6 +89,13 @@ impl Logger {
         &self.config
     }
 
+    /// Create a new Logger with the same config but a different service name.
+    pub fn alias(&self, service: impl Into<String>) -> Logger {
+        let mut cfg = self.config.clone();
+        cfg.service = service.into();
+        Logger::new(cfg)
+    }
+
     pub fn start_event(&self, params: Params) -> EventContext {
         self.metrics.record_event_created();
         let mut params = params;

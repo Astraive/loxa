@@ -43,7 +43,7 @@ export {
   Plan, Currency, Amount, Country, Device, Platform, AppVersion,
   ErrorType, ErrorCode, ErrorMessage, ErrorStack, Retryable,
   // camelCase aliases (primary v1 API)
-  string, int, int64, uint64, float64, bool, any, group, time, duration,
+  string, int, int64, uint64, float64, bool, null_ as nullAttr, any, group, time, duration,
   sensitiveString, hashString, markSensitive,
   userId, tenantId, workspaceId, organizationId, sessionId,
   requestId, traceId, spanId,
@@ -83,7 +83,7 @@ export {
 export type { Config, AsyncConfig, SecurityConfig, ConfigOptions } from './config/config.ts';
 
 // --- Context ---
-export { getEvent, hasEvent, eventId, runWithEvent, getEvent as FromContext, hasEvent as HasEvent } from './core/context.ts';
+export { getEvent, hasEvent, eventId, requestIdFromContext, traceIdFromContext, runWithEvent, getEvent as FromContext, hasEvent as HasEvent, requestIdFromContext as RequestIDFromContext, traceIdFromContext as TraceIDFromContext } from './core/context.ts';
 
 // --- Sink ---
 export type { Sink } from './sinks/sink.ts';
@@ -195,4 +195,8 @@ export {
   warn as Warn,
   error as Error,
   fatal as Fatal,
+  createLoxa,
+  alias,
+  createLoxa as CreateLoxa,
+  alias as Alias,
 } from './loxa.ts';

@@ -10,13 +10,19 @@
  *   await loxa.emit(ctx);
  */
 
-import { getDefault, configure, reset } from './core/logger.ts';
-import type { Logger } from './core/logger.ts';
+import { getDefault, configure, reset, Logger } from './core/logger.ts';
+import type { Config } from './config/config.ts';
 import type { Event, Params, Attr } from './core/event.ts';
 import type { ProcessHandle, TimerHandle, GroupHandle } from './core/timing.ts';
 
 export function defaultLogger(): Logger { return getDefault(); }
 export { configure, reset };
+
+/** Create a new Logger instance with the given config. */
+export function createLoxa(cfg?: Partial<Config>): Logger { return new Logger(cfg); }
+
+/** Create a new Logger with the same config as default but a different service name. */
+export function alias(service: string): Logger { return getDefault().alias(service); }
 
 // --- Event lifecycle ---
 

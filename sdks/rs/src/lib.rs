@@ -236,6 +236,24 @@ pub fn Shutdown() {
     let _ = default_logger().shutdown();
 }
 
+/// Create a new Logger instance with the given config.
+pub fn create_loxa(config: Config) -> Logger {
+    Logger::new(config)
+}
+
+/// Create a new Logger with the same config as default but a different service name.
+pub fn alias(service: impl Into<String>) -> Logger {
+    default_logger().alias(service)
+}
+
+pub fn CreateLoxa(config: Config) -> Logger {
+    create_loxa(config)
+}
+
+pub fn Alias(service: impl Into<String>) -> Logger {
+    alias(service)
+}
+
 // --- Convenience loggers ---
 
 pub fn Debug(message: impl Into<String>) {
@@ -705,6 +723,14 @@ pub fn NotSampler(sampler: SamplerConfig) -> SamplerConfig {
 
 pub fn SampleByHeader(header: &str, value: &str) -> SamplerConfig {
     SamplerConfig::SampleByHeader(header.to_string(), value.to_string())
+}
+
+pub fn SampleRateLimited(rate: f64, window: std::time::Duration) -> SamplerConfig {
+    SamplerConfig::SampleRateLimited(rate, window)
+}
+
+pub fn sample_rate_limited(rate: f64, window: std::time::Duration) -> SamplerConfig {
+    SampleRateLimited(rate, window)
 }
 
 // --- Redactor constructors ---

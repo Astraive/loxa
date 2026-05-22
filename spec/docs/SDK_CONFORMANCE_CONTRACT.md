@@ -327,6 +327,26 @@ The following capabilities are intentionally collector-owned and MUST NOT be tre
 
 ---
 
+## 12. Default API Surface
+
+### 12.1 `loxa` Namespace
+- All SDKs MUST export a `loxa` object/namespace as the primary API surface
+- `loxa.info("msg")` etc. MUST delegate to the global default logger
+- `loxa.New(cfg)` / `loxa.new(cfg)` / `loxa::New(cfg)` creates a custom instance
+
+### 12.2 `CreateLoxa()` Factory
+- JS, Python, Rust MUST export `CreateLoxa()` / `create_loxa()` as an alias for `New()`/`new()`
+- Go does not need this because `loxa.New(cfg)` is already idiomatic
+- Both PascalCase and camelCase/snake_case variants MUST be exported
+
+### 12.3 `Alias()` Method
+- All SDKs MUST support `Alias("name")` on Logger instances
+- MUST create a new Logger with identical config but different `service` field
+- MUST NOT mutate the original logger
+- MUST be available as a module-level function delegating to `Default().Alias()`
+
+---
+
 ## Conformance Checklist
 
 For a release to be marked "stable" (not alpha), SDKs must pass:

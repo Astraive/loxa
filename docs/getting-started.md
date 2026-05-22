@@ -167,6 +167,94 @@ await client.emit(evt);
 await client.close();
 ```
 
+## Default API (`loxa.*`)
+
+All SDKs export a default logger for quick usage. No explicit construction needed:
+
+### Go
+```go
+loxa.Configure(loxa.Config{Service: "my-service", CollectorURL: "http://localhost:9090"})
+loxa.Info("server started", loxa.String("port", "8080"))
+```
+
+### Python
+```python
+import loxa
+loxa.configure(loxa.Config(service="my-service", collector_endpoint="http://localhost:9090"))
+loxa.info("server started", port="8080")
+```
+
+### Rust
+```rust
+loxa::configure(loxa::Config::dev("my-service").with_collector_endpoint("http://localhost:9090")).unwrap();
+loxa::info("server started");
+```
+
+### JavaScript
+```typescript
+import { configure, production, info } from "loxa-js";
+configure(production("my-service").withCollectorEndpoint("http://localhost:9090"));
+info("server started");
+```
+
+## Custom Instances (`createLoxa` / `loxa.New`)
+
+Create isolated logger instances for different services or contexts:
+
+### Go
+```go
+logger, _ := loxa.New(loxa.Config{Service: "checkout-api", CollectorURL: "http://localhost:9090"})
+logger.Info(ctx, "payment processed")
+```
+
+### Python
+```python
+logger = loxa.create_loxa(service="checkout-api", collector_endpoint="http://localhost:9090")
+logger.info("payment processed")
+```
+
+### Rust
+```rust
+let logger = loxa::create_loxa(loxa::Config::dev("checkout-api").with_collector_endpoint("http://localhost:9090"));
+logger.info("payment processed");
+```
+
+### JavaScript
+```typescript
+import { createLoxa } from "loxa-js";
+const logger = createLoxa({ service: "checkout-api", collectorUrl: "http://localhost:9090" });
+logger.info("payment processed");
+```
+
+## Aliases (`loxa.alias`)
+
+Create a variant with the same config but a different service name:
+
+### Go
+```go
+audit, _ := loxa.Alias("audit-service")
+audit.Info(ctx, "permission changed")
+```
+
+### Python
+```python
+audit = loxa.alias("audit-service")
+audit.info("permission changed")
+```
+
+### Rust
+```rust
+let audit = loxa::alias("audit-service");
+audit.info("permission changed");
+```
+
+### JavaScript
+```typescript
+import { alias } from "loxa-js";
+const audit = alias("audit-service");
+audit.info("permission changed");
+```
+
 ## 3. Query Events
 
 Use the CLI to query events stored by the collector:

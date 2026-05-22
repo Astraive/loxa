@@ -136,6 +136,7 @@ Heavy production sinks such as Kafka, ClickHouse, Postgres, DuckDB, OTLP, S3, GC
 
 ## Documentation
 
+- [Instrumentation Guide](docs/business-instrumentation.md) — instrumenting checkout, payments, auth, jobs, queues, cron
 - [docs/sdk.md](docs/sdk.md)
 - [docs/public-api.md](docs/public-api.md)
 - [docs/event-lifecycle.md](docs/event-lifecycle.md)

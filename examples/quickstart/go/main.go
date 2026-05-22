@@ -8,28 +8,29 @@ import (
 )
 
 func main() {
-	cfg := loxa.Production("quickstart-demo").WithCollectorEndpoint("http://localhost:9090")
-	logger, err := loxa.New(cfg)
-	if err != nil {
-		panic(err)
-	}
-	defer logger.Shutdown(context.Background())
+	ctx := context.Background()
 
-	ctx := logger.StartEvent(context.Background(), loxa.Params{
-		Event:   "user.signup",
-		Kind:    "http",
-		Service: "quickstart-demo",
-	})
+	// Default API — configure once, use everywhere
+	loxa.Configure(loxa.Production("quickstart-demo").WithCollectorEndpoint("http://localhost:9090"))
+	defer loxa.Shutdown(ctx)
 
-	logger.Enrich(ctx, loxa.String("user.email", "demo@example.com"))
-	logger.Enrich(ctx, loxa.String("user.plan", "pro"))
+	loxa.Info("server started")
 
-	logger.Finish(ctx, "success")
-
-	if err := logger.Emit(ctx); err != nil {
+	ev := loxa.StartEvent(ctx, loxa.Params{Event: "user.signup", Kind: "http"})
+	loxa.Enrich(ev, loxa.String("user.email", "demo@example.com"))
+	loxa.Enrich(ev, loxa.String("user.plan", "pro"))
+	loxa.Finish(ev, "success")
+	if err := loxa.Emit(ev); err != nil {
 		fmt.Printf("emit error: %v\n", err)
 		return
 	}
-
 	fmt.Println("Event emitted successfully")
+
+	// Custom instance
+	logger, _ := loxa.New(loxa.Config{Service: "checkout-api", CollectorURL: "http://localhost:9090"})
+	logger.Info(ctx, "custom instance ready")
+
+	// Alias — same config, different service name
+	audit, _ := loxa.Alias("audit-service")
+	audit.Info(ctx, "audit trail started")
 }

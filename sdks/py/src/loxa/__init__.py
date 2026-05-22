@@ -5,7 +5,7 @@ from dataclasses import replace
 from .core.attr import *  # exports Any, String, Int, etc.
 from .core.config import *  # noqa: F403
 from .core.config_options import *
-from .core.context import FromContext, HasEvent, EventID, RequestIDFromContext
+from .core.context import FromContext, HasEvent, EventID, RequestIDFromContext, TraceIDFromContext, SpanIDFromContext
 from .core.duplicate_policy import *
 from .core.event import Attr, EventContext, Params
 from .core.errors import DuplicateEmitError, EventAlreadyFinishedError, EventClosedError, EventValidationError
@@ -56,6 +56,21 @@ def try_new(config: Config) -> Logger:
 def new_client(config: Config) -> Logger:
     from .core.config import new_client as _new_client
     return _new_client(config)
+
+
+def create_loxa(service: str = "", **kwargs: Any) -> Logger:
+    """Create a new Logger instance. Alias for new()."""
+    cfg = load_layered_config()
+    if service:
+        cfg = cfg.with_service(service)
+    for k, v in kwargs.items():
+        cfg = getattr(cfg, f'with_{k}')(v)
+    return new(cfg)
+
+
+def alias(service: str) -> Logger:
+    """Create a new Logger with the same config as _default but different service."""
+    return _default.alias(service)
 
 
 def dev(service: str = "") -> Config:
@@ -237,6 +252,8 @@ Finish = finish
 FinishError = finish_error
 Emit = emit
 EmitEvent = emit_event
+CreateLoxa = create_loxa
+Alias = alias
 Flush = flush
 Shutdown = shutdown
 
@@ -518,7 +535,7 @@ __all__ = [
     # Config options
     "WithService", "WithVersion", "WithEnvironment", "WithSink", "WithSampler", "WithRedactor", "WithMetrics", "WithSchema", "WithEventSchema", "WithAsync", "WithCollectorEndpoint", "WithDuplicatePolicy", "WithStatsHandler", "WithDeploymentID", "WithIncludeHost", "WithPanicRecovery", "WithExitOnFatal",
     # Context helpers
-    "FromContext", "HasEvent", "EventID", "RequestIDFromContext",
+    "FromContext", "HasEvent", "EventID", "RequestIDFromContext", "TraceIDFromContext", "SpanIDFromContext",
     # Cortex
     "CortexClient", "IncidentContext", "GraphView", "Remediation", "RemediationFeedback",
 ]

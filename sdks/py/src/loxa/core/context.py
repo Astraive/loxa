@@ -13,3 +13,9 @@ def EventID(ctx: EventContext) -> str:
 
 def RequestIDFromContext(ctx: EventContext) -> str:
     return ctx.params.request_id or ctx.request_id
+
+def TraceIDFromContext(ctx: EventContext) -> str:
+    return ctx.trace_id or ""
+
+def SpanIDFromContext(ctx: EventContext) -> str:
+    return ctx.span_id or ""

@@ -500,6 +500,13 @@ npm run build
 python ../../spec/conformance/runner.py --sdk javascript --group all
 ```
 
+## Documentation
+
+- [Instrumentation Guide](docs/business-instrumentation.md) — instrumenting checkout, payments, auth, jobs, queues, cron
+- [docs/public-api.md](docs/public-api.md)
+- [docs/middleware.md](docs/middleware.md)
+- [docs/integrations.md](docs/integrations.md)
+
 ## Architecture
 
 ```

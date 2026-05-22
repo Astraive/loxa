@@ -50,6 +50,11 @@ func (l *Logger) Child(options ...ConfigOption) (*Logger, error) {
 	return New(cfg)
 }
 
+// Alias creates a new Logger with the same config but a different service name.
+func (l *Logger) Alias(service string) (*Logger, error) {
+	return l.Child(WithService(service))
+}
+
 // WithSchema creates a nested logger with a different output schema.
 func (l *Logger) WithSchema(schema Schema) (*Logger, error) {
 	return l.Child(WithSchema(schema))

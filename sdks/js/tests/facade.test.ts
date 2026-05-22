@@ -8,6 +8,7 @@ import {
   stdoutSink, memorySink, noopSink,
   userId, cartId, featureFlag, int,
   EventView, ConfigBuilder,
+  createLoxa, alias, New,
 } from '../src/index.ts';
 
 describe('Facade', () => {
@@ -131,5 +132,31 @@ describe('Facade', () => {
 
   it('EventView is exported', () => {
     assert.ok(EventView);
+  });
+});
+
+describe('createLoxa and alias', () => {
+  afterEach(() => {
+    reset();
+  });
+
+  it('createLoxa returns independent Logger', () => {
+    const logger = createLoxa({ service: 'test-svc' });
+    assert.ok(logger instanceof Logger);
+    assert.equal(logger.getConfig().service, 'test-svc');
+  });
+
+  it('alias creates Logger with different service', () => {
+    configure(production('api').withSink(memorySink()));
+    const audit = alias('audit');
+    assert.ok(audit instanceof Logger);
+    assert.equal(audit.getConfig().service, 'audit');
+  });
+
+  it('Logger.alias creates child with different service', () => {
+    const logger = new Logger({ service: 'api' });
+    const child = logger.alias('child-svc');
+    assert.equal(child.getConfig().service, 'child-svc');
+    assert.equal(logger.getConfig().service, 'api');
   });
 });

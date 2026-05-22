@@ -27,3 +27,13 @@ export function eventId(): string {
 export function runWithEvent<T>(event: Event, fn: () => T): T {
   return storage.run(event, fn);
 }
+
+/** Get the request ID from the current context. */
+export function requestIdFromContext(): string {
+  return storage.getStore()?.requestId ?? '';
+}
+
+/** Get the trace ID from the current context. */
+export function traceIdFromContext(): string {
+  return storage.getStore()?.traceId ?? '';
+}

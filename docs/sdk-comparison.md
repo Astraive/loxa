@@ -15,6 +15,9 @@
 | Metrics | Internal counters | -- | Internal counters | -- |
 | Async Emit | Goroutine-based | Thread-based | Tokio async | Promise-based |
 | CortexClient | Yes (11 methods) | Yes (13 methods) | Yes | Yes |
+| Default API (`loxa.*` facade) | Yes | Yes | Yes | Yes |
+| `CreateLoxa()` factory | N/A (`New`) | `create_loxa` | `create_loxa` | `createLoxa` |
+| `Alias("name")` sugar | Yes | Yes | Yes | Yes |
 
 ## SDK Documentation
 

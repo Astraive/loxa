@@ -33,6 +33,8 @@
     "TryNew",
     "Default",
     "Configure",
+    "CreateLoxa",
+    "Alias",
     "FromContext",
     "HasEvent",
     "Config",
