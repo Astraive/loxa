@@ -1,9 +1,9 @@
-module github.com/astraive/loxa-go/src/middleware
+module github.com/astraive/loxa/sdks/go/src/middleware
 
 go 1.25.0
 
 require (
-	github.com/astraive/loxa-go v0.0.0
+	github.com/astraive/loxa/sdks/go v0.0.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/gofiber/fiber/v2 v2.52.13
@@ -13,7 +13,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
-	github.com/astraive/loxa-spec v0.0.0 // indirect
+	github.com/astraive/loxa/spec v0.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.15.0 // indirect
@@ -66,6 +66,6 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace github.com/astraive/loxa-go => ../../
+replace github.com/astraive/loxa/sdks/go => ../../
 
-replace github.com/astraive/loxa-spec => ../../../../spec
+replace github.com/astraive/loxa/spec => ../../../../spec

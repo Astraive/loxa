@@ -949,7 +949,7 @@ const file_loxa_v1_cortex_proto_rawDesc = "" +
 	"\vReconstruct\x12\x1b.loxa.v1.ReconstructRequest\x1a\x1c.loxa.v1.ReconstructResponse\x12?\n" +
 	"\bGetGraph\x12\x18.loxa.v1.GetGraphRequest\x1a\x19.loxa.v1.GetGraphResponse\x12Q\n" +
 	"\x0eRecordFeedback\x12\x1e.loxa.v1.RecordFeedbackRequest\x1a\x1f.loxa.v1.RecordFeedbackResponse\x12K\n" +
-	"\fStreamEvents\x12\x1c.loxa.v1.StreamEventsRequest\x1a\x1b.loxa.v1.IngestEventRequest0\x01B4Z2github.com/astraive/loxa-spec/proto/loxa/v1;loxav1b\x06proto3"
+	"\fStreamEvents\x12\x1c.loxa.v1.StreamEventsRequest\x1a\x1b.loxa.v1.IngestEventRequest0\x01B4Z2github.com/astraive/loxa/spec/proto/loxa/v1;loxav1b\x06proto3"
 
 var (
 	file_loxa_v1_cortex_proto_rawDescOnce sync.Once

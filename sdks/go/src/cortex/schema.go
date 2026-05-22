@@ -1,7 +1,7 @@
 package cortex
 
 import (
-	"github.com/astraive/loxa-go/src/core"
+	"github.com/astraive/loxa/sdks/go/src/core"
 )
 
 // DefaultSchema returns the default LOXA event schema.

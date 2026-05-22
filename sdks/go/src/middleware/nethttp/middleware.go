@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/astraive/loxa-go"
+	"github.com/astraive/loxa/sdks/go"
 )
 
 // Config configures the net/http middleware.

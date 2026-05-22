@@ -77,10 +77,7 @@ pub mod actix_impl {
                 .and_then(|v| v.to_str().ok())
                 .unwrap_or("")
                 .to_string();
-            let remote_ip = req
-                .peer_addr()
-                .map(|a| a.to_string())
-                .unwrap_or_default();
+            let remote_ip = req.peer_addr().map(|a| a.to_string()).unwrap_or_default();
 
             let started = Instant::now();
             let fut = self.service.call(req);

@@ -3,7 +3,7 @@ package fiber
 import (
 	"fmt"
 
-	"github.com/astraive/loxa-go"
+	"github.com/astraive/loxa/sdks/go"
 	fiberpkg "github.com/gofiber/fiber/v2"
 )
 

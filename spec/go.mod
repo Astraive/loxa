@@ -1,4 +1,4 @@
-module github.com/astraive/loxa-spec
+module github.com/astraive/loxa/spec
 
 go 1.25.0
 

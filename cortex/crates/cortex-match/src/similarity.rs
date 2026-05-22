@@ -15,7 +15,12 @@ pub mod similarity {
         }
 
         let min_len = a.len().min(b.len());
-        let dot: f64 = a.iter().take(min_len).zip(b.iter().take(min_len)).map(|(x, y)| x * y).sum();
+        let dot: f64 = a
+            .iter()
+            .take(min_len)
+            .zip(b.iter().take(min_len))
+            .map(|(x, y)| x * y)
+            .sum();
 
         let a_mag = a.iter().map(|x| x * x).sum::<f64>().sqrt();
         let b_mag = b.iter().map(|x| x * x).sum::<f64>().sqrt();
@@ -34,7 +39,8 @@ pub mod similarity {
         }
 
         let min_len = a.len().min(b.len());
-        let sum_sq: f64 = a.iter()
+        let sum_sq: f64 = a
+            .iter()
             .take(min_len)
             .zip(b.iter().take(min_len))
             .map(|(x, y)| (x - y).powi(2))
@@ -97,7 +103,8 @@ pub mod similarity {
 
         // For sequences of same length, compare position correlation
         if a_norm.len() == b_norm.len() {
-            let diffs: f64 = a_norm.iter()
+            let diffs: f64 = a_norm
+                .iter()
                 .zip(b_norm.iter())
                 .map(|(x, y)| (x - y).abs())
                 .sum();

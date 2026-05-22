@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/astraive/loxa-go/src/internal/pool"
-	speccontract "github.com/astraive/loxa-spec/generated/go/contract"
+	"github.com/astraive/loxa/sdks/go/src/internal/pool"
+	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
 
 // Ensure is used (pipeline only).

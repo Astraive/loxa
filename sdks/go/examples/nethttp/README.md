@@ -6,8 +6,8 @@ package main
 import (
 	"net/http"
 
-	"github.com/Astraive/loxa/sdks/go"
-	loxahttp "github.com/Astraive/loxa/sdks/go/middleware/nethttp"
+	"github.com/astraive/loxa/sdks/go"
+	loxahttp "github.com/astraive/loxa/sdks/go/middleware/nethttp"
 )
 
 func main() {

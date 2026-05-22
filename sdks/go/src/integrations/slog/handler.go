@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/astraive/loxa-go"
+	"github.com/astraive/loxa/sdks/go"
 )
 
 // SlogHandler is a slog.Handler that forwards records to loxa.

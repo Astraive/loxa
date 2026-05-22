@@ -1,7 +1,7 @@
 {
   "version": "v1",
-  "strict_schema": "../schema/event.strict.schema.json",
-  "loose_schema": "../schema/event.loose.schema.json",
+  "strict_schema": "../spec/schemas/json/event.strict.schema.json",
+  "loose_schema": "../spec/schemas/json/event.loose.schema.json",
   "valid": [
     "../fixtures/valid/http_success.json",
     "../fixtures/valid/http_error.json",

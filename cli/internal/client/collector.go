@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	speccontract "github.com/astraive/loxa-spec/generated/go/contract"
+	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
 
 const defaultTimeout = 30 * time.Second

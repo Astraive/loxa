@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	speccontract "github.com/astraive/loxa-spec/generated/go/contract"
+	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 	"github.com/astraive/loxa-cli/internal/cli"
 )
 

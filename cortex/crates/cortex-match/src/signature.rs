@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum SymptomClass {
@@ -90,7 +90,10 @@ impl Signature {
     ) -> Self {
         let mut sig = Self::new();
 
-        sig.symptom_classes = symptoms.iter().map(|s| SymptomClass::from(s.as_str())).collect();
+        sig.symptom_classes = symptoms
+            .iter()
+            .map(|s| SymptomClass::from(s.as_str()))
+            .collect();
 
         let shape_parts: Vec<String> = sig
             .symptom_classes
@@ -101,22 +104,15 @@ impl Signature {
 
         sig.resolution_pattern = remediation.to_vec();
 
-        sig.feature_vector = compute_feature_vector(
-            causal_chain.len(),
-            services.len(),
-            &sig.symptom_classes,
-        );
+        sig.feature_vector =
+            compute_feature_vector(causal_chain.len(), services.len(), &sig.symptom_classes);
 
         sig
     }
 
     fn compute_feature_vector(&mut self) {
         let n = self.symptom_classes.len();
-        self.feature_vector = compute_feature_vector(
-            n,
-            n,
-            &self.symptom_classes,
-        );
+        self.feature_vector = compute_feature_vector(n, n, &self.symptom_classes);
     }
 }
 
@@ -158,10 +154,14 @@ fn compute_feature_vector(
     v.push(has_resource);
     v.push(has_deploy);
 
-    let unique_symptoms = symptoms.iter().collect::<std::collections::HashSet<_>>().len() as f64;
+    let unique_symptoms = symptoms
+        .iter()
+        .collect::<std::collections::HashSet<_>>()
+        .len() as f64;
     v.push(unique_symptoms / n_symptoms.max(1) as f64);
 
-    let severity = (has_error * 0.3 + has_timeout * 0.3 + has_resource * 0.2 + has_latency * 0.2) as f64;
+    let severity =
+        (has_error * 0.3 + has_timeout * 0.3 + has_resource * 0.2 + has_latency * 0.2) as f64;
     v.push(severity);
     v.push(0.0);
 
@@ -173,10 +173,7 @@ fn compute_feature_vector(
 /// - extracts symptom classes
 /// - captures temporal sequence
 /// - ignores timing, only order matters
-pub fn normalize_signature(
-    causal_chain: &[Event],
-    service_names: &[String],
-) -> Signature {
+pub fn normalize_signature(causal_chain: &[Event], service_names: &[String]) -> Signature {
     let mut sig = Signature::from_causal_chain(causal_chain);
 
     let roles: Vec<String> = service_names
@@ -227,10 +224,26 @@ mod tests {
     #[test]
     fn test_signature_from_chain() {
         let events = vec![
-            Event { kind: "deploy".to_string(), service: Some("api".to_string()), timestamp_ms: 0 },
-            Event { kind: "latency_spike".to_string(), service: Some("api".to_string()), timestamp_ms: 5000 },
-            Event { kind: "timeout".to_string(), service: Some("db".to_string()), timestamp_ms: 10000 },
-            Event { kind: "rollback".to_string(), service: Some("api".to_string()), timestamp_ms: 15000 },
+            Event {
+                kind: "deploy".to_string(),
+                service: Some("api".to_string()),
+                timestamp_ms: 0,
+            },
+            Event {
+                kind: "latency_spike".to_string(),
+                service: Some("api".to_string()),
+                timestamp_ms: 5000,
+            },
+            Event {
+                kind: "timeout".to_string(),
+                service: Some("db".to_string()),
+                timestamp_ms: 10000,
+            },
+            Event {
+                kind: "rollback".to_string(),
+                service: Some("api".to_string()),
+                timestamp_ms: 15000,
+            },
         ];
 
         let sig = Signature::from_causal_chain(&events);
@@ -243,9 +256,21 @@ mod tests {
     #[test]
     fn test_normalize_topology_independent() {
         let events = vec![
-            Event { kind: "deploy".to_string(), service: None, timestamp_ms: 0 },
-            Event { kind: "latency_spike".to_string(), service: None, timestamp_ms: 5000 },
-            Event { kind: "timeout".to_string(), service: None, timestamp_ms: 10000 },
+            Event {
+                kind: "deploy".to_string(),
+                service: None,
+                timestamp_ms: 0,
+            },
+            Event {
+                kind: "latency_spike".to_string(),
+                service: None,
+                timestamp_ms: 5000,
+            },
+            Event {
+                kind: "timeout".to_string(),
+                service: None,
+                timestamp_ms: 10000,
+            },
         ];
 
         let services = vec!["payments-svc".to_string(), "billing-db".to_string()];

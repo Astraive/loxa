@@ -3,7 +3,7 @@ package utils_test
 import (
 	"testing"
 
-	"github.com/astraive/loxa-go/src/utils"
+	"github.com/astraive/loxa/sdks/go/src/utils"
 )
 
 func TestParseNDJSON(t *testing.T) {

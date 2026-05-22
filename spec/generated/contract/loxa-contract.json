@@ -53,11 +53,7 @@
     "trace_id",
     "user",
     "version",
-    "workspace",
-    "checkpoints",
-    "process",
-    "groups",
-    "timers"
+    "workspace"
   ],
   "canonical_fields": [
     "attrs",
@@ -94,11 +90,7 @@
     "trace_id",
     "user",
     "version",
-    "workspace",
-    "checkpoints",
-    "process",
-    "groups",
-    "timers"
+    "workspace"
   ],
   "enums": {
     "schema_versions": [

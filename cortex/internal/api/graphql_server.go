@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	transportcontracts "github.com/astraive/loxa-spec/transport/contracts"
+	transportcontracts "github.com/astraive/loxa/spec/transport/contracts"
 	"github.com/astraive/loxa/loxa-cortex/internal/config"
 	"github.com/astraive/loxa/loxa-cortex/internal/graph"
 	"github.com/astraive/loxa/loxa-cortex/internal/learner"

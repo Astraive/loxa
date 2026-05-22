@@ -51,7 +51,7 @@ git push origin cli/v1.0.0
 The CLI is a single binary. Distribute via:
 
 - Direct download from GitHub releases
-- `go install github.com/Astraive/loxa/cli/cmd/loxa@latest`
+- `go install github.com/astraive/loxa/cli/cmd/loxa@latest`
 - Build from source: `go build -o loxa.exe ./cmd/loxa`
 
 ## Post-release

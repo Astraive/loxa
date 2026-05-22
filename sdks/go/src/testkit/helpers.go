@@ -1,8 +1,8 @@
 package testkit
 
 import (
-	"github.com/astraive/loxa-go"
-	"github.com/astraive/loxa-go/src/core"
+	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loxa/sdks/go/src/core"
 	"testing"
 )
 

@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/astraive/loxa-go"
-	"github.com/astraive/loxa-go/sinks/httpbatch"
+	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loxa/sdks/go/sinks/httpbatch"
 )
 
 func main() {

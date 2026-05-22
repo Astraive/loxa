@@ -99,7 +99,8 @@ fn collector_ack_behavior_fixtures() {
 
 fn fixture_paths() -> Vec<PathBuf> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("..").join("..")
+        .join("..")
+        .join("..")
         .join("spec")
         .join("examples")
         .join("golden")

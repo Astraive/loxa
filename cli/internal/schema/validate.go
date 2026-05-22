@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	speccontract "github.com/astraive/loxa-spec/generated/go/contract"
+	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
 
 func firstExisting(paths ...string) string {

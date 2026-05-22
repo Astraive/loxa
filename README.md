@@ -40,8 +40,8 @@ package main
 import (
 	"context"
 
-	"github.com/Astraive/loxa/sdks/go"
-	"github.com/Astraive/loxa/sdks/go/sinks/httpbatch"
+	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loxa/sdks/go/sinks/httpbatch"
 )
 
 func main() {

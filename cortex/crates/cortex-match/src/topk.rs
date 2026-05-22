@@ -1,5 +1,5 @@
-use std::collections::BinaryHeap;
 use std::cmp::Ordering;
+use std::collections::BinaryHeap;
 
 use crate::signature::Signature;
 use crate::similarity::{self, ScoredMatch};
@@ -27,7 +27,9 @@ impl PartialOrd for PQItem {
 
 impl Ord for PQItem {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.score.partial_cmp(&other.score).unwrap_or(Ordering::Equal)
+        self.score
+            .partial_cmp(&other.score)
+            .unwrap_or(Ordering::Equal)
     }
 }
 
@@ -65,11 +67,7 @@ impl TopK {
     /// Search for top-k similar signatures
     /// O(n * d) where n = candidates, d = feature vector dim
     /// Using heap: O(n log k) instead of O(n log n)
-    pub fn search(
-        &self,
-        query: &Signature,
-        candidates: &[Signature],
-    ) -> Vec<ScoredMatch> {
+    pub fn search(&self, query: &Signature, candidates: &[Signature]) -> Vec<ScoredMatch> {
         let k = self.k.min(candidates.len());
         if k == 0 {
             return Vec::new();
@@ -103,7 +101,11 @@ impl TopK {
             .map(|item| ScoredMatch::new(item.signature_id, item.score))
             .collect();
 
-        results.sort_by(|a, b| b.similarity.partial_cmp(&a.similarity).unwrap_or(Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.similarity
+                .partial_cmp(&a.similarity)
+                .unwrap_or(Ordering::Equal)
+        });
         results
     }
 
@@ -138,7 +140,11 @@ pub fn search_brute(
         })
         .collect();
 
-    results.sort_by(|a, b| b.similarity.partial_cmp(&a.similarity).unwrap_or(Ordering::Equal));
+    results.sort_by(|a, b| {
+        b.similarity
+            .partial_cmp(&a.similarity)
+            .unwrap_or(Ordering::Equal)
+    });
     results.truncate(k);
     results
 }

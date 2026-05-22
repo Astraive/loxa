@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/astraive/loxa-go"
+	"github.com/astraive/loxa/sdks/go"
 )
 
 // Config controls HTTP batch sink behavior.

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	loxa "github.com/astraive/loxa-go"
+	loxa "github.com/astraive/loxa/sdks/go"
 )
 
 const collectorURL = "http://127.0.0.1:9090"

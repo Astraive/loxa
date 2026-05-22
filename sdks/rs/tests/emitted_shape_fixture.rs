@@ -70,7 +70,8 @@ fn shared_emitted_shape_fixture() {
 
 fn load_fixture() -> Fixture {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("..").join("..")
+        .join("..")
+        .join("..")
         .join("spec")
         .join("examples")
         .join("golden")

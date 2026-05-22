@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	transportcontracts "github.com/astraive/loxa-spec/transport/contracts"
+	transportcontracts "github.com/astraive/loxa/spec/transport/contracts"
 	"github.com/astraive/loxa/loxa-cortex/internal/eventconv"
 	"github.com/gorilla/websocket"
 )

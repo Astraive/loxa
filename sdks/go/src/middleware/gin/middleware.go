@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/astraive/loxa-go"
+	"github.com/astraive/loxa/sdks/go"
 	ginpkg "github.com/gin-gonic/gin"
 )
 

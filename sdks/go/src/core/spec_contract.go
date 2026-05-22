@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	speccontract "github.com/astraive/loxa-spec/generated/go/contract"
+	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
 
 const (

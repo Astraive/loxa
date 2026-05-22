@@ -465,7 +465,7 @@ schema_governance:
 ### Go SDK
 
 ```go
-import loxa "github.com/Astraive/loxa/sdks/go"
+import loxa "github.com/astraive/loxa/sdks/go"
 
 client, err := loxa.New(loxa.Config{
     Service: "my-service",

@@ -1,7 +1,7 @@
 package redaction
 
 import (
-	"github.com/astraive/loxa-go/src/core"
+	"github.com/astraive/loxa/sdks/go/src/core"
 )
 
 // DefaultRedactor returns a Redactor that replaces common sensitive keys.

@@ -403,7 +403,11 @@ pub fn new_client(code_config: Config) -> Result<crate::Logger, crate::errors::L
                 std::env::var("LOXA_API_KEY")
                     .ok()
                     .filter(|s| !s.is_empty())
-                    .or_else(|| std::env::var("LOXA_COLLECTOR_API_KEY").ok().filter(|s| !s.is_empty()))
+                    .or_else(|| {
+                        std::env::var("LOXA_COLLECTOR_API_KEY")
+                            .ok()
+                            .filter(|s| !s.is_empty())
+                    })
             },
             timeout_ms: 2_000,
             max_batch_bytes: 256 * 1024,

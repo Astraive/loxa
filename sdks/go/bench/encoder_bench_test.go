@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/astraive/loxa-go"
+	"github.com/astraive/loxa/sdks/go"
 )
 
 func BenchmarkEncoder(b *testing.B) {

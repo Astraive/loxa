@@ -287,7 +287,7 @@ const file_loxa_v1_ingest_proto_rawDesc = "" +
 	"\n" +
 	"LoxaIngest\x127\n" +
 	"\x06Ingest\x12\x16.loxa.v1.RawEventBatch\x1a\x15.loxa.v1.PushResponse\x12?\n" +
-	"\fIngestStream\x12\x16.loxa.v1.RawEventBatch\x1a\x15.loxa.v1.PushResponse(\x01B4Z2github.com/astraive/loxa-spec/proto/loxa/v1;loxav1b\x06proto3"
+	"\fIngestStream\x12\x16.loxa.v1.RawEventBatch\x1a\x15.loxa.v1.PushResponse(\x01B4Z2github.com/astraive/loxa/spec/proto/loxa/v1;loxav1b\x06proto3"
 
 var (
 	file_loxa_v1_ingest_proto_rawDescOnce sync.Once

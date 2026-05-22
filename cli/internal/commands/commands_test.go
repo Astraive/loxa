@@ -63,15 +63,14 @@ func TestDLQListHitsCollectorAPI(t *testing.T) {
 }
 
 func TestEmitSampleSendsAPIKeyFromEnv(t *testing.T) {
-	t.Setenv("LOXA_COLLECTOR_API_KEY", "test-key")
-	t.Setenv("LOXA_COLLECTOR_API_KEY_HEADER", "X-API-Key")
+	t.Setenv("LOXA_API_KEY", "test-key")
 
-	var gotHeader string
+	var gotAuth string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/v1/events" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
-		gotHeader = r.Header.Get("X-API-Key")
+		gotAuth = r.Header.Get("Authorization")
 		w.WriteHeader(http.StatusAccepted)
 		_, _ = w.Write([]byte(`{"status":"accepted"}`))
 	}))
@@ -81,8 +80,8 @@ func TestEmitSampleSendsAPIKeyFromEnv(t *testing.T) {
 	if err := EmitCommand(cfg, []string{"sample", "--service", "checkout", "--event", "payment.completed"}); err != nil {
 		t.Fatalf("emit sample: %v", err)
 	}
-	if gotHeader != "test-key" {
-		t.Fatalf("expected X-API-Key header to be set")
+	if gotAuth != "Bearer test-key" {
+		t.Fatalf("expected Authorization: Bearer header, got %q", gotAuth)
 	}
 }
 

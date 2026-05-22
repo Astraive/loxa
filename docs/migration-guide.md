@@ -59,7 +59,7 @@ auth:
 
 ```bash
 # Go
-go get github.com/Astraive/loxa/sdks/go@v1.0.0
+go get github.com/astraive/loxa/sdks/go@v1.0.0
 
 # Python
 pip install --upgrade loxa==1.0.0
@@ -86,8 +86,8 @@ loxa import --file events_backup.jsonl --target postgres://localhost/loxa_events
 
 ```bash
 # Upgrade binary
-go install github.com/Astraive/loxa/collector/cmd/loxa-collector@v1.0.0
-go install github.com/Astraive/loxa/cli/cmd/loxa@v1.0.0
+go install github.com/astraive/loxa/collector/cmd/loxa-collector@v1.0.0
+go install github.com/astraive/loxa/cli/cmd/loxa@v1.0.0
 
 # Update config
 vi ~/.loxa/loxa.yaml  # Apply changes from step 2
@@ -426,8 +426,8 @@ loxa query --sql "EXPLAIN SELECT * FROM events LIMIT 1000"
 ## Support
 
 - **Documentation**: https://docs.loxa.dev
-- **GitHub Issues**: https://github.com/Astraive/loxa/issues
-- **Discussion**: https://github.com/Astraive/loxa/discussions
+- **GitHub Issues**: https://github.com/astraive/loxa/issues
+- **Discussion**: https://github.com/astraive/loxa/discussions
 - **Community Slack**: [Join](https://loxa-community.slack.com)
 
 **Need Help?** Create an issue on GitHub with migration details and we'll assist you.

@@ -77,8 +77,8 @@ Set the `LOXA_API_KEY` environment variable, then configure the SDK:
 
 ```go
 import (
-    loxa "github.com/Astraive/loxa/sdks/go"
-    "github.com/Astraive/loxa/sdks/go/sinks/httpbatch"
+    loxa "github.com/astraive/loxa/sdks/go"
+    "github.com/astraive/loxa/sdks/go/sinks/httpbatch"
 )
 
 sink, _ := httpbatch.New(httpbatch.Config{

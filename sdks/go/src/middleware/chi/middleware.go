@@ -3,8 +3,8 @@ package chi
 import (
 	"net/http"
 
-	"github.com/astraive/loxa-go"
-	"github.com/astraive/loxa-go/src/middleware/nethttp"
+	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loxa/sdks/go/src/middleware/nethttp"
 	"github.com/go-chi/chi/v5"
 )
 

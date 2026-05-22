@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
-	"time"
 )
 
 const (
@@ -16,6 +16,7 @@ const (
 	MaxEventBytes        = 65536
 )
 
+var rfc3339Pattern = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))$`)
 
 type SourceInfo struct {
 	SDK     string `json:"sdk"`
@@ -89,7 +90,7 @@ var AllowedOutcomes = set("success", "error", "timeout", "cancelled", "rejected"
 var AllowedPartialReasons = set("not_finished", "process_exit", "timeout", "panic", "collector_unavailable")
 var AllowedEventStates = set("created", "active", "finished", "emitting", "emitted", "failed_validation", "delivery_failed")
 var AllowedSourceSDKs = set("loxa-cli", "loxa-go", "loxa-py", "loxa-rs")
-var AllowedTopLevelFields = set("attrs", "checkpoints", "delivery_attempts", "deployment", "duration_ms", "environment", "error", "event", "event_id", "event_state", "event_version", "http", "kind", "level", "message", "method", "organization", "outcome", "partial", "partial_reason", "path", "pii", "request_id", "resource", "route", "schema_version", "service", "source", "span_id", "status_code", "tenant", "timestamp", "trace_id", "user", "version", "workspace")
+var AllowedTopLevelFields = set("attrs", "delivery_attempts", "deployment", "duration_ms", "environment", "error", "event", "event_id", "event_state", "event_version", "http", "kind", "level", "message", "method", "organization", "outcome", "partial", "partial_reason", "path", "pii", "request_id", "resource", "route", "schema_version", "service", "source", "span_id", "status_code", "tenant", "timestamp", "trace_id", "user", "version", "workspace")
 var AllowedCollectorStatuses = set("accepted", "partial", "rejected", "invalid")
 var CanonicalFieldSet = AllowedTopLevelFields
 
@@ -370,11 +371,7 @@ func optionalStatusCode(payload map[string]any, field string, errs *ValidationEr
 
 func requireTimestamp(payload map[string]any, field string, errs *ValidationErrors) {
 	value, ok := payload[field].(string)
-	if !ok {
-		*errs = append(*errs, ValidationError{Field: field, Code: "invalid_rfc3339", Message: fmt.Sprintf("field %q must be RFC3339", field)})
-		return
-	}
-	if _, err := time.Parse(time.RFC3339, strings.TrimSpace(value)); err != nil {
+	if !ok || !rfc3339Pattern.MatchString(strings.TrimSpace(value)) {
 		*errs = append(*errs, ValidationError{Field: field, Code: "invalid_rfc3339", Message: fmt.Sprintf("field %q must be RFC3339", field)})
 	}
 }

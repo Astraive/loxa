@@ -253,7 +253,7 @@ Update each SDK to consume new release:
 
 ```bash
 # For Go SDK
-go get github.com/Astraive/loxa/sdks/go@v1.0.0
+go get github.com/astraive/loxa/sdks/go@v1.0.0
 
 # For Python SDK
 pip install loxa-spec==1.0.0

@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/astraive/loxa-go"
-	loxahttp "github.com/astraive/loxa-go/src/middleware/nethttp"
+	"github.com/astraive/loxa/sdks/go"
+	loxahttp "github.com/astraive/loxa/sdks/go/src/middleware/nethttp"
 )
 
 func BenchmarkNetHTTPMiddleware(b *testing.B) {

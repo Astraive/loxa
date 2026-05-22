@@ -1,11 +1,11 @@
-module github.com/astraive/loxa-go/tests/e2e
+module github.com/astraive/loxa/sdks/go/tests/e2e
 
 go 1.25.0
 
-require github.com/astraive/loxa-go v0.0.0
+require github.com/astraive/loxa/sdks/go v0.0.0
 
 require (
-	github.com/astraive/loxa-spec v0.0.0 // indirect
+	github.com/astraive/loxa/spec v0.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
@@ -20,6 +20,6 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace github.com/astraive/loxa-go => ../../
+replace github.com/astraive/loxa/sdks/go => ../../
 
-replace github.com/astraive/loxa-spec => ../../../../spec
+replace github.com/astraive/loxa/spec => ../../../../spec

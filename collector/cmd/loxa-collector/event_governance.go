@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	speccontract "github.com/astraive/loxa-spec/generated/go/contract"
+	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
 
 var secretValuePattern = regexp.MustCompile(`(?i)(bearer\s+[a-z0-9._~+/=-]{12,}|sk-[a-z0-9]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)`)

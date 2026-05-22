@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/astraive/loxa-collector/internal/ingest"
-	speccontract "github.com/astraive/loxa-spec/generated/go/contract"
+	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
 
 type ingestEnvelopeFixture struct {

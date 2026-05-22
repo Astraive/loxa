@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"strings"
 
-	speccontract "github.com/astraive/loxa-spec/generated/go/contract"
+	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 	"github.com/klauspost/compress/zstd"
 )
 

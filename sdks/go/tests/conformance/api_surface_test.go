@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa-go"
-	"github.com/astraive/loxa-go/src/testkit"
+	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loxa/sdks/go/src/testkit"
 )
 
 func TestPublicAPISurfaceCoreFlow(t *testing.T) {

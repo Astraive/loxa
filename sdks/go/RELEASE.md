@@ -44,13 +44,13 @@ The `go/` prefix is required because the Go SDK lives in a subdirectory of a mon
 After pushing the tag, verify that the module proxy has indexed the new version:
 
 ```bash
-GOPROXY=https://proxy.golang.org go list -m github.com/Astraive/loxa/sdks/go@v1.0.0
+GOPROXY=https://proxy.golang.org go list -m github.com/astraive/loxa/sdks/go@v1.0.0
 ```
 
 If the proxy has not yet indexed the version, wait a few minutes and retry. You can also force a re-fetch:
 
 ```bash
-curl https://proxy.golang.org/github.com/Astraive/loxa/sdks/go/@v/v1.0.0.info
+curl https://proxy.golang.org/github.com/astraive/loxa/sdks/go/@v/v1.0.0.info
 ```
 
 ### 4. Verify Downstream Consumers
@@ -60,7 +60,7 @@ Confirm that the new version resolves cleanly in a fresh module:
 ```bash
 mkdir /tmp/loxa-verify && cd /tmp/loxa-verify
 go mod init verify
-go get github.com/Astraive/loxa/sdks/go@v1.0.0
+go get github.com/astraive/loxa/sdks/go@v1.0.0
 go build ./...
 ```
 

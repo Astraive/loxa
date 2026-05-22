@@ -132,6 +132,7 @@ src/loxa/testkit/__init__.py
 src/loxa/testkit/helpers.py
 src/loxa/utils/__init__.py
 src/loxa/utils/ndjson.py
+tests/test_alias.py
 tests/test_behavior.py
 tests/test_canonical_fields.py
 tests/test_collector_ack_fixture.py

@@ -12,9 +12,7 @@ pub fn assert_contains(encoded: &str, needle: &str) {
 /// Run a closure with a temporary memory sink and return captured event JSON strings.
 pub fn capture(f: impl FnOnce(&Logger)) -> Vec<String> {
     let store = MemorySinkStore::new();
-    let logger = Logger::new(
-        Config::test("capture").with_sink(SinkConfig::Memory(store.clone())),
-    );
+    let logger = Logger::new(Config::test("capture").with_sink(SinkConfig::Memory(store.clone())));
     f(&logger);
     let _ = logger.flush();
     store.events()
@@ -56,7 +54,10 @@ pub fn assert_has_checkpoint(encoded: &str, name: &str) {
                 .map(|n| n == name)
                 .unwrap_or(false)
         });
-        assert!(found, "assert_has_checkpoint: checkpoint \"{name}\" not found");
+        assert!(
+            found,
+            "assert_has_checkpoint: checkpoint \"{name}\" not found"
+        );
     } else {
         panic!("assert_has_checkpoint: no checkpoints array in event");
     }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	loxav1 "github.com/astraive/loxa-spec/proto/loxa/v1"
+	loxav1 "github.com/astraive/loxa/spec/proto/loxa/v1"
 	"github.com/astraive/loxa/loxa-cortex/internal/config"
 	"github.com/astraive/loxa/loxa-cortex/internal/eventbus"
 	"github.com/astraive/loxa/loxa-cortex/internal/eventconv"

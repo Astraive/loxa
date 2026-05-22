@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/astraive/loxa-go"
+	"github.com/astraive/loxa/sdks/go"
 )
 
 func main() {

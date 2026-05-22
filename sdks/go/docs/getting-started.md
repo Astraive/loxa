@@ -5,7 +5,7 @@ A 5-minute quickstart for the LOXA Go SDK. By the end you will have a working ap
 ## Install
 
 ```bash
-go get github.com/Astraive/loxa/sdks/go@latest
+go get github.com/astraive/loxa/sdks/go@latest
 ```
 
 ## Full Working Example
@@ -17,7 +17,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Astraive/loxa/sdks/go"
+	"github.com/astraive/loxa/sdks/go"
 )
 
 func main() {

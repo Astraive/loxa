@@ -27,7 +27,6 @@ CONTRACT = {
   ],
   "allowed_top_level_fields": [
     "attrs",
-    "checkpoints",
     "delivery_attempts",
     "deployment",
     "duration_ms",
@@ -176,33 +175,33 @@ CONTRACT = {
     "loose_mode": "normalize_then_use"
   },
   "strict_mode": {
-    "allow_unknown_top_level_fields": False,
-    "allow_aliases": False,
-    "enforce_required_fields": True,
-    "enforce_enums": True,
-    "enforce_status_codes": True,
-    "enforce_timestamps": True,
-    "normalize_aliases": False
+    "allow_unknown_top_level_fields": false,
+    "allow_aliases": false,
+    "enforce_required_fields": true,
+    "enforce_enums": true,
+    "enforce_status_codes": true,
+    "enforce_timestamps": true,
+    "normalize_aliases": false
   },
   "loose_mode": {
-    "allow_unknown_top_level_fields": True,
-    "allow_aliases": True,
-    "enforce_required_fields": True,
-    "enforce_enums": True,
-    "normalize_aliases": True
+    "allow_unknown_top_level_fields": true,
+    "allow_aliases": true,
+    "enforce_required_fields": true,
+    "enforce_enums": true,
+    "normalize_aliases": true
   },
   "validation_modes": {
     "strict": {
       "name": "strict",
       "description": "Reject unknown fields, aliases, and enforce all constraints",
-      "allow_aliases": False,
-      "allow_unknown_top_level_fields": False
+      "allow_aliases": false,
+      "allow_unknown_top_level_fields": false
     },
     "loose": {
       "name": "loose",
       "description": "Accept aliases and some unknown fields, normalize before validation",
-      "allow_aliases": True,
-      "allow_unknown_top_level_fields": True
+      "allow_aliases": true,
+      "allow_unknown_top_level_fields": true
     }
   },
   "wire_formats": [
@@ -302,11 +301,11 @@ CONTRACT = {
     }
   },
   "paths": {
-    "event_schema": "spec/schemas/json/event.schema.json",
-    "strict_schema": "spec/schemas/json/event.strict.schema.json",
-    "loose_schema": "spec/schemas/json/event.loose.schema.json",
-    "ingest_schema": "spec/schemas/json/ingest-envelope.schema.json",
-    "collector_response_schema": "spec/schemas/json/collector-response.schema.json",
+    "event_schema": "schema/event.schema.json",
+    "strict_schema": "schema/event.strict.schema.json",
+    "loose_schema": "schema/event.loose.schema.json",
+    "ingest_schema": "schema/ingest.schema.json",
+    "collector_response_schema": "schema/collector-response.schema.json",
     "manifest": "conformance/manifest.json"
   }
 }
@@ -323,16 +322,7 @@ ALLOWED_PARTIAL_REASONS = set(CONTRACT['enums']['partial_reasons'])
 ALLOWED_EVENT_STATES = set(CONTRACT['enums']['event_states'])
 ALLOWED_COLLECTOR_STATUSES = set(CONTRACT['collector_statuses'])
 NON_ACCEPTED_COLLECTOR_STATUSES = ALLOWED_COLLECTOR_STATUSES - {'accepted'}
-RFC3339_RE = re.compile(
-    r'^(?P<year>\d{4})-'
-    r'(?P<month>0[1-9]|1[0-2])-'
-    r'(?P<day>0[1-9]|[12]\d|3[01])T'
-    r'(?P<hour>[01]\d|2[0-3]):'
-    r'(?P<minute>[0-5]\d):'
-    r'(?P<second>[0-5]\d)'
-    r'(?P<fraction>\.\d+)?'
-    r'(?P<offset>Z|[+-](?:0\d|1[0-4]):[0-5]\d)$'
-)
+RFC3339_RE = re.compile(r'^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))$')
 
 @dataclass(slots=True)
 class ValidationError:
@@ -434,19 +424,16 @@ def normalize_event_aliases_in_place(payload: dict[str, Any]) -> bool:
     return changed
 
 def build_ingest_envelope(events: Iterable[dict[str, Any]], sdk_name: str, sdk_version: str, service: str) -> dict[str, Any]:
-    events_list: list[dict[str, Any]] = []
-    for event in events:
-        normalized, _ = normalize_event_aliases(event)
-        events_list.append(normalized)
+    events_list = list(events)
     return {'api_version': LOXA_INGEST_API_VERSION, 'source': {'sdk': sdk_name, 'version': sdk_version, 'service': service.strip() or _infer_service(events_list)}, 'events': events_list}
 
-def validate_event_payload(payload: dict[str, Any], strict: bool = False) -> None:
+def validate_event_payload(payload: dict[str, Any], strict: bool) -> None:
     errors = validate_event_payload_detailed(payload, strict)
     if errors:
         raise ValidationErrors(errors)
 
-def validate_event_payload_detailed(payload: dict[str, Any], strict: bool = False) -> list[ValidationError]:
-    normalized = dict(payload) if strict else normalize_event_aliases(payload)[0]
+def validate_event_payload_detailed(payload: dict[str, Any], strict: bool) -> list[ValidationError]:
+    normalized, _ = normalize_event_aliases(payload)
     errors: list[ValidationError] = []
     if strict:
         for key in normalized:
@@ -480,45 +467,17 @@ def validate_flexible_json_bytes(raw: bytes, strict: bool) -> None:
     try:
         payload = json.loads(trimmed)
     except json.JSONDecodeError:
-        errors: list[ValidationError] = []
-        for line_number, line in enumerate(trimmed.splitlines(), start=1):
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                item = json.loads(line)
-            except json.JSONDecodeError as exc:
-                errors.append(ValidationError(field=f'payload.line[{line_number}]', code='invalid_json', message=f'invalid NDJSON at line {line_number}: {exc.msg}'))
-                continue
-            if not isinstance(item, dict):
-                errors.append(ValidationError(field=f'payload.line[{line_number}]', code='invalid_payload', message='each NDJSON line must be a JSON object'))
-                continue
-            errors.extend(validate_event_payload_detailed(item, strict))
-        if errors:
-            raise ValidationErrors(errors)
+        for line in trimmed.splitlines():
+            if line.strip():
+                validate_event_payload(json.loads(line), strict)
         return
     if isinstance(payload, dict) and 'events' in payload and 'api_version' not in payload:
-        events = payload.get('events')
-        if not isinstance(events, list):
-            raise ValidationErrors([ValidationError(field='events', code='invalid_payload', message='field "events" must be an array')])
-        errors: list[ValidationError] = []
-        for idx, event in enumerate(events):
-            if not isinstance(event, dict):
-                errors.append(ValidationError(field=f'events[{idx}]', code='invalid_payload', message='event must be a JSON object'))
-                continue
-            errors.extend(validate_event_payload_detailed(event, strict))
-        if errors:
-            raise ValidationErrors(errors)
+        for event in payload['events']:
+            validate_event_payload(event, strict)
         return
     if isinstance(payload, list):
-        errors: list[ValidationError] = []
-        for idx, event in enumerate(payload):
-            if not isinstance(event, dict):
-                errors.append(ValidationError(field=f'payload[{idx}]', code='invalid_payload', message='event must be a JSON object'))
-                continue
-            errors.extend(validate_event_payload_detailed(event, strict))
-        if errors:
-            raise ValidationErrors(errors)
+        for event in payload:
+            validate_event_payload(event, strict)
         return
     if isinstance(payload, dict):
         validate_event_payload(payload, strict)
@@ -567,31 +526,5 @@ def _req_service(payload: dict[str, Any], errors: list[ValidationError]) -> None
 
 def _req_ts(payload: dict[str, Any], key: str, errors: list[ValidationError]) -> None:
     value = payload.get(key)
-    if not isinstance(value, str) or not _is_rfc3339_timestamp(value):
+    if not isinstance(value, str) or not RFC3339_RE.match(value.strip()):
         errors.append(ValidationError(field=key, code='invalid_rfc3339', message=f'field "{key}" must be RFC3339'))
-
-def _is_rfc3339_timestamp(value: str) -> bool:
-    match = RFC3339_RE.match(value.strip())
-    if match is None:
-        return False
-    try:
-        year = int(match.group('year'))
-        month = int(match.group('month'))
-        day = int(match.group('day'))
-        hour = int(match.group('hour'))
-        minute = int(match.group('minute'))
-        second = int(match.group('second'))
-    except (TypeError, ValueError):
-        return False
-    try:
-        import datetime
-        datetime.datetime(year, month, day, hour, minute, second)
-    except ValueError:
-        return False
-    offset = match.group('offset')
-    if offset != 'Z':
-        offset_hour = int(offset[1:3])
-        offset_minute = int(offset[4:6])
-        if offset_hour == 14 and offset_minute != 0:
-            return False
-    return True

@@ -74,11 +74,7 @@ impl IncidentGraph {
     }
 
     /// Extract subgraph around a node
-    pub fn extract_subgraph(
-        &self,
-        center: &str,
-        depth: usize,
-    ) -> IncidentGraph {
+    pub fn extract_subgraph(&self, center: &str, depth: usize) -> IncidentGraph {
         let mut subgraph = IncidentGraph::new();
         let mut visited = HashSet::new();
         let mut queue: Vec<(String, usize)> = vec![(center.to_string(), 0)];
@@ -119,14 +115,16 @@ impl Default for IncidentGraph {
 /// Compute graph signature - topology pattern without exact service names
 pub fn compute_graph_signature(graph: &IncidentGraph) -> String {
     let mut pattern = String::new();
-    let mut node_types: Vec<String> = graph.nodes()
+    let mut node_types: Vec<String> = graph
+        .nodes()
         .values()
         .map(|n| format!("{:?}", n.node_type))
         .collect();
     node_types.sort();
     pattern.push_str(&node_types.join(":"));
 
-    let mut edge_types: Vec<String> = graph.edges()
+    let mut edge_types: Vec<String> = graph
+        .edges()
         .iter()
         .map(|e| format!("{:?}", e.edge_type))
         .collect();
@@ -192,13 +190,15 @@ pub fn extract_causality_pattern(graph: &IncidentGraph) -> Vec<String> {
     let mut pattern = Vec::new();
 
     // Find deploy nodes
-    let deploys: Vec<_> = graph.nodes()
+    let deploys: Vec<_> = graph
+        .nodes()
         .values()
         .filter(|n| matches!(n.node_type, NodeType::Deploy))
         .collect();
 
     // Find symptom nodes (metrics, logs)
-    let _symptoms: Vec<_> = graph.nodes()
+    let _symptoms: Vec<_> = graph
+        .nodes()
         .values()
         .filter(|n| matches!(n.node_type, NodeType::Metric | NodeType::Log))
         .collect();
@@ -217,7 +217,8 @@ pub fn extract_causality_pattern(graph: &IncidentGraph) -> Vec<String> {
     }
 
     // Find remediation
-    let remediations: Vec<_> = graph.nodes()
+    let remediations: Vec<_> = graph
+        .nodes()
         .values()
         .filter(|n| matches!(n.node_type, NodeType::Incident))
         .collect();
@@ -266,7 +267,7 @@ mod tests {
         graph.add_node("deploy1".to_string(), NodeType::Deploy);
         graph.add_node("metric1".to_string(), NodeType::Metric);
 
-        graph.add_edge(Edge { 
+        graph.add_edge(Edge {
             from: "deploy1".to_string(),
             to: "api".to_string(),
             edge_type: EdgeType::DeployedBefore,

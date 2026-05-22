@@ -214,9 +214,9 @@
 ## Support & Resources
 
 - **Documentation**: https://docs.loxa.dev
-- **GitHub**: https://github.com/Astraive/loxa
-- **Issues**: https://github.com/Astraive/loxa/issues
-- **Discussions**: https://github.com/Astraive/loxa/discussions
+- **GitHub**: https://github.com/astraive/loxa
+- **Issues**: https://github.com/astraive/loxa/issues
+- **Discussions**: https://github.com/astraive/loxa/discussions
 
 ---
 

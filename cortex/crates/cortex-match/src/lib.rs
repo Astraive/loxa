@@ -1,5 +1,5 @@
 //! cortex-match: High-performance incident shape matching for LOXA Cortex
-//! 
+//!
 //! CPU-heavy pure algorithm work:
 //! - incident shape similarity scoring
 //! - top-k similar incident search  
@@ -9,15 +9,15 @@
 //! - fast pattern comparison
 //! - approximate matching
 
+pub mod graph;
 pub mod signature;
 pub mod similarity;
 pub mod topk;
-pub mod graph;
 
-pub use signature::{Signature, SymptomClass, Event, normalize_signature, compute_shape_hash};
+pub use graph::{Edge, EdgeType, IncidentGraph, Node, NodeType};
+pub use signature::{compute_shape_hash, normalize_signature, Event, Signature, SymptomClass};
 pub use similarity::ScoredMatch;
 pub use topk::TopK;
-pub use graph::{IncidentGraph, Node, NodeType, Edge, EdgeType};
 
 /// Main matcher interface - matches incidents by shape
 pub struct Matcher {
@@ -26,9 +26,7 @@ pub struct Matcher {
 
 impl Matcher {
     pub fn new() -> Self {
-        Self {
-            topk: TopK::new(5),
-        }
+        Self { topk: TopK::new(5) }
     }
 
     pub fn with_k(mut self, k: usize) -> Self {
@@ -57,7 +55,12 @@ impl Matcher {
     }
 
     /// Find top-k using a specific metric
-    pub fn search(&self, query: &Signature, candidates: &[Signature], metric: &str) -> Vec<ScoredMatch> {
+    pub fn search(
+        &self,
+        query: &Signature,
+        candidates: &[Signature],
+        metric: &str,
+    ) -> Vec<ScoredMatch> {
         let tk = TopK::new(self.topk.k()).with_metric(metric);
         tk.search(query, candidates)
     }
@@ -71,9 +74,9 @@ impl Default for Matcher {
 
 /// Convenient function for matching a query incident against candidates
 /// Returns top-k closest matches with similarity scores
-/// 
+///
 /// # Example
-/// 
+///
 /// ```ignore
 /// let query = normalize_signature(&events, &services);
 /// let candidates = load_signatures(); // from DB
@@ -82,11 +85,7 @@ impl Default for Matcher {
 ///     println!("{}: {:.2}", m.signature_id, m.similarity);
 /// }
 /// ```
-pub fn match_incident(
-    query: &Signature,
-    candidates: &[Signature],
-    k: usize,
-) -> Vec<ScoredMatch> {
+pub fn match_incident(query: &Signature, candidates: &[Signature], k: usize) -> Vec<ScoredMatch> {
     let topk = TopK::new(k).with_metric("shape");
     topk.search(query, candidates)
 }
@@ -151,9 +150,21 @@ mod tests {
     fn test_match_incident() {
         let query = normalize_signature(
             &[
-                signature::Event { kind: "deploy".to_string(), service: None, timestamp_ms: 0 },
-                signature::Event { kind: "latency_spike".to_string(), service: None, timestamp_ms: 5000 },
-                signature::Event { kind: "timeout".to_string(), service: None, timestamp_ms: 10000 },
+                signature::Event {
+                    kind: "deploy".to_string(),
+                    service: None,
+                    timestamp_ms: 0,
+                },
+                signature::Event {
+                    kind: "latency_spike".to_string(),
+                    service: None,
+                    timestamp_ms: 5000,
+                },
+                signature::Event {
+                    kind: "timeout".to_string(),
+                    service: None,
+                    timestamp_ms: 10000,
+                },
             ],
             &["payments-svc".to_string(), "db".to_string()],
         );
@@ -162,9 +173,21 @@ mod tests {
             .map(|_| {
                 normalize_signature(
                     &[
-                        signature::Event { kind: "deploy".to_string(), service: None, timestamp_ms: 0 },
-                        signature::Event { kind: "latency_spike".to_string(), service: None, timestamp_ms: 5000 },
-                        signature::Event { kind: "timeout".to_string(), service: None, timestamp_ms: 10000 },
+                        signature::Event {
+                            kind: "deploy".to_string(),
+                            service: None,
+                            timestamp_ms: 0,
+                        },
+                        signature::Event {
+                            kind: "latency_spike".to_string(),
+                            service: None,
+                            timestamp_ms: 5000,
+                        },
+                        signature::Event {
+                            kind: "timeout".to_string(),
+                            service: None,
+                            timestamp_ms: 10000,
+                        },
                     ],
                     &["billing-svc".to_string(), "postgres".to_string()],
                 )
@@ -179,8 +202,16 @@ mod tests {
     fn test_topology_independent() {
         let query = normalize_signature(
             &[
-                signature::Event { kind: "deploy".to_string(), service: None, timestamp_ms: 0 },
-                signature::Event { kind: "latency_spike".to_string(), service: None, timestamp_ms: 5000 },
+                signature::Event {
+                    kind: "deploy".to_string(),
+                    service: None,
+                    timestamp_ms: 0,
+                },
+                signature::Event {
+                    kind: "latency_spike".to_string(),
+                    service: None,
+                    timestamp_ms: 5000,
+                },
             ],
             &["payments-svc".to_string()],
         );
@@ -188,15 +219,31 @@ mod tests {
         let candidates = vec![
             normalize_signature(
                 &[
-                    signature::Event { kind: "deploy".to_string(), service: None, timestamp_ms: 0 },
-                    signature::Event { kind: "latency_spike".to_string(), service: None, timestamp_ms: 5000 },
+                    signature::Event {
+                        kind: "deploy".to_string(),
+                        service: None,
+                        timestamp_ms: 0,
+                    },
+                    signature::Event {
+                        kind: "latency_spike".to_string(),
+                        service: None,
+                        timestamp_ms: 5000,
+                    },
                 ],
                 &["billing-svc".to_string()],
             ),
             normalize_signature(
                 &[
-                    signature::Event { kind: "deploy".to_string(), service: None, timestamp_ms: 0 },
-                    signature::Event { kind: "error_rate".to_string(), service: None, timestamp_ms: 5000 },
+                    signature::Event {
+                        kind: "deploy".to_string(),
+                        service: None,
+                        timestamp_ms: 0,
+                    },
+                    signature::Event {
+                        kind: "error_rate".to_string(),
+                        service: None,
+                        timestamp_ms: 5000,
+                    },
                 ],
                 &["invoice-svc".to_string()],
             ),

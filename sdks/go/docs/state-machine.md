@@ -264,7 +264,7 @@ package main
 import (
     "context"
     "errors"
-    "github.com/Astraive/loxa/sdks/go"
+    "github.com/astraive/loxa/sdks/go"
 )
 
 func main() {

@@ -142,8 +142,8 @@ loxa query --sql "SELECT * FROM events LIMIT 10"
 
 ### From Binary
 ```bash
-go install github.com/Astraive/loxa/collector/cmd/loxa-collector@v1.0.0
-go install github.com/Astraive/loxa/cli/cmd/loxa@v1.0.0
+go install github.com/astraive/loxa/collector/cmd/loxa-collector@v1.0.0
+go install github.com/astraive/loxa/cli/cmd/loxa@v1.0.0
 ```
 
 ### From Docker
@@ -160,7 +160,7 @@ helm install loxa loxa/loxa --version 1.0.0
 
 ## SDK Versions
 
-- **Go**: `github.com/Astraive/loxa/sdks/go v1.0.0`
+- **Go**: `github.com/astraive/loxa/sdks/go v1.0.0`
 - **Python**: `loxa==1.0.0` (PyPI)
 - **Rust**: `loxa = "1.0.0"` (Crates.io)
 
@@ -192,10 +192,10 @@ None (initial release)
 
 ## Support & Documentation
 
-- **GitHub**: https://github.com/Astraive/loxa
+- **GitHub**: https://github.com/astraive/loxa
 - **Documentation**: https://docs.loxa.dev
-- **Issues**: https://github.com/Astraive/loxa/issues
-- **Discussions**: https://github.com/Astraive/loxa/discussions
+- **Issues**: https://github.com/astraive/loxa/issues
+- **Discussions**: https://github.com/astraive/loxa/discussions
 
 ## Acknowledgments
 

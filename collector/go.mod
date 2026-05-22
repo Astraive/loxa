@@ -2,13 +2,13 @@ module github.com/astraive/loxa-collector
 
 go 1.25.0
 
-replace github.com/astraive/loxa-spec => ../spec
+replace github.com/astraive/loxa/spec => ../spec
 
 require (
 	cloud.google.com/go/storage v1.62.1
 	github.com/ClickHouse/clickhouse-go/v2 v2.46.0
 	github.com/alicebob/miniredis/v2 v2.38.0
-	github.com/astraive/loxa-spec v0.0.0
+	github.com/astraive/loxa/spec v0.0.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.17
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.16
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.101.0

@@ -3,7 +3,7 @@ package config
 import (
 	"context"
 
-	"github.com/astraive/loxa-go/src/core"
+	"github.com/astraive/loxa/sdks/go/src/core"
 )
 
 // Production returns a Config suitable for production use.

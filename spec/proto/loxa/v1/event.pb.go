@@ -670,7 +670,7 @@ const file_loxa_v1_event_proto_rawDesc = "" +
 	"\x15EVENT_OUTCOME_TIMEOUT\x10\x03\x12\x1b\n" +
 	"\x17EVENT_OUTCOME_CANCELLED\x10\x04\x12\x1a\n" +
 	"\x16EVENT_OUTCOME_REJECTED\x10\x05\x12\x19\n" +
-	"\x15EVENT_OUTCOME_UNKNOWN\x10\x06B4Z2github.com/astraive/loxa-spec/proto/loxa/v1;loxav1b\x06proto3"
+	"\x15EVENT_OUTCOME_UNKNOWN\x10\x06B4Z2github.com/astraive/loxa/spec/proto/loxa/v1;loxav1b\x06proto3"
 
 var (
 	file_loxa_v1_event_proto_rawDescOnce sync.Once

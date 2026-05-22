@@ -15,7 +15,7 @@ import (
 	processing "github.com/astraive/loxa-collector/internal/processing"
 	serverruntime "github.com/astraive/loxa-collector/internal/server"
 	"github.com/astraive/loxa-collector/internal/validation"
-	speccontract "github.com/astraive/loxa-spec/generated/go/contract"
+	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
 
 func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {

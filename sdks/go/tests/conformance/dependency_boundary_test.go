@@ -7,7 +7,7 @@ import (
 )
 
 func TestRootModuleDependencyBoundary(t *testing.T) {
-	cmd := exec.Command("go", "list", "-deps", "github.com/astraive/loxa-go")
+	cmd := exec.Command("go", "list", "-deps", "github.com/astraive/loxa/sdks/go")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("go list deps failed: %v\n%s", err, string(out))

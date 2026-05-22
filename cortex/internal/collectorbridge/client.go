@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	transportcontracts "github.com/astraive/loxa-spec/transport/contracts"
+	transportcontracts "github.com/astraive/loxa/spec/transport/contracts"
 	"github.com/astraive/loxa/loxa-cortex/internal/config"
 	"github.com/astraive/loxa/loxa-cortex/internal/eventconv"
 	"github.com/astraive/loxa/loxa-cortex/internal/models"

@@ -111,7 +111,7 @@ const file_loxa_v1_collector_proto_rawDesc = "" +
 	"\x06status\x18\x01 \x01(\tR\x06status2\xab\x01\n" +
 	"\x10CollectorService\x12K\n" +
 	"\x06Health\x12\x1f.loxa.v1.CollectorStatusRequest\x1a .loxa.v1.CollectorStatusResponse\x12J\n" +
-	"\x05Ready\x12\x1f.loxa.v1.CollectorStatusRequest\x1a .loxa.v1.CollectorStatusResponseB4Z2github.com/astraive/loxa-spec/proto/loxa/v1;loxav1b\x06proto3"
+	"\x05Ready\x12\x1f.loxa.v1.CollectorStatusRequest\x1a .loxa.v1.CollectorStatusResponseB4Z2github.com/astraive/loxa/spec/proto/loxa/v1;loxav1b\x06proto3"
 
 var (
 	file_loxa_v1_collector_proto_rawDescOnce sync.Once

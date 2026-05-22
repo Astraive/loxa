@@ -11,8 +11,7 @@ pub(crate) fn load_env_config() -> FileConfig {
         async_enabled: env_bool("LOXA_ASYNC_ENABLED"),
         collector_endpoint: env_string("LOXA_COLLECTOR_ENDPOINT")
             .or_else(|| env_string("LOXA_COLLECTOR_URL")),
-        api_key: env_string("LOXA_API_KEY")
-            .or_else(|| env_string("LOXA_COLLECTOR_API_KEY")),
+        api_key: env_string("LOXA_API_KEY").or_else(|| env_string("LOXA_COLLECTOR_API_KEY")),
         duplicate_policy: env_string("LOXA_DUPLICATE_POLICY"),
         max_event_bytes: env_usize("LOXA_MAX_EVENT_BYTES"),
     }

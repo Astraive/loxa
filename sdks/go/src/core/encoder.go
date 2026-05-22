@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/astraive/loxa-go/src/internal/jsonenc"
-	"github.com/astraive/loxa-go/src/internal/pool"
+	"github.com/astraive/loxa/sdks/go/src/internal/jsonenc"
+	"github.com/astraive/loxa/sdks/go/src/internal/pool"
 )
 
 // TimeFormat controls how timestamps are serialised.

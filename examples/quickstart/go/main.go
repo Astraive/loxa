@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	loxa "github.com/astraive/loxa-go"
+	loxa "github.com/astraive/loxa/sdks/go"
 )
 
 func main() {

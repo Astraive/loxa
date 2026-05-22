@@ -1,6 +1,6 @@
 # LOXA-Go
 
-[![CI](https://github.com/Astraive/loxa/actions/workflows/sdks-go-ci.yml/badge.svg)](https://github.com/Astraive/loxa/actions/workflows/sdks-go-ci.yml)
+[![CI](https://github.com/astraive/loxa/actions/workflows/sdks-go-ci.yml/badge.svg)](https://github.com/astraive/loxa/actions/workflows/sdks-go-ci.yml)
 
 **Status**: 🟢 **STABLE** (v1.0.0) - Production-ready, collector-first stable-v1 SDK
 
@@ -24,15 +24,15 @@ For the operations CLI, see `cli/`.
 Core:
 
 ```bash
-go get github.com/Astraive/loxa/sdks/go
+go get github.com/astraive/loxa/sdks/go
 ```
 
 Optional modules:
 
 ```bash
-go get github.com/Astraive/loxa/sdks/go/middleware
-go get github.com/Astraive/loxa/sdks/go/integrations
-go get github.com/Astraive/loxa/sdks/go/sinks/httpbatch
+go get github.com/astraive/loxa/sdks/go/middleware
+go get github.com/astraive/loxa/sdks/go/integrations
+go get github.com/astraive/loxa/sdks/go/sinks/httpbatch
 ```
 
 ## Quick Start
@@ -43,7 +43,7 @@ package main
 import (
 	"context"
 
-	"github.com/Astraive/loxa/sdks/go"
+	"github.com/astraive/loxa/sdks/go"
 )
 
 func main() {
@@ -107,11 +107,11 @@ For cross-language stable-v1 parity, treat `docs/sdk-parity-manifest.json` as th
 
 ## Package Boundaries
 
-- `github.com/Astraive/loxa/sdks/go`: lifecycle, attrs, config, schema, sampler, security, core sinks.
-- `github.com/Astraive/loxa/sdks/go/middleware/*`: HTTP/RPC adapters.
-- `github.com/Astraive/loxa/sdks/go/integrations/*`: slog/zap/zerolog/otel bridges.
-- `github.com/Astraive/loxa/sdks/go/sinks/httpbatch`: collector HTTP batch transport.
-- `github.com/Astraive/loxa/sdks/go/testkit`: capture/assert helpers for tests.
+- `github.com/astraive/loxa/sdks/go`: lifecycle, attrs, config, schema, sampler, security, core sinks.
+- `github.com/astraive/loxa/sdks/go/middleware/*`: HTTP/RPC adapters.
+- `github.com/astraive/loxa/sdks/go/integrations/*`: slog/zap/zerolog/otel bridges.
+- `github.com/astraive/loxa/sdks/go/sinks/httpbatch`: collector HTTP batch transport.
+- `github.com/astraive/loxa/sdks/go/testkit`: capture/assert helpers for tests.
 
 Repository boundaries:
 
@@ -146,8 +146,8 @@ Heavy production sinks such as Kafka, ClickHouse, Postgres, DuckDB, OTLP, S3, GC
 
 ## Breaking Changes in Current Refactor
 
-- Root testing helpers moved to `github.com/Astraive/loxa/sdks/go/testkit`.
-- Root `net/http` middleware wrapper removed; use `github.com/Astraive/loxa/sdks/go/middleware/nethttp`.
+- Root testing helpers moved to `github.com/astraive/loxa/sdks/go/testkit`.
+- Root `net/http` middleware wrapper removed; use `github.com/astraive/loxa/sdks/go/middleware/nethttp`.
 
 ## Current Focus
 

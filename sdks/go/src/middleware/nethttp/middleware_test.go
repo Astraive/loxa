@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/astraive/loxa-go"
+	"github.com/astraive/loxa/sdks/go"
 )
 
 func TestMiddlewarePanicBeforeWriteReturns500AndErrorEvent(t *testing.T) {

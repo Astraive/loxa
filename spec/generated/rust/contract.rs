@@ -21,7 +21,6 @@ pub const CONTRACT_JSON: &str = r#"{
   ],
   \"allowed_top_level_fields\": [
     \"attrs\",
-    \"checkpoints\",
     \"delivery_attempts\",
     \"deployment\",
     \"duration_ms\",
@@ -296,11 +295,11 @@ pub const CONTRACT_JSON: &str = r#"{
     }
   },
   \"paths\": {
-    \"event_schema\": \"spec/schemas/json/event.schema.json\",
-    \"strict_schema\": \"spec/schemas/json/event.strict.schema.json\",
-    \"loose_schema\": \"spec/schemas/json/event.loose.schema.json\",
-    \"ingest_schema\": \"spec/schemas/json/ingest-envelope.schema.json\",
-    \"collector_response_schema\": \"spec/schemas/json/collector-response.schema.json\",
+    \"event_schema\": \"schema/event.schema.json\",
+    \"strict_schema\": \"schema/event.strict.schema.json\",
+    \"loose_schema\": \"schema/event.loose.schema.json\",
+    \"ingest_schema\": \"schema/ingest.schema.json\",
+    \"collector_response_schema\": \"schema/collector-response.schema.json\",
     \"manifest\": \"conformance/manifest.json\"
   }
 }"#;
