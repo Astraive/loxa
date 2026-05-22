@@ -170,7 +170,7 @@ impl CollectorHttpClient {
         Self {
             endpoint: endpoint.into(),
             api_key: None,
-            auth_header: "x-loxa-api-key".to_string(),
+            auth_header: "Authorization".to_string(),
             timeout_ms: 2_000,
             sdk_name: "loxa-rs".to_string(),
             sdk_version: "1.0.0".to_string(),

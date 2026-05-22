@@ -126,7 +126,12 @@ fn post_http_batch_with_ack(
         .timeout(std::time::Duration::from_millis(client.timeout_ms));
 
     if let Some(api_key) = &client.api_key {
-        request = request.set(&client.auth_header, api_key);
+        let auth_value = if client.auth_header.eq_ignore_ascii_case("authorization") {
+            format!("Bearer {}", api_key)
+        } else {
+            api_key.clone()
+        };
+        request = request.set(&client.auth_header, &auth_value);
     }
     let retry_policy = RetryPolicy {
         max_attempts: 3,
@@ -227,7 +232,12 @@ fn post_http_ndjson_with_ack(
         .timeout(std::time::Duration::from_millis(client.timeout_ms));
 
     if let Some(api_key) = &client.api_key {
-        request = request.set(&client.auth_header, api_key);
+        let auth_value = if client.auth_header.eq_ignore_ascii_case("authorization") {
+            format!("Bearer {}", api_key)
+        } else {
+            api_key.clone()
+        };
+        request = request.set(&client.auth_header, &auth_value);
     }
     let retry_policy = RetryPolicy {
         max_attempts: 3,

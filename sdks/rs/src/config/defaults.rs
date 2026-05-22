@@ -56,6 +56,7 @@ impl Config {
             strict: false,
             async_enabled: false,
             collector_endpoint: String::new(),
+            api_key: String::new(),
             duplicate_policy: "canonical_wins".to_string(),
             max_event_bytes: 256 * 1024,
             sampler: SamplerConfig::All,

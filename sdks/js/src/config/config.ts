@@ -31,6 +31,7 @@ export interface Config {
   version: string;
   environment: string;
   collectorUrl: string;
+  apiKey: string;
   sink: Sink | null;
   sinks: Sink[];
   sampler: Sampler;
@@ -58,6 +59,7 @@ export function defaultConfig(): Config {
     version: '',
     environment: 'development',
     collectorUrl: '',
+    apiKey: (typeof process !== 'undefined' && process.env?.LOXA_API_KEY) || '',
     sink: null,
     sinks: [],
     sampler: sampleAll(),
@@ -119,6 +121,7 @@ export interface ConfigOptions {
   version?: string;
   environment?: string;
   collectorUrl?: string;
+  apiKey?: string;
   sink?: Sink;
   sampler?: Sampler;
   redactor?: Redactor;
@@ -144,6 +147,7 @@ export class ConfigBuilder implements Config {
   version: string;
   environment: string;
   collectorUrl: string;
+  apiKey: string;
   sink: Sink | null;
   sinks: Sink[];
   sampler: Sampler;
@@ -168,6 +172,7 @@ export class ConfigBuilder implements Config {
     this.version = base.version;
     this.environment = base.environment;
     this.collectorUrl = base.collectorUrl;
+    this.apiKey = base.apiKey;
     this.sink = base.sink;
     this.sinks = base.sinks;
     this.sampler = base.sampler;
@@ -192,6 +197,7 @@ export class ConfigBuilder implements Config {
   withVersion(version: string): this { this.version = version; return this; }
   withEnvironment(environment: string): this { this.environment = environment; return this; }
   withCollectorUrl(url: string): this { this.collectorUrl = url; return this; }
+  withApiKey(apiKey: string): this { this.apiKey = apiKey.trim(); return this; }
   withSink(sink: Sink): this { this.sink = sink; return this; }
   withSinks(...sinks: Sink[]): this { this.sinks = sinks; return this; }
   withSampler(sampler: Sampler): this { this.sampler = sampler; return this; }

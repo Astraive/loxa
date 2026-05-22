@@ -69,13 +69,36 @@ func main() {
 
 ## Connecting to a Collector
 
-In production, send events to the LOXA collector via HTTPBatchSink:
+In production, send events to the LOXA collector with authentication:
 
 ```go
 cfg := loxa.Production("checkout-service").
-    WithSink(loxa.HTTPBatchSink("http://collector:9090/v1/events")).
+    WithAPIKey(os.Getenv("LOXA_API_KEY")).
+    WithCollectorEndpoint("https://collector.loxa.dev").
     WithSampler(loxa.SampleErrors())
 ```
+
+The SDK automatically sets `Authorization: Bearer <key>`, `X-Loxa-Service`, and `X-Loxa-Env` headers.
+
+### Authentication
+
+| Config Field | Env Var | Description |
+|---|---|---|
+| `APIKey` | `LOXA_API_KEY` | Ingest API key (`lx_sec_live_k_xxx_yyyy`) |
+| `Insecure` | -- | Allow plain HTTP (local dev only) |
+
+```go
+// Production (HTTPS required)
+cfg := loxa.Production("my-service").
+    WithAPIKey("lx_sec_live_k_xxx_yyyy")
+
+// Local dev (HTTP allowed)
+cfg := loxa.Dev("my-service").
+    WithAPIKey("lx_local_dev_mytoken").
+    WithInsecure(true)
+```
+
+See [Security](../../docs/security.md) for key types, RBAC roles, and ABAC restrictions.
 
 ## Event Lifecycle
 

@@ -69,7 +69,7 @@ class Logger:
         if any(isinstance(sink, HTTPBatchSink) for sink in self._config.sinks):
             return
         if not self._config.sinks or all(self._is_default_terminal_sink(sink) for sink in self._config.sinks):
-            self._config = replace(self._config, sinks=[HTTPBatchSink(endpoint, service=self._config.service)])
+            self._config = replace(self._config, sinks=[HTTPBatchSink(endpoint, api_key=self._config.api_key, service=self._config.service)])
 
     @staticmethod
     def _is_default_terminal_sink(sink: object) -> bool:

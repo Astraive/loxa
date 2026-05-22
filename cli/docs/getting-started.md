@@ -19,18 +19,41 @@ go install github.com/astraive/loxa/cli/cmd/loxa@latest
 
 ## Configure
 
-The CLI reads configuration from `loxa-cli.defaults.yaml` in the current directory or the path specified by `--config`. The most important setting is the collector URL.
+The CLI reads configuration from `loxa-cli.defaults.yaml` in the current directory or the path specified by `--config`. The most important settings are the collector URL and API key.
 
 ```yaml
 collector:
-  url: http://localhost:9090
+  url: https://collector.loxa.dev
 ```
 
-You can also set the collector URL via environment variable:
+Set the collector URL and API key via environment variables:
 
 ```bash
-export LOXA_COLLECTOR_URL=http://localhost:9090
+export LOXA_COLLECTOR_URL=https://collector.loxa.dev
+export LOXA_API_KEY=lx_sec_live_k_xxx_yyyy
 ```
+
+### Authentication
+
+The CLI authenticates with the collector using `Authorization: Bearer <key>`. Set `LOXA_API_KEY` env var or pass `--api-key` flag.
+
+| Env Var | Description |
+|---|---|
+| `LOXA_API_KEY` | Primary ingest API key (works for all services) |
+| `LOXA_COLLECTOR_API_KEY` | Collector-specific key (fallback) |
+| `LOXA_CORTEX_API_KEY` | Cortex-specific key (fallback) |
+
+```bash
+# Production
+export LOXA_API_KEY=lx_sec_live_k_xxx_yyyy
+loxa query "SELECT * FROM events LIMIT 10"
+
+# Local dev (no auth)
+export LOXA_COLLECTOR_URL=http://localhost:9090
+loxa status
+```
+
+See [Security](../../docs/security.md) for key types and RBAC roles.
 
 ## First Commands
 

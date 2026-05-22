@@ -62,16 +62,36 @@ loxa.shutdown()
 
 ## Connecting to a Collector
 
-In production, send events to the LOXA collector via HTTPBatchSink:
+In production, send events to the LOXA collector with authentication:
 
 ```python
+import os
 cfg = (
     loxa.production("checkout-service")
-    .with_sink(loxa.HTTPBatchSink("http://collector:9090/v1/events"))
+    .with_api_key(os.environ["LOXA_API_KEY"])
+    .with_collector_endpoint("https://collector.loxa.dev")
     .with_sampler(loxa.SampleErrors())
 )
 logger = loxa.configure(cfg)
 ```
+
+The SDK automatically sets `Authorization: Bearer <key>` headers.
+
+### Authentication
+
+| Config Field | Env Var | Description |
+|---|---|---|
+| `api_key` | `LOXA_API_KEY` | Ingest API key (`lx_sec_live_k_xxx_yyyy`) |
+
+```python
+# Production
+cfg = loxa.production("my-service").with_api_key("lx_sec_live_k_xxx_yyyy")
+
+# Local dev
+cfg = loxa.dev("my-service").with_api_key("lx_local_dev_mytoken")
+```
+
+See [Security](../../docs/security.md) for key types and RBAC roles.
 
 ## Using Logger Directly
 

@@ -28,7 +28,7 @@ class HTTPBatchSink:
 
     endpoint: str
     api_key: str = ""
-    auth_header: str = "x-loxa-api-key"
+    auth_header: str = "Authorization"
     sdk_name: str = "loxa-py"
     sdk_version: str = "1.0.0"
     service: str = ""
@@ -60,7 +60,10 @@ class HTTPBatchSink:
             headers["content-encoding"] = "gzip"
 
         if self.api_key:
-            headers[self.auth_header] = self.api_key
+            if self.auth_header.lower() == "authorization":
+                headers[self.auth_header] = f"Bearer {self.api_key}"
+            else:
+                headers[self.auth_header] = self.api_key
 
         req = urllib.request.Request(self.endpoint, data=payload, headers=headers, method="POST")
         last_error: Exception | None = None

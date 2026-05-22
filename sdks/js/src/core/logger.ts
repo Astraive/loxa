@@ -19,6 +19,7 @@ function resolveSink(cfg: Config): Sink | null {
   if (cfg.collectorUrl) {
     return new HTTPBatchSink({
       endpoint: cfg.collectorUrl,
+      apiKey: cfg.apiKey,
       service: cfg.service,
       batchSize: cfg.batchSize,
       flushIntervalMs: cfg.flushIntervalMs,

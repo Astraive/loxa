@@ -506,38 +506,21 @@ func applyAPIKeyAuth(req *http.Request) {
 	if apiKey == "" {
 		return
 	}
-	header := strings.TrimSpace(os.Getenv("LOXA_API_KEY_HEADER"))
-	if header == "" {
-		switch {
-		case strings.Contains(strings.ToLower(req.URL.Host), "cortex"):
-			header = strings.TrimSpace(os.Getenv("LOXA_CORTEX_API_KEY_HEADER"))
-		default:
-			header = strings.TrimSpace(os.Getenv("LOXA_COLLECTOR_API_KEY_HEADER"))
-		}
-	}
-	if header == "" {
-		header = "X-API-Key"
-	}
-	req.Header.Set(header, apiKey)
+	// Use Authorization: Bearer format (matches collector auth middleware)
+	req.Header.Set("Authorization", "Bearer "+apiKey)
 }
 
 func getConfiguredAPIKey(host string) string {
-	host = strings.ToLower(strings.TrimSpace(host))
-	if strings.Contains(host, "collector") {
-		return strings.TrimSpace(os.Getenv("LOXA_COLLECTOR_API_KEY"))
+	// Primary: LOXA_API_KEY (works for all services)
+	if apiKey := strings.TrimSpace(os.Getenv("LOXA_API_KEY")); apiKey != "" {
+		return apiKey
 	}
+	// Fallback: service-specific keys
+	host = strings.ToLower(strings.TrimSpace(host))
 	if strings.Contains(host, "cortex") {
 		return strings.TrimSpace(os.Getenv("LOXA_CORTEX_API_KEY"))
 	}
-	if strings.Contains(host, "127.0.0.1") || strings.Contains(host, "localhost") {
-		if apiKey := strings.TrimSpace(os.Getenv("LOXA_COLLECTOR_API_KEY")); apiKey != "" {
-			return apiKey
-		}
-		if apiKey := strings.TrimSpace(os.Getenv("LOXA_CORTEX_API_KEY")); apiKey != "" {
-			return apiKey
-		}
-	}
-	return strings.TrimSpace(os.Getenv("LOXA_API_KEY"))
+	return strings.TrimSpace(os.Getenv("LOXA_COLLECTOR_API_KEY"))
 }
 
 func runGoCommand(ctx context.Context, repoPath, packagePath string, args []string) error {

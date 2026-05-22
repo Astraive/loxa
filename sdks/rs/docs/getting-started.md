@@ -59,17 +59,38 @@ fn main() {
 
 ## Connecting to a Collector
 
-In production, send events to the LOXA collector:
+In production, send events to the LOXA collector with authentication:
 
 ```rust
-use loxa::{Config, Logger, HTTPBatchSink, SampleErrors};
+use loxa::{Config, Logger, SampleErrors};
 
 let logger = Logger::new(
     Config::production("checkout-service")
-        .with_sink(HTTPBatchSink("http://collector:9090/v1/events"))
+        .with_collector_endpoint("https://collector.loxa.dev")
+        .with_api_key(std::env::var("LOXA_API_KEY").unwrap_or_default())
         .with_sampler(SampleErrors()),
 );
 ```
+
+The SDK automatically sets `Authorization: Bearer <key>` headers.
+
+### Authentication
+
+| Config Field | Env Var | Description |
+|---|---|---|
+| `api_key` | `LOXA_API_KEY` | Ingest API key (`lx_sec_live_k_xxx_yyyy`) |
+
+```rust
+// Production
+Config::production("my-service")
+    .with_api_key("lx_sec_live_k_xxx_yyyy")
+
+// Local dev
+Config::dev("my-service")
+    .with_api_key("lx_local_dev_mytoken")
+```
+
+See [Security](../../docs/security.md) for key types and RBAC roles.
 
 ## Using the Global Default Logger
 

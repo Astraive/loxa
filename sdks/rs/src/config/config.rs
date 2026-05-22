@@ -39,6 +39,7 @@ pub struct Config {
     pub strict: bool,
     pub async_enabled: bool,
     pub collector_endpoint: String,
+    pub api_key: String,
     pub duplicate_policy: String,
     pub max_event_bytes: usize,
     pub sampler: SamplerConfig,
@@ -90,6 +91,7 @@ pub(crate) struct FileConfig {
     pub(crate) strict: Option<bool>,
     pub(crate) async_enabled: Option<bool>,
     pub(crate) collector_endpoint: Option<String>,
+    pub(crate) api_key: Option<String>,
     pub(crate) duplicate_policy: Option<String>,
     pub(crate) max_event_bytes: Option<usize>,
 }
@@ -237,6 +239,11 @@ impl Config {
         self
     }
 
+    pub fn with_api_key(mut self, api_key: impl Into<String>) -> Self {
+        self.api_key = api_key.into();
+        self
+    }
+
     pub fn with_duplicate_policy(mut self, policy: impl Into<String>) -> Self {
         self.duplicate_policy = policy.into();
         self
@@ -344,6 +351,9 @@ impl FileConfig {
         if let Some(value) = self.collector_endpoint {
             cfg.collector_endpoint = value;
         }
+        if let Some(value) = self.api_key {
+            cfg.api_key = value;
+        }
         if let Some(value) = self.duplicate_policy {
             cfg.duplicate_policy = value;
         }
@@ -387,9 +397,14 @@ pub fn new_client(code_config: Config) -> Result<crate::Logger, crate::errors::L
     {
         merged.sinks = vec![SinkConfig::HttpBatch {
             endpoint: merged.collector_endpoint.clone(),
-            api_key: std::env::var("LOXA_COLLECTOR_API_KEY")
-                .ok()
-                .filter(|s| !s.is_empty()),
+            api_key: if !merged.api_key.is_empty() {
+                Some(merged.api_key.clone())
+            } else {
+                std::env::var("LOXA_API_KEY")
+                    .ok()
+                    .filter(|s| !s.is_empty())
+                    .or_else(|| std::env::var("LOXA_COLLECTOR_API_KEY").ok().filter(|s| !s.is_empty()))
+            },
             timeout_ms: 2_000,
             max_batch_bytes: 256 * 1024,
             max_retries: 3,
@@ -430,6 +445,9 @@ fn merge_code_config(mut base: Config, code: Config) -> Config {
     }
     if code.collector_endpoint != defaults.collector_endpoint {
         base.collector_endpoint = code.collector_endpoint;
+    }
+    if code.api_key != defaults.api_key {
+        base.api_key = code.api_key;
     }
     if code.duplicate_policy != defaults.duplicate_policy {
         base.duplicate_policy = code.duplicate_policy;

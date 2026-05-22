@@ -86,17 +86,36 @@ main().catch(console.error);
 
 ## Connecting to a Collector
 
-In production, send events to the LOXA collector:
+In production, send events to the LOXA collector with authentication:
 
 ```typescript
 import { production, httpBatchSink, sampleErrors, configure } from 'loxa-js';
 
 configure(
   production('checkout-service')
-    .withSink(httpBatchSink({ endpoint: 'http://collector:9090/v1/events' }))
+    .withApiKey(process.env.LOXA_API_KEY!)
+    .withCollectorUrl('https://collector.loxa.dev')
     .withSampler(sampleErrors())
 );
 ```
+
+The SDK automatically sets `Authorization: Bearer <key>` headers.
+
+### Authentication
+
+| Config Field | Env Var | Description |
+|---|---|---|
+| `apiKey` | `LOXA_API_KEY` | Ingest API key (`lx_sec_live_k_xxx_yyyy`) |
+
+```typescript
+// Production
+production('my-service').withApiKey('lx_sec_live_k_xxx_yyyy')
+
+// Local dev
+dev('my-service').withApiKey('lx_local_dev_mytoken')
+```
+
+See [Security](../../docs/security.md) for key types and RBAC roles.
 
 ## Using the Logger Directly
 

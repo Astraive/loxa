@@ -81,6 +81,7 @@ class Config:
     strict: bool = False
     sinks: list[Any] = field(default_factory=list)
     collector_endpoint: str = ""
+    api_key: str = ""
     duplicate_policy: str = "canonical_wins"
     schema: Any = None
     sampler: Any = None
@@ -156,6 +157,10 @@ class Config:
         self.collector_endpoint = endpoint
         return self
 
+    def with_api_key(self, api_key: str) -> "Config":
+        self.api_key = api_key.strip()
+        return self
+
     def with_duplicate_policy(self, policy: str) -> "Config":
         self.duplicate_policy = policy
         return self
@@ -228,6 +233,7 @@ def _apply_env_vars(cfg: Config) -> Config:
         "LOXA_LOG_LEVEL": "level",
         "LOXA_COLLECTOR_URL": "collector_endpoint",
         "LOXA_COLLECTOR_ENDPOINT": "collector_endpoint",
+        "LOXA_API_KEY": "api_key",
         "LOXA_DUPLICATE_POLICY": "duplicate_policy",
     }
     for env_key, field in env_map.items():

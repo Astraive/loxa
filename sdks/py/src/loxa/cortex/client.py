@@ -29,7 +29,7 @@ class CortexClient:
         self,
         endpoint: str = "http://localhost:8080",
         api_key: str = "",
-        auth_header: str = "X-API-Key",
+        auth_header: str = "Authorization",
         timeout: float = 10.0,
     ) -> None:
         self.endpoint = endpoint.rstrip("/")
@@ -40,7 +40,10 @@ class CortexClient:
     def _headers(self) -> dict[str, str]:
         headers = {"content-type": "application/json"}
         if self.api_key:
-            headers[self.auth_header] = self.api_key
+            if self.auth_header.lower() == "authorization":
+                headers[self.auth_header] = f"Bearer {self.api_key}"
+            else:
+                headers[self.auth_header] = self.api_key
         return headers
 
     def _get(self, path: str) -> dict:

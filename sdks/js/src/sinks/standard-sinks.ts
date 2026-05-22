@@ -120,7 +120,7 @@ export class HTTPBatchSink implements Sink {
   }) {
     this.endpoint = opts.endpoint;
     this.apiKey = opts.apiKey || '';
-    this.authHeader = opts.authHeader || 'x-loxa-api-key';
+    this.authHeader = opts.authHeader || 'Authorization';
     this.sdkName = opts.sdkName || 'loxa-js';
     this.sdkVersion = opts.sdkVersion || '1.0.0';
     this.service = opts.service || '';
@@ -276,7 +276,11 @@ export class HTTPBatchSink implements Sink {
         'Content-Type': this.ndjson ? 'application/x-ndjson' : 'application/json',
         'Content-Length': body.length.toString(),
       };
-      if (this.apiKey) headers[this.authHeader] = this.apiKey;
+      if (this.apiKey) {
+        headers[this.authHeader] = this.authHeader.toLowerCase() === 'authorization'
+          ? `Bearer ${this.apiKey}`
+          : this.apiKey;
+      }
       if (this.enableCompression) headers['Content-Encoding'] = 'gzip';
 
       const req = mod.request({

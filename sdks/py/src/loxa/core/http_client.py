@@ -116,7 +116,7 @@ class CollectorClient:
         self,
         endpoint: str,
         api_key: str = "",
-        auth_header: str = "x-loxa-api-key",
+        auth_header: str = "Authorization",
         timeout: float = 2.0,
         retries: int = 2,
         sdk_name: str = "loxa-py",
@@ -139,7 +139,10 @@ class CollectorClient:
         body = self.envelope(encoded_events)
         headers = {"content-type": "application/json"}
         if self.api_key:
-            headers[self.auth_header] = self.api_key
+            if self.auth_header.lower() == "authorization":
+                headers[self.auth_header] = f"Bearer {self.api_key}"
+            else:
+                headers[self.auth_header] = self.api_key
         request = Request(self.endpoint, data=body, headers=headers, method="POST")
         last_error: Exception | None = None
         for attempt in range(self.retries + 1):
@@ -208,7 +211,10 @@ class CollectorClient:
         """Fetch operational status from the collector."""
         req = Request(f"{self._base_url()}/v1/status", method="GET")
         if self.api_key:
-            req.add_header(self.auth_header, self.api_key)
+            if self.auth_header.lower() == "authorization":
+                req.add_header(self.auth_header, f"Bearer {self.api_key}")
+            else:
+                req.add_header(self.auth_header, self.api_key)
         with urlopen(req, timeout=self.timeout) as resp:
             return json.loads(resp.read())
 
