@@ -84,87 +84,81 @@ package main
 
 import (
     "context"
-    loxa "github.com/astraive/loxa/sdks/go"
-    "github.com/astraive/loxa/sdks/go/sinks/httpbatch"
+    "fmt"
+
+    "github.com/astraive/loxa/sdks/go"
 )
 
 func main() {
-    sink, _ := httpbatch.New(httpbatch.Config{
-        Endpoint: "http://localhost:9090/ingest",
-    })
-    client, _ := loxa.New(loxa.Config{
-        Service: "my-service",
-        Sink:    sink,
-    })
-    defer client.Close(context.Background())
+    loxa.Configure(loxa.Dev("my-service").WithCollectorEndpoint("http://localhost:9090"))
+    defer loxa.Shutdown(context.Background())
 
-    evt := client.StartEvent("order.created")
-    evt.SetAttr("order_id", "ORD-12345")
-    evt.SetAttr("customer_id", "CUST-789")
-    evt.SetAttr("total_cents", 5999)
-    evt.Finish()
-    client.Emit(context.Background(), evt)
+    ctx := loxa.StartEvent(context.Background(), loxa.Params{Event: "order.created"})
+    loxa.Enrich(ctx,
+        loxa.String("order_id", "ORD-12345"),
+        loxa.String("customer_id", "CUST-789"),
+        loxa.Int("total_cents", 5999),
+    )
+    loxa.Finish(ctx, "success")
+    if err := loxa.Emit(ctx); err != nil {
+        fmt.Printf("emit error: %v\n", err)
+    }
 }
 ```
 
 ### Python
 
 ```python
-from loxa import CollectorClient, HTTPBatchSink
+import loxa
 
-sink = HTTPBatchSink(endpoint="http://localhost:9090/ingest")
-client = CollectorClient(service="my-service", sink=sink)
+loxa.configure(loxa.dev("my-service").with_collector_endpoint("http://localhost:9090"))
 
-evt = client.start_event("order.created")
-evt.set_attr("order_id", "ORD-12345")
-evt.set_attr("customer_id", "CUST-789")
-evt.set_attr("total_cents", 5999)
-evt.finish()
-client.emit(evt)
-
-client.close()
+ctx = loxa.start_event(event="order.created")
+loxa.enrich(ctx,
+    loxa.String("order_id", "ORD-12345"),
+    loxa.String("customer_id", "CUST-789"),
+    loxa.Int("total_cents", 5999),
+)
+loxa.finish(ctx, "success")
+loxa.emit(ctx)
+loxa.shutdown()
 ```
 
 ### Rust
 
 ```rust
-use loxa::{Config, Event, HTTPBatchSink};
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    loxa::configure(
+        loxa::Config::dev("my-service").with_collector_endpoint("http://localhost:9090"),
+    )?;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let sink = HTTPBatchSink::new("http://localhost:9090/ingest")?;
-    let client = Config::new("my-service")
-        .with_sink(sink)
-        .build()?;
-
-    let mut evt = client.start_event("order.created");
-    evt.set_attr("order_id", "ORD-12345");
-    evt.set_attr("customer_id", "CUST-789");
-    evt.set_attr("total_cents", 5999);
-    evt.finish();
-    client.emit(&evt).await?;
-
-    client.close().await;
+    let mut ctx = loxa::start_event(loxa::Params::new("order.created"));
+    loxa::enrich(&mut ctx, loxa::String("order_id", "ORD-12345"));
+    loxa::enrich(&mut ctx, loxa::String("customer_id", "CUST-789"));
+    loxa::enrich(&mut ctx, loxa::Int("total_cents", 5999));
+    loxa::finish(&mut ctx, "success");
+    loxa::emit(&mut ctx)?;
+    loxa::shutdown();
     Ok(())
 }
 ```
 
 ### JavaScript
 
-```javascript
-import { CollectorClient, HTTPBatchSink } from "loxa-js";
+```typescript
+import { loxa } from "loxa-js";
 
-const sink = new HTTPBatchSink({ endpoint: "http://localhost:9090/ingest" });
-const client = new CollectorClient({ service: "my-service", sink });
+loxa.configure(loxa.dev("my-service").withCollectorEndpoint("http://localhost:9090"));
 
-const evt = client.startEvent("order.created");
-evt.setAttr("order_id", "ORD-12345");
-evt.setAttr("customer_id", "CUST-789");
-evt.setAttr("total_cents", 5999);
-evt.finish();
-await client.emit(evt);
-
-await client.close();
+const ctx = loxa.startEvent({ event: "order.created" });
+loxa.enrich(ctx,
+    loxa.string("order_id", "ORD-12345"),
+    loxa.string("customer_id", "CUST-789"),
+    loxa.int("total_cents", 5999),
+);
+loxa.finish(ctx, "success");
+await loxa.emit(ctx);
+await loxa.shutdown();
 ```
 
 ## Default API (`loxa.*`)
@@ -192,9 +186,9 @@ loxa::info("server started");
 
 ### JavaScript
 ```typescript
-import { configure, production, info } from "loxa-js";
-configure(production("my-service").withCollectorEndpoint("http://localhost:9090"));
-info("server started");
+import { loxa } from "loxa-js";
+loxa.configure(loxa.production("my-service").withCollectorEndpoint("http://localhost:9090"));
+loxa.info("server started");
 ```
 
 ## Custom Instances (`createLoxa` / `loxa.New`)
@@ -221,8 +215,8 @@ logger.info("payment processed");
 
 ### JavaScript
 ```typescript
-import { createLoxa } from "loxa-js";
-const logger = createLoxa({ service: "checkout-api", collectorUrl: "http://localhost:9090" });
+import { loxa } from "loxa-js";
+const logger = loxa.createLoxa({ service: "checkout-api", collectorUrl: "http://localhost:9090" });
 logger.info("payment processed");
 ```
 
@@ -250,8 +244,8 @@ audit.info("permission changed");
 
 ### JavaScript
 ```typescript
-import { alias } from "loxa-js";
-const audit = alias("audit-service");
+import { loxa } from "loxa-js";
+const audit = loxa.alias("audit-service");
 audit.info("permission changed");
 ```
 

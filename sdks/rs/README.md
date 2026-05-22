@@ -7,85 +7,78 @@
 ## Quick Start
 
 ```rust
-use loxa::{Config, Logger, Params, String as LoxaString, Int};
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Configure the default logger
+    loxa::configure(
+        loxa::Config::production("checkout")
+            .with_collector_endpoint("http://127.0.0.1:9090"),
+    )?;
 
-fn main() {
-    let logger = Logger::new(
-        Config::production("checkout")
-            .with_sink(loxa::StdoutSink),
-    );
-
-    let mut ctx = logger.start_event(Params::new("checkout.request").with_kind("http"));
-    loxa::Append(&mut ctx, loxa::UserID("u_123"));
-    loxa::Append(&mut ctx, loxa::String("payment.provider", "stripe"));
-    logger.finish(&mut ctx, "success").unwrap();
-    logger.emit(&ctx).unwrap();
+    // Lifecycle
+    let mut ctx = loxa::start_event(loxa::Params::new("checkout.request").with_kind("http"));
+    loxa::enrich(&mut ctx, loxa::UserID("u_123"));
+    loxa::enrich(&mut ctx, loxa::String("payment.provider", "stripe"));
+    loxa::finish(&mut ctx, "success")?;
+    loxa::emit(&mut ctx)?;
+    loxa::shutdown();
+    Ok(())
 }
 ```
 
 ## Core Lifecycle API
 
-The main flow: `StartEvent` -> `Enrich` -> `Checkpoint` -> `Finish`/`FinishError` -> `Emit`
+The main flow: `start_event` -> `enrich` -> `checkpoint` -> `finish`/`finish_error` -> `emit`
 
 ```rust
-use loxa::{
-    StartEvent, StartHTTPEvent, StartJobEvent, StartQueueEvent,
-    StartCLIEvent, StartCronEvent,
-    Append, Enrich, Set, Merge, Delete, Get, GetGroup,
-    Checkpoint, Finish, FinishError, Emit, Flush, Shutdown,
-    Params, EventContext,
-};
+use loxa::{Params, EventContext};
 
-// Start an event (PascalCase - Go-style)
-let mut ctx = StartEvent(Params::new("checkout.request")
+// Start an event
+let mut ctx = loxa::start_event(Params::new("checkout.request")
     .with_kind("http")
     .with_service("checkout"));
 
-// Or snake_case (Rust-idiomatic)
-let mut ctx = start_event(Params::new("checkout.request"));
-
 // Typed starters
-let mut ctx = StartHTTPEvent(Params::new("http.request"));
-let mut ctx = StartJobEvent(Params::new("job.send_email"));
-let mut ctx = StartQueueEvent(Params::new("queue.process"));
-let mut ctx = StartCLIEvent(Params::new("cli.run"));
-let mut ctx = StartCronEvent(Params::new("cron.tick"));
+let mut ctx = loxa::start_http_event(Params::new("http.request"));
+let mut ctx = loxa::start_job_event(Params::new("job.send_email"));
+let mut ctx = loxa::start_queue_event(Params::new("queue.process"));
+let mut ctx = loxa::start_cli_event(Params::new("cli.run"));
+let mut ctx = loxa::start_cron_event(Params::new("cron.tick"));
 
 // Enrich (add attributes)
-Append(&mut ctx, String("user.id", "u_123"));
-Append(&mut ctx, Int("cart.items", 3));
+loxa::enrich(&mut ctx, loxa::String("user.id", "u_123"));
+loxa::enrich(&mut ctx, loxa::Int("cart.items", 3));
 
 // Set (override)
-Set(&mut ctx, String("status", "processing"));
+loxa::set(&mut ctx, loxa::String("status", "processing"));
 
 // Merge into group
-Merge(&mut ctx, "payment", String("provider", "stripe"));
+loxa::merge(&mut ctx, "payment", loxa::String("provider", "stripe"));
 
 // Delete
-Delete(&mut ctx, "temp_field");
+loxa::delete(&mut ctx, "temp_field");
 
 // Get
-let val = Get(&ctx, "user.id");
-let group = GetGroup(&ctx, "payment");
+let val = loxa::get(&ctx, "user.id");
+let group = loxa::get_group(&ctx, "payment");
 
 // Checkpoint
-Checkpoint(&mut ctx, "payment_started");
-Checkpoint(&mut ctx, "payment_finished");
+loxa::checkpoint(&mut ctx, "payment_started");
+loxa::checkpoint(&mut ctx, "payment_finished");
 
 // Finish
-Finish(&mut ctx, "success").unwrap();
+loxa::finish(&mut ctx, "success").unwrap();
 
 // Finish with error
-FinishError(&mut ctx, "payment failed").unwrap();
+loxa::finish_error(&mut ctx, "payment failed").unwrap();
 
 // Emit
-Emit(&ctx).unwrap();
+loxa::emit(&ctx).unwrap();
 
 // Flush
-Flush().unwrap();
+loxa::flush().unwrap();
 
 // Shutdown
-Shutdown().unwrap();
+loxa::shutdown().unwrap();
 ```
 
 ## Attribute Constructors
@@ -95,7 +88,7 @@ use loxa::{
     String, Int, Int64, Uint64, Float64, Bool, Time, Duration, Any, Null, Group,
 };
 
-Append(&mut ctx,
+loxa::enrich(&mut ctx,
     String("user.id", "u_123"),
     Int("cart.items", 3),
     Int64("big_number", 9999999999),
@@ -107,7 +100,7 @@ Append(&mut ctx,
 );
 
 // Groups (nested objects)
-Append(&mut ctx,
+loxa::enrich(&mut ctx,
     Group("user", vec![
         String("id", "u_123"),
         String("email", "user@example.com"),
@@ -124,7 +117,7 @@ use loxa::{
     FeatureFlag, FeatureFlagBool, Experiment,
 };
 
-Append(&mut ctx,
+loxa::enrich(&mut ctx,
     UserID("u_123"),
     TenantID("t_456"),
     WorkspaceID("w_789"),
@@ -147,7 +140,7 @@ use loxa::{
     Plan, Currency, Amount, Country, Device, Platform, AppVersion,
 };
 
-Append(&mut ctx,
+loxa::enrich(&mut ctx,
     OrderID("ord_123"),
     CartID("cart_456"),
     ProductID("prod_789"),
@@ -168,45 +161,50 @@ Append(&mut ctx,
 use loxa::{ErrorType, ErrorCode, ErrorMessage, ErrorStack, Retryable};
 
 match process() {
-    Ok(_) => loxa::Finish(&mut ctx, "success").unwrap(),
+    Ok(_) => loxa::finish(&mut ctx, "success").unwrap(),
     Err(e) => {
-        loxa::FinishError(&mut ctx, &e.to_string()).unwrap();
-        Append(&mut ctx, ErrorType("ValidationError"));
-        Append(&mut ctx, ErrorCode("INVALID_INPUT"));
-        Append(&mut ctx, Retryable(false));
+        loxa::finish_error(&mut ctx, &e.to_string()).unwrap();
+        loxa::enrich(&mut ctx, ErrorType("ValidationError"));
+        loxa::enrich(&mut ctx, ErrorCode("INVALID_INPUT"));
+        loxa::enrich(&mut ctx, Retryable(false));
     }
 }
 ```
 
 ## Immediate Logs
 
-One-shot events without requiring `StartEvent`:
+One-shot events without requiring `start_event`:
 
 ```rust
-use loxa::{Debug, Info, Warn, Error, Fatal};
-
-Info("worker started").unwrap();
-Error("payment failed").unwrap();
+loxa::info("worker started").unwrap();
+loxa::error("payment failed").unwrap();
 ```
 
 ## Logger Instances
 
 ```rust
-use loxa::{Logger, Config, Dev, Production, Test, Default};
+// Default API -- configure once, use everywhere
+loxa::configure(loxa::Config::production("checkout").with_collector_endpoint("http://127.0.0.1:9090"))?;
+loxa::info("server started");
 
-// Create logger
-let logger = Logger::new(Config::production("checkout"));
+// Custom instance
+let logger = loxa::create_loxa(loxa::Config::dev("checkout-api").with_collector_endpoint("http://127.0.0.1:9090"));
+logger.info("custom instance ready");
+
+// Alias -- same config, different service name
+let audit = loxa::alias("audit-service");
+audit.info("audit trail started");
 
 // Presets
-let cfg = Dev("checkout");       // pretty JSON, stdout, sync, debug level
-let cfg = Production("checkout"); // compact JSON, stdout, async, info level
-let cfg = Test("checkout");       // sync, no sinks, debug level
+let cfg = loxa::Dev("checkout");       // pretty JSON, stdout, sync, debug level
+let cfg = loxa::Production("checkout"); // compact JSON, stdout, async, info level
+let cfg = loxa::Test("checkout");       // sync, no sinks, debug level
 
 // Get default
-let logger = Default();
+let logger = loxa::default();
 
 // Instance methods
-let mut ctx = logger.start_event(Params::new("checkout.request"));
+let mut ctx = logger.start_event(loxa::Params::new("checkout.request"));
 logger.finish(&mut ctx, "success").unwrap();
 logger.emit(&ctx).unwrap();
 logger.flush().unwrap();
@@ -285,8 +283,8 @@ let cfg = Config::production("checkout").with_redactor(
 );
 
 // Mark fields
-Append(&mut ctx, SensitiveString("user.email", email));
-Append(&mut ctx, HashString("user.ssn", ssn));
+loxa::enrich(&mut ctx, SensitiveString("user.email", email));
+loxa::enrich(&mut ctx, HashString("user.ssn", ssn));
 ```
 
 ## Schema
@@ -313,10 +311,10 @@ let cfg = Config::production("checkout").with_duplicate_policy(LastWins);
 ```rust
 use loxa::{FromContext, HasEvent, EventID, RequestIDFromContext, TraceIDFromContext};
 
-let ev = FromContext(&ctx);
-let has = HasEvent(&ctx);
-let eid = EventID(&ctx);
-let rid = RequestIDFromContext(&ctx);
+let ev = loxa::from_context(&ctx);
+let has = loxa::has_event(&ctx);
+let eid = loxa::event_id(&ctx);
+let rid = loxa::request_id_from_context(&ctx);
 ```
 
 ## Feature Flags
@@ -324,9 +322,9 @@ let rid = RequestIDFromContext(&ctx);
 ```rust
 use loxa::{FeatureFlag, FeatureFlagBool, Experiment};
 
-Append(&mut ctx, FeatureFlag("checkout_v2", "enabled"));
-Append(&mut ctx, FeatureFlagBool("new_ui", true));
-Append(&mut ctx, Experiment("pricing_test", "variant_b"));
+loxa::enrich(&mut ctx, FeatureFlag("checkout_v2", "enabled"));
+loxa::enrich(&mut ctx, FeatureFlagBool("new_ui", true));
+loxa::enrich(&mut ctx, Experiment("pricing_test", "variant_b"));
 ```
 
 ## Middleware
@@ -388,9 +386,25 @@ assert_redacted(&events[0], "password");
 assert_has_checkpoint(&events[0], "payment_started");
 ```
 
+## Cross-Language Parity
+
+The same event lifecycle is available in every LOXA SDK:
+
+| Operation | Rust | Go | Python | JavaScript |
+|---|---|---|---|---|
+| Configure | `loxa::configure(config)` | `loxa.Configure(config)` | `loxa.configure(config)` | `loxa.configure(config)` |
+| Start event | `loxa::start_event(params)` | `loxa.StartEvent(ctx, params)` | `loxa.start_event(params)` | `loxa.startEvent(params)` |
+| Enrich | `loxa::enrich(&mut ctx, attrs)` | `loxa.Enrich(ctx, attrs...)` | `loxa.enrich(ctx, attrs...)` | `loxa.enrich(ctx, attrs...)` |
+| Checkpoint | `loxa::checkpoint(&mut ctx, name)` | `loxa.Checkpoint(ctx, name)` | `loxa.checkpoint(ctx, name)` | `loxa.checkpoint(ctx, name)` |
+| Finish | `loxa::finish(&mut ctx, outcome)` | `loxa.Finish(ctx, outcome)` | `loxa.finish(ctx, outcome)` | `loxa.finish(ctx, outcome)` |
+| Emit | `loxa::emit(&ctx)` | `loxa.Emit(ctx)` | `loxa.emit(ctx)` | `await loxa.emit(ctx)` |
+| Info (immediate) | `loxa::info("msg")` | `loxa.Info("msg")` | `loxa.info("msg")` | `await loxa.info("msg")` |
+| Custom instance | `loxa::create_loxa(config)` | `loxa.New(config)` | `loxa.create_loxa(config)` | `createLoxa(config)` |
+| Alias | `loxa::alias("name")` | `loxa.Alias("name")` | `loxa.alias("name")` | `loxa.alias("name")` |
+
 ## Documentation
 
-- [Instrumentation Guide](docs/business-instrumentation.md) — instrumenting checkout, payments, auth, jobs, queues, cron
+- [Instrumentation Guide](docs/business-instrumentation.md) -- instrumenting checkout, payments, auth, jobs, queues, cron
 - [docs/SDK.md](docs/SDK.md)
 - [docs/getting-started.md](docs/getting-started.md)
 

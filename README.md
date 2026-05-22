@@ -41,26 +41,17 @@ import (
 	"context"
 
 	"github.com/astraive/loxa/sdks/go"
-	"github.com/astraive/loxa/sdks/go/sinks/httpbatch"
 )
 
 func main() {
-	sink, _ := httpbatch.New(httpbatch.Config{
-		URL: "http://127.0.0.1:9090/v1/events",
-	})
-
-	_ = loxa.Configure(
-		loxa.Production().
-			WithService("checkout").
-			WithSink(sink),
-	)
+	loxa.Configure(loxa.Production("checkout").
+		WithCollectorEndpoint("http://127.0.0.1:9090"))
 	defer loxa.Shutdown(context.Background())
 
 	ctx := loxa.StartEvent(context.Background(), loxa.Params{
 		Event:  "checkout.request",
 		Method: "POST",
 		Path:   "/checkout",
-		Route:  "/checkout",
 	})
 	loxa.Enrich(ctx, loxa.UserID("u-1"))
 	loxa.Finish(ctx, "success", loxa.Int("status_code", 200))
@@ -71,50 +62,53 @@ func main() {
 Python:
 
 ```python
-from loxa import CollectorClient, HTTPBatchSink
+import loxa
 
-client = CollectorClient(
-    service="checkout",
-    sink=HTTPBatchSink("http://127.0.0.1:9090/v1/events"),
-    api_key=os.environ["LOXA_API_KEY"],
+loxa.configure(
+    loxa.production("checkout")
+    .with_collector_endpoint("http://127.0.0.1:9090")
 )
 
-ctx = logger.start_event(Params(event="checkout.request", method="POST", path="/checkout"))
-logger.enrich(ctx, "user.id", "u-1")
-logger.finish(ctx, outcome="success")
-logger.emit(ctx)
+ctx = loxa.start_event(event="checkout.request", kind="http")
+loxa.enrich(ctx, loxa.UserID("u-1"))
+loxa.finish(ctx, "success", loxa.Int("status_code", 200))
+loxa.emit(ctx)
+loxa.shutdown()
 ```
 
 Rust:
 
 ```rust
-use loxa::{Config, HTTPBatchSink};
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let sink = HTTPBatchSink::new("http://127.0.0.1:9090/v1/events")?;
-    let client = Config::new("checkout")
-        .with_sink(sink)
-        .with_api_key(std::env::var("LOXA_API_KEY")?)
-        .build()?;
+    loxa::configure(
+        loxa::Config::production("checkout")
+            .with_collector_endpoint("http://127.0.0.1:9090"),
+    )?;
 
-    let mut ctx = logger.start_event(Params::new("checkout.request").with_kind("http"));
-    logger.finish(&mut ctx, "success").unwrap();
-    logger.emit(&ctx).unwrap();
+    let mut ctx = loxa::start_event(loxa::Params::new("checkout.request").with_kind("http"));
+    loxa::enrich(&mut ctx, loxa::UserID("u-1"));
+    loxa::finish(&mut ctx, "success");
+    loxa::emit(&mut ctx)?;
+    loxa::shutdown();
+    Ok(())
 }
 ```
 
 JavaScript:
 
 ```ts
-import { CollectorClient, HTTPBatchSink } from 'loxa-js';
+import { loxa } from 'loxa-js';
 
-const sink = new HTTPBatchSink({ endpoint: 'http://127.0.0.1:9090/v1/events' });
-const client = new CollectorClient({ service: 'checkout', sink, apiKey: process.env.LOXA_API_KEY });
+loxa.configure(
+  loxa.production('checkout')
+    .withCollectorEndpoint('http://127.0.0.1:9090')
+);
 
-const ctx = logger.startEvent({ event: 'checkout.request', kind: 'http' });
-logger.enrich(ctx, UserID('u-1'));
-logger.finish(ctx, 'success');
-await logger.emit(ctx);
+const ctx = loxa.startEvent({ event: 'checkout.request', kind: 'http' });
+loxa.enrich(ctx, { 'user.id': 'u-1' });
+loxa.finish(ctx, 'success');
+await loxa.emit(ctx);
+await loxa.shutdown();
 ```
 
 ### 3. Query stored events

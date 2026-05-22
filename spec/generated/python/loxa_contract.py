@@ -175,33 +175,33 @@ CONTRACT = {
     "loose_mode": "normalize_then_use"
   },
   "strict_mode": {
-    "allow_unknown_top_level_fields": false,
-    "allow_aliases": false,
-    "enforce_required_fields": true,
-    "enforce_enums": true,
-    "enforce_status_codes": true,
-    "enforce_timestamps": true,
-    "normalize_aliases": false
+    "allow_unknown_top_level_fields": False,
+    "allow_aliases": False,
+    "enforce_required_fields": True,
+    "enforce_enums": True,
+    "enforce_status_codes": True,
+    "enforce_timestamps": True,
+    "normalize_aliases": False
   },
   "loose_mode": {
-    "allow_unknown_top_level_fields": true,
-    "allow_aliases": true,
-    "enforce_required_fields": true,
-    "enforce_enums": true,
-    "normalize_aliases": true
+    "allow_unknown_top_level_fields": True,
+    "allow_aliases": True,
+    "enforce_required_fields": True,
+    "enforce_enums": True,
+    "normalize_aliases": True
   },
   "validation_modes": {
     "strict": {
       "name": "strict",
       "description": "Reject unknown fields, aliases, and enforce all constraints",
-      "allow_aliases": false,
-      "allow_unknown_top_level_fields": false
+      "allow_aliases": False,
+      "allow_unknown_top_level_fields": False
     },
     "loose": {
       "name": "loose",
       "description": "Accept aliases and some unknown fields, normalize before validation",
-      "allow_aliases": true,
-      "allow_unknown_top_level_fields": true
+      "allow_aliases": True,
+      "allow_unknown_top_level_fields": True
     }
   },
   "wire_formats": [

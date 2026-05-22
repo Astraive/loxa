@@ -187,7 +187,12 @@ func PanicRecoveryEnabled() bool {
 	return core.PanicRecoveryEnabled()
 }
 
-// New creates a new Logger.
+// CreateLoxa creates a new Logger. Cross-language parity factory.
+func CreateLoxa(cfg Config) (*Logger, error) {
+	return core.New(cfg)
+}
+
+// New creates a new Logger. Idiomatic Go alias for CreateLoxa.
 func New(cfg Config) (*Logger, error) {
 	return core.New(cfg)
 }

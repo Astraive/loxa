@@ -9,11 +9,11 @@ The JS SDK can be used as a structured logging backend. Events follow the LOXA w
 ### Using LOXA as a Logging Backend
 
 ```typescript
-import { debug, info, warn, error, fatal } from 'loxa-js';
+import { loxa } from 'loxa-js';
 
 // These create and emit events with the appropriate level
-info('User signed up', userId('u-123'), string('method', 'oauth'));
-error('Payment failed', errorCode('PAYMENT_DECLINED'), string('order_id', 'ord-456'));
+loxa.info('User signed up', loxa.userId('u-123'), loxa.string('method', 'oauth'));
+loxa.error('Payment failed', loxa.errorCode('PAYMENT_DECLINED'), loxa.string('order_id', 'ord-456'));
 ```
 
 ### Bridging console.log
@@ -21,11 +21,11 @@ error('Payment failed', errorCode('PAYMENT_DECLINED'), string('order_id', 'ord-4
 Replace `console.log` with LOXA structured events:
 
 ```typescript
-import { info, string } from 'loxa-js';
+import { loxa } from 'loxa-js';
 
 function structuredLog(message: string, meta?: Record<string, any>) {
-  const attrs = Object.entries(meta || {}).map(([k, v]) => string(k, String(v)));
-  info(message, ...attrs);
+  const attrs = Object.entries(meta || {}).map(([k, v]) => loxa.string(k, String(v)));
+  loxa.info(message, ...attrs);
 }
 ```
 
@@ -52,18 +52,18 @@ Create a Winston transport that emits LOXA events:
 
 ```typescript
 import winston from 'winston';
-import { info, warn, error, string } from 'loxa-js';
+import { loxa } from 'loxa-js';
 
 const loxaTransport = new winston.transports.Console({
-  log: (info: any) => {
-    const level = info.level;
-    const message = info.message;
-    const attrs = Object.entries(info).filter(([k]) => !['level', 'message'].includes(k));
-    const loxaAttrs = attrs.map(([k, v]) => string(k, String(v)));
+  log: (logInfo: any) => {
+    const level = logInfo.level;
+    const message = logInfo.message;
+    const attrs = Object.entries(logInfo).filter(([k]) => !['level', 'message'].includes(k));
+    const loxaAttrs = attrs.map(([k, v]) => loxa.string(k, String(v)));
 
-    if (level === 'error') error(message, ...loxaAttrs);
-    else if (level === 'warn') warn(message, ...loxaAttrs);
-    else info(message, ...loxaAttrs);
+    if (level === 'error') loxa.error(message, ...loxaAttrs);
+    else if (level === 'warn') loxa.warn(message, ...loxaAttrs);
+    else loxa.info(message, ...loxaAttrs);
   },
 });
 ```
@@ -74,14 +74,14 @@ Pino is a popular fast JSON logger for Node.js. Bridge it to LOXA:
 
 ```typescript
 import pino from 'pino';
-import { info, string } from 'loxa-js';
+import { loxa } from 'loxa-js';
 
 const pinoLogger = pino({
   hooks: {
     logMethod(inputArgs: any[], method: any) {
       const [msg, ...rest] = inputArgs;
-      const attrs = rest.map((v: any, i: number) => string(`extra_${i}`, String(v)));
-      info(msg, ...attrs);
+      const attrs = rest.map((v: any, i: number) => loxa.string(`extra_${i}`, String(v)));
+      loxa.info(msg, ...attrs);
       method.apply(this, inputArgs);
     },
   },

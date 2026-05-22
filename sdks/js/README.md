@@ -13,14 +13,12 @@ npm install loxa-js
 ## Quick Start
 
 ```typescript
-import * as loxa from 'loxa-js';
+import { loxa } from 'loxa-js';
 
 // Configure
 loxa.configure(
   loxa.production('checkout')
-    .withSink(loxa.httpBatchSink({
-      endpoint: 'http://localhost:9090/v1/events',
-    }))
+    .withCollectorEndpoint('http://localhost:9090')
 );
 
 // Lifecycle
@@ -227,34 +225,37 @@ try {
 One-shot events without requiring `startEvent`:
 
 ```typescript
-import { debug, info, warn, error, fatal } from 'loxa-js';
+import { loxa } from 'loxa-js';
 
-await info('worker started', string('queue', 'emails'));
-await error('payment failed', string('provider', 'stripe'));
+await loxa.info('worker started', loxa.string('queue', 'emails'));
+await loxa.error('payment failed', loxa.string('provider', 'stripe'));
 ```
 
 ## Logger Instances
 
 ```typescript
-import { createLoxa, production, dev, test, configure, defaultLogger } from 'loxa-js';
+import { loxa, createLoxa } from 'loxa-js';
 
-// Create logger
-const logger = createLoxa({ service: 'checkout', apiKey: process.env.LOXA_API_KEY });
+// Default API — configure once, use everywhere
+loxa.configure(loxa.production('checkout').withCollectorEndpoint('http://127.0.0.1:9090'));
+loxa.info('server started');
 
-// Configure default
-configure(production('checkout'));
+// Custom instance
+const logger = createLoxa({ service: 'checkout-api', collectorUrl: 'http://127.0.0.1:9090' });
+logger.info('custom instance ready');
 
-// Get default
-const logger = defaultLogger();
+// Alias — same config, different service name
+const audit = loxa.alias('audit-service');
+audit.info('audit trail started');
 
 // Presets
-const cfg = dev('checkout');       // pretty JSON, stdout, sync, debug level
-const cfg2 = production('checkout'); // compact JSON, stdout, async, info level
-const cfg3 = test('checkout');       // sync, no sinks, debug level
+const cfg = loxa.dev('checkout');       // pretty JSON, stdout, sync, debug level
+const cfg2 = loxa.production('checkout'); // compact JSON, stdout, async, info level
+const cfg3 = loxa.test('checkout');       // sync, no sinks, debug level
 
 // Instance methods
 const ctx = logger.startEvent({ event: 'checkout.request' });
-logger.enrich(ctx, string('key', 'value'));
+logger.enrich(ctx, loxa.string('key', 'value'));
 logger.finish(ctx, 'success');
 await logger.emit(ctx);
 await logger.flush();

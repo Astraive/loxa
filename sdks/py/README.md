@@ -15,44 +15,31 @@ pip install -e .
 ## Quick Start
 
 ```python
-from loxa import CollectorClient, HTTPBatchSink, Params, StartHTTPEvent, Enrich, Finish, Emit
-from loxa import UserID, String, Int
+import loxa
 
-# Configure
-client = CollectorClient(
-    service="checkout",
-    sink=HTTPBatchSink("http://127.0.0.1:9090/v1/events"),
-    api_key=os.environ["LOXA_API_KEY"],
+# Configure the default logger
+loxa.configure(
+    loxa.production("checkout")
+    .with_collector_endpoint("http://127.0.0.1:9090")
 )
 
-# Or use the default facade
-from loxa import configure, production
-configure(production("checkout").with_sink(
-    HTTPBatchSink("http://127.0.0.1:9090/v1/events")
-))
-
 # Lifecycle
-ctx = StartHTTPEvent(None, Params(event="checkout.request", method="POST", path="/checkout"))
-Enrich(ctx, UserID("u_123"), String("payment.provider", "stripe"))
-Finish(ctx, "success", Int("status_code", 200))
-Emit(ctx)
+ctx = loxa.start_http_event(event="checkout.request", method="POST", path="/checkout")
+loxa.enrich(ctx, loxa.UserID("u_123"), loxa.String("payment.provider", "stripe"))
+loxa.finish(ctx, "success", loxa.Int("status_code", 200))
+loxa.emit(ctx)
+loxa.shutdown()
 ```
 
 ## Core Lifecycle API
 
-The main flow: `StartEvent` -> `Enrich` -> `Checkpoint` -> `Finish`/`FinishError` -> `Emit`
+The main flow: `start_event` -> `enrich` -> `checkpoint` -> `finish`/`finish_error` -> `emit`
 
 ```python
-from loxa import (
-    start_event, start_http_event, start_job_event, start_queue_event,
-    start_cli_event, start_cron_event,
-    enrich, append, set, merge, delete, get, get_group,
-    checkpoint, finish, finish_error, emit, flush, shutdown,
-    Params,
-)
+import loxa
 
 # Start an event (returns context carrying the event)
-ctx = start_event(Params(
+ctx = loxa.start_event(loxa.Params(
     event="checkout.request",
     kind="http",
     method="POST",
@@ -61,81 +48,79 @@ ctx = start_event(Params(
 ))
 
 # Typed starters
-ctx = start_http_event(Params(event="http.request", method="GET", path="/health"))
-ctx = start_job_event(Params(event="job.send_email"))
-ctx = start_queue_event(Params(event="queue.process"))
-ctx = start_cli_event(Params(event="cli.run"))
-ctx = start_cron_event(Params(event="cron.tick"))
+ctx = loxa.start_http_event(loxa.Params(event="http.request", method="GET", path="/health"))
+ctx = loxa.start_job_event(loxa.Params(event="job.send_email"))
+ctx = loxa.start_queue_event(loxa.Params(event="queue.process"))
+ctx = loxa.start_cli_event(loxa.Params(event="cli.run"))
+ctx = loxa.start_cron_event(loxa.Params(event="cron.tick"))
 
 # Enrich (add attributes)
-enrich(ctx, String("user.id", "u_123"), Int("cart.items", 3))
+loxa.enrich(ctx, loxa.String("user.id", "u_123"), loxa.Int("cart.items", 3))
 
 # Append (alias for enrich)
-append(ctx, String("key", "value"))
+loxa.append(ctx, loxa.String("key", "value"))
 
 # Set (override)
-set(ctx, String("status", "processing"))
+loxa.set(ctx, loxa.String("status", "processing"))
 
 # Merge into group
-merge(ctx, "payment", String("provider", "stripe"), Int("attempt", 1))
+loxa.merge(ctx, "payment", loxa.String("provider", "stripe"), loxa.Int("attempt", 1))
 
 # Delete
-delete(ctx, "temp_field")
+loxa.delete(ctx, "temp_field")
 
 # Get
-val = get(ctx, "user.id")
-group = get_group(ctx, "payment")
+val = loxa.get(ctx, "user.id")
+group = loxa.get_group(ctx, "payment")
 
 # Checkpoint (timeline marker)
-checkpoint(ctx, "payment_started")
-checkpoint(ctx, "payment_finished", String("provider", "stripe"))
+loxa.checkpoint(ctx, "payment_started")
+loxa.checkpoint(ctx, "payment_finished", loxa.String("provider", "stripe"))
 
 # Finish
-finish(ctx, "success", Int("status_code", 200))
+loxa.finish(ctx, "success", loxa.Int("status_code", 200))
 
 # Or finish with error
 try:
     process_payment()
 except Exception as e:
-    finish_error(ctx, e, Int("status_code", 500))
+    loxa.finish_error(ctx, e, loxa.Int("status_code", 500))
 
 # Emit (sends to sink)
-emit(ctx)
+loxa.emit(ctx)
 
 # Flush (force buffered events)
-flush()
+loxa.flush()
 
 # Shutdown (drain pipeline)
-shutdown()
+loxa.shutdown()
 ```
 
 ## Attribute Constructors
 
 ```python
-from loxa import (
-    String, Int, Int64, Uint64, Float64, Bool, Time, Duration, Any, Null, Group,
-)
+import loxa
 
-enrich(ctx,
-    String("user.id", "u_123"),
-    Int("cart.items", 3),
-    Int64("big_number", 9999999999),
-    Float64("price", 49.99),
-    Bool("premium", True),
-    Duration("timeout", timedelta(seconds=30)),
-    Any("metadata", {"key": "value"}),
-    Null("optional_field"),
+loxa.enrich(ctx,
+    loxa.String("user.id", "u_123"),
+    loxa.Int("cart.items", 3),
+    loxa.Int64("big_number", 9999999999),
+    loxa.Float64("price", 49.99),
+    loxa.Bool("premium", True),
+    loxa.Duration("timeout", timedelta(seconds=30)),
+    loxa.Any("metadata", {"key": "value"}),
+    loxa.Null("optional_field"),
 )
 
 # Groups (nested objects)
-enrich(ctx,
-    Group("user",
-        String("id", "u_123"),
-        String("email", "user@example.com"),
+loxa.enrich(ctx,
+    loxa.Group("user",
+        loxa.String("id", "u_123"),
+        loxa.String("email", "user@example.com"),
     ),
-    Group("payment",
-        String("provider", "stripe"),
-        Int("attempt", 1),
+    loxa.Group("payment",
+        loxa.String("provider", "stripe"),
+        loxa.Int("attempt", 1),
     ),
 )
 ```
@@ -143,70 +128,63 @@ enrich(ctx,
 Dot keys expand into nested JSON:
 
 ```python
-String("user.id", "u_123")  # -> {"user": {"id": "u_123"}}
+loxa.String("user.id", "u_123")  # -> {"user": {"id": "u_123"}}
 ```
 
 ## Canonical Helpers
 
 ```python
-from loxa import (
-    UserID, TenantID, WorkspaceID, OrganizationID, SessionID,
-    RequestID, TraceID, SpanID,
-    FeatureFlag, FeatureFlagBool, Experiment,
-)
+import loxa
 
-enrich(ctx,
-    UserID("u_123"),
-    TenantID("t_456"),
-    WorkspaceID("w_789"),
-    OrganizationID("org_abc"),
-    SessionID("sess_xyz"),
-    RequestID("req_123"),
-    TraceID("trace_abc"),
-    SpanID("span_def"),
-    FeatureFlag("checkout_v2", "enabled"),
-    FeatureFlagBool("new_ui", True),
-    Experiment("pricing_test", "variant_b"),
+loxa.enrich(ctx,
+    loxa.UserID("u_123"),
+    loxa.TenantID("t_456"),
+    loxa.WorkspaceID("w_789"),
+    loxa.OrganizationID("org_abc"),
+    loxa.SessionID("sess_xyz"),
+    loxa.RequestID("req_123"),
+    loxa.TraceID("trace_abc"),
+    loxa.SpanID("span_def"),
+    loxa.FeatureFlag("checkout_v2", "enabled"),
+    loxa.FeatureFlagBool("new_ui", True),
+    loxa.Experiment("pricing_test", "variant_b"),
 )
 ```
 
 ## Business/Domain Helpers
 
 ```python
-from loxa import (
-    OrderID, CartID, ProductID, CustomerID,
-    Plan, Currency, Amount, Country, Device, Platform, AppVersion,
-)
+import loxa
 
-enrich(ctx,
-    OrderID("ord_123"),
-    CartID("cart_456"),
-    ProductID("prod_789"),
-    CustomerID("cust_abc"),
-    Plan("pro"),
-    Currency("INR"),
-    Amount(4999),
-    Country("IN"),
-    Device("mobile"),
-    Platform("ios"),
-    AppVersion("2.1.0"),
+loxa.enrich(ctx,
+    loxa.OrderID("ord_123"),
+    loxa.CartID("cart_456"),
+    loxa.ProductID("prod_789"),
+    loxa.CustomerID("cust_abc"),
+    loxa.Plan("pro"),
+    loxa.Currency("INR"),
+    loxa.Amount(4999),
+    loxa.Country("IN"),
+    loxa.Device("mobile"),
+    loxa.Platform("ios"),
+    loxa.AppVersion("2.1.0"),
 )
 ```
 
 ## Error Helpers
 
 ```python
-from loxa import ErrorType, ErrorCode, ErrorMessage, ErrorStack, Retryable
+import loxa
 
 try:
     process()
 except Exception as e:
-    finish_error(ctx, e,
-        ErrorType("ValidationError"),
-        ErrorCode("INVALID_INPUT"),
-        ErrorMessage(str(e)),
-        ErrorStack(traceback.format_exc()),
-        Retryable(False),
+    loxa.finish_error(ctx, e,
+        loxa.ErrorType("ValidationError"),
+        loxa.ErrorCode("INVALID_INPUT"),
+        loxa.ErrorMessage(str(e)),
+        loxa.ErrorStack(traceback.format_exc()),
+        loxa.Retryable(False),
     )
 ```
 
@@ -230,37 +208,37 @@ Error output:
 One-shot events without requiring `StartEvent`:
 
 ```python
-from loxa import debug, info, warn, error, fatal
+import loxa
 
-info("worker started", queue="emails")
-error("payment failed", provider="stripe", amount=4999)
+loxa.info("worker started", queue="emails")
+loxa.error("payment failed", provider="stripe", amount=4999)
 ```
 
 ## Logger Instances
 
 ```python
-from loxa import CollectorClient, HTTPBatchSink, configure, default, Config, dev, production, test
+import loxa
 
-# Create client
-client = CollectorClient(service="checkout", sink=HTTPBatchSink("http://127.0.0.1:9090/v1/events"))
+# Default API — configure once, use everywhere
+loxa.configure(loxa.production("checkout").with_collector_endpoint("http://127.0.0.1:9090"))
+loxa.info("server started")
 
-# Or use factory
-logger = new(production("checkout"))
+# Custom instance
+logger = loxa.create_loxa(service="checkout-api", collector_endpoint="http://127.0.0.1:9090")
+logger.info("custom instance ready")
 
-# Configure default
-configure(production("checkout"))
-
-# Get default
-logger = default()
+# Alias — same config, different service name
+audit = loxa.alias("audit-service")
+audit.info("audit trail started")
 
 # Presets
-cfg = dev("checkout")       # pretty JSON, stdout, sync, debug level
-cfg = production("checkout") # compact JSON, stdout, async, info level
-cfg = test("checkout")       # sync, no sinks, debug level
+cfg = loxa.dev("checkout")       # pretty JSON, stdout, sync, debug level
+cfg = loxa.production("checkout") # compact JSON, stdout, async, info level
+cfg = loxa.test("checkout")       # sync, no sinks, debug level
 
 # Instance methods
-ctx = logger.start_event(Params(event="checkout.request"))
-logger.enrich(ctx, String("key", "value"))
+ctx = logger.start_event(loxa.Params(event="checkout.request"))
+logger.enrich(ctx, loxa.String("key", "value"))
 logger.finish(ctx, "success")
 logger.emit(ctx)
 logger.flush()
@@ -274,61 +252,52 @@ logger.error("failed")
 ## Config API
 
 ```python
-from loxa import (
-    Config, SecurityConfig, AsyncConfig, FieldNamingConfig,
-    WithService, WithVersion, WithEnvironment, WithSink, WithSampler,
-    WithRedactor, WithSchema, WithEventSchema, WithAsync,
-    WithCollectorEndpoint, WithDuplicatePolicy, WithStatsHandler,
-    WithDeploymentID, WithIncludeHost, WithPanicRecovery, WithExitOnFatal,
-)
+import loxa
 
-cfg = Config(
+cfg = loxa.Config(
     service="checkout",
     version="1.2.0",
     environment="prod",
     region="ap-south-1",
-    level=LevelInfo,
-    sinks=[StdoutSink()],
-    async_config=AsyncConfig(enabled=True, queue_size=8192, workers=2),
-    field_naming=FieldNamingConfig(expand_dot_keys=True),
-    security=SecurityConfig(max_field_bytes=4096, max_event_bytes=262144),
+    level=loxa.LevelInfo,
+    sinks=[loxa.StdoutSink()],
+    async_config=loxa.AsyncConfig(enabled=True, queue_size=8192, workers=2),
+    field_naming=loxa.FieldNamingConfig(expand_dot_keys=True),
+    security=loxa.SecurityConfig(max_field_bytes=4096, max_event_bytes=262144),
 )
 
 # Builder style
-cfg = (production("checkout")
+cfg = (loxa.production("checkout")
     .with_version("1.2.0")
     .with_environment("prod")
-    .with_sink(StdoutSink())
-    .with_sampler(SampleErrors())
-    .with_redactor(DefaultRedactor())
+    .with_sink(loxa.StdoutSink())
+    .with_sampler(loxa.SampleErrors())
+    .with_redactor(loxa.DefaultRedactor())
     .with_async(True)
-    .with_duplicate_policy(LastWins)
+    .with_duplicate_policy(loxa.LastWins)
 )
 ```
 
 ## Levels
 
 ```python
-from loxa import LevelDebug, LevelInfo, LevelWarn, LevelError, LevelFatal, ParseLevel
+import loxa
 
-level = ParseLevel("info")  # LevelInfo
+level = loxa.ParseLevel("info")  # loxa.LevelInfo
 ```
 
 ## Sinks
 
 ```python
-from loxa import (
-    StdoutSink, StderrSink, FileSink, RotatingFileSink,
-    MemorySink, NoopSink, HTTPBatchSink,
-)
+import loxa
 
-cfg = production("checkout").with_sink(StdoutSink())
-cfg = production("checkout").with_sink(FileSink("/var/log/app.log"))
-cfg = production("checkout").with_sink(HTTPBatchSink("http://collector:9090/v1/events"))
+cfg = loxa.production("checkout").with_sink(loxa.StdoutSink())
+cfg = loxa.production("checkout").with_sink(loxa.FileSink("/var/log/app.log"))
+cfg = loxa.production("checkout").with_sink(loxa.HTTPBatchSink("http://collector:9090/v1/events"))
 
 # For testing
-sink, store = MemorySink()
-client = CollectorClient(service="checkout", sink=sink)
+sink, store = loxa.MemorySink()
+logger = loxa.create_loxa(service="checkout", sink=sink)
 # ... use logger ...
 events = store.events()
 ```
@@ -336,30 +305,24 @@ events = store.events()
 ## Sampling
 
 ```python
-from loxa import (
-    SampleAll, SampleNone, SampleRandom, SampleErrors,
-    SampleSlowRequests, SampleStatusCodes, SampleRoutes,
-    SampleUsers, SampleTenants, SampleFeatureFlag,
-    SampleRateLimited, SampleByHeader,
-    AnySampler, AllSampler, NotSampler,
-)
+import loxa
 from datetime import timedelta
 
-cfg = production("checkout").with_sampler(SampleAll())
-cfg = production("checkout").with_sampler(SampleRandom(0.01))  # 1% sampling
-cfg = production("checkout").with_sampler(SampleErrors())
-cfg = production("checkout").with_sampler(SampleSlowRequests(timedelta(milliseconds=500)))
-cfg = production("checkout").with_sampler(SampleStatusCodes(500, 502, 503))
-cfg = production("checkout").with_sampler(SampleRoutes("/checkout", "/payment"))
-cfg = production("checkout").with_sampler(SampleUsers("u_1", "u_2"))
-cfg = production("checkout").with_sampler(SampleRateLimited(100.0, 1.0))  # 100 events/sec
+cfg = loxa.production("checkout").with_sampler(loxa.SampleAll())
+cfg = loxa.production("checkout").with_sampler(loxa.SampleRandom(0.01))  # 1% sampling
+cfg = loxa.production("checkout").with_sampler(loxa.SampleErrors())
+cfg = loxa.production("checkout").with_sampler(loxa.SampleSlowRequests(timedelta(milliseconds=500)))
+cfg = loxa.production("checkout").with_sampler(loxa.SampleStatusCodes(500, 502, 503))
+cfg = loxa.production("checkout").with_sampler(loxa.SampleRoutes("/checkout", "/payment"))
+cfg = loxa.production("checkout").with_sampler(loxa.SampleUsers("u_1", "u_2"))
+cfg = loxa.production("checkout").with_sampler(loxa.SampleRateLimited(100.0, 1.0))  # 100 events/sec
 
 # Combinators
-cfg = production("checkout").with_sampler(
-    AnySampler(
-        SampleErrors(),
-        SampleSlowRequests(timedelta(milliseconds=500)),
-        SampleRandom(0.01),
+cfg = loxa.production("checkout").with_sampler(
+    loxa.AnySampler(
+        loxa.SampleErrors(),
+        loxa.SampleSlowRequests(timedelta(milliseconds=500)),
+        loxa.SampleRandom(0.01),
     )
 )
 ```
@@ -367,44 +330,38 @@ cfg = production("checkout").with_sampler(
 ## Redaction
 
 ```python
-from loxa import (
-    DefaultRedactor, RedactKeys, RedactPatterns, HashKeys, MaskKeys, DropKeys,
-    ComposeRedactors, SensitiveString, MarkSensitive, HashString,
-)
+import loxa
 
-cfg = production("checkout").with_redactor(DefaultRedactor())
-cfg = production("checkout").with_redactor(RedactKeys("password", "token", "authorization"))
-cfg = production("checkout").with_redactor(HashKeys("user.email"))
+cfg = loxa.production("checkout").with_redactor(loxa.DefaultRedactor())
+cfg = loxa.production("checkout").with_redactor(loxa.RedactKeys("password", "token", "authorization"))
+cfg = loxa.production("checkout").with_redactor(loxa.HashKeys("user.email"))
 
 # Compose
-cfg = production("checkout").with_redactor(
-    ComposeRedactors(
-        DefaultRedactor(),
-        RedactKeys("password", "token"),
-        HashKeys("user.email"),
+cfg = loxa.production("checkout").with_redactor(
+    loxa.ComposeRedactors(
+        loxa.DefaultRedactor(),
+        loxa.RedactKeys("password", "token"),
+        loxa.HashKeys("user.email"),
     )
 )
 
 # Mark fields as sensitive
-enrich(ctx,
-    SensitiveString("user.email", email),  # auto-redacted
-    MarkSensitive("credit_card", card_no),
-    HashString("user.ssn", ssn),
+loxa.enrich(ctx,
+    loxa.SensitiveString("user.email", email),  # auto-redacted
+    loxa.MarkSensitive("credit_card", card_no),
+    loxa.HashString("user.ssn", ssn),
 )
 ```
 
 ## Schema
 
 ```python
-from loxa import (
-    DefaultSchema, FlatSchema, NestedSchema, OTelLogSchema, ECSchema,
-    DatadogSchema, CustomSchema, SchemaFunc,
-)
+import loxa
 
-cfg = production("checkout").with_schema(DefaultSchema())
-cfg = production("checkout").with_schema(FlatSchema())  # good for ClickHouse
-cfg = production("checkout").with_schema(OTelLogSchema())
-cfg = production("checkout").with_schema(ECSchema())
+cfg = loxa.production("checkout").with_schema(loxa.DefaultSchema())
+cfg = loxa.production("checkout").with_schema(loxa.FlatSchema())  # good for ClickHouse
+cfg = loxa.production("checkout").with_schema(loxa.OTelLogSchema())
+cfg = loxa.production("checkout").with_schema(loxa.ECSchema())
 
 # Custom schema
 def my_schema(ev):
@@ -416,17 +373,17 @@ def my_schema(ev):
         "fields": ev.attrs(),
     }
 
-cfg = production("checkout").with_schema(CustomSchema(my_schema))
+cfg = loxa.production("checkout").with_schema(loxa.CustomSchema(my_schema))
 ```
 
 ## Duplicate Policy
 
 ```python
-from loxa import CanonicalWins, UserWins, FirstWins, LastWins, KeepBoth, ErrorOnDuplicate
+import loxa
 
-cfg = production("checkout").with_duplicate_policy(CanonicalWins)  # default
-cfg = production("checkout").with_duplicate_policy(LastWins)      # user attrs win
-cfg = production("checkout").with_duplicate_policy(ErrorOnDuplicate)  # strict
+cfg = loxa.production("checkout").with_duplicate_policy(loxa.CanonicalWins)  # default
+cfg = loxa.production("checkout").with_duplicate_policy(loxa.LastWins)      # user attrs win
+cfg = loxa.production("checkout").with_duplicate_policy(loxa.ErrorOnDuplicate)  # strict
 ```
 
 ## Middleware
@@ -448,21 +405,21 @@ from loxa.middleware.django.middleware import LoxaMiddleware
 ## Feature Flags
 
 ```python
-from loxa import FeatureFlag, FeatureFlagBool, Experiment
+import loxa
 
-enrich(ctx,
-    FeatureFlag("checkout_v2", "enabled"),
-    FeatureFlagBool("new_ui", True),
-    Experiment("pricing_test", "variant_b"),
+loxa.enrich(ctx,
+    loxa.FeatureFlag("checkout_v2", "enabled"),
+    loxa.FeatureFlagBool("new_ui", True),
+    loxa.Experiment("pricing_test", "variant_b"),
 )
 ```
 
 ## Security
 
 ```python
-from loxa import SecurityConfig, SensitiveString, MarkSensitive, HashString
+import loxa
 
-cfg = production("checkout").with_security(SecurityConfig(
+cfg = loxa.production("checkout").with_security(loxa.SecurityConfig(
     redact_by_default=True,
     allow_pii=False,
     max_field_bytes=4096,
@@ -471,21 +428,21 @@ cfg = production("checkout").with_security(SecurityConfig(
     drop_oversized_events=True,
 ))
 
-enrich(ctx,
-    SensitiveString("user.email", email),
-    HashString("user.ssn", ssn),
+loxa.enrich(ctx,
+    loxa.SensitiveString("user.email", email),
+    loxa.HashString("user.ssn", ssn),
 )
 ```
 
 ## Context Helpers
 
 ```python
-from loxa import FromContext, HasEvent, EventID, RequestIDFromContext
+import loxa
 
-ev, ok = FromContext(ctx)
-if HasEvent(ctx):
-    eid = EventID(ctx)
-    rid = RequestIDFromContext(ctx)
+ev, ok = loxa.FromContext(ctx)
+if loxa.HasEvent(ctx):
+    eid = loxa.EventID(ctx)
+    rid = loxa.RequestIDFromContext(ctx)
 ```
 
 ## Testing
@@ -506,7 +463,7 @@ assert_has_checkpoint(events[0], "payment_started")
 
 # Context manager
 with CapturingLogger("test") as (logger, store):
-    ctx = logger.start_event(Params(event="test"))
+    ctx = logger.start_event(loxa.Params(event="test"))
     logger.finish(ctx, "success")
     logger.emit(ctx)
 events = store.events()
@@ -528,3 +485,24 @@ python ../../spec/conformance/runner.py --sdk python --group all
 - [docs/integrations.md](docs/integrations.md)
 - [docs/security.md](docs/security.md)
 - [docs/testing.md](docs/testing.md)
+
+## Cross-Language Parity
+
+| Feature                   | Python               | Go                   | JavaScript           | Rust                 |
+|---------------------------|----------------------|----------------------|----------------------|----------------------|
+| Module facade             | `import loxa`        | `import "loxa"`      | `import loxa`        | `use loxa`           |
+| Configure                 | `loxa.configure()`   | `loxa.Configure()`   | `loxa.configure()`   | `loxa::configure()`  |
+| Start event               | `loxa.start_event()` | `loxa.StartEvent()`  | `loxa.startEvent()`  | `loxa::start_event()`|
+| Enrich                    | `loxa.enrich()`      | `loxa.Enrich()`      | `loxa.enrich()`      | `loxa::enrich()`     |
+| Checkpoint                | `loxa.checkpoint()`  | `loxa.Checkpoint()`  | `loxa.checkpoint()`  | `loxa::checkpoint()` |
+| Finish                    | `loxa.finish()`      | `loxa.Finish()`      | `loxa.finish()`      | `loxa::finish()`     |
+| Emit                      | `loxa.emit()`        | `loxa.Emit()`        | `loxa.emit()`        | `loxa::emit()`       |
+| Shutdown                  | `loxa.shutdown()`    | `loxa.Shutdown()`    | `loxa.shutdown()`    | `loxa::shutdown()`   |
+| Create instance           | `loxa.create_loxa()` | `loxa.NewLogger()`   | `loxa.createLoxa()`  | `loxa::new()`        |
+| Alias                     | `loxa.alias()`       | `loxa.Alias()`       | `loxa.alias()`       | `loxa::alias()`      |
+| String attr               | `loxa.String()`      | `loxa.String()`      | `loxa.string()`      | `loxa::String()`     |
+| Int attr                  | `loxa.Int()`         | `loxa.Int()`         | `loxa.int()`         | `loxa::Int()`        |
+| User ID                   | `loxa.UserID()`      | `loxa.UserID()`      | `loxa.userID()`      | `loxa::UserID()`     |
+| Feature flag              | `loxa.FeatureFlag()` | `loxa.FeatureFlag()` | `loxa.featureFlag()` | `loxa::FeatureFlag()`|
+| Middleware                 | `loxa.middleware.*`  | `loxa/http`          | `loxa/middleware`    | `loxa::middleware`   |
+| Test kit                  | `loxa.testkit`       | `loxa/testkit`       | `loxa/testkit`       | `loxa::testkit`      |

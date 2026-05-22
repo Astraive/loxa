@@ -67,7 +67,7 @@ Every event flows through this pipeline. You can add attributes at any point bef
 This example instruments a complete e-commerce checkout flow:
 
 ```typescript
-import * as loxa from "loxa-js";
+import { loxa } from "loxa-js";
 
 // --- One-time setup ---
 loxa.configure(
@@ -1116,7 +1116,7 @@ it("should track process steps", async () => {
 ### 13.1 E-Commerce Checkout Flow
 
 ```typescript
-import * as loxa from "loxa-js";
+import { loxa } from "loxa-js";
 
 async function handleCheckout(req: CheckoutRequest) {
   const ctx = loxa.startEvent({

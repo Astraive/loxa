@@ -77,24 +77,20 @@ Set the `LOXA_API_KEY` environment variable, then configure the SDK:
 
 ```go
 import (
+    "os"
+
     loxa "github.com/astraive/loxa/sdks/go"
-    "github.com/astraive/loxa/sdks/go/sinks/httpbatch"
 )
 
-sink, _ := httpbatch.New(httpbatch.Config{
-    Endpoint: "https://collector.example.com/ingest",
-})
-client, _ := loxa.New(loxa.Config{
-    Service: "checkout-api",
-    Sink:    sink,
-    APIKey:  os.Getenv("LOXA_API_KEY"),
-})
+loxa.Configure(loxa.Production("checkout-api").
+    WithCollectorEndpoint("https://collector.example.com").
+    WithAPIKey(os.Getenv("LOXA_API_KEY")))
 ```
 
-Or with the default logger:
+Or create a custom instance:
 
 ```go
-loxa.Configure(loxa.Config{
+logger, _ := loxa.New(loxa.Config{
     Service:        "checkout-api",
     CollectorURL:   "https://collector.example.com",
     APIKey:         os.Getenv("LOXA_API_KEY"),
@@ -104,73 +100,67 @@ loxa.Configure(loxa.Config{
 ### Python
 
 ```python
-from loxa import CollectorClient, HTTPBatchSink
+import os, loxa
 
-sink = HTTPBatchSink(endpoint="https://collector.example.com/ingest")
-client = CollectorClient(
-    service="checkout-api",
-    sink=sink,
-    api_key=os.environ["LOXA_API_KEY"],
+loxa.configure(
+    loxa.production("checkout-api")
+    .with_collector_endpoint("https://collector.example.com")
+    .with_api_key(os.environ["LOXA_API_KEY"])
 )
 ```
 
-Or with the default logger:
+Or create a custom instance:
 
 ```python
-import loxa
-
-loxa.configure(loxa.Config(
+logger = loxa.create_loxa(
     service="checkout-api",
     collector_endpoint="https://collector.example.com",
     api_key=os.environ["LOXA_API_KEY"],
-))
+)
 ```
 
 ### Rust
 
 ```rust
-use loxa::{Config, HTTPBatchSink};
-
-let sink = HTTPBatchSink::new("https://collector.example.com/ingest")?;
-let client = Config::new("checkout-api")
-    .with_sink(sink)
-    .with_api_key(std::env::var("LOXA_API_KEY")?)
-    .build()?;
-```
-
-Or with the default logger:
-
-```rust
 loxa::configure(
-    loxa::Config::dev("checkout-api")
+    loxa::Config::production("checkout-api")
         .with_collector_endpoint("https://collector.example.com")
         .with_api_key(std::env::var("LOXA_API_KEY")?)
 )?;
 ```
 
+Or create a custom instance:
+
+```rust
+let logger = loxa::create_loxa(
+    loxa::Config::production("checkout-api")
+        .with_collector_endpoint("https://collector.example.com")
+        .with_api_key(std::env::var("LOXA_API_KEY")?)
+);
+```
+
 ### JavaScript
 
 ```typescript
-import { CollectorClient, HTTPBatchSink } from "loxa-js";
+import { loxa } from "loxa-js";
 
-const sink = new HTTPBatchSink({ endpoint: "https://collector.example.com/ingest" });
-const client = new CollectorClient({
-    service: "checkout-api",
-    sink,
-    apiKey: process.env.LOXA_API_KEY!,
-});
-```
-
-Or with the default logger:
-
-```typescript
-import { configure, production } from "loxa-js";
-
-configure(
-    production("checkout-api")
+loxa.configure(
+    loxa.production("checkout-api")
         .withCollectorEndpoint("https://collector.example.com")
         .withApiKey(process.env.LOXA_API_KEY!)
 );
+```
+
+Or create a custom instance:
+
+```typescript
+import { createLoxa } from "loxa-js";
+
+const logger = createLoxa({
+    service: "checkout-api",
+    collectorUrl: "https://collector.example.com",
+    apiKey: process.env.LOXA_API_KEY!,
+});
 ```
 
 ## Headers

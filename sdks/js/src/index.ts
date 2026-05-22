@@ -69,7 +69,7 @@ export { LevelDebug, LevelInfo, LevelWarn, LevelError, LevelFatal, parseLevel, l
 export type { Level } from './core/level.ts';
 
 // --- Logger ---
-export { Logger, New, TryNew, Default, Configure, getDefault, configure, reset } from './core/logger.ts';
+export { Logger, New, TryNew, Default, Configure, getDefault, reset } from './core/logger.ts';
 
 // --- Config + Builder ---
 export {
@@ -164,7 +164,11 @@ export type { TestLoggerResult } from './testkit/helpers.ts';
 
 // --- Default facade (loxa.*) ---
 export {
+  loxa,
   defaultLogger,
+  configure,
+  createLoxa,
+  alias,
   startEvent, startHttpEvent, startJobEvent, startQueueEvent, startCliEvent, startCronEvent,
   append, enrich, set, merge, del, get, getGroup,
   checkpoint, finish, finishError, emit, runEvent,
@@ -195,8 +199,6 @@ export {
   warn as Warn,
   error as Error,
   fatal as Fatal,
-  createLoxa,
-  alias,
   createLoxa as CreateLoxa,
   alias as Alias,
 } from './loxa.ts';

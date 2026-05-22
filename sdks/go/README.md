@@ -94,6 +94,25 @@ Sample event:
 }
 ```
 
+## Custom Instances
+
+```go
+// Create a custom logger with its own config
+logger, _ := loxa.CreateLoxa(loxa.Config{
+    Service:      "checkout-api",
+    CollectorURL: "http://localhost:9090",
+})
+logger.Info(ctx, "payment processed")
+
+// Or use the idiomatic Go alias
+logger, _ := loxa.New(loxa.Config{Service: "checkout-api"})
+logger.Info(ctx, "payment processed")
+
+// Alias — same config as default, different service name
+audit, _ := loxa.Alias("audit-service")
+audit.Info(ctx, "permission changed")
+```
+
 ## API Stability (v1)
 
 The stable core surface for `v1.0.x` is:

@@ -9,17 +9,20 @@ import (
 	"time"
 )
 
+var benchCounter int64
+
 func generateEvents(n int) [][]byte {
 	events := make([][]byte, n)
 	for i := 0; i < n; i++ {
+		benchCounter++
 		ev := map[string]any{
-			"event_id":   fmt.Sprintf("evt_bench_%d_%d", time.Now().UnixNano(), i),
+			"event_id":   fmt.Sprintf("evt_bench_%d", benchCounter),
 			"timestamp":  time.Now().UTC().Format(time.RFC3339Nano),
 			"event_name": "benchmark.event",
 			"level":      "info",
 			"service":    "bench-service",
 			"outcome":    "success",
-			"raw":        fmt.Sprintf(`{"event":{"name":"bench_%d","timestamp":"%s"}}`, i, time.Now().UTC().Format(time.RFC3339Nano)),
+			"raw":        fmt.Sprintf(`{"event":{"name":"bench_%d","timestamp":"%s"}}`, benchCounter, time.Now().UTC().Format(time.RFC3339Nano)),
 		}
 		events[i], _ = json.Marshal(ev)
 	}
@@ -47,18 +50,24 @@ func BenchmarkDuckDBInsert(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	events := generateEvents(100)
 	ctx := context.Background()
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		ev := events[i%len(events)]
-		var parsed map[string]any
-		json.Unmarshal(ev, &parsed)
+		benchCounter++
+		ev := map[string]any{
+			"event_id":   fmt.Sprintf("evt_bench_%d", benchCounter),
+			"timestamp":  time.Now().UTC().Format(time.RFC3339Nano),
+			"event_name": "benchmark.event",
+			"level":      "info",
+			"service":    "bench-service",
+			"outcome":    "success",
+			"raw":        fmt.Sprintf(`{"event":{"name":"bench_%d"}}`, benchCounter),
+		}
 		_, err := db.ExecContext(ctx,
 			`INSERT INTO events (event_id, timestamp, event_name, level, service, outcome, raw) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			parsed["event_id"], parsed["timestamp"], parsed["event_name"], parsed["level"], parsed["service"], parsed["outcome"], parsed["raw"])
+			ev["event_id"], ev["timestamp"], ev["event_name"], ev["level"], ev["service"], ev["outcome"], ev["raw"])
 		if err != nil {
 			b.Fatal(err)
 		}

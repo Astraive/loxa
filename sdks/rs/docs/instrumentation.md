@@ -84,7 +84,7 @@ This example demonstrates the complete lifecycle of a checkout business operatio
 
 ```rust
 use loxa::{
-    Config, New, StartEvent, Params, Enrich, Append, Checkpoint,
+    Config, Params, Enrich, Append, Checkpoint,
     Finish, FinishError, Emit, Flush, Shutdown,
     UserID, TenantID, OrderID, CartID, CustomerID,
     Amount, Currency, Country, Plan, Platform,
@@ -95,14 +95,15 @@ use loxa::{
 };
 
 fn main() {
-    // 1. Create a production logger
-    let logger = New(Config::production("checkout-service")
+    // 1. Configure the default logger
+    loxa::configure(Config::production("checkout-service")
         .with_sink(HttpBatchSink("http://collector:9090/v1/events"))
         .with_sampler(SampleAll())
-        .with_redactor(DefaultRedactor()));
+        .with_redactor(DefaultRedactor()))
+        .expect("failed to configure loxa");
 
     // 2. Start a checkout event
-    let mut evt = logger.start_event(Params::new("checkout.completed").with_kind("event"));
+    let mut evt = loxa::start_event(Params::new("checkout.completed").with_kind("event"));
 
     // 3. Attach identity context
     Append(&mut evt, UserID("u_8f3a"));
@@ -224,24 +225,24 @@ stateDiagram-v2
 
 ```rust
 // Generic event
-let mut evt = logger.start_event(Params::new("order.created").with_kind("event"));
+let mut evt = loxa::start_event(Params::new("order.created").with_kind("event"));
 
 // HTTP event -- method and path are pre-populated
-let mut evt = logger.start_event(
+let mut evt = loxa::start_event(
     StartHTTPEvent("POST", "/api/v1/orders")
 );
 
 // Background job
-let mut evt = logger.start_event(Params::new("send_welcome_email").with_kind("job"));
+let mut evt = loxa::start_event(Params::new("send_welcome_email").with_kind("job"));
 
 // Queue consumer
-let mut evt = logger.start_event(Params::new("order_notifications").with_kind("queue"));
+let mut evt = loxa::start_event(Params::new("order_notifications").with_kind("queue"));
 
 // CLI command
-let mut evt = logger.start_event(Params::new("migrate_db").with_kind("cli"));
+let mut evt = loxa::start_event(Params::new("migrate_db").with_kind("cli"));
 
 // Cron task
-let mut evt = logger.start_event(Params::new("cleanup_expired_sessions").with_kind("cron"));
+let mut evt = loxa::start_event(Params::new("cleanup_expired_sessions").with_kind("cron"));
 ```
 
 **Params builder methods:**
@@ -316,9 +317,9 @@ Finish(&mut evt);
 // Error with message
 FinishError(&mut evt, "payment gateway timeout");
 
-// Via Logger methods (return Result)
-logger.finish(&mut evt, "success")?;
-logger.finish_error(&mut evt, "connection refused")?;
+// Via module-level functions (return Result)
+loxa::finish(&mut evt, "success")?;
+loxa::finish_error(&mut evt, "connection refused")?;
 ```
 
 ### 3.5 Emitting and Flushing
@@ -628,7 +629,7 @@ Append(&mut evt, Route("/api/v1/orders"));
 `FinishError` sets `outcome = "error"`, `level = "error"`, and populates the `error` object in the event JSON.
 
 ```rust
-let mut evt = logger.start_event(Params::new("payment.charge").with_kind("event"));
+let mut evt = loxa::start_event(Params::new("payment.charge").with_kind("event"));
 
 match charge_payment(&order).await {
     Ok(charge) => {
@@ -705,12 +706,12 @@ loxa = { version = "1.0", features = ["actix"] }
 
 ```rust
 use actix_web::{web, App, HttpServer, HttpResponse};
-use loxa::{Config, New, HttpBatchSink};
+use loxa::{Config, HttpBatchSink};
 use loxa::middleware::actix::LoxaMiddleware;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let logger = New(Config::production("api-server")
+    let logger = loxa::create_loxa(Config::production("api-server")
         .with_sink(HttpBatchSink("http://collector:9090/v1/events")));
 
     HttpServer::new(move || {
@@ -733,13 +734,13 @@ loxa = { version = "1.0", features = ["axum"] }
 
 ```rust
 use axum::{Router, routing::post, middleware};
-use loxa::{Config, New, HttpBatchSink};
+use loxa::{Config, HttpBatchSink};
 use loxa::middleware::axum::{LoxaLayer, loxa_middleware};
 use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
-    let logger = Arc::new(New(Config::production("api-server")
+    let logger = Arc::new(loxa::create_loxa(Config::production("api-server")
         .with_sink(HttpBatchSink("http://collector:9090/v1/events"))));
 
     let app = Router::new()
@@ -801,13 +802,13 @@ pub struct MiddlewareConfig {
 
 ```rust
 // Production -- strict validation, async enabled
-let logger = New(Config::production("my-service"));
+loxa::configure(Config::production("my-service")).unwrap();
 
 // Development -- lenient, stdout sink
-let logger = New(Config::dev("my-service"));
+loxa::configure(Config::dev("my-service")).unwrap();
 
 // Testing -- memory sink for capture
-let logger = New(Config::test("my-service"));
+loxa::configure(Config::test("my-service")).unwrap();
 ```
 
 ### 10.2 Config Builder
@@ -825,24 +826,24 @@ let config = Config::production("my-service")
     .with_duplicate_policy(CanonicalWins);
 ```
 
-### 10.3 NewWith Options API
+### 10.3 Config Builder API
 
-The `NewWith` constructor accepts a vector of `ConfigOption` closures:
+The `loxa::create_loxa` factory accepts a `Config` object with builder methods:
 
 ```rust
-use loxa::{NewWith, WithService, WithVersion, WithSink, WithSampler, WithRedactor};
+use loxa::{Config, HttpBatchSink, SampleErrors, RedactKeys, CanonicalWins};
 
-let logger = NewWith(vec![
-    WithService("checkout-service"),
-    WithVersion("2.0.0"),
-    WithEnvironment("production"),
-    WithRegion("eu-west-1"),
-    WithSink(HttpBatchSink("http://collector:9090/v1/events")),
-    WithSampler(SampleErrors()),
-    WithRedactor(RedactKeys(&["password", "ssn", "credit_card"])),
-    WithDuplicatePolicy(CanonicalWins),
-    WithAsync(true),
-]);
+let logger = loxa::create_loxa(
+    Config::production("checkout-service")
+        .with_version("2.0.0")
+        .with_environment("production")
+        .with_region("eu-west-1")
+        .with_sink(HttpBatchSink("http://collector:9090/v1/events"))
+        .with_sampler(SampleErrors())
+        .with_redactor(RedactKeys(&["password", "ssn", "credit_card"]))
+        .with_duplicate_policy(CanonicalWins)
+        .with_async(true),
+);
 ```
 
 ### 10.4 Sink Types
@@ -1051,12 +1052,12 @@ fn test_checkpoints() {
 For advanced test scenarios, use `MemorySinkStore` directly:
 
 ```rust
-use loxa::{Config, Logger, SinkConfig, MemorySinkStore};
+use loxa::{Config, SinkConfig, MemorySinkStore};
 
 #[test]
 fn test_advanced_capture() {
     let store = MemorySinkStore::new();
-    let logger = Logger::new(
+    let logger = loxa::create_loxa(
         Config::test("advanced").with_sink(SinkConfig::Memory(store.clone()))
     );
 
@@ -1397,8 +1398,7 @@ async fn cleanup_expired_sessions(logger: &Logger) -> Result<(), CronError> {
 
 | PascalCase              | snake_case              | Returns                 |
 |-------------------------|-------------------------|-------------------------|
-| `New(config)`           | `new_logger(config)`    | `Logger`                |
-| `NewWith(options)`      | `new_with(options)`     | `Logger`                |
+| `create_loxa(config)`   | `create_loxa(config)`   | `Logger` (custom instance) |
 | `TryNew(config)`        | `try_new_logger(config)`| `Result<Logger, Error>` |
 | `Dev(service)`          | `dev(service)`          | `Logger`                |
 | `Production(service)`   | `production(service)`   | `Logger`                |

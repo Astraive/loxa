@@ -80,6 +80,35 @@ class Logger:
         cfg = replace(self._config, service=service)
         return Logger(cfg)
 
+    def _reconfigure(self, config: Config) -> None:
+        """Reconfigure this logger in-place (used by configure() to update the exported loxa instance)."""
+        config.validate()
+        # Shut down existing pipeline if any
+        if self._pipeline is not None:
+            self._pipeline.stop()
+            self._pipeline = None
+        self._config = config
+        self._metrics = config.metrics
+        self._stats_handler = config.stats_handler
+        self._install_default_collector_sink()
+        if not self._config.sinks and self._config.environment != "test":
+            self._config = replace(self._config, sinks=Config.dev(config.service).sinks)
+        if self._config.sampler is None:
+            self._config.sampler = lambda event: True
+        if self._config.redactor is None:
+            self._config.redactor = default_redactor()
+        if self._config.schema is None:
+            self._config.schema = DefaultSchema()
+        if self._config.async_config.enabled and self._config.sinks:
+            self._pipeline = Pipeline(
+                self._config.sinks,
+                queue_size=self._config.async_config.queue_size,
+                max_batch_bytes=self._config.async_config.max_batch_bytes,
+                offline_buffer=MemoryOfflineBuffer(self._config.async_config.queue_size),
+                metrics=self._metrics,
+            )
+            self._pipeline.start(self._config.async_config.workers)
+
     def start_event(self, params: Params) -> EventContext:
         params = replace(params, custom=list(params.custom))
         if not params.service and self._config.service:

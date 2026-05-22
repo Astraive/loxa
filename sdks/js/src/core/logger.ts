@@ -242,6 +242,12 @@ export class Logger {
   shutdown(): Promise<void> {
     return this.close();
   }
+
+  /** Reconfigure this logger in-place (used by configure() to update the exported loxa instance). */
+  _reconfigure(cfg: Config): void {
+    this.cfg = { ...cfg };
+    this._resolvedSink = resolveSink(this.cfg);
+  }
 }
 
 export function New(cfg?: Partial<Config>): Logger {
