@@ -425,6 +425,10 @@ def NotSampler(sampler):
     return not_sampler(sampler)
 
 
+def SampleRateLimited(rate: float, window: float = 1.0):
+    return sample_rate_limited(rate, window)
+
+
 def DefaultRedactor():
     return default_redactor()
 
@@ -503,7 +507,8 @@ __all__ = [
     # Schema
     "Schema", "SchemaFunc", "EventView", "DefaultSchema", "FlatSchema", "NestedSchema", "ECSchema", "OTelLogSchema", "OTelSchema", "DatadogSchema", "CustomSchema",
     # Sampler
-    "SampleAll", "SampleNone", "SampleRandom", "SampleErrors", "SampleSlowRequests", "SampleStatusCodes", "SampleRoutes", "SampleUsers", "SampleTenants", "SampleFeatureFlag", "SampleByHeader", "AnySampler", "AllSampler", "NotSampler",
+    "SampleAll", "SampleNone", "SampleRandom", "SampleErrors", "SampleSlowRequests", "SampleStatusCodes", "SampleRoutes", "SampleUsers", "SampleTenants", "SampleFeatureFlag", "SampleByHeader", "SampleRateLimited", "AnySampler", "AllSampler", "NotSampler",
+    "sample_rate_limited",
     # Redactor
     "DefaultRedactor", "RedactKeys", "RedactPatterns", "HashKeys", "MaskKeys", "DropKeys", "ComposeRedactors",
     # Metrics

@@ -154,6 +154,14 @@ export type { CollectorClientOptions, VersionInfo } from './collector/client.ts'
 export { CortexClient, normalizeIncidentContext, normalizeGraphView, normalizeRemediation, validateIncidentContext, validateGraphView, validateRemediation, validateFeedback } from './cortex/client.ts';
 export type { CortexClientOptions, ReconstructionResult, GraphResult, Remediation, Feedback } from './cortex/client.ts';
 
+// --- SecurityLimiter ---
+export { SecurityLimiter } from './config/security.ts';
+export type { SecurityConfig as SecurityLimiterConfig } from './config/security.ts';
+
+// --- Testkit ---
+export { testLogger, capture, assertEvent, assertAttr, assertRedacted, assertHasCheckpoint } from './testkit/helpers.ts';
+export type { TestLoggerResult } from './testkit/helpers.ts';
+
 // --- Default facade (loxa.*) ---
 export {
   defaultLogger,

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import random
+import threading
+import time
 from datetime import timedelta
 from typing import Callable, Any
 
@@ -70,3 +72,35 @@ def all_sampler(*samplers: Sampler) -> Sampler:
 
 def not_sampler(sampler: Sampler) -> Sampler:
     return lambda event: not sampler(event)
+
+
+class _RateLimitedSampler:
+    """Token-bucket rate limiter sampler."""
+
+    def __init__(self, rate: float, window: float) -> None:
+        self.rate = rate
+        self.window = window
+        self._lock = threading.Lock()
+        self._tokens = rate
+        self._last = time.monotonic()
+
+    def __call__(self, event: EventContext) -> bool:
+        with self._lock:
+            now = time.monotonic()
+            elapsed = now - self._last
+            self._last = now
+            capacity = max(1.0, self.rate)
+            self._tokens += elapsed * (self.rate / max(self.window, 0.001))
+            if self._tokens > capacity:
+                self._tokens = capacity
+            if self._tokens < 1:
+                return False
+            self._tokens -= 1
+            return True
+
+
+def sample_rate_limited(rate: float, window: float = 1.0) -> Sampler:
+    """Keep at most `rate` events per `window` seconds using a token-bucket strategy."""
+    if rate <= 0 or window <= 0:
+        return sample_none()
+    return _RateLimitedSampler(rate, window)

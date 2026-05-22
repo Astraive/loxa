@@ -275,6 +275,22 @@ pub fn HasEvent(_: &EventContext) -> bool {
     true
 }
 
+pub fn EventID(ctx: &EventContext) -> Option<String> {
+    Some(ctx.event_id.clone())
+}
+
+pub fn RequestIDFromContext(ctx: &EventContext) -> Option<String> {
+    Some(ctx.request_id.clone())
+}
+
+pub fn TraceIDFromContext(ctx: &EventContext) -> Option<String> {
+    ctx.trace_id.clone()
+}
+
+pub fn SpanIDFromContext(ctx: &EventContext) -> Option<String> {
+    ctx.span_id.clone()
+}
+
 pub fn InjectHTTPHeaders(request: &mut HTTPRequest, event: &EventContext) {
     inject_http_headers(request, event);
 }
@@ -1291,4 +1307,20 @@ pub fn redact_patterns(patterns: &[&str]) -> RedactorConfig {
 
 pub fn from_context(ctx: &EventContext) -> Option<&EventContext> {
     FromContext(ctx)
+}
+
+pub fn event_id(ctx: &EventContext) -> Option<String> {
+    EventID(ctx)
+}
+
+pub fn request_id_from_context(ctx: &EventContext) -> Option<String> {
+    RequestIDFromContext(ctx)
+}
+
+pub fn trace_id_from_context(ctx: &EventContext) -> Option<String> {
+    TraceIDFromContext(ctx)
+}
+
+pub fn span_id_from_context(ctx: &EventContext) -> Option<String> {
+    SpanIDFromContext(ctx)
 }

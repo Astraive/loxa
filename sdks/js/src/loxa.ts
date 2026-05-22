@@ -63,3 +63,11 @@ export async function info(message: string, ...attrs: Attr[]): Promise<void> { r
 export async function warn(message: string, ...attrs: Attr[]): Promise<void> { return getDefault().warn(message, ...attrs); }
 export async function error(message: string, ...attrs: Attr[]): Promise<void> { return getDefault().error(message, ...attrs); }
 export async function fatal(message: string, ...attrs: Attr[]): Promise<void> { return getDefault().fatal(message, ...attrs); }
+
+// --- Testkit ---
+export { testLogger, capture, assertEvent, assertAttr, assertRedacted, assertHasCheckpoint } from './testkit/helpers.ts';
+export type { TestLoggerResult } from './testkit/helpers.ts';
+
+// --- SecurityLimiter ---
+export { SecurityLimiter } from './config/security.ts';
+export type { SecurityConfig as SecurityLimiterConfig } from './config/security.ts';
