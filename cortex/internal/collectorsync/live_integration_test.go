@@ -24,7 +24,7 @@ func TestRunSourceOfTruthSyncAgainstLiveCollector(t *testing.T) {
 
 	_, thisFile, _, _ := runtime.Caller(0)
 	repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", "..", ".."))
-	collectorDir := filepath.Join(repoRoot, "loxa-collector")
+	collectorDir := filepath.Join(repoRoot, "collector")
 	binDir := t.TempDir()
 	collectorBin := filepath.Join(binDir, "loxa-collector-test.exe")
 	buildCmd := exec.Command("go", "build", "-o", collectorBin, "./cmd/loxa-collector")

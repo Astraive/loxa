@@ -25,7 +25,7 @@ struct Expected {
 }
 
 fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("..")
 }
 
 fn first_existing(paths: &[PathBuf]) -> PathBuf {
@@ -41,8 +41,8 @@ fn first_existing(paths: &[PathBuf]) -> PathBuf {
 fn collector_http_client_matches_wrapped_batch_envelope_fixture() {
     let root = repo_root();
     let path = first_existing(&[
-        root.join("loxa-spec/fixtures/ingest/wrapped_batch_json.json"),
-        root.join("loxa-spec/examples/golden/ingest-envelopes/wrapped_batch_json.json"),
+        root.join("spec/fixtures/ingest/wrapped_batch_json.json"),
+        root.join("spec/examples/golden/ingest-envelopes/wrapped_batch_json.json"),
     ]);
     let raw = fs::read_to_string(path).expect("read fixture");
     let fixture: Fixture = serde_json::from_str(&raw).expect("parse fixture");

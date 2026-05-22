@@ -6,7 +6,7 @@ and a lightweight /metrics endpoint. Intended as a local prototype for a durable
 registry (cacheable, with health checks) that SDKs and CI can query.
 
 Run:
-  python loxa-spec\services\schema_service.py --host 0.0.0.0 --port 8080
+  python spec\services\schema_service.py --host 0.0.0.0 --port 8080
 
 This intentionally has no external dependencies and is easy to run in CI or as a lightweight
 container during rollout. It should be replaced by a production service (API gateway + CDN)
@@ -45,7 +45,7 @@ class SchemaServiceHandler(BaseHTTPRequestHandler):
     server_version = "LoxaSchemaService/0.1"
 
     def _spec_root(self) -> Path:
-        # service located in loxa-spec/services/ -> step up one to loxa-spec
+        # service located in spec/services/ -> step up one to spec
         return Path(__file__).resolve().parents[1]
 
     def _send_json(self, obj: object, status: int = HTTPStatus.OK) -> None:
@@ -176,7 +176,7 @@ class SchemaServiceHandler(BaseHTTPRequestHandler):
         # default: simple index with links
         if path == "/" or path == "/index.html":
             index = {
-                "service": "loxa-spec schema-service",
+                "service": "spec schema-service",
                 "endpoints": ["/health", "/contract", "/schemas/<name>", "/metrics"],
             }
             self._send_json(index)

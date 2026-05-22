@@ -3,7 +3,6 @@ use std::fs;
 use std::path::PathBuf;
 
 const REQUIRED_DIRS: &[&str] = &[
-    ".github/workflows",
     "bench",
     "docs/rules",
     "examples/basic",
@@ -54,9 +53,9 @@ fn required_repo_tree_exists() {
 fn superset_manifest_is_readable_for_parity_gate() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let manifest_path = root
-        .parent()
-        .expect("workspace parent")
-        .join("loxa-spec")
+        .parent().expect("workspace parent")
+        .parent().expect("repo root")
+        .join("spec")
         .join("docs")
         .join("sdk-parity-manifest.json");
     let manifest: Value =
@@ -73,9 +72,9 @@ fn superset_manifest_is_readable_for_parity_gate() {
 fn public_api_names_match_superset_manifest() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let manifest_path = root
-        .parent()
-        .expect("workspace parent")
-        .join("loxa-spec")
+        .parent().expect("workspace parent")
+        .parent().expect("repo root")
+        .join("spec")
         .join("docs")
         .join("sdk-parity-manifest.json");
     let manifest: Value =

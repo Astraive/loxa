@@ -6,7 +6,7 @@ from typing import Any
 
 
 def _spec_root() -> Path:
-    return Path(__file__).resolve().parents[2] / "loxa-spec"
+    return Path(__file__).resolve().parents[3] / "spec"
 
 
 def _load_manifest() -> dict[str, Any]:

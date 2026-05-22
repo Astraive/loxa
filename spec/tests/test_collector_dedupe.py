@@ -3,7 +3,7 @@ from pathlib import Path
 import sys
 
 repo_root = Path(__file__).resolve().parents[2]
-spec_dir = repo_root / 'loxa-spec'
+spec_dir = repo_root / 'spec'
 # ensure services package importable
 sys.path.insert(0, str(spec_dir))
 

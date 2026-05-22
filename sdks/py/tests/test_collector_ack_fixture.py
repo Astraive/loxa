@@ -11,11 +11,11 @@ from loxa.sinks.httpbatch import HTTPBatchSink
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+    return Path(__file__).resolve().parents[3]
 
 
 def _fixtures() -> list[Path]:
-    root = _repo_root() / "loxa-spec" / "examples" / "golden" / "collector-acks"
+    root = _repo_root() / "spec" / "examples" / "golden" / "collector-acks"
     return sorted(root.glob("*.json"))
 
 

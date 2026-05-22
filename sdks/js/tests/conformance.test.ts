@@ -67,7 +67,7 @@ describe('Spec Conformance', () => {
   });
 
   it('public API source matches stable superset manifest', () => {
-    const manifestPath = path.resolve('..', 'loxa-spec', 'docs', 'sdk-parity-manifest.json');
+    const manifestPath = path.resolve('..', '..', 'spec', 'docs', 'sdk-parity-manifest.json');
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     const source = fs.readFileSync(path.resolve('src', 'index.ts'), 'utf8');
     const missing: string[] = [];

@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 repo_root = Path(__file__).resolve().parents[2]
-spec_dir = repo_root / "loxa-spec"
+spec_dir = repo_root / "spec"
 sys.path.insert(0, str(spec_dir))
 
 from services.kafka_adapter import RetryPolicy

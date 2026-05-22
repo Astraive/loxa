@@ -6,8 +6,8 @@ import { Logger, MemorySink } from '../src/index.ts';
 
 function loadFixture() {
   const paths = [
-    resolve(import.meta.dirname, '../../loxa-spec/fixtures/emitted-shape/structured_http_success.json'),
-    resolve(import.meta.dirname, '../../loxa-spec/examples/golden/emitted-shape/structured_http_success.json'),
+    resolve(import.meta.dirname, '../../../spec/fixtures/emitted-shape/structured_http_success.json'),
+    resolve(import.meta.dirname, '../../../spec/examples/golden/emitted-shape/structured_http_success.json'),
   ];
   for (const p of paths) {
     try {

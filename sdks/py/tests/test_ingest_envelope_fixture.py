@@ -10,7 +10,7 @@ from loxa.core.http_client import _validate_ingest_envelope
 
 
 def _fixture(name: str) -> dict:
-    root = Path(__file__).resolve().parents[2] / "loxa-spec" / "examples" / "golden" / "ingest-envelopes"
+    root = Path(__file__).resolve().parents[3] / "spec" / "examples" / "golden" / "ingest-envelopes"
     return json.loads((root / name).read_text())
 
 

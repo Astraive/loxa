@@ -3,18 +3,18 @@ use std::fs;
 use std::path::PathBuf;
 
 fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("..")
 }
 
 #[test]
 fn loxa_spec_manifest_points_to_existing_contract_files() {
     let root = repo_root();
     let manifest_path = {
-        let canonical = root.join("loxa-spec/conformance/manifest.json");
+        let canonical = root.join("spec/conformance/manifest.json");
         if canonical.exists() {
             canonical
         } else {
-            root.join("loxa-spec/examples/golden/manifest.json")
+            root.join("spec/examples/golden/manifest.json")
         }
     };
     let raw = fs::read_to_string(&manifest_path).expect("read manifest");

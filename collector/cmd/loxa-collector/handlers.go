@@ -42,24 +42,8 @@ func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !s.isAuthorized(r) {
-		s.metrics.requestsAuthErr.Add(1)
-		s.metrics.eventsRejected.Add(1)
-		writeJSON(w, http.StatusUnauthorized, ingest.Response{
-			RequestID: requestID,
-			Status:    ingest.StatusRejected,
-			Rejected:  1,
-			Error:     "auth_failed",
-			Reason:    "auth_failed",
-			Errors: []ingest.EventError{{
-				Index:     0,
-				Code:      "auth_failed",
-				Message:   "collector authentication failed",
-				Retryable: false,
-			}},
-		})
-		return
-	}
+	// Auth is handled by middleware (auth.Middleware + auth.RequirePermission).
+	// When auth is disabled, middleware is not applied and requests pass through.
 
 	if !isSupportedIngestContentType(r.Header.Get("Content-Type")) {
 		s.metrics.eventsRejected.Add(1)
@@ -380,10 +364,7 @@ func (s *collectorState) handleMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *collectorState) handleTail(w http.ResponseWriter, r *http.Request) {
-	if !s.isAuthorized(r) {
-		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
-		return
-	}
+	// Auth is handled by middleware.
 	filters, err := serverruntime.ParseTailFilters(r)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})

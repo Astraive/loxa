@@ -3,11 +3,11 @@ use std::fs;
 use std::path::PathBuf;
 
 fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("..")
 }
 
 fn spec_root() -> PathBuf {
-    repo_root().join("loxa-spec")
+    repo_root().join("spec")
 }
 
 fn manifest_path() -> PathBuf {

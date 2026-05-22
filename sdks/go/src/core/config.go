@@ -135,6 +135,10 @@ type Config struct {
 	Region       string
 	TenantID     string // Multi-tenant identifier
 
+	// ── Authentication ───────────────────────────────────────────────────────
+	APIKey   string // Ingest API key (e.g., "lx_sec_live_k_xxx_yyyy")
+	Insecure bool   // Allow plain HTTP (local dev only). Default: false.
+
 	// ── Collector configuration ───────────────────────────────────────────────
 	CollectorURL string // URL of the LOXA collector (required)
 
@@ -339,6 +343,18 @@ func (c Config) WithFallbackSink(sink Sink) Config {
 
 func (c Config) WithCollectorEndpoint(endpoint string) Config {
 	c.CollectorEndpoint = strings.TrimSpace(endpoint)
+	return c
+}
+
+// WithAPIKey sets the ingest API key for collector authentication.
+func (c Config) WithAPIKey(apiKey string) Config {
+	c.APIKey = strings.TrimSpace(apiKey)
+	return c
+}
+
+// WithInsecure allows plain HTTP connections (for local dev only).
+func (c Config) WithInsecure(insecure bool) Config {
+	c.Insecure = insecure
 	return c
 }
 
@@ -724,6 +740,11 @@ func LoadFromEnv(base Config) Config {
 		cfg.CollectorURL = url
 	}
 
+	// Load authentication
+	if apiKey := os.Getenv("LOXA_API_KEY"); apiKey != "" {
+		cfg.APIKey = apiKey
+	}
+
 	// Load service identity
 	if service := os.Getenv("LOXA_SERVICE_NAME"); service != "" {
 		cfg.Service = service
@@ -911,8 +932,21 @@ func NewClient(cfg Config) (*Logger, error) {
 	// If no explicit sink was configured, route events to the collector endpoint
 	// using HTTPBatchSink (NDJSON batching with periodic flush).
 	if shouldInstallDefaultCollectorSink(merged) {
+		// Build headers from config (auth + service identity)
+		headers := make(map[string]string)
+		if merged.APIKey != "" {
+			headers["Authorization"] = "Bearer " + merged.APIKey
+		}
+		if merged.Service != "" {
+			headers["X-Loxa-Service"] = merged.Service
+		}
+		if merged.Environment != "" {
+			headers["X-Loxa-Env"] = merged.Environment
+		}
+
 		batchSink, err := HTTPBatchSink(HTTPBatchSinkConfig{
 			Endpoint:      strings.TrimRight(merged.CollectorURL, "/") + "/ingest",
+			Headers:       headers,
 			BatchSize:     merged.BatchSize,
 			FlushInterval: merged.Async.FlushInterval,
 			Gzip:          merged.EnableCompression,

@@ -51,6 +51,7 @@ src/loxa/core/span.py
 src/loxa/core/spec_contract.py
 src/loxa/core/standard_sinks.py
 src/loxa/core/structure.py
+src/loxa/core/timing.py
 src/loxa/core/uuidv7.py
 src/loxa/cortex/__init__.py
 src/loxa/cortex/client.py
@@ -136,6 +137,7 @@ tests/test_canonical_fields.py
 tests/test_collector_ack_fixture.py
 tests/test_config_loader.py
 tests/test_delivery_semantics.py
+tests/test_e2e_live.py
 tests/test_emitted_shape_fixture.py
 tests/test_httpbatch_sink.py
 tests/test_ingest_envelope_fixture.py
@@ -148,3 +150,4 @@ tests/test_parity.py
 tests/test_smoke.py
 tests/test_spec_conformance.py
 tests/test_state_machine.py
+tests/test_timing.py

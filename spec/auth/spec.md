@@ -2,135 +2,281 @@
 
 ## Overview
 
-LOXA provides unified authentication across all components using multiple methods:
-- **API Key**: Simple header-based authentication
-- **JWT**: Token-based authentication with claims support
-- **mTLS**: Mutual TLS with client certificate validation
+LOXA uses scoped ingest API keys with RBAC+ABAC for authentication and authorization. The collector (data plane) validates keys and enforces permissions. Key management (create/revoke/rotate) lives in the control plane (cortex/API).
 
-## Auth Modes
+## Key Format
 
-| Mode | Description | Use Case |
-|------|-------------|---------|
-| `none` | No authentication | Development/local |
-| `api_key` | API key in header | Service-to-service |
-| `jwt` | JWT bearer tokens | User/SSO authentication |
-| `mtls` | Mutual TLS | High-security environments |
-
-## Configuration
-
-```yaml
-auth:
-  enabled: true              # Enable/disable auth (default: false)
-  mode: "api_key"           # Auth mode: none, api_key, jwt, mtls
-  api_key_header: "X-API-Key" # Header for API key
-  api_keys:               # List of API keys
-    - name: "service-a"
-      key: "loxa_xxx_xxx"
-      role: "writer"       # reader, writer, admin
-    - name: "admin"
-      key: "loxa_xxx_xxx"
-      role: "admin"
-  jwt_secret: ""          # JWT verification key (HMAC or RSA/ECDSA pubkey)
-  jwt_issuer: ""          # Expected JWT issuer (optional)
-  jwt_audience: []        # Expected JWT audience (optional)
-  required_version: "v1"   # Required API version for auth
+```
+lx_{kind}_{env}_{key_id}_{secret}
 ```
 
-## API Key Format
+| Component | Values | Example |
+|-----------|--------|---------|
+| Prefix | `lx` | `lx` |
+| Kind | `pub`, `sec`, `local` | `sec` |
+| Env | `live`, `test`, `dev` | `live` |
+| Key ID | Single segment, no underscores | `k2M9aQp` |
+| Secret | Arbitrary length | `7QmVxN8pT4zRbK1sYw` |
 
-- Prefix: `loxa_`
-- Format: `{random_32_chars}` 
-- Example: `loxa_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6`
+### Examples
 
-## Roles
-
-| Role | Permissions |
-|------|-------------|
-| `reader` | GET requests only |
-| `writer` | GET + POST to ingest/feedback endpoints |
-| `admin` | All requests including config changes |
-
-## HTTP Headers
-
-### Request (Client → Server)
 ```
-X-API-Key: loxa_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-Authorization: Bearer <jwt_token>
+lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw    # Backend server (production)
+lx_pub_live_kabc123_xxxxx                    # Frontend/browser (production)
+lx_sec_test_ktest1_testsecret                # Backend server (test)
+lx_local_dev_mydevtoken                      # Local development only
 ```
 
-### Response (Server → Client)
+### Key Kinds
+
+| Kind | Prefix | Use Case | Scopes |
+|------|--------|----------|--------|
+| `sec` | `lx_sec_` | Backend/server SDKs | Full ingest |
+| `pub` | `lx_pub_` | Frontend/browser/mobile | Limited ingest |
+| `local` | `lx_local_` | Local dev only | Full ingest (blocked in prod) |
+
+## Wire Protocol
+
+### HTTP
+
+```
+POST /v1/events
+Authorization: Bearer lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
+X-Loxa-Service: checkout-api
+X-Loxa-Env: prod
+Content-Type: application/json
+```
+
+### gRPC
+
+Metadata:
+```
+authorization: Bearer lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
+x-loxa-service: checkout-api
+x-loxa-env: prod
+```
+
+## RBAC Roles
+
+| Role | Permissions | Use Case |
+|------|-------------|----------|
+| `collector_ingest_public` | events:write, heartbeat:write | Frontend/browser SDKs |
+| `collector_ingest_server` | events:write, logs:write, traces:write, metrics:write, heartbeat:write | Backend SDKs |
+| `collector_ingest_enterprise` | All above + profiles:write, attachments:write | Enterprise (requires mTLS/HMAC) |
+| `project_readonly` | events:read, logs:read, traces:read, metrics:read, schema:read, pii_audit:read | Dashboards, support |
+| `project_operator` | project_readonly + schema:write | DevOps, infra automation |
+| `project_admin` | events:read, events:delete, logs:read, traces:read, metrics:read, schema:read, schema:write, pii_audit:read, project:admin | Admin (no ingest) |
+
+Note: `project_admin` does NOT include ingest permissions. Ingest and admin keys are separate concerns.
+
+## Permissions
+
+```
+events:write      logs:write       traces:write     metrics:write
+events:read       logs:read        traces:read      metrics:read
+events:delete     heartbeat:write  schema:write     schema:read
+pii_audit:read    project:admin
+```
+
+## ABAC Restrictions
+
+Each API key can have attribute-based restrictions:
+
+| Restriction | Description | Default |
+|-------------|-------------|---------|
+| `allowed_envs` | Permitted environments | All |
+| `allowed_services` | Permitted service names | All |
+| `allowed_origins` | Permitted Origins (public keys) | Required for pub |
+| `allowed_ips` | Permitted IP addresses/CIDRs | All |
+| `max_payload_bytes` | Max request body size | 256KB |
+| `max_requests_per_minute` | Request rate limit | 1000 |
+| `max_events_per_minute` | Event rate limit | 10000 |
+| `sampling_rate` | Event sampling rate | 1.0 |
+| `allow_pii` | Allow PII in events | false for pub |
+| `allow_attachments` | Allow attachments | false for pub |
+
+## Validation Flow
+
+```
+1.  Parse Authorization header → extract key
+2.  ParseKey(raw) → kind, env, key_id, secret
+3.  Cache lookup by key_id (60s positive, 10s negative)
+4.  If cache miss: KeyStore.FindByKeyID()
+5.  Check revoked / expired
+6.  Verify prefix matches DB record
+7.  HMAC-SHA256(incoming secret) == stored hash (constant-time)
+8.  Build AuthContext (org, project, roles, permissions)
+9.  Public keys: force allow_pii=false, allow_attachments=false
+10. Check X-Loxa-Env against allowed_envs
+11. Check X-Loxa-Service against allowed_services
+12. Check Origin against allowed_origins (public keys)
+13. Check remote IP against allowed_ips
+14. Check Content-Length against max_payload_bytes
+15. Wrap body with http.MaxBytesReader
+16. Apply per-key rate limit (requests/min + events/min)
+17. Attach AuthContext to request context
+18. Call next handler
+```
+
+## Default-Deny Rules
+
+| Condition | Decision |
+|-----------|----------|
+| Unknown role | Deny |
+| Unknown permission | Deny |
+| Missing env when allowed_envs configured | Deny |
+| Missing service when allowed_services configured | Deny |
+| Missing origin for public key | Deny |
+| Missing auth on protected route | Deny |
+| Missing IP when allowed_ips configured | Deny |
+| Key not found | Deny |
+| Key revoked | Deny |
+| Key expired | Deny |
+| Payload exceeds max_payload_bytes | Deny (413) |
+| Rate limit exceeded | Deny (429) |
+
+## Public Key Strict Defaults
+
+Public keys (`lx_pub_*`) are assumed exposed:
+
+- Only `events:write` + `heartbeat:write` permissions
+- No logs, traces, metrics, attachments, PII
+- `allow_pii: false` (cannot be overridden)
+- `allow_attachments: false` (cannot be overridden)
+- Origin allowlist required
+- Lower rate limits
+- Smaller payload limits
+
+## Failure Response
+
 ```
 HTTP/401 Unauthorized
-X-Auth-Failure-Reason: <reason>
-X-Auth-Failure-Code: <code>
+X-Auth-Failure-Reason: <human-readable reason>
+X-Auth-Failure-Code: <machine-readable code>
 ```
 
-## Failure Codes
+| Code | Reason |
+|------|--------|
+| `missing_token` | No Authorization header |
+| `invalid_key_format` | Key doesn't match lx_ format |
+| `key_not_found` | Key ID not in store |
+| `key_revoked` | Key has been revoked |
+| `key_expired` | Key has expired |
+| `key_kind_mismatch` | Key kind prefix mismatch |
+| `invalid_secret` | HMAC verification failed |
+| `env_not_allowed` | X-Loxa-Env not in allowed_envs |
+| `service_not_allowed` | X-Loxa-Service not in allowed_services |
+| `origin_not_allowed` | Origin not in allowed_origins |
+| `ip_not_allowed` | IP not in allowed_ips |
+| `rate_limited` | Per-key rate limit exceeded |
 
-| Code | Reason | Description |
-|------|--------|--------------|
-| `missing` | No credentials provided | Auth header required |
-| `invalid` | Invalid credentials | Key/token malformed |
-| `expired` | Expired credentials | Token expired |
-| `revoked` | Revoked credentials | Key was revoked |
-| `rate_limited`| Rate limited | Too many requests |
-| `unauthorized_role` | Role insufficient | Permission denied |
+## Token Storage
 
-## Implementation Requirements
+- Never store raw tokens
+- Store HMAC-SHA256 hash: `hmac_sha256(server_secret, token_secret)`
+- Constant-time comparison via `crypto/subtle.ConstantTimeCompare`
+- Server secret from env: `COLLECTOR_SERVER_SECRET`
 
-### Security
-- Constant-time comparison for API keys (prevent timing attacks)
-- Secure key storage (env vars, secrets managers)
-- Key rotation support
-- Audit logging for all auth events
+## SDK Integration
 
-### Standardization
-- Shared auth package across all languages
-- Consistent config schema
-- Compatible JWT claims structure
-- Standard error responses
+### Go
 
-## JWT Claims Structure
-
-```json
-{
-  "sub": "user-id",
-  "name": "John Doe",
-  "role": "writer",
-  "iss": "loxa",
-  "aud": ["loxa-cortex", "loxa-collector"],
-  "exp": 1699999999,
-  "iat": 1699999999
-}
+```go
+client := loxa.New(loxa.Config{
+    Endpoint: "https://collector.loxa.dev",
+    APIKey:   os.Getenv("LOXA_API_KEY"),
+    Service:  "checkout-service",
+    Env:      "prod",
+})
 ```
 
-## Rate Limiting (Optional)
+Env vars: `LOXA_API_KEY`, `LOXA_COLLECTOR_URL`
 
-Per-API-key rate limiting can be enabled alongside authentication:
+### Headers Set Automatically
 
+```
+Authorization: Bearer lx_sec_live_k_xxx_yyyy
+X-Loxa-Service: checkout-service
+X-Loxa-Env: prod
+```
+
+## Local Development
+
+```go
+client := loxa.New(loxa.Config{
+    Endpoint: "http://localhost:9090",
+    APIKey:   "lx_local_dev_mydevtoken",
+    Service:  "test-service",
+    Env:      "dev",
+    Insecure: true,
+})
+```
+
+Collector config:
 ```yaml
-rate_limit:
-  enabled: true
-  per_api_key_rpm: 1000    # requests per minute
-  per_ip_rpm: 100         # requests per minute (unauthenticated)
+auth:
+  enabled: false  # or enabled: true with dev_mode: true
 ```
 
-## Service Integration
+## Key Management
 
-### loxa-collector
-- Uses auth for all write endpoints
-- Fanout mode pushes to Cortex with auth
+Key management (create/revoke/rotate) lives in the control plane (cortex/API), NOT in the collector. The collector only validates keys.
 
-### loxa-cortex
-- Uses auth for event ingestion
-- Uses auth for incident reconstruction
-- Uses auth for feedback recording
+### Key Lifecycle
 
-### loxa-cli
-- Uses auth config for all commands
-- Stores credentials in config or env vars
+1. User creates project in dashboard
+2. Backend generates ingest token
+3. User adds token to env (`LOXA_API_KEY`)
+4. SDK sends batches to collector over HTTPS
+5. Collector validates token, enriches, redacts, stores
 
-### SDKs
-- Python: `LoxaClient(api_key="loxa_...")`
-- Go: `loxa.NewClient(loxa.WithAPIKey("loxa_..."))`
-- Rust: `LoxaClient::new().api_key("loxa_...")`
+### Key Rotation
+
+1. Create new key in dashboard
+2. Deploy app with new key
+3. Collector accepts both keys during overlap window
+4. Revoke old key
+
+## Route-Level Permissions
+
+Each route has its own permission requirement:
+
+| Route | Permission |
+|-------|------------|
+| `POST /v1/events` | events:write |
+| `GET /v1/events` | events:read |
+| `POST /v1/logs` | logs:write |
+| `POST /v1/traces` | traces:write |
+| `GET /v1/tail` | events:read |
+| `POST /v1/schema/publish` | schema:write |
+| `DELETE /v1/events` | events:delete |
+| `POST /v1/audit/pii` | pii_audit:read |
+| `GET /v1/dlq` | events:read |
+| `POST /v1/dlq/replay` | events:write |
+| `GET /healthz` | (public) |
+| `GET /readyz` | (public) |
+| `GET /metrics` | events:read |
+
+## Audit Events
+
+| Event | Description |
+|-------|-------------|
+| `key.authenticated` | Successful auth |
+| `key.failed` | Invalid/revoked/expired key |
+| `key.rate_limited` | Rate limit exceeded |
+| `key.permission_denied` | Missing required permission |
+| `key.env_denied` | Environment not allowed |
+| `key.origin_denied` | Origin not allowed |
+| `key.payload_too_large` | Payload exceeds limit |
+
+## Future: HMAC Signed Requests (post-v1.0.0)
+
+For enterprise high-security mode:
+
+```
+Authorization: Loxa-HMAC key_id="k_xxx", signature="...", timestamp="..."
+```
+
+Signature base: `METHOD\nPATH\nTIMESTAMP\nSHA256(body)`
+
+Protects against replay and tampering.

@@ -45,7 +45,7 @@ SDK_GROUPS: dict[str, list[Check]] = {
         Check("go", "config_precedence", ("go", "test", "./src/core", "-run", "Test.*Config.*"), WORKSPACE_ROOT / "sdks" / "go", "config and env precedence"),
         Check("go", "metrics", ("go", "test", "./src/core", "-run", "Test.*Stats.*|Test.*Metrics.*"), WORKSPACE_ROOT / "sdks" / "go", "stats and metrics hooks"),
         Check("go", "golden_fixtures", ("go", "test", "./tests/conformance", "-run", "TestConformanceFixtures"), WORKSPACE_ROOT / "sdks" / "go", "shared fixture and manifest checks"),
-        Check("go", "collector_integration", ("go", "test", "."), WORKSPACE_ROOT / "loxa-go/tests/integration", "end-to-end collector delivery"),
+        Check("go", "collector_integration", ("go", "test", "."), WORKSPACE_ROOT / "sdks" / "go" / "tests" / "integration", "end-to-end collector delivery"),
         Check("go", "cortex_emitted_shape", ("go", "test", "./src/core", "-run", "TestSharedEmittedShapeFixture"), WORKSPACE_ROOT / "sdks" / "go", "Cortex-consumable emitted event shape"),
         Check("go", "parity", ("go", "test", "./tests/conformance", "-run", "TestPublicAPISurfaceCoreFlow|TestRootModuleDependencyBoundary"), WORKSPACE_ROOT / "sdks" / "go", "stable-v1 manifest and dependency boundary"),
     ],

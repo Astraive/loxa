@@ -7,7 +7,6 @@ import loxa
 
 
 REQUIRED_DIRS = [
-    ".github/workflows",
     "bench",
     "cmd",
     "core",
@@ -45,8 +44,8 @@ def test_required_repo_tree_exists() -> None:
 
 
 def test_public_api_matches_superset_manifest() -> None:
-    root = Path(__file__).resolve().parents[2]
-    manifest = json.loads((root / "loxa-spec" / "docs" / "sdk-parity-manifest.json").read_text())
+    root = Path(__file__).resolve().parents[3]
+    manifest = json.loads((root / "spec" / "docs" / "sdk-parity-manifest.json").read_text())
     required = set()
     for key, values in manifest.items():
         if isinstance(values, list) and key not in {"excluded_from_sdk", "sdks"}:
@@ -56,8 +55,8 @@ def test_public_api_matches_superset_manifest() -> None:
 
 
 def test_spec_manifest_is_present() -> None:
-    root = Path(__file__).resolve().parents[2]
-    manifest_path = root / "loxa-spec" / "examples" / "golden" / "manifest.json"
+    root = Path(__file__).resolve().parents[3]
+    manifest_path = root / "spec" / "examples" / "golden" / "manifest.json"
     manifest = json.loads(manifest_path.read_text())
     assert (manifest_path.parent / manifest["strict_schema"]).exists()
     assert (manifest_path.parent / manifest["loose_schema"]).exists()

@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/astraive/loxa-collector/internal/auth"
 	collectorevent "github.com/astraive/loxa-collector/internal/event"
 	processing "github.com/astraive/loxa-collector/internal/processing"
 	serverruntime "github.com/astraive/loxa-collector/internal/server"
@@ -384,7 +385,82 @@ func reloadCollectorState(state *collectorState) error {
 
 func buildMux(state *collectorState) *http.ServeMux {
 	tailWSHandler := serverruntime.NewTailWebSocketHandler(state.cfg.serverConfig.HTTP, state)
-	return publichttp.BuildMux(state.cfg.ingestPath, state.cfg.healthPath, state.cfg.readyPath, state.cfg.metricsPath, state.cfg.metricsPrometheus, state.metricsHandler(), tailWSHandler, state)
+
+	// Build auth middleware if enabled
+	var protector publichttp.RouteProtector
+	if state.cfg.authEnabled {
+		serverSecret := []byte(state.cfg.storageEncryptionKey)
+		if len(serverSecret) == 0 {
+			serverSecret = []byte("loxa-default-secret")
+		}
+
+		// Create key store from config (backward compat: single apiKey → one KeyRecord)
+		store := newMemoryKeyStoreFromConfig(state.cfg, serverSecret)
+		cache := auth.NewMemoryKeyCache(60*time.Second, 10*time.Second)
+
+		// Create middleware chain
+		authMW := auth.Middleware(store, cache, serverSecret)
+
+		// Wrap: auth middleware → then per-route permission check
+		protector = func(next http.Handler, perm string) http.Handler {
+			return authMW(auth.RequirePermission(next, auth.Permission(perm)))
+		}
+	}
+
+	return publichttp.BuildMux(state.cfg.ingestPath, state.cfg.healthPath, state.cfg.readyPath, state.cfg.metricsPath, state.cfg.metricsPrometheus, state.metricsHandler(), tailWSHandler, state, protector)
+}
+
+// memoryKeyStore is a simple in-memory KeyStore for backward compatibility
+// with the single-key auth config (auth.value / COLLECTOR_API_KEY).
+type memoryKeyStore struct {
+	keys map[string]*auth.KeyRecord
+}
+
+func (s *memoryKeyStore) FindByKeyID(_ context.Context, keyID string) (*auth.KeyRecord, error) {
+	return s.keys[keyID], nil
+}
+
+// newMemoryKeyStoreFromConfig creates a KeyStore from the collector config.
+// When the old single-key config is used (auth.value), it creates one KeyRecord
+// with the collector_ingest_server role. This preserves backward compatibility.
+func newMemoryKeyStoreFromConfig(cfg collectorConfig, serverSecret []byte) *memoryKeyStore {
+	store := &memoryKeyStore{keys: make(map[string]*auth.KeyRecord)}
+
+	if cfg.apiKey == "" {
+		return store
+	}
+
+	// Parse the key to extract key_id
+	parsed, err := auth.ParseKey(cfg.apiKey)
+	if err != nil {
+		// Legacy key format (not lx_...): treat as a raw secret with a fixed key_id
+		hash := auth.HashSecret(cfg.apiKey, serverSecret)
+		store.keys["legacy"] = &auth.KeyRecord{
+			ID:           "legacy",
+			KeyID:        "legacy",
+			SecretHash:   hash,
+			Kind:         auth.KeyKindSecret,
+			Roles:        []auth.Role{auth.RoleIngestServer},
+			MaxPayloadBytes:     int(cfg.maxBodyBytes),
+			MaxRequestsPerMinute: int(cfg.rateLimitRPS) * 60,
+			MaxEventsPerMinute:  int(cfg.rateLimitRPS) * 600,
+		}
+		return store
+	}
+
+	hash := auth.HashSecret(parsed.Secret, serverSecret)
+	store.keys[parsed.KeyID] = &auth.KeyRecord{
+		ID:           parsed.KeyID,
+		KeyID:        parsed.KeyID,
+		SecretHash:   hash,
+		Kind:         parsed.Kind,
+		Roles:        []auth.Role{auth.RoleIngestServer},
+		MaxPayloadBytes:     int(cfg.maxBodyBytes),
+		MaxRequestsPerMinute: int(cfg.rateLimitRPS) * 60,
+		MaxEventsPerMinute:  int(cfg.rateLimitRPS) * 600,
+	}
+
+	return store
 }
 
 func ensureSchema(db *sql.DB, cfg collectorConfig) error {

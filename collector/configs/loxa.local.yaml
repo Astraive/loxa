@@ -4,3 +4,14 @@ duckdb:
   path: "loxa-local.db"
 reliability:
   mode: "direct"
+# Auth is disabled by default for local dev.
+# To enable: set auth.enabled=true and provide keys.
+# auth:
+#   enabled: true
+#   server_secret: "dev-secret-change-in-prod"
+#   keys:
+#     - name: "local-dev"
+#       key_id: "klocal"
+#       secret: "devtoken"
+#       kind: "local"
+#       roles: ["collector_ingest_server"]

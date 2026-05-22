@@ -11,7 +11,7 @@ Environment variables:
 - CLOUDFRONT_DISTRIBUTION_ID (optional) - if provided, an invalidation is attempted.
 
 Usage:
-  python loxa-spec/scripts/publish_contract_s3.py --dry-run
+  python spec/scripts/publish_contract_s3.py --dry-run
 """
 from __future__ import annotations
 

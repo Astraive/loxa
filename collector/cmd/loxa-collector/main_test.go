@@ -126,7 +126,7 @@ func TestHandleIngestAuthFailure(t *testing.T) {
 	sink := &fakeSink{}
 	cfg := testCollectorConfig()
 	cfg.authEnabled = true
-	cfg.apiKey = "secret"
+	cfg.apiKey = "lx_sec_live_ktest_testsecret"
 	state := &collectorState{
 		cfg:         cfg,
 		ingestSink:  sink,
@@ -134,12 +134,21 @@ func TestHandleIngestAuthFailure(t *testing.T) {
 	}
 	state.ready.Store(true)
 
-	req := httptest.NewRequest(http.MethodPost, "/ingest", strings.NewReader(`[{"event":"a"}]`))
-	rec := httptest.NewRecorder()
-	state.handleIngest(rec, req)
+	// Auth is now handled by middleware, so test through the mux
+	srv := httptest.NewServer(buildMux(state))
+	defer srv.Close()
 
-	if rec.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401, got %d", rec.Code)
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/events", strings.NewReader(`[{"event":"a"}]`))
+	req.Header.Set("Content-Type", "application/json")
+	// No Authorization header → should get 401 from middleware
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", resp.StatusCode)
 	}
 }
 
