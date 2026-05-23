@@ -95,7 +95,7 @@ impl IncidentGraph {
                         subgraph.add_node(node.id.clone(), node.node_type.clone());
                         subgraph.add_edge(edge.clone());
                     }
-                    if d + 1 <= depth {
+                    if d < depth {
                         queue.push((edge.to.clone(), d + 1));
                     }
                 }

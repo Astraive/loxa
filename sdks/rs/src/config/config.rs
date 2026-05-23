@@ -175,8 +175,14 @@ impl std::fmt::Debug for SamplerConfig {
             Self::Tenants(t) => f.debug_tuple("Tenants").field(t).finish(),
             Self::FeatureFlag(n, v) => f.debug_tuple("FeatureFlag").field(n).field(v).finish(),
             Self::SampleRandom(r) => f.debug_tuple("SampleRandom").field(r).finish(),
-            Self::SampleRateLimited(r, w) => f.debug_tuple("SampleRateLimited").field(r).field(w).finish(),
-            Self::SampleByHeader(h, v) => f.debug_tuple("SampleByHeader").field(h).field(v).finish(),
+            Self::SampleRateLimited(r, w) => f
+                .debug_tuple("SampleRateLimited")
+                .field(r)
+                .field(w)
+                .finish(),
+            Self::SampleByHeader(h, v) => {
+                f.debug_tuple("SampleByHeader").field(h).field(v).finish()
+            }
             Self::Custom(_) => write!(f, "Custom(<fn>)"),
         }
     }
@@ -529,8 +535,8 @@ fn merge_code_config(mut base: Config, code: Config) -> Config {
         base.max_event_bytes = code.max_event_bytes;
     }
     // For sinks, if code config has non-default sinks, use them
-    if !code.sinks.is_empty()
-        && !(code.sinks.len() == 1 && matches!(&code.sinks[0], SinkConfig::Stdout))
+    if !(code.sinks.is_empty()
+        || code.sinks.len() == 1 && matches!(&code.sinks[0], SinkConfig::Stdout))
     {
         base.sinks = code.sinks;
     }
@@ -597,16 +603,14 @@ fn find_defaults_config_file() -> Result<PathBuf, std::io::Error> {
         }
     }
     let cwd = std::env::current_dir()?;
-    for candidate in [
+    Ok([
         cwd.join("loxa-rs.defaults.yaml"),
         cwd.join("../loxa-rs.defaults.yaml"),
         cwd.join("../../loxa-rs.defaults.yaml"),
-    ] {
-        if candidate.exists() {
-            return Ok(candidate);
-        }
-    }
-    Ok(cwd.join("loxa-rs.defaults.yaml"))
+    ]
+    .into_iter()
+    .find(|candidate| candidate.exists())
+    .unwrap_or_else(|| cwd.join("loxa-rs.defaults.yaml")))
 }
 
 fn find_user_config_file() -> Option<PathBuf> {
@@ -617,10 +621,7 @@ fn find_user_config_file() -> Option<PathBuf> {
         }
     }
     let cwd = std::env::current_dir().ok()?;
-    for candidate in [cwd.join(".loxa-rs.yaml"), cwd.join("loxa.yaml")] {
-        if candidate.exists() {
-            return Some(candidate);
-        }
-    }
-    None
+    [cwd.join(".loxa-rs.yaml"), cwd.join("loxa.yaml")]
+        .into_iter()
+        .find(|candidate| candidate.exists())
 }

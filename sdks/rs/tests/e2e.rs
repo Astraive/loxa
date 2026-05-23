@@ -45,7 +45,7 @@ fn test_multiple_events_ordering() {
     let logger = Logger::new(Config::test("order_test"));
 
     for i in 0..5 {
-        let mut ctx = logger.start_event(Params::new(&format!("event_{}", i)));
+        let mut ctx = logger.start_event(Params::new(format!("event_{}", i)));
         let _ = logger.finish(&mut ctx, "success");
         let payload = logger.emit(&ctx).unwrap();
 
@@ -177,7 +177,7 @@ fn test_sampling_in_pipeline() {
     let logger = Logger::new(Config::test("sample_test"));
 
     for i in 0..3 {
-        let mut ctx = logger.start_event(Params::new(&format!("sampled_{}", i)));
+        let mut ctx = logger.start_event(Params::new(format!("sampled_{}", i)));
         let _ = logger.finish(&mut ctx, "success");
         let payload = logger.emit(&ctx).unwrap();
         // Should emit events
@@ -223,7 +223,7 @@ fn test_concurrent_emissions() {
         let logger_clone = Arc::clone(&logger);
         let handle = thread::spawn(move || {
             let logger = logger_clone.lock().unwrap();
-            let mut ctx = logger.start_event(Params::new(&format!("concurrent_{}", i)));
+            let mut ctx = logger.start_event(Params::new(format!("concurrent_{}", i)));
 
             let _ = logger.finish(&mut ctx, "success");
             let payload = logger.emit(&ctx).unwrap();

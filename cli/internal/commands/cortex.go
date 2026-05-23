@@ -148,7 +148,9 @@ func fetchEventsFromURL(url string) []map[string]interface{} {
 	defer resp.Body.Close()
 
 	var events []map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&events)
+	if err := json.NewDecoder(resp.Body).Decode(&events); err != nil {
+		return nil
+	}
 	return events
 }
 
@@ -239,7 +241,9 @@ func RunCortexSimilar(ctx context.Context, cfg config.Config, args []string) err
 			incidentID = args[i+1]
 			i++
 		} else if args[i] == "--limit" && i+1 < len(args) {
-			fmt.Sscanf(args[i+1], "%d", &limit)
+			if _, err := fmt.Sscanf(args[i+1], "%d", &limit); err != nil {
+				return fmt.Errorf("invalid limit: %w", err)
+			}
 			i++
 		}
 	}
@@ -320,7 +324,9 @@ func RunCortexFeedback(ctx context.Context, cfg config.Config, args []string) er
 			outcome = args[i+1]
 			i++
 		} else if args[i] == "--time-to-resolve" && i+1 < len(args) {
-			fmt.Sscanf(args[i+1], "%d", &timeToResolve)
+			if _, err := fmt.Sscanf(args[i+1], "%d", &timeToResolve); err != nil {
+				return fmt.Errorf("invalid time-to-resolve: %w", err)
+			}
 			i++
 		}
 	}
@@ -359,7 +365,9 @@ func RunCortexGraph(ctx context.Context, cfg config.Config, args []string) error
 			incidentID = args[i+1]
 			i++
 		} else if args[i] == "--depth" && i+1 < len(args) {
-			fmt.Sscanf(args[i+1], "%d", &depth)
+			if _, err := fmt.Sscanf(args[i+1], "%d", &depth); err != nil {
+				return fmt.Errorf("invalid depth: %w", err)
+			}
 			i++
 		}
 	}

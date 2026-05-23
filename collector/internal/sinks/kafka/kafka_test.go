@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"context"
 	"testing"
 	"time"
 )
@@ -29,7 +30,7 @@ func TestNewAcceptsProducerOptions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new kafka sink: %v", err)
 	}
-	if err := sink.Close(nil); err != nil {
+	if err := sink.Close(context.TODO()); err != nil {
 		t.Fatalf("close kafka sink: %v", err)
 	}
 }

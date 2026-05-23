@@ -180,7 +180,6 @@ type collectorMetrics struct {
 	queueBytes             atomic.Int64
 	inflightRequests       atomic.Int64
 	inflightEvents         atomic.Int64
-	retryAttempts          atomic.Int64
 	spoolReplayCount       int64
 	cortexBridgeFlushes    atomic.Int64
 	cortexBridgeEvents     atomic.Int64
@@ -215,12 +214,13 @@ type collectorState struct {
 	dedupeStore       dedupeStore
 	tailMu            sync.Mutex
 	tailSubscribers   map[chan []byte]struct{}
-	processorMu       sync.Mutex
+	processorMu       sync.RWMutex
 	processor         *processing.Processor
 	cortexBridge      *cortexBridgeClient
 	queryDB           *sql.DB
 	reliabilityCtx    context.Context
 	reliabilityCancel context.CancelFunc
+	retentionStop     chan struct{}
 	closeOnce         sync.Once
 }
 

@@ -121,7 +121,7 @@ func TestLoadFromEnv(t *testing.T) {
 		"LOXA_CONNECTION_TIMEOUT": os.Getenv("LOXA_CONNECTION_TIMEOUT"),
 		"LOXA_ENABLE_COMPRESSION": os.Getenv("LOXA_ENABLE_COMPRESSION"),
 	}
-	
+
 	// Restore env vars after test
 	defer func() {
 		for k, v := range originalEnv {
@@ -195,7 +195,7 @@ func TestLoadFromEnv(t *testing.T) {
 
 func TestConfigPrecedence(t *testing.T) {
 	// Test: code > environment > defaults
-	
+
 	// Set env vars
 	os.Setenv("LOXA_SERVICE_NAME", "env-service")
 	os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:8080")
@@ -206,10 +206,10 @@ func TestConfigPrecedence(t *testing.T) {
 
 	// Start with defaults
 	cfg := Dev()
-	
+
 	// Apply env vars
 	cfg = LoadFromEnv(cfg)
-	
+
 	// Verify env vars override defaults
 	if cfg.Service != "env-service" {
 		t.Errorf("Service = %v, want %v (env should override defaults)", cfg.Service, "env-service")
@@ -217,13 +217,13 @@ func TestConfigPrecedence(t *testing.T) {
 	if cfg.CollectorURL != "http://env-collector:8080" {
 		t.Errorf("CollectorURL = %v, want %v (env should override defaults)", cfg.CollectorURL, "http://env-collector:8080")
 	}
-	
+
 	// Apply code config (should override env)
-	cfg = ApplyConfig(cfg, 
+	cfg = ApplyConfig(cfg,
 		WithService("code-service"),
 		WithCollectorURL("http://code-collector:8080"),
 	)
-	
+
 	// Verify code config overrides env
 	if cfg.Service != "code-service" {
 		t.Errorf("Service = %v, want %v (code should override env)", cfg.Service, "code-service")
@@ -235,7 +235,7 @@ func TestConfigPrecedence(t *testing.T) {
 
 func TestConfigOptions(t *testing.T) {
 	cfg := Config{}
-	
+
 	cfg = ApplyConfig(cfg,
 		WithCollectorURL("http://localhost:8080"),
 		WithTenantID("tenant-123"),
@@ -248,7 +248,7 @@ func TestConfigOptions(t *testing.T) {
 		WithConnectionTimeout(15*time.Second),
 		WithCompression(false),
 	)
-	
+
 	if cfg.CollectorURL != "http://localhost:8080" {
 		t.Errorf("CollectorURL = %v, want %v", cfg.CollectorURL, "http://localhost:8080")
 	}
@@ -286,25 +286,25 @@ func TestFlushAndShutdown(t *testing.T) {
 	sink, store := MemorySink()
 	cfg := Test()
 	cfg.Sinks = []Sink{sink}
-	
+
 	logger, err := New(cfg)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
-	
+
 	// Emit an event
 	logger.Info("test message")
-	
+
 	// Flush should work
 	if err := logger.Flush(nil); err != nil {
 		t.Errorf("Flush() error = %v", err)
 	}
-	
+
 	// Verify event was flushed
 	if store.Len() == 0 {
 		t.Error("Expected events to be flushed, got none")
 	}
-	
+
 	// Shutdown should work
 	if err := logger.Shutdown(nil); err != nil {
 		t.Errorf("Shutdown() error = %v", err)

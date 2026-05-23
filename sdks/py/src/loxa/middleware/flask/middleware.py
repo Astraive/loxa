@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Callable, Iterable
+from typing import Callable, Iterable
 
 from ... import Bool, Emit, Enrich, Finish, FinishError, Int, Params, StartHTTPEvent, String
 

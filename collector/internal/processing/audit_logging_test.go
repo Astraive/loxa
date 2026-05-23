@@ -184,7 +184,7 @@ func TestAuditLogFormat(t *testing.T) {
 	p := &Processor{cfg: cfg}
 
 	// Redact event
-	p.redactPII(eventJSON)
+	_ = p.redactPII(eventJSON)
 
 	// Verify audit log format
 	mu.Lock()
@@ -253,7 +253,7 @@ func TestAuditLoggingMultipleRedactions(t *testing.T) {
 
 	eventJSON, _ := json.Marshal(event)
 	p := &Processor{cfg: cfg}
-	p.redactPII(eventJSON)
+	_ = p.redactPII(eventJSON)
 
 	// Verify all sensitive fields were logged
 	mu.Lock()
@@ -323,7 +323,7 @@ func TestAuditLoggingWithNestedStructures(t *testing.T) {
 
 	eventJSON, _ := json.Marshal(event)
 	p := &Processor{cfg: cfg}
-	p.redactPII(eventJSON)
+	_ = p.redactPII(eventJSON)
 
 	// Verify nested paths are logged correctly
 	mu.Lock()

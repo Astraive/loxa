@@ -89,7 +89,7 @@ impl Transport {
         } else {
             req.call()
         };
-        let response = response.map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+        let response = response.map_err(io::Error::other)?;
         let status_code = response.status();
         let mut headers = BTreeMap::new();
         for name in &["content-type", "x-request-id", "x-deduped"] {
@@ -97,9 +97,7 @@ impl Transport {
                 headers.insert(name.to_string(), value.to_string());
             }
         }
-        let body = response
-            .into_string()
-            .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+        let body = response.into_string().map_err(io::Error::other)?;
         Ok(HttpResponse {
             status_code,
             headers,

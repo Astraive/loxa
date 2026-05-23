@@ -113,7 +113,7 @@ def sample_by_event(fn: Callable[[EventContext], bool]) -> Sampler:
 
 def sample_by_outcome(*outcomes: str) -> Sampler:
     wanted = set(outcomes)
-    return lambda event: event.outcome in wanted or event.params.outcome in wanted
+    return lambda event: event.outcome in wanted
 
 
 def should_sample(sampler: Sampler, event: EventContext) -> bool:

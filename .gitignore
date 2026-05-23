@@ -45,5 +45,8 @@ tmp_*/
 .DS_Store
 Thumbs.db
 
+# Generated protobuf Go code
+gen/go/
+
 # Benchmark results
 bench/results/

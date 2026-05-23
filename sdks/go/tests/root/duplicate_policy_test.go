@@ -47,7 +47,7 @@ func TestDuplicatePolicyCanonicalWinsDropsConflicts(t *testing.T) {
 func TestDuplicatePolicyAttrWinsOverwritesCanonical(t *testing.T) {
 	sink, store := loxa.MemorySink()
 	cfg := loxa.Test().WithSink(sink)
-	cfg.DuplicateFieldPolicy = loxa.AttrWins
+	cfg.DuplicateFieldPolicy = loxa.UserWins
 	if err := loxa.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}

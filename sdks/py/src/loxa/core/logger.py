@@ -7,7 +7,7 @@ import sys
 import time
 from dataclasses import replace
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Callable
 
 from .config import (
     CanonicalWins,
@@ -33,7 +33,7 @@ from .pipeline import MemoryOfflineBuffer, Pipeline
 from .redactor import default_redactor
 from .schema import DefaultSchema, EventView
 from ..sinks.httpbatch import HTTPBatchSink
-from ..generated.spec_contract import ALLOWED_KINDS, ALLOWED_LEVELS, validate_event_payload
+from ..generated.spec_contract import validate_event_payload
 
 
 class Logger:

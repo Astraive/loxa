@@ -4,9 +4,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from .event import Attr
+if TYPE_CHECKING:
+    from .event import Attr
 
 
 @dataclass(slots=True)

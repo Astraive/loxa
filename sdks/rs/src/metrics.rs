@@ -376,13 +376,9 @@ fn push_histogram(
 /// Format a float like Python's :g — trim trailing zeros and trailing dot.
 fn format_float_g(value: f64) -> String {
     let s = format!("{value}");
-    if s.find('.').is_some() {
+    if s.contains('.') {
         let trimmed = s.trim_end_matches('0');
-        if trimmed.ends_with('.') {
-            trimmed[..trimmed.len() - 1].to_string()
-        } else {
-            trimmed.to_string()
-        }
+        trimmed.strip_suffix('.').unwrap_or(trimmed).to_string()
     } else {
         s
     }

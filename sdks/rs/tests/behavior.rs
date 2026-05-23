@@ -1,7 +1,7 @@
 use loxa::{
     ComposeRedactors, Config, ContextCarrier, ContextSource, HTTPClient, HTTPRequest,
-    InjectHTTPHeaders, InjectHTTPHeadersFromCarrier, Logger, Params, RedactKeys, SampleErrors,
-    SampleNone, SchemaConfig, String as LoxaString,
+    InjectHTTPHeadersFromCarrier, Logger, Params, RedactKeys, SampleErrors, SampleNone,
+    SchemaConfig, String as LoxaString,
 };
 use serde_json::Value;
 use std::collections::BTreeMap;

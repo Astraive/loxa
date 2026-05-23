@@ -53,7 +53,7 @@ def test_e2e_collector_pipeline():
     e2e_events = []
     for i in range(3):
         e2e_events.append({"event": f"e2e.test.event_{i}", "service": "e2e-test-service", "outcome": "success"})
-    print(f"  Collector accepted >= 3 events: OK\n")
+    print("  Collector accepted >= 3 events: OK\n")
 
     # Verify collector has events in DuckDB via query endpoint
     try:
@@ -77,10 +77,10 @@ def test_e2e_collector_pipeline():
     cc = CollectorClient("http://127.0.0.1:9090/v1/events")
 
     assert cc.health() is True, "collector health check failed"
-    print(f"\n  Collector health: True")
+    print("\n  Collector health: True")
 
     assert cc.ready() is True, "collector ready check failed"
-    print(f"  Collector ready:  True")
+    print("  Collector ready:  True")
 
     ver = cc.version()
     assert "version" in ver, f"version response missing: {ver}"

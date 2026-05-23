@@ -71,6 +71,7 @@ pub struct Params {
     pub request_id: Option<String>,
     pub trace_id: Option<String>,
     pub span_id: Option<String>,
+    pub incident_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -79,6 +80,7 @@ pub struct ContextCarrier {
     pub span_id: Option<String>,
     pub tracestate: Option<String>,
     pub request_id: Option<String>,
+    pub incident_id: Option<String>,
     pub baggage: BTreeMap<String, String>,
 }
 
@@ -105,6 +107,7 @@ impl Params {
             request_id: None,
             trace_id: None,
             span_id: None,
+            incident_id: None,
         }
     }
 
@@ -138,6 +141,11 @@ impl Params {
         self
     }
 
+    pub fn with_incident_id(mut self, incident_id: impl Into<String>) -> Self {
+        self.incident_id = Some(incident_id.into());
+        self
+    }
+
     pub fn inherit_from(mut self, parent: &EventContext) -> Self {
         if self.service.is_none() {
             self.service = Some(parent.service.clone());
@@ -151,6 +159,9 @@ impl Params {
         if self.span_id.is_none() {
             self.span_id = parent.span_id.clone();
         }
+        if self.incident_id.is_none() {
+            self.incident_id = parent.incident_id.clone();
+        }
         self
     }
 
@@ -163,6 +174,9 @@ impl Params {
         }
         if self.span_id.is_none() {
             self.span_id = carrier.span_id.clone();
+        }
+        if self.incident_id.is_none() {
+            self.incident_id = carrier.incident_id.clone();
         }
         self
     }
@@ -190,6 +204,11 @@ impl ContextCarrier {
 
     pub fn with_request_id(mut self, request_id: impl Into<String>) -> Self {
         self.request_id = Some(request_id.into());
+        self
+    }
+
+    pub fn with_incident_id(mut self, incident_id: impl Into<String>) -> Self {
+        self.incident_id = Some(incident_id.into());
         self
     }
 
@@ -266,6 +285,8 @@ pub struct EventContext {
     pub trace_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub span_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub incident_id: Option<String>,
     pub service: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
@@ -356,6 +377,7 @@ impl EventContext {
             request_id,
             trace_id: params.trace_id,
             span_id: params.span_id,
+            incident_id: params.incident_id,
             service: params.service.clone().unwrap_or_else(|| service.into()),
             version: params.version,
             environment: params.environment,
@@ -915,6 +937,12 @@ impl GroupHandle {
 /// Standalone elapsed-time measurer with no event reference.
 pub struct StopwatchHandle {
     started_at: std::time::Instant,
+}
+
+impl Default for StopwatchHandle {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl StopwatchHandle {

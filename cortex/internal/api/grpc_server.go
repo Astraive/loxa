@@ -7,7 +7,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	loxav1 "github.com/astraive/loxa/spec/proto/loxa/v1"
+	loxav1 "github.com/astraive/loxa/gen/go/loxa/v1"
 	"github.com/astraive/loxa/loxa-cortex/internal/config"
 	"github.com/astraive/loxa/loxa-cortex/internal/eventbus"
 	"github.com/astraive/loxa/loxa-cortex/internal/eventconv"
@@ -57,6 +57,7 @@ func NewGRPCServer(cfg *config.Config, stor storage.Storage, redactCfg redaction
 	return &GRPCServer{
 		config:      cfg,
 		processor:   eventProc,
+		bus:         eventbus.New(),
 		topology:    topology,
 		graph:       graphBuilder,
 		match:       matching,
@@ -177,6 +178,9 @@ func protoEventToModel(pe *loxav1.Event) (*models.Event, []string, error) {
 			Host:       pe.Http.Host,
 		}
 	}
+
+	// IncidentID
+	event.IncidentID = pe.IncidentId
 
 	// Error
 	if pe.Error != nil {
@@ -467,6 +471,7 @@ func modelToProtoEvent(event *models.Event) *loxav1.Event {
 		SpanId:        event.SpanID,
 		TraceFlags:    event.TraceFlags,
 		Release:       event.Release,
+		IncidentId:    event.IncidentID,
 	}
 
 	if !event.Timestamp.IsZero() {
@@ -611,7 +616,9 @@ func modelToProtoEvent(event *models.Event) *loxav1.Event {
 
 	if len(rawMap) > 0 {
 		st, err := structpb.NewStruct(rawMap)
-		if err == nil {
+		if err != nil {
+			log.Warn().Err(err).Int("fields", len(rawMap)).Msg("Failed to convert lifecycle/attrs to structpb for streaming")
+		} else {
 			pe.Attrs = st
 		}
 	}

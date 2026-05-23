@@ -125,9 +125,7 @@ func (s *rotatingFileSink) open() error {
 	}
 	info, err := f.Stat()
 	if err != nil {
-		if closeErr := f.Close(); closeErr != nil {
-			// Could not close file on stat error; log but don't shadow original error
-		}
+		_ = f.Close()
 		return fmt.Errorf("loxa: stat rotating file %q: %w", s.cfg.Path, err)
 	}
 	s.f = f

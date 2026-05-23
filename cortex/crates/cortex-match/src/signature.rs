@@ -160,8 +160,7 @@ fn compute_feature_vector(
         .len() as f64;
     v.push(unique_symptoms / n_symptoms.max(1) as f64);
 
-    let severity =
-        (has_error * 0.3 + has_timeout * 0.3 + has_resource * 0.2 + has_latency * 0.2) as f64;
+    let severity = has_error * 0.3 + has_timeout * 0.3 + has_resource * 0.2 + has_latency * 0.2;
     v.push(severity);
     v.push(0.0);
 

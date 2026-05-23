@@ -92,6 +92,7 @@ export function SessionID(id: string): Attr { return String('session.id', id); }
 export function RequestID(id: string): Attr { return String('request_id', id); }
 export function TraceID(id: string): Attr { return String('trace_id', id); }
 export function SpanID(id: string): Attr { return String('span_id', id); }
+export function IncidentID(id: string): Attr { return String('incident_id', id); }
 export function FeatureFlag(name: string, value: any): Attr { return Any(`feature.${name}`, value); }
 export function FeatureFlagBool(name: string, value: boolean): Attr { return Bool(`feature.${name}`, value); }
 export function Experiment(name: string, variant: string): Attr { return String(`experiment.${name}`, variant); }
@@ -197,6 +198,7 @@ export const sessionId = SessionID;
 export const requestId = RequestID;
 export const traceId = TraceID;
 export const spanId = SpanID;
+export const incidentId = IncidentID;
 export const featureFlag = FeatureFlag;
 export const featureFlagBool = FeatureFlagBool;
 export const experiment = Experiment;
@@ -325,6 +327,7 @@ export interface Params {
   requestId?: string;
   traceId?: string;
   spanId?: string;
+  incidentId?: string;
   parentId?: string;
   outcome?: string;
   custom?: Attr[];
@@ -339,6 +342,7 @@ export class Event {
   requestId: string;
   traceId: string;
   spanId: string;
+  incidentId = '';
   parentId = '';
 
   timestamp: string;
@@ -385,6 +389,7 @@ export class Event {
     this.requestId = params.requestId || uuidv7();
     this.traceId = params.traceId || '';
     this.spanId = params.spanId || '';
+    this.incidentId = params.incidentId || '';
     this.parentId = params.parentId || '';
 
     this.startedAt = Date.now();

@@ -9,11 +9,9 @@ Generates the L2 public benchmark defaults:
 
 from __future__ import annotations
 
-import hashlib
 import json
 import random
 from datetime import datetime, timedelta, timezone
-from typing import Iterator
 
 
 # L2 defaults

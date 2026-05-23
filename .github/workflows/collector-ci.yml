@@ -7,19 +7,44 @@ on:
       - ".github/workflows/collector-ci.yml"
       - "collector/**"
       - "spec/**"
+      - "proto/**"
   pull_request:
     branches: [main]
     paths:
       - ".github/workflows/collector-ci.yml"
       - "collector/**"
       - "spec/**"
+      - "proto/**"
 
 jobs:
+  proto-sync:
+    name: Check proto files are in sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Install protoc and Go plugins
+        run: |
+          sudo apt-get update && sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5
+
+      - name: Regenerate proto and check diff
+        run: |
+          make proto
+          make check-proto
+
   unit:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: collector
+    needs: [proto-sync]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,6 +54,15 @@ jobs:
         with:
           go-version-file: collector/go.mod
 
+      - name: Install protoc and Go plugins
+        run: |
+          sudo apt-get update && sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5
+
+      - name: Generate protobuf code
+        run: make proto
+
       - name: Run unit tests
         run: go test ./...
 
@@ -37,6 +71,7 @@ jobs:
     defaults:
       run:
         working-directory: collector
+    needs: [proto-sync]
     services:
       kafka:
         image: bitnami/kafka:latest
@@ -64,6 +99,15 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: collector/go.mod
+
+      - name: Install protoc and Go plugins
+        run: |
+          sudo apt-get update && sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5
+
+      - name: Generate protobuf code
+        run: make proto
 
       - name: Run queue and Redis integration tests
         run: go test -tags=integration -run TestCollectorIntegration_ ./cmd/loxa-collector

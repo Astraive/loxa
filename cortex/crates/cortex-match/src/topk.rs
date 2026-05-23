@@ -128,8 +128,7 @@ pub fn search_brute(
 ) -> Vec<ScoredMatch> {
     let mut results: Vec<ScoredMatch> = candidates
         .iter()
-        .enumerate()
-        .map(|(_, cand)| {
+        .map(|cand| {
             let score = similarity::score(query, cand, metric);
             ScoredMatch {
                 signature_id: cand.shape.clone(),

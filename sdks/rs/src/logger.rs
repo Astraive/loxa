@@ -390,7 +390,11 @@ impl Logger {
         std::process::exit(1)
     }
 
-    pub fn drop_event(&self, ctx: &mut EventContext, reason: impl Into<String>) -> Result<(), LoxaError> {
+    pub fn drop_event(
+        &self,
+        ctx: &mut EventContext,
+        reason: impl Into<String>,
+    ) -> Result<(), LoxaError> {
         ctx.outcome = Some("dropped".to_string());
         ctx.partial = true;
         ctx.partial_reason = Some(reason.into());
@@ -421,7 +425,11 @@ impl Logger {
         result
     }
 
-    pub fn partial(&self, ctx: &mut EventContext, reason: impl Into<String>) -> Result<(), LoxaError> {
+    pub fn partial(
+        &self,
+        ctx: &mut EventContext,
+        reason: impl Into<String>,
+    ) -> Result<(), LoxaError> {
         let result = ctx.finish("partial");
         if result.is_ok() {
             ctx.partial = true;
@@ -437,7 +445,10 @@ impl Logger {
 
     pub fn link_event(&self, ctx: &mut EventContext, linked_id: impl Into<String>) {
         let mut link = serde_json::Map::new();
-        link.insert("event_id".to_string(), serde_json::Value::String(linked_id.into()));
+        link.insert(
+            "event_id".to_string(),
+            serde_json::Value::String(linked_id.into()),
+        );
         if ctx.error.is_none() {
             ctx.error = Some(serde_json::Map::new());
         }
@@ -451,19 +462,34 @@ impl Logger {
         f(ctx);
     }
 
-    pub fn with_process(&self, ctx: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+    pub fn with_process(
+        &self,
+        ctx: &mut EventContext,
+        name: &str,
+        f: impl FnOnce(&mut EventContext),
+    ) {
         let process = ctx.start_process(name);
         f(ctx);
         process.finish(ctx, &[]);
     }
 
-    pub fn with_group(&self, ctx: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+    pub fn with_group(
+        &self,
+        ctx: &mut EventContext,
+        name: &str,
+        f: impl FnOnce(&mut EventContext),
+    ) {
         let group = ctx.start_group(name);
         f(ctx);
         group.finish(ctx, &[]);
     }
 
-    pub fn with_timer(&self, ctx: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+    pub fn with_timer(
+        &self,
+        ctx: &mut EventContext,
+        name: &str,
+        f: impl FnOnce(&mut EventContext),
+    ) {
         let timer = ctx.start_timer(name);
         f(ctx);
         timer.stop(ctx, &[]);

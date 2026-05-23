@@ -134,7 +134,7 @@ impl HTTPClient {
         } else {
             req.call()
         };
-        let response = response.map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+        let response = response.map_err(io::Error::other)?;
         let status_code = response.status();
         let mut headers = BTreeMap::new();
         for name in response.headers_names() {
@@ -142,9 +142,7 @@ impl HTTPClient {
                 headers.insert(name, value.to_string());
             }
         }
-        let body = response
-            .into_string()
-            .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+        let body = response.into_string().map_err(io::Error::other)?;
         Ok(HTTPResponse {
             status_code,
             headers,
@@ -226,10 +224,11 @@ impl CollectorHttpClient {
     /// Validate events against the collector schema.
     pub fn validate(&self, events: &[String]) -> Result<CollectorResponse, String> {
         let envelope = self.envelope(events);
-        self.validate_envelope(&envelope).map(|_| CollectorResponse {
-            status_code: 200,
-            body: serde_json::json!({"accepted": events.len(), "rejected": 0, "invalid": 0}),
-        }).map_err(|e| e)
+        self.validate_envelope(&envelope)
+            .map(|_| CollectorResponse {
+                status_code: 200,
+                body: serde_json::json!({"accepted": events.len(), "rejected": 0, "invalid": 0}),
+            })
     }
 
     /// Ingest events into the collector.

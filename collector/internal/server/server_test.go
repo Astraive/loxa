@@ -66,7 +66,7 @@ func TestHTTPServerIngest(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	require.True(t, srv.IsReady())
 
-	srv.Stop(context.Background())
+	_ = srv.Stop(context.Background())
 }
 
 func TestHTTPServerHealthReady(t *testing.T) {
@@ -90,7 +90,7 @@ func TestHTTPServerHealthReady(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	assert.True(t, srv.IsReady())
 
-	srv.Stop(context.Background())
+	_ = srv.Stop(context.Background())
 }
 
 func TestGRPCServerDisabled(t *testing.T) {
@@ -129,7 +129,7 @@ func TestGRPCServerStart(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	require.True(t, srv.IsReady())
 
-	srv.Stop(context.Background())
+	_ = srv.Stop(context.Background())
 }
 
 func TestGRPCCollectorServiceHealth(t *testing.T) {
@@ -261,7 +261,7 @@ func TestGraphQLServerStart(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	require.True(t, srv.IsReady())
 
-	srv.Stop(context.Background())
+	_ = srv.Stop(context.Background())
 }
 
 func TestDuration(t *testing.T) {

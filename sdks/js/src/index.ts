@@ -38,7 +38,7 @@ export {
   SensitiveString, HashString, MarkSensitive,
   // PascalCase semantic shortcuts
   UserID, TenantID, WorkspaceID, OrganizationID, SessionID,
-  RequestID, TraceID, SpanID,
+  RequestID, TraceID, SpanID, IncidentID,
   FeatureFlag, FeatureFlagBool, Experiment,
   OrderID, CartID, ProductID, CustomerID,
   Plan, Currency, Amount, Country, Device, Platform, AppVersion,
@@ -61,7 +61,7 @@ export {
   string, int, int64, uint64, float64, float, bool, null_ as nullAttr, any, group, time, duration,
   sensitiveString, hashString, markSensitive,
   userId, tenantId, workspaceId, organizationId, sessionId,
-  requestId, traceId, spanId,
+  requestId, traceId, spanId, incidentId,
   featureFlag, featureFlagBool, experiment,
   orderId, cartId, productId, customerId,
   plan, currency, amount, country, device, platform, appVersion,

@@ -77,7 +77,7 @@ fn test_lifecycle_extras() {
     let mut ctx5 = start_event(None, Params::new("test"));
     Partial(&mut ctx5, "not_finished");
     assert_eq!(ctx5.outcome, Some("partial".to_string()));
-    assert_eq!(ctx5.partial, true);
+    assert!(ctx5.partial);
 
     let cloned = CloneEvent(&ctx5);
     assert_eq!(cloned.event_id, ctx5.event_id);
@@ -138,7 +138,7 @@ fn test_logging_helpers() {
     let _ = Security("access.control");
     let _ = Metric("requests.count");
     Count("test.count", 42);
-    Gauge("test.gauge", 3.14);
+    Gauge("test.gauge", std::f64::consts::PI);
     Histogram("test.hist", 0.5);
     Breadcrumb("navigated to page");
 }
@@ -164,7 +164,7 @@ fn test_sink_extras() {
 #[test]
 fn test_sampling_policy_extras() {
     let mut ctx = start_event(None, Params::new("test"));
-    let _ = Finish(&mut ctx);
+    Finish(&mut ctx);
     assert!(ShouldSample(&ctx, &SampleAll()));
     assert!(!ShouldSample(&ctx, &SampleNone()));
     let _ = SampleByEvent(|_| true);
@@ -176,7 +176,7 @@ fn test_sampling_policy_extras() {
 #[test]
 fn test_sampling_snake_case() {
     let mut ctx = start_event(None, Params::new("test"));
-    let _ = finish(&mut ctx);
+    finish(&mut ctx);
     assert!(should_sample(&ctx, &sample_all()));
     assert!(!should_sample(&ctx, &sample_none()));
 }
@@ -193,10 +193,10 @@ fn test_sink_snake_case() {
 #[test]
 fn test_testing_extras() {
     let config = Config::test("test-svc");
-    let logger = Logger::new(config);
+    let _logger = Logger::new(config);
     let _ = MockSink();
-    let _ = FakeClock();
-    let _ = SetIDGenerator(|| "test-id".to_string());
+    FakeClock();
+    SetIDGenerator(|| "test-id".to_string());
 }
 
 #[test]
@@ -300,7 +300,10 @@ fn test_with_process_integration() {
     });
     assert!(!ctx.processes.is_empty());
     let first = &ctx.processes[0];
-    assert_eq!(first.get("name").and_then(|v| v.as_str()), Some("extraction"));
+    assert_eq!(
+        first.get("name").and_then(|v| v.as_str()),
+        Some("extraction")
+    );
     assert_eq!(first.get("source").and_then(|v| v.as_str()), Some("db"));
 }
 
@@ -314,7 +317,13 @@ fn test_with_timer_integration() {
     assert!(!ctx.timers.is_empty());
     let first = &ctx.timers[0];
     assert_eq!(first.get("name").and_then(|v| v.as_str()), Some("api_call"));
-    assert!(first.get("duration_ms").and_then(|v| v.as_u64()).unwrap_or(0) > 0);
+    assert!(
+        first
+            .get("duration_ms")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0)
+            > 0
+    );
 }
 
 #[test]

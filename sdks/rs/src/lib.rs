@@ -279,7 +279,7 @@ pub fn Error(message: impl Into<String>) {
 
 pub fn Fatal(message: impl Into<String>) -> ! {
     let _ = default_logger().fatal(message);
-    let _ = Flush();
+    Flush();
     std::process::exit(1)
 }
 
@@ -639,7 +639,10 @@ pub fn Bucket(name: impl Into<String>) -> Attr {
 }
 
 pub fn Tags(values: Vec<impl Into<String>>) -> Attr {
-    let arr: Vec<Value> = values.into_iter().map(|v| Value::String(v.into())).collect();
+    let arr: Vec<Value> = values
+        .into_iter()
+        .map(|v| Value::String(v.into()))
+        .collect();
     Attr::new("tags", Value::Array(arr))
 }
 
@@ -861,17 +864,29 @@ pub fn Wrap(event: &mut EventContext, f: impl FnOnce(&mut EventContext)) {
 
 // --- Process/Group/Timer extras ---
 
-pub fn WithProcess(event: &mut EventContext, name: &str, f: impl FnOnce(ProcessHandle, &mut EventContext)) {
+pub fn WithProcess(
+    event: &mut EventContext,
+    name: &str,
+    f: impl FnOnce(ProcessHandle, &mut EventContext),
+) {
     let handle = event.start_process(name);
     f(handle, event);
 }
 
-pub fn WithGroup(event: &mut EventContext, name: &str, f: impl FnOnce(GroupHandle, &mut EventContext)) {
+pub fn WithGroup(
+    event: &mut EventContext,
+    name: &str,
+    f: impl FnOnce(GroupHandle, &mut EventContext),
+) {
     let handle = event.start_group(name);
     f(handle, event);
 }
 
-pub fn WithTimer(event: &mut EventContext, name: &str, f: impl FnOnce(TimerHandle, &mut EventContext)) {
+pub fn WithTimer(
+    event: &mut EventContext,
+    name: &str,
+    f: impl FnOnce(TimerHandle, &mut EventContext),
+) {
     let handle = event.start_timer(name);
     f(handle, event);
 }
@@ -1013,7 +1028,10 @@ pub fn SampleByEvent(f: impl Fn(&EventContext) -> bool + Send + Sync + 'static) 
 pub fn SampleByOutcome(outcomes: &[&str]) -> SamplerConfig {
     let outcomes: Vec<String> = outcomes.iter().map(|s| s.to_string()).collect();
     SamplerConfig::Custom(Arc::new(move |event: &EventContext| {
-        event.outcome.as_deref().map_or(false, |o| outcomes.iter().any(|w| w == o))
+        event
+            .outcome
+            .as_deref()
+            .is_some_and(|o| outcomes.iter().any(|w| w == o))
     }))
 }
 
@@ -1034,7 +1052,7 @@ pub fn BlockFields(keys: &[&str]) -> RedactorConfig {
 pub fn ExpectEvent(_logger: &Logger, _name: &str, _f: impl FnOnce(&EventContext)) {}
 
 pub fn ExpectAttr(event: &EventContext, key: &str, expected: &Value) -> bool {
-    event.attrs.get(key).map_or(false, |v| v == expected)
+    event.attrs.get(key) == Some(expected)
 }
 
 pub fn SnapshotEvent(event: &EventContext) -> String {
@@ -1841,123 +1859,327 @@ pub fn has_event(ctx: &EventContext) -> bool {
 
 // --- Domain helper aliases ---
 
-pub fn payment_id(id: impl Into<String>) -> Attr { PaymentID(id) }
-pub fn subscription_id(id: impl Into<String>) -> Attr { SubscriptionID(id) }
-pub fn invoice_id(id: impl Into<String>) -> Attr { InvoiceID(id) }
-pub fn job_id(id: impl Into<String>) -> Attr { JobID(id) }
-pub fn message_id(id: impl Into<String>) -> Attr { MessageID(id) }
-pub fn correlation_id(id: impl Into<String>) -> Attr { CorrelationID(id) }
-pub fn commit_sha(sha: impl Into<String>) -> Attr { CommitSHA(sha) }
-pub fn release(name: impl Into<String>) -> Attr { Release(name) }
-pub fn money(amount: f64) -> Attr { Money(amount) }
-pub fn percent(value: f64) -> Attr { Percent(value) }
-pub fn bytes(value: u64) -> Attr { Bytes(value) }
-pub fn http_status(code: u16) -> Attr { HTTPStatus(code) }
-pub fn bucket(name: impl Into<String>) -> Attr { Bucket(name) }
-pub fn tags(values: Vec<impl Into<String>>) -> Attr { Tags(values) }
-pub fn masked(value: impl Into<String>) -> Attr { Masked(value) }
-pub fn url(url: impl Into<String>) -> Attr { URL(url) }
-pub fn email_hash(email: impl Into<String>) -> Attr { EmailHash(email) }
-pub fn ip_hash(ip: impl Into<String>) -> Attr { IPHash(ip) }
+pub fn payment_id(id: impl Into<String>) -> Attr {
+    PaymentID(id)
+}
+pub fn subscription_id(id: impl Into<String>) -> Attr {
+    SubscriptionID(id)
+}
+pub fn invoice_id(id: impl Into<String>) -> Attr {
+    InvoiceID(id)
+}
+pub fn job_id(id: impl Into<String>) -> Attr {
+    JobID(id)
+}
+pub fn message_id(id: impl Into<String>) -> Attr {
+    MessageID(id)
+}
+pub fn correlation_id(id: impl Into<String>) -> Attr {
+    CorrelationID(id)
+}
+pub fn commit_sha(sha: impl Into<String>) -> Attr {
+    CommitSHA(sha)
+}
+pub fn release(name: impl Into<String>) -> Attr {
+    Release(name)
+}
+pub fn money(amount: f64) -> Attr {
+    Money(amount)
+}
+pub fn percent(value: f64) -> Attr {
+    Percent(value)
+}
+pub fn bytes(value: u64) -> Attr {
+    Bytes(value)
+}
+pub fn http_status(code: u16) -> Attr {
+    HTTPStatus(code)
+}
+pub fn bucket(name: impl Into<String>) -> Attr {
+    Bucket(name)
+}
+pub fn tags(values: Vec<impl Into<String>>) -> Attr {
+    Tags(values)
+}
+pub fn masked(value: impl Into<String>) -> Attr {
+    Masked(value)
+}
+pub fn url(url: impl Into<String>) -> Attr {
+    URL(url)
+}
+pub fn email_hash(email: impl Into<String>) -> Attr {
+    EmailHash(email)
+}
+pub fn ip_hash(ip: impl Into<String>) -> Attr {
+    IPHash(ip)
+}
 
 // --- Domain pack aliases ---
 
-pub fn checkout_cart_item_count(count: u32) -> Attr { CheckoutCartItemCount(count) }
-pub fn checkout_cart_total(total: f64) -> Attr { CheckoutCartTotal(total) }
-pub fn checkout_payment_method(method: impl Into<String>) -> Attr { CheckoutPaymentMethod(method) }
-pub fn checkout_status(status: impl Into<String>) -> Attr { CheckoutStatus(status) }
-pub fn payment_provider(provider: impl Into<String>) -> Attr { PaymentProvider(provider) }
-pub fn payment_method(method: impl Into<String>) -> Attr { PaymentMethod(method) }
-pub fn payment_intent_id(id: impl Into<String>) -> Attr { PaymentIntentID(id) }
-pub fn payment_failure_code(code: impl Into<String>) -> Attr { PaymentFailureCode(code) }
-pub fn payment_retry_attempt(attempt: u32) -> Attr { PaymentRetryAttempt(attempt) }
-pub fn billing_plan(plan: impl Into<String>) -> Attr { BillingPlan(plan) }
-pub fn billing_subscription_id(id: impl Into<String>) -> Attr { BillingSubscriptionID(id) }
-pub fn billing_invoice_id(id: impl Into<String>) -> Attr { BillingInvoiceID(id) }
-pub fn billing_amount(amount: f64) -> Attr { BillingAmount(amount) }
-pub fn billing_interval(interval: impl Into<String>) -> Attr { BillingInterval(interval) }
-pub fn agent_name(name: impl Into<String>) -> Attr { AgentName(name) }
-pub fn agent_provider(provider: impl Into<String>) -> Attr { AgentProvider(provider) }
-pub fn agent_model(model: impl Into<String>) -> Attr { AgentModel(model) }
-pub fn agent_run_type(run_type: impl Into<String>) -> Attr { AgentRunType(run_type) }
-pub fn agent_tool_name(name: impl Into<String>) -> Attr { AgentToolName(name) }
-pub fn agent_tool_outcome(outcome: impl Into<String>) -> Attr { AgentToolOutcome(outcome) }
-pub fn agent_input_tokens(tokens: u64) -> Attr { AgentInputTokens(tokens) }
-pub fn agent_output_tokens(tokens: u64) -> Attr { AgentOutputTokens(tokens) }
-pub fn agent_cost(cost: f64) -> Attr { AgentCost(cost) }
-pub fn rag_index(index: impl Into<String>) -> Attr { RAGIndex(index) }
-pub fn rag_embedding_model(model: impl Into<String>) -> Attr { RAGEmbeddingModel(model) }
-pub fn rag_chunks_retrieved(count: u32) -> Attr { RAGChunksRetrieved(count) }
-pub fn rag_top_score(score: f64) -> Attr { RAGTopScore(score) }
-pub fn rag_query_hash(hash: impl Into<String>) -> Attr { RAGQueryHash(hash) }
-pub fn rag_citation_count(count: u32) -> Attr { RAGCitationCount(count) }
-pub fn rag_retrieval_latency(latency_ms: u64) -> Attr { RAGRetrievalLatency(latency_ms) }
+pub fn checkout_cart_item_count(count: u32) -> Attr {
+    CheckoutCartItemCount(count)
+}
+pub fn checkout_cart_total(total: f64) -> Attr {
+    CheckoutCartTotal(total)
+}
+pub fn checkout_payment_method(method: impl Into<String>) -> Attr {
+    CheckoutPaymentMethod(method)
+}
+pub fn checkout_status(status: impl Into<String>) -> Attr {
+    CheckoutStatus(status)
+}
+pub fn payment_provider(provider: impl Into<String>) -> Attr {
+    PaymentProvider(provider)
+}
+pub fn payment_method(method: impl Into<String>) -> Attr {
+    PaymentMethod(method)
+}
+pub fn payment_intent_id(id: impl Into<String>) -> Attr {
+    PaymentIntentID(id)
+}
+pub fn payment_failure_code(code: impl Into<String>) -> Attr {
+    PaymentFailureCode(code)
+}
+pub fn payment_retry_attempt(attempt: u32) -> Attr {
+    PaymentRetryAttempt(attempt)
+}
+pub fn billing_plan(plan: impl Into<String>) -> Attr {
+    BillingPlan(plan)
+}
+pub fn billing_subscription_id(id: impl Into<String>) -> Attr {
+    BillingSubscriptionID(id)
+}
+pub fn billing_invoice_id(id: impl Into<String>) -> Attr {
+    BillingInvoiceID(id)
+}
+pub fn billing_amount(amount: f64) -> Attr {
+    BillingAmount(amount)
+}
+pub fn billing_interval(interval: impl Into<String>) -> Attr {
+    BillingInterval(interval)
+}
+pub fn agent_name(name: impl Into<String>) -> Attr {
+    AgentName(name)
+}
+pub fn agent_provider(provider: impl Into<String>) -> Attr {
+    AgentProvider(provider)
+}
+pub fn agent_model(model: impl Into<String>) -> Attr {
+    AgentModel(model)
+}
+pub fn agent_run_type(run_type: impl Into<String>) -> Attr {
+    AgentRunType(run_type)
+}
+pub fn agent_tool_name(name: impl Into<String>) -> Attr {
+    AgentToolName(name)
+}
+pub fn agent_tool_outcome(outcome: impl Into<String>) -> Attr {
+    AgentToolOutcome(outcome)
+}
+pub fn agent_input_tokens(tokens: u64) -> Attr {
+    AgentInputTokens(tokens)
+}
+pub fn agent_output_tokens(tokens: u64) -> Attr {
+    AgentOutputTokens(tokens)
+}
+pub fn agent_cost(cost: f64) -> Attr {
+    AgentCost(cost)
+}
+pub fn rag_index(index: impl Into<String>) -> Attr {
+    RAGIndex(index)
+}
+pub fn rag_embedding_model(model: impl Into<String>) -> Attr {
+    RAGEmbeddingModel(model)
+}
+pub fn rag_chunks_retrieved(count: u32) -> Attr {
+    RAGChunksRetrieved(count)
+}
+pub fn rag_top_score(score: f64) -> Attr {
+    RAGTopScore(score)
+}
+pub fn rag_query_hash(hash: impl Into<String>) -> Attr {
+    RAGQueryHash(hash)
+}
+pub fn rag_citation_count(count: u32) -> Attr {
+    RAGCitationCount(count)
+}
+pub fn rag_retrieval_latency(latency_ms: u64) -> Attr {
+    RAGRetrievalLatency(latency_ms)
+}
 
 // --- Lifecycle extras ---
 
-pub fn drop(event: &mut EventContext, reason: impl Into<String>) { Drop(event, reason) }
-pub fn cancel(event: &mut EventContext) { Cancel(event) }
-pub fn abandon(event: &mut EventContext) { Abandon(event) }
-pub fn retry(event: &mut EventContext) { Retry(event) }
-pub fn partial(event: &mut EventContext, reason: impl Into<String>) { Partial(event, reason) }
-pub fn clone_event(event: &EventContext) -> EventContext { CloneEvent(event) }
-pub fn link_event(event: &mut EventContext, linked_id: impl Into<String>) { LinkEvent(event, linked_id) }
-pub fn current_event() -> Option<EventContext> { CurrentEvent() }
-pub fn bind_event(logger: &Logger, event: &EventContext) -> EventContext { BindEvent(logger, event) }
-pub fn wrap(event: &mut EventContext, f: impl FnOnce(&mut EventContext)) { Wrap(event, f) }
+pub fn drop(event: &mut EventContext, reason: impl Into<String>) {
+    Drop(event, reason)
+}
+pub fn cancel(event: &mut EventContext) {
+    Cancel(event)
+}
+pub fn abandon(event: &mut EventContext) {
+    Abandon(event)
+}
+pub fn retry(event: &mut EventContext) {
+    Retry(event)
+}
+pub fn partial(event: &mut EventContext, reason: impl Into<String>) {
+    Partial(event, reason)
+}
+pub fn clone_event(event: &EventContext) -> EventContext {
+    CloneEvent(event)
+}
+pub fn link_event(event: &mut EventContext, linked_id: impl Into<String>) {
+    LinkEvent(event, linked_id)
+}
+pub fn current_event() -> Option<EventContext> {
+    CurrentEvent()
+}
+pub fn bind_event(logger: &Logger, event: &EventContext) -> EventContext {
+    BindEvent(logger, event)
+}
+pub fn wrap(event: &mut EventContext, f: impl FnOnce(&mut EventContext)) {
+    Wrap(event, f)
+}
 
 // --- Process/Group/Timer extras ---
 
-pub fn with_process(event: &mut EventContext, name: &str, f: impl FnOnce(ProcessHandle, &mut EventContext)) { WithProcess(event, name, f) }
-pub fn with_group(event: &mut EventContext, name: &str, f: impl FnOnce(GroupHandle, &mut EventContext)) { WithGroup(event, name, f) }
-pub fn with_timer(event: &mut EventContext, name: &str, f: impl FnOnce(TimerHandle, &mut EventContext)) { WithTimer(event, name, f) }
-pub fn finish_group_error(handle: GroupHandle, event: &mut EventContext, message: &str) { FinishGroupError(handle, event, message) }
-pub fn measure(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) { Measure(event, name, f) }
-pub fn step(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) { Step(event, name, f) }
-pub fn phase(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) { Phase(event, name, f) }
-pub fn span(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) { Span(event, name, f) }
+pub fn with_process(
+    event: &mut EventContext,
+    name: &str,
+    f: impl FnOnce(ProcessHandle, &mut EventContext),
+) {
+    WithProcess(event, name, f)
+}
+pub fn with_group(
+    event: &mut EventContext,
+    name: &str,
+    f: impl FnOnce(GroupHandle, &mut EventContext),
+) {
+    WithGroup(event, name, f)
+}
+pub fn with_timer(
+    event: &mut EventContext,
+    name: &str,
+    f: impl FnOnce(TimerHandle, &mut EventContext),
+) {
+    WithTimer(event, name, f)
+}
+pub fn finish_group_error(handle: GroupHandle, event: &mut EventContext, message: &str) {
+    FinishGroupError(handle, event, message)
+}
+pub fn measure(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+    Measure(event, name, f)
+}
+pub fn step(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+    Step(event, name, f)
+}
+pub fn phase(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+    Phase(event, name, f)
+}
+pub fn span(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+    Span(event, name, f)
+}
 
 // --- Logging helpers ---
 
-pub fn notice(message: impl Into<String>) { Notice(message) }
-pub fn event(name: impl Into<String>) -> EventContext { Event(name) }
-pub fn track(name: impl Into<String>, attrs: &[Attr]) { Track(name, attrs) }
-pub fn audit(name: impl Into<String>) -> EventContext { Audit(name) }
-pub fn security(name: impl Into<String>) -> EventContext { Security(name) }
-pub fn metric(name: impl Into<String>) -> EventContext { Metric(name) }
-pub fn count(name: impl Into<String>, value: u64) { Count(name, value) }
-pub fn gauge(name: impl Into<String>, value: f64) { Gauge(name, value) }
-pub fn histogram(name: impl Into<String>, value: f64) { Histogram(name, value) }
-pub fn breadcrumb(message: impl Into<String>) { Breadcrumb(message) }
+pub fn notice(message: impl Into<String>) {
+    Notice(message)
+}
+pub fn event(name: impl Into<String>) -> EventContext {
+    Event(name)
+}
+pub fn track(name: impl Into<String>, attrs: &[Attr]) {
+    Track(name, attrs)
+}
+pub fn audit(name: impl Into<String>) -> EventContext {
+    Audit(name)
+}
+pub fn security(name: impl Into<String>) -> EventContext {
+    Security(name)
+}
+pub fn metric(name: impl Into<String>) -> EventContext {
+    Metric(name)
+}
+pub fn count(name: impl Into<String>, value: u64) {
+    Count(name, value)
+}
+pub fn gauge(name: impl Into<String>, value: f64) {
+    Gauge(name, value)
+}
+pub fn histogram(name: impl Into<String>, value: f64) {
+    Histogram(name, value)
+}
+pub fn breadcrumb(message: impl Into<String>) {
+    Breadcrumb(message)
+}
 
 // --- Config extras ---
 
-pub fn disabled_config() -> Config { DisabledConfig() }
-pub fn from_env() -> Config { FromEnv() }
+pub fn disabled_config() -> Config {
+    DisabledConfig()
+}
+pub fn from_env() -> Config {
+    FromEnv()
+}
 
 // --- Sink extras ---
 
-pub fn multi_sink(sinks: &[SinkConfig]) -> Vec<SinkConfig> { MultiSink(sinks) }
-pub fn otlp_sink(endpoint: impl Into<String>) -> SinkConfig { OtlpSink(endpoint) }
-pub fn drain(sink: &SinkConfig) { Drain(sink) }
-pub fn pause(sink: &SinkConfig) { Pause(sink) }
-pub fn resume(sink: &SinkConfig) { Resume(sink) }
-pub fn queue_size() -> usize { QueueSize() }
-pub fn health() -> bool { Health() }
+pub fn multi_sink(sinks: &[SinkConfig]) -> Vec<SinkConfig> {
+    MultiSink(sinks)
+}
+pub fn otlp_sink(endpoint: impl Into<String>) -> SinkConfig {
+    OtlpSink(endpoint)
+}
+pub fn drain(sink: &SinkConfig) {
+    Drain(sink)
+}
+pub fn pause(sink: &SinkConfig) {
+    Pause(sink)
+}
+pub fn resume(sink: &SinkConfig) {
+    Resume(sink)
+}
+pub fn queue_size() -> usize {
+    QueueSize()
+}
+pub fn health() -> bool {
+    Health()
+}
 
 // --- Sampling/Policy extras ---
 
-pub fn sample_by_event(f: impl Fn(&EventContext) -> bool + Send + Sync + 'static) -> SamplerConfig { SampleByEvent(f) }
-pub fn sample_by_outcome(outcomes: &[&str]) -> SamplerConfig { SampleByOutcome(outcomes) }
-pub fn should_sample(event: &EventContext, sampler: &SamplerConfig) -> bool { ShouldSample(event, sampler) }
-pub fn allow_fields(keys: &[&str]) -> RedactorConfig { AllowFields(keys) }
-pub fn block_fields(keys: &[&str]) -> RedactorConfig { BlockFields(keys) }
+pub fn sample_by_event(f: impl Fn(&EventContext) -> bool + Send + Sync + 'static) -> SamplerConfig {
+    SampleByEvent(f)
+}
+pub fn sample_by_outcome(outcomes: &[&str]) -> SamplerConfig {
+    SampleByOutcome(outcomes)
+}
+pub fn should_sample(event: &EventContext, sampler: &SamplerConfig) -> bool {
+    ShouldSample(event, sampler)
+}
+pub fn allow_fields(keys: &[&str]) -> RedactorConfig {
+    AllowFields(keys)
+}
+pub fn block_fields(keys: &[&str]) -> RedactorConfig {
+    BlockFields(keys)
+}
 
 // --- Testing extras ---
 
-pub fn expect_event(logger: &Logger, name: &str, f: impl FnOnce(&EventContext)) { ExpectEvent(logger, name, f) }
-pub fn expect_attr(event: &EventContext, key: &str, expected: &Value) -> bool { ExpectAttr(event, key, expected) }
-pub fn snapshot_event(event: &EventContext) -> String { SnapshotEvent(event) }
-pub fn mock_sink() -> SinkConfig { MockSink() }
-pub fn fake_clock() { FakeClock() }
-pub fn set_id_generator(f: fn() -> String) { SetIDGenerator(f) }
+pub fn expect_event(logger: &Logger, name: &str, f: impl FnOnce(&EventContext)) {
+    ExpectEvent(logger, name, f)
+}
+pub fn expect_attr(event: &EventContext, key: &str, expected: &Value) -> bool {
+    ExpectAttr(event, key, expected)
+}
+pub fn snapshot_event(event: &EventContext) -> String {
+    SnapshotEvent(event)
+}
+pub fn mock_sink() -> SinkConfig {
+    MockSink()
+}
+pub fn fake_clock() {
+    FakeClock()
+}
+pub fn set_id_generator(f: fn() -> String) {
+    SetIDGenerator(f)
+}

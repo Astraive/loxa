@@ -73,7 +73,9 @@ func debugPipeline(ctx context.Context, cfg config.Config) error {
 		return fmt.Errorf("fetch status: %w", err)
 	}
 	var st map[string]any
-	json.Unmarshal(status, &st)
+	if err := json.Unmarshal(status, &st); err != nil {
+		return fmt.Errorf("decode status: %w", err)
+	}
 
 	pairs := map[string]string{}
 	for k, v := range st {
@@ -86,7 +88,9 @@ func debugPipeline(ctx context.Context, cfg config.Config) error {
 		fmt.Println()
 		output.PrintSection("Sinks")
 		var sk map[string]any
-		json.Unmarshal(sinks, &sk)
+		if err := json.Unmarshal(sinks, &sk); err != nil {
+			return fmt.Errorf("decode sinks: %w", err)
+		}
 		if sinkList, ok := sk["sinks"].([]any); ok {
 			rows := [][]string{}
 			for _, s := range sinkList {

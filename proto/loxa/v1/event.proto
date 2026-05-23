@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package loxa.v1;
 
-option go_package = "github.com/astraive/loxa/spec/proto/loxa/v1;loxav1";
+option go_package = "github.com/astraive/loxa/gen/go/loxa/v1;loxav1";
 
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
@@ -142,4 +142,5 @@ message Event {
   repeated EventCheckpoint checkpoints = 27;
   repeated ErrorContext errors = 28;
   repeated EventLink links = 29;
+  string incident_id = 30;
 }

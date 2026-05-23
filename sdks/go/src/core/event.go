@@ -40,6 +40,7 @@ type Event struct {
 	TraceID       string
 	SpanID        string
 	ParentID      string
+	IncidentID    string
 
 	// ── Classification ───────────────────────────────────────────────────────
 	Level   Level
@@ -514,6 +515,8 @@ func (e *Event) Get(key string) (any, bool) {
 		return e.TraceID, e.TraceID != ""
 	case "span_id":
 		return e.SpanID, e.SpanID != ""
+	case "incident_id":
+		return e.IncidentID, e.IncidentID != ""
 	case "service":
 		return e.Service, e.Service != ""
 	case "event":
@@ -728,6 +731,7 @@ func (e *Event) Clone() *Event {
 		TraceID:       e.TraceID,
 		SpanID:        e.SpanID,
 		ParentID:      e.ParentID,
+		IncidentID:    e.IncidentID,
 		Level:         e.Level,
 		Event:         e.Event,
 		Kind:          e.Kind,
@@ -796,6 +800,11 @@ func (e *Event) applyCanonical(a Attr) bool {
 	case "span_id":
 		if v, ok := a.Value.(string); ok {
 			e.SpanID = v
+			return true
+		}
+	case "incident_id":
+		if v, ok := a.Value.(string); ok {
+			e.IncidentID = v
 			return true
 		}
 	case "parent_id":
@@ -1141,13 +1150,11 @@ func canonicalInt64(v any) (int64, bool) {
 	default:
 		return 0, false
 	}
-}
-
-// ── Canonical key lookup ──────────────────────────────────────────────────────
+}	// ── Canonical key lookup ──────────────────────────────────────────────────────
 
 var canonicalKeys = map[string]struct{}{
 	"timestamp": {}, "schema_version": {}, "event_version": {}, "event_id": {}, "request_id": {}, "trace_id": {},
-	"span_id": {}, "parent_id": {}, "level": {}, "event": {},
+	"span_id": {}, "parent_id": {}, "incident_id": {}, "level": {}, "event": {},
 	"kind": {}, "message": {}, "outcome": {}, "duration_ms": {}, "service": {},
 	"version": {}, "environment": {}, "deployment_id": {}, "region": {},
 	"host": {}, "runtime": {}, "method": {}, "path": {}, "route": {},

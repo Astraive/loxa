@@ -34,8 +34,7 @@ cd "$REPO_ROOT/collector"
 
 # Try to build and run the collector
 if command -v go &>/dev/null; then
-    go build -o /tmp/loxa-collector-smoke ./cmd/collector 2>/dev/null || \
-    go build -o /tmp/loxa-collector-smoke . 2>/dev/null || {
+    go build -o /tmp/loxa-collector-smoke ./cmd/loxa-collector 2>/dev/null || {
         echo "FAIL: Could not build collector"
         exit 1
     }
@@ -83,7 +82,7 @@ PAYLOAD=$(cat <<EOF
 EOF
 )
 
-EMIT_RESPONSE=$(curl -sf -X POST "${COLLECTOR_URL}/api/v1/ingest" \
+EMIT_RESPONSE=$(curl -sf -X POST "${COLLECTOR_URL}/v1/events" \
     -H "Content-Type: application/json" \
     -d "$PAYLOAD" 2>/dev/null) || {
     echo "FAIL: Could not emit event to collector"
@@ -96,7 +95,9 @@ sleep 1
 
 # --- Query and verify ---
 echo "Querying stored events..."
-QUERY_RESPONSE=$(curl -sf "${COLLECTOR_URL}/api/v1/query?service=smoke-test&limit=10" 2>/dev/null) || {
+QUERY_RESPONSE=$(curl -sf -X POST "${COLLECTOR_URL}/v1/query" \
+    -H "Content-Type: application/json" \
+    -d '{"query":"SELECT raw FROM events ORDER BY timestamp DESC LIMIT 10"}' 2>/dev/null) || {
     echo "FAIL: Could not query events"
     exit 1
 }
@@ -115,7 +116,7 @@ echo "Checking version endpoint..."
 curl -sf "${COLLECTOR_URL}/version" >/dev/null 2>&1 && echo "  /version OK" || echo "  WARN: /version not available"
 
 echo "Checking status endpoint..."
-curl -sf "${COLLECTOR_URL}/api/v1/status" >/dev/null 2>&1 && echo "  /api/v1/status OK" || echo "  WARN: /api/v1/status not available"
+curl -sf "${COLLECTOR_URL}/v1/status" >/dev/null 2>&1 && echo "  /v1/status OK" || echo "  WARN: /v1/status not available"
 
 echo ""
 echo "=== Smoke Test PASSED ==="

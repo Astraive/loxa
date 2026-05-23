@@ -106,11 +106,11 @@ func BenchmarkDuckDBBatchInsert(b *testing.B) {
 			`INSERT INTO events (event_id, timestamp, event_name, level, service, outcome, raw) VALUES (?, ?, ?, ?, ?, ?, ?)`)
 		for _, ev := range events {
 			var parsed map[string]any
-			json.Unmarshal(ev, &parsed)
-			stmt.ExecContext(ctx, parsed["event_id"], parsed["timestamp"], parsed["event_name"], parsed["level"], parsed["service"], parsed["outcome"], parsed["raw"])
+			_ = json.Unmarshal(ev, &parsed)
+			_, _ = stmt.ExecContext(ctx, parsed["event_id"], parsed["timestamp"], parsed["event_name"], parsed["level"], parsed["service"], parsed["outcome"], parsed["raw"])
 		}
-		stmt.Close()
-		tx.Commit()
+		_ = stmt.Close()
+		_ = tx.Commit()
 	}
 }
 
@@ -144,12 +144,12 @@ func BenchmarkDuckDBPointLookup(b *testing.B) {
 	eventIDs := make([]string, len(events))
 	for i, ev := range events {
 		var parsed map[string]any
-		json.Unmarshal(ev, &parsed)
+		_ = json.Unmarshal(ev, &parsed)
 		eventIDs[i] = parsed["event_id"].(string)
-		stmt.ExecContext(ctx, parsed["event_id"], parsed["timestamp"], parsed["event_name"], parsed["level"], parsed["service"], parsed["outcome"], parsed["raw"])
+		_, _ = stmt.ExecContext(ctx, parsed["event_id"], parsed["timestamp"], parsed["event_name"], parsed["level"], parsed["service"], parsed["outcome"], parsed["raw"])
 	}
-	stmt.Close()
-	tx.Commit()
+	_ = stmt.Close()
+	_ = tx.Commit()
 
 	b.ResetTimer()
 	b.ReportAllocs()

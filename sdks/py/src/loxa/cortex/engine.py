@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import time
 import urllib.request
 from typing import Iterable
 from urllib.error import HTTPError, URLError

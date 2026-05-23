@@ -1,5 +1,5 @@
 use flate2::read::GzDecoder;
-use loxa::{Config, Logger, Params, SinkConfig};
+use loxa::{Config, Logger, Params};
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::sync::mpsc;

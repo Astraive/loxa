@@ -13,7 +13,6 @@ from __future__ import annotations
 import statistics
 import time
 import urllib.request
-import json
 from urllib.error import URLError
 
 import sys

@@ -3,6 +3,7 @@ use std::hash::Hash;
 use crate::signature::Signature;
 use serde::{Deserialize, Serialize};
 
+#[allow(clippy::module_inception)]
 /// Multiple similarity metrics for incident matching
 pub mod similarity {
 

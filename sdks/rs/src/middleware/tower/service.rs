@@ -43,11 +43,8 @@ pub fn capture_request(
         },
     );
     let event_id = ctx.event_id.clone();
-    let encoded = logger.emit(&ctx).map_err(|err| {
-        serde_json::Error::io(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            err.to_string(),
-        ))
-    })?;
+    let encoded = logger
+        .emit(&ctx)
+        .map_err(|err| serde_json::Error::io(std::io::Error::other(err.to_string())))?;
     Ok(MiddlewareResult { event_id, encoded })
 }

@@ -47,6 +47,7 @@ func buildEvent(params Params, cfg *Config) *Event {
 	
 	// Parent span ID is optional and only set if provided (Requirement 39.5)
 	ev.ParentID = params.ParentID
+	ev.IncidentID = params.IncidentID
 
 	// Classification
 	ev.Level = params.Level
@@ -88,13 +89,13 @@ func buildEvent(params Params, cfg *Config) *Event {
 
 	// Canonical subject identifiers are included as attrs.
 	if params.UserID != "" {
-		ev.AddAttrs([]Attr{UserID(params.UserID)})
+		_ = ev.AddAttrs([]Attr{UserID(params.UserID)})
 	}
 	if params.TenantID != "" {
-		ev.AddAttrs([]Attr{TenantID(params.TenantID)})
+		_ = ev.AddAttrs([]Attr{TenantID(params.TenantID)})
 	}
 	if params.WorkspaceID != "" {
-		ev.AddAttrs([]Attr{WorkspaceID(params.WorkspaceID)})
+		_ = ev.AddAttrs([]Attr{WorkspaceID(params.WorkspaceID)})
 	}
 	if params.OrganizationID != "" {
 		ev.AddAttrs([]Attr{OrganizationID(params.OrganizationID)})

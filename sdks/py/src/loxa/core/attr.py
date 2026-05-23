@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any as _TypingAny
 
 from .event import Attr
 
@@ -14,7 +14,7 @@ def Float64(key: str, value: float) -> Attr: return Attr(key, value)
 def Bool(key: str, value: bool) -> Attr: return Attr(key, value)
 def Time(key: str, value: datetime) -> Attr: return Attr(key, value.isoformat())
 def Duration(key: str, value: timedelta) -> Attr: return Attr(key, int(value.total_seconds() * 1000))
-def Any(key: str, value: Any) -> Attr: return Attr(key, value)
+def Any(key: str, value: _TypingAny) -> Attr: return Attr(key, value)
 def Null(key: str) -> Attr: return Attr(key, None)
 def Group(key: str, *attrs: Attr) -> Attr:
     result: dict[str, object] = {}

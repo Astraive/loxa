@@ -813,37 +813,6 @@ func LoadFromEnv(base Config) Config {
 	return cfg
 }
 
-// applySDKDefaults fills in SDK-specific defaults for fields that are zero-valued.
-// These are the defaults described in Requirement 32.
-func applySDKDefaults(cfg *Config) {
-	if cfg.Version == "" {
-		cfg.Version = "unknown"
-	}
-	if cfg.Environment == "" {
-		cfg.Environment = "development"
-	}
-	if cfg.BatchSize == 0 {
-		cfg.BatchSize = 100
-	}
-	if cfg.FlushInterval == 0 {
-		cfg.FlushInterval = 5 * time.Second
-	}
-	if cfg.MaxBufferSize == 0 {
-		cfg.MaxBufferSize = 10000
-	}
-	if cfg.MaxRetries == 0 {
-		cfg.MaxRetries = 3
-	}
-	if cfg.MaxBackoff == 0 {
-		cfg.MaxBackoff = 30 * time.Second
-	}
-	if cfg.Timeout == 0 {
-		cfg.Timeout = 10 * time.Second
-	}
-	if cfg.ConnectionTimeout == 0 {
-		cfg.ConnectionTimeout = 5 * time.Second
-	}
-}
 
 // validateSDKConfig validates the SDK configuration per Requirement 32.5 and 32.6.
 // Returns an error if required fields are missing or values are invalid.

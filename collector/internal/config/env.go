@@ -203,14 +203,3 @@ func csvSetter(dst *[]string) EnvOverrideFunc {
 	}
 }
 
-func boolGetter(v string) (bool, error) {
-	v = strings.ToLower(strings.TrimSpace(v))
-	switch v {
-	case "1", "true", "yes", "on":
-		return true, nil
-	case "0", "false", "no", "off":
-		return false, nil
-	default:
-		return false, fmt.Errorf("invalid bool: %q", v)
-	}
-}

@@ -2,21 +2,36 @@ name: Protobuf generation
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "proto/loxa/v1/*.proto"
+  pull_request:
+    paths:
+      - "proto/loxa/v1/*.proto"
 
 jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Install protoc
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Install protoc and Go plugins
         run: |
           sudo apt-get update && sudo apt-get install -y protobuf-compiler
-      - name: Run proto generator script
-        run: |
-          chmod +x ./tools/generate_protos.sh
-          ./tools/generate_protos.sh
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5
+
+      - name: Generate and verify Go protobuf code
+        run: make check-proto
+
       - name: Upload generated protos
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: protos-generated
-          path: generated/proto
+          path: gen/go/loxa/v1/

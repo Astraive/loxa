@@ -1,18 +1,15 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"regexp"
 	"strings"
 	"time"
 
 	collectorconfig "github.com/astraive/loxa-collector/internal/config"
-	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -94,25 +91,6 @@ func loadWorkerConfigFromArgs(args []string) (workerConfig, error) {
 	return workerRuntimeConfig(fc), nil
 }
 
-func mergeWorkerConfigFile(dst *workerFileConfig, path string) error {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	dec := yaml.NewDecoder(bytes.NewReader(raw))
-	dec.KnownFields(true)
-	if err := dec.Decode(dst); err != nil {
-		return err
-	}
-	var extraDoc workerFileConfig
-	if err := dec.Decode(&extraDoc); err != io.EOF {
-		if err == nil {
-			return errors.New("config file must contain a single YAML document")
-		}
-		return err
-	}
-	return nil
-}
 
 func applyWorkerEnvOverrides(fc *workerFileConfig) error {
 	get := func(key string) (string, bool) {

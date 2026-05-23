@@ -219,7 +219,9 @@ func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 				resp.AddRejected(i, eventID, "pipeline_not_initialized", err.Error(), true)
 				continue
 			}
+			s.processorMu.RLock()
 			result := s.processor.Process(r.Context(), raw)
+			s.processorMu.RUnlock()
 			if failures := result.Outcome.FailureCount(); failures > 0 {
 				s.metrics.sinkWriteErrors.Add(int64(failures))
 			}
@@ -493,12 +495,18 @@ func (s *collectorState) handleIngestBatch(ctx context.Context, rawEvents [][]by
 				logJSON("error", "collector_pipeline_not_initialized", map[string]any{"error": err.Error()})
 				continue
 			}
+			s.processorMu.RLock()
 			result := s.processor.Process(ctx, raw)
+			s.processorMu.RUnlock()
 			if failures := result.Outcome.FailureCount(); failures > 0 {
 				s.metrics.sinkWriteErrors.Add(int64(failures))
 			}
 			if result.Deduped {
 				s.metrics.eventsDeduped.Add(1)
+				continue
+			}
+			if result.Quarantined {
+				s.metrics.eventsInvalid.Add(1)
 				continue
 			}
 			if result.Invalid {

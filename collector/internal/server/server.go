@@ -10,7 +10,6 @@ type MultiServer struct {
 	cfg      Config
 	state    State
 	servers  []Server
-	ready    bool
 	mu       sync.Mutex
 	started  bool
 	stopped  bool

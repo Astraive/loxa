@@ -347,6 +347,8 @@ func normalizeProvenance(value, fallback string) string {
 		return "otlp"
 	case strings.HasPrefix(strings.ToLower(strings.TrimSpace(value)), "jsonl"):
 		return "jsonl"
+	case strings.HasPrefix(strings.ToLower(strings.TrimSpace(value)), "grpc"):
+		return "grpc"
 	case strings.TrimSpace(value) == "":
 		if strings.TrimSpace(fallback) == "" {
 			return "loxa"

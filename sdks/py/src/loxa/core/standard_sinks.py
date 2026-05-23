@@ -1,6 +1,6 @@
 import os
 import sys
-from ..sinks import FileSink, HTTPBatchSink, MemorySink, NoopSink, StdoutSink
+from ..sinks import HTTPBatchSink, StdoutSink
 
 
 def StderrSink():

@@ -16,6 +16,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// The tail WebSocket feature is not yet wired into the router.
+// Keeping the implementation for future use. 
+//lint:ignore U1000 tail transport
+
+//nolint:unused
 var tailWSUpgrader = websocket.Upgrader{
 	ReadBufferSize:  16 * 1024,
 	WriteBufferSize: 16 * 1024,
@@ -24,6 +29,7 @@ var tailWSUpgrader = websocket.Upgrader{
 	},
 }
 
+//nolint:unused
 func (s *collectorState) handleTailWebSocket(w http.ResponseWriter, r *http.Request) {
 	if !s.isAuthorized(r) {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
@@ -70,6 +76,7 @@ func (s *collectorState) handleTailWebSocket(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+//nolint:unused
 func (s *collectorState) streamHistoricalTail(ctx context.Context, filters serverruntime.TailFilters, write func([]byte) error) error {
 	rows, err := s.queryTailHistory(ctx, filters)
 	if err != nil {
@@ -219,6 +226,7 @@ func (s *collectorState) RemoveTailSubscriber(ch chan []byte) {
 	s.removeTailSubscriber(ch)
 }
 
+//nolint:unused
 func (s *collectorState) writeTailWebSocketEvent(conn *websocket.Conn, raw []byte) error {
 	var payload map[string]any
 	if err := json.Unmarshal(raw, &payload); err != nil {

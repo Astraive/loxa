@@ -10,14 +10,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
-)
-
-type rawJSONBytes []byte
-
-func (r rawJSONBytes) MarshalJSON() ([]byte, error) {
-	return r, nil
-}
+	"time")
 
 type RunnerConfig struct {
 	URL       string

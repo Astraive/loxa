@@ -19,6 +19,7 @@ type MemoryKeyCache struct {
 	negativeTTL      time.Duration
 	cleanupInterval  time.Duration
 	stopCleanup      chan struct{}
+	cleanupWG        sync.WaitGroup
 }
 
 // NewMemoryKeyCache creates a new cache with the given TTLs.
@@ -31,6 +32,7 @@ func NewMemoryKeyCache(defaultTTL, negativeTTL time.Duration) *MemoryKeyCache {
 		cleanupInterval: defaultTTL,
 		stopCleanup:     make(chan struct{}),
 	}
+	c.cleanupWG.Add(1)
 	go c.cleanupLoop()
 	return c
 }
@@ -87,12 +89,14 @@ func (c *MemoryKeyCache) Invalidate(keyID string) {
 	delete(c.entries, keyID)
 }
 
-// Close stops the background cleanup goroutine.
+// Close stops the background cleanup goroutine and waits for it to exit.
 func (c *MemoryKeyCache) Close() {
 	close(c.stopCleanup)
+	c.cleanupWG.Wait()
 }
 
 func (c *MemoryKeyCache) cleanupLoop() {
+	defer c.cleanupWG.Done()
 	ticker := time.NewTicker(c.cleanupInterval)
 	defer ticker.Stop()
 	for {

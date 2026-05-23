@@ -6,7 +6,9 @@ from contextlib import contextmanager
 from datetime import datetime
 from typing import Any
 
-from .. import Config, Logger, MemorySink
+from ..core.config import Config
+from ..core.logger import Logger
+from ..sinks import MemorySink
 
 
 def TestLogger(service: str = "test"):

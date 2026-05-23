@@ -182,7 +182,7 @@ func (t *HTTPTransport) Do(ctx context.Context, req *http.Request) (*HTTPRespons
 func (t *HTTPTransport) isRetryableError(err error) bool {
 	// Network errors are generally retryable
 	if netErr, ok := err.(net.Error); ok {
-		return netErr.Timeout() || netErr.Temporary()
+		return netErr.Timeout()
 	}
 	return false
 }

@@ -221,9 +221,7 @@ func (s *sink) WriteBatch(ctx context.Context, events [][]byte) error {
 			return err
 		}
 		args := make([]any, 0, len(values)+1)
-		for _, v := range values {
-			args = append(args, v)
-		}
+		args = append(args, values...)
 		if s.storeRaw {
 			if s.encryptRaw {
 				enc, err := atrest.EncryptString(e, s.encryptKey)

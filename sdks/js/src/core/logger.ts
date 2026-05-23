@@ -231,8 +231,14 @@ export class Logger {
   // Logging helpers
   async event(name: string, ...attrs: Attr[]): Promise<void> { return this.immediate(LevelInfo, name, attrs); }
   async track(name: string, ...attrs: Attr[]): Promise<void> { return this.event(name, ...attrs); }
-  async audit(name: string, ...attrs: Attr[]): Promise<void> { return this.immediate(LevelInfo, name, [`audit.${name}`, ...attrs] as any); }
-  async security(name: string, ...attrs: Attr[]): Promise<void> { return this.immediate(LevelWarn, name, [`security.${name}`, ...attrs] as any); }
+  async audit(name: string, ...attrs: Attr[]): Promise<void> {
+    const all: Attr[] = [String('audit.name', name), ...attrs];
+    return this.immediate(LevelInfo, name, all);
+  }
+  async security(name: string, ...attrs: Attr[]): Promise<void> {
+    const all: Attr[] = [String('security.name', name), ...attrs];
+    return this.immediate(LevelWarn, name, all);
+  }
   async metric(name: string, value: number, ...attrs: Attr[]): Promise<void> {
     const all: Attr[] = [Float64('value', value), ...attrs];
     return this.immediate(LevelInfo, `metric.${name}`, all);

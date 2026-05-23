@@ -67,7 +67,7 @@ pub fn should_sample(event: &EventContext, sampler: &SamplerConfig) -> bool {
             ];
             let want = value.trim();
             keys.iter().any(|key| {
-                lookup_attr_string(event, key).map_or(false, |got| {
+                lookup_attr_string(event, key).is_some_and(|got| {
                     if want.is_empty() {
                         !got.trim().is_empty()
                     } else {

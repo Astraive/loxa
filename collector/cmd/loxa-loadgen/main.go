@@ -59,7 +59,7 @@ func run(args []string) error {
 	batchSize := fs.Int("batch", cfg.BatchSize, "batch size per request")
 	apiKey := fs.String("api-key", cfg.APIKey, "API key for auth")
 	bodySize := fs.Int("body-size", cfg.BodySize, "average body size in bytes")
-	fs.Parse(args)
+	_ = fs.Parse(args)
 
 	cfg.URL = *url
 	cfg.Events = *events
@@ -188,7 +188,7 @@ func sendBatch(ctx context.Context, client *http.Client, cfg Config, batch [][]b
 		Invalid  int `json:"invalid"`
 		Rejected int `json:"rejected"`
 	}
-	json.NewDecoder(resp.Body).Decode(&result)
+	_ = json.NewDecoder(resp.Body).Decode(&result)
 
 	atomic.AddInt64(&stats.accepted, int64(result.Accepted))
 	atomic.AddInt64(&stats.invalid, int64(result.Invalid))

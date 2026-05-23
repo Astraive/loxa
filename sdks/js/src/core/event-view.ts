@@ -13,6 +13,7 @@ export class EventView {
   readonly requestId: string;
   readonly traceId: string;
   readonly spanId: string;
+  readonly incidentId: string;
   readonly parentId: string;
   readonly timestamp: string;
   readonly service: string;
@@ -51,6 +52,7 @@ export class EventView {
     this.requestId = event.requestId;
     this.traceId = event.traceId;
     this.spanId = event.spanId;
+    this.incidentId = event.incidentId;
     this.parentId = event.parentId;
     this.timestamp = event.timestamp;
     this.service = event.service;

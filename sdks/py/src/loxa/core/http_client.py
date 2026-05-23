@@ -4,7 +4,7 @@ import json
 import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
-from typing import Iterable
+from typing import Any, Iterable
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from ..generated.spec_contract import (

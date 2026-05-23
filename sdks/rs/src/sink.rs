@@ -38,7 +38,10 @@ pub fn write_sink_with_ack(
         SinkConfig::File(path) => {
             // Global mutex to prevent concurrent file writes from corrupting data
             static FILE_WRITE_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-            let _guard = FILE_WRITE_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
+            let _guard = FILE_WRITE_LOCK
+                .get_or_init(|| Mutex::new(()))
+                .lock()
+                .unwrap();
             let mut file = OpenOptions::new().create(true).append(true).open(path)?;
             writeln!(file, "{encoded}")
         }

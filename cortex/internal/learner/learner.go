@@ -7,6 +7,7 @@ import (
 
 	"github.com/astraive/loxa/loxa-cortex/internal/models"
 	"github.com/astraive/loxa/loxa-cortex/internal/storage"
+	"github.com/rs/zerolog/log"
 )
 
 type Learner struct {
@@ -93,7 +94,9 @@ func (l *Learner) RecordFeedback(ctx context.Context, feedback *models.Remediati
 				sig.AvgResolutionTime = avgTime
 			}
 
-			l.signatureStore.Save(ctx, sig)
+			if saveErr := l.signatureStore.Save(ctx, sig); saveErr != nil {
+				log.Warn().Err(saveErr).Str("signature_id", sig.SignatureID).Msg("failed to save updated signature")
+			}
 		}
 	}
 

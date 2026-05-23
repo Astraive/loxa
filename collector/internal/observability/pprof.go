@@ -16,6 +16,6 @@ func RegisterAndServePprof(addr string) {
 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	go func() {
 		log.Printf("pprof listening on %s", addr)
-		http.ListenAndServe(addr, mux)
+		_ = http.ListenAndServe(addr, mux)
 	}()
 }

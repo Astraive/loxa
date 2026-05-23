@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Protocol, runtime_checkable
 
 from ..sinks.stdout import StdoutSink
-from ..generated.spec_contract import LOXA_EVENT_VERSION, LOXA_INGEST_API_VERSION, LOXA_SPEC_VERSION
 
 CanonicalWins = "canonical_wins"
 UserWins = "user_wins"
@@ -151,7 +150,7 @@ class Config:
         return self
 
     def validate(self) -> None:
-        if self.level not in {"debug", "info", "warn", "error", "fatal"}:
+        if self.level not in {"debug", "info", "notice", "warn", "error", "fatal"}:
             raise ValueError(f"unsupported level: {self.level}")
         if self.async_config.queue_size <= 0:
             raise ValueError("async queue_size must be positive")
@@ -173,7 +172,7 @@ def load_layered_config() -> Config:
     return _config_from_mapping(raw)
 
 
-def new_client(code_config: Config) -> "Logger":
+def new_client(code_config: Config):  # -> Logger
     """Create a Logger with 4-layer config precedence: defaults -> file -> env -> code."""
     # Step 1: Start with hardcoded defaults
     base = Config()
@@ -200,13 +199,14 @@ def new_client(code_config: Config) -> "Logger":
     # Step 6: Validate
     merged.validate()
 
-    from .logger import Logger
+    from ..core.logger import Logger
     return Logger(merged)
 
 
 def _apply_env_vars(cfg: Config) -> Config:
     """Apply environment variables to config, overriding file values."""
     env_map = {
+        "LOXA_SERVICE": "service",
         "LOXA_SERVICE_NAME": "service",
         "LOXA_SERVICE_VERSION": "version",
         "LOXA_ENVIRONMENT": "environment",
@@ -216,10 +216,10 @@ def _apply_env_vars(cfg: Config) -> Config:
         "LOXA_COLLECTOR_ENDPOINT": "collector_endpoint",
         "LOXA_DUPLICATE_POLICY": "duplicate_policy",
     }
-    for env_key, field in env_map.items():
+    for env_key, cfg_field in env_map.items():
         val = os.getenv(env_key, "").strip()
         if val:
-            setattr(cfg, field, val)
+            setattr(cfg, cfg_field, val)
 
     # Strict mode from env
     strict_env = os.getenv("LOXA_STRICT", "").strip().lower()
@@ -379,11 +379,11 @@ def _config_from_mapping(data: dict[str, Any]) -> Config:
 
 def _merge_dicts(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     merged = dict(base)
-    for key, value in override.items():
-        if isinstance(value, dict) and isinstance(merged.get(key), dict):
-            merged[key] = _merge_dicts(merged[key], value)
+    for k, v in override.items():
+        if isinstance(v, dict) and isinstance(merged.get(k), dict):
+            merged[k] = _merge_dicts(merged[k], v)
         else:
-            merged[key] = value
+            merged[k] = v
     return merged
 
 

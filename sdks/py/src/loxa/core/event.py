@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
+
+if TYPE_CHECKING:
+    from .timing import ProcessHandle, TimerHandle, GroupHandle
 from .config import LOXA_EVENT_VERSION, LOXA_SPEC_VERSION
 from .uuidv7 import uuidv7_like
 from .errors import EventAlreadyFinishedError, EventClosedError
@@ -45,6 +48,7 @@ class Params:
     request_id: str = ""
     trace_id: str = ""
     span_id: str = ""
+    incident_id: str = ""
     user_id: str = ""
     tenant_id: str = ""
     workspace_id: str = ""
@@ -62,6 +66,7 @@ class EventContext:
     request_id: str = field(default_factory=lambda: uuidv7_like("req"))
     trace_id: str = ""
     span_id: str = ""
+    incident_id: str = ""
     started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     finished_at: datetime | None = None
     outcome: str = ""
@@ -174,6 +179,8 @@ class EventContext:
             payload["trace_id"] = self.params.trace_id or self.trace_id
         if self.params.span_id or self.span_id:
             payload["span_id"] = self.params.span_id or self.span_id
+        if self.params.incident_id or self.incident_id:
+            payload["incident_id"] = self.params.incident_id or self.incident_id
         if self.params.version:
             payload["version"] = self.params.version
         if self.params.environment:

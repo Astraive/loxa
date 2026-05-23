@@ -10,6 +10,8 @@ require (
 
 replace github.com/astraive/loxa/spec => ../spec
 
+replace github.com/astraive/loxa/gen/go => ../gen/go
+
 require (
 	github.com/apache/arrow-go/v18 v18.1.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect

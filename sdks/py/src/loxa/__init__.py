@@ -3,33 +3,94 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import replace
 
-from .core.attr import *  # exports Any, String, Int, etc.
-from .core.config import *  # noqa: F403
-from .core.config_options import *
-from .core.context import FromContext, HasEvent, EventID, RequestIDFromContext, TraceIDFromContext, SpanIDFromContext
-from .core.duplicate_policy import *
-from .core.event import Attr, EventContext, Params
-from .core.errors import DuplicateEmitError, EventAlreadyFinishedError, EventClosedError, EventValidationError
-from .core.level import *
-from .core.logger import Logger
-from .core.redactor import *
-from .core.sampler import *
-from .core.schema import *
-from .metrics import *
-from .core.standard_sinks import StderrSink, RotatingFileSink, CollectorSink
-from .sinks import FileSink, HTTPBatchSink, MemorySink, NoopSink, StdoutSink
-from .sinks import MultiSink, multi_sink, drain, pause, resume, queue_size, health, otlp_sink
-from .sinks import MultiSinkFactory, Drain, Pause, Resume, QueueSize, Health, OTLPSink
+from .core import (  # noqa: F403
+    String, Int, Int64, Uint64, Float64, Bool, Time, Duration,
+    Null, Group, SensitiveString, HashString, MarkSensitive,
+    CanonicalWins, UserWins, FirstWins, LastWins, KeepBoth, ErrorOnDuplicate,
+    ExpandDotKeys, PreserveDotKeys, SnakeCaseKeys, CamelCaseKeys,
+    AsyncConfig, SecurityConfig, FieldNamingConfig, Config,
+    LOXA_EVENT_VERSION, LOXA_INGEST_API_VERSION, LOXA_SPEC_VERSION,
+    load_layered_config, new_client as _new_client_core,
+    WithService, WithVersion, WithEnvironment, WithSink, WithSampler,
+    WithRedactor, WithMetrics, WithSchema, WithEventSchema, WithAsync,
+    WithCollectorEndpoint, WithDuplicatePolicy, WithStatsHandler,
+    WithDeploymentID, WithIncludeHost, WithPanicRecovery, WithExitOnFatal,
+    WithRelease, WithNamespace, WithApiKey, WithOtelBridge, WithRetry,
+    WithTimeout, WithQueueSize, WithLogger,
+    Disabled, FromEnv,
+    with_service, with_version, with_environment, with_sink, with_sampler,
+    with_redactor, with_metrics, with_schema, with_event_schema, with_async,
+    with_collector_endpoint, with_duplicate_policy, with_stats_handler,
+    with_deployment_id, with_include_host, with_panic_recovery,
+    with_exit_on_fatal, with_release, with_namespace, with_api_key,
+    with_otel_bridge, with_retry, with_timeout, with_queue_size, with_logger,
+    disabled, from_env,
+    StatsHandler, DeliveryFailureHandler,
+    FromContext, HasEvent, EventID, RequestIDFromContext, TraceIDFromContext, SpanIDFromContext,
+    Attr, Params, EventContext, Logger,
+    DuplicateEmitError, EventAlreadyFinishedError, EventClosedError, EventValidationError,
+    LevelDebug, LevelInfo, LevelNotice, LevelWarn, LevelError, LevelFatal, ParseLevel,
+    # domain helpers (snake_case)
+    payment_id, subscription_id, invoice_id, job_id, message_id,
+    correlation_id, commit_sha, release,
+    money, percent, bytes_attr, http_status, status_code, error_code,
+    bucket, tags, masked, url, email_hash, ip_hash, region,
+    checkout_cart_item_count, checkout_cart_total, checkout_payment_method,
+    checkout_status, payment_provider, payment_method, payment_intent_id,
+    payment_failure_code, payment_retry_attempt,
+    billing_plan, billing_subscription_id, billing_invoice_id,
+    billing_amount, billing_interval,
+    agent_name, agent_provider, agent_model, agent_run_type,
+    agent_tool_name, agent_tool_outcome, agent_input_tokens,
+    agent_output_tokens, agent_cost,
+    rag_index, rag_embedding_model, rag_chunks_retrieved, rag_top_score,
+    rag_query_hash, rag_citation_count, rag_retrieval_latency,
+    # PascalCase aliases
+    PaymentID, SubscriptionID, InvoiceID, JobID, MessageID, CorrelationID,
+    CommitSHA, Release, Money, Percent, Bytes, HTTPStatus, StatusCode,
+    Bucket, Tags, Masked, URL, EmailHash, IPHash, Region,
+    CheckoutCartItemCount, CheckoutCartTotal, CheckoutPaymentMethod,
+    CheckoutStatus, PaymentProvider, PaymentMethod, PaymentIntentID,
+    PaymentFailureCode, PaymentRetryAttempt,
+    BillingPlan, BillingSubscriptionID, BillingInvoiceID, BillingAmount,
+    BillingInterval, AgentName, AgentProvider, AgentModel, AgentRunType,
+    AgentToolName, AgentToolOutcome, AgentInputTokens, AgentOutputTokens,
+    AgentCost, RAGIndex, RAGEmbeddingModel, RAGChunksRetrieved,
+    RAGTopScore, RAGQueryHash, RAGCitationCount, RAGRetrievalLatency,
+    default_redactor, redact_keys, hash_keys, mask_keys, drop_keys,
+    redact_patterns, compose_redactors,
+    sample_all, sample_none, sample_random, sample_errors,
+    sample_slow_requests, sample_status_codes, sample_routes,
+    sample_users, sample_tenants, sample_feature_flag, sample_by_header,
+    any_sampler, all_sampler, not_sampler, sample_rate_limited,
+    sample_by_event, sample_by_outcome, should_sample,
+    allow_fields, block_fields,
+    SampleByEvent, SampleByOutcome, ShouldSample, AllowFields, BlockFields,
+    Schema, SchemaFunc, EventView, DefaultSchema, FlatSchema, NestedSchema,
+    ECSchema, OTelLogSchema, DatadogSchema, CallableSchema, custom_schema,
+    StderrSink, RotatingFileSink, CollectorSink,
+)
+
+from .sinks import (
+    FileSink, HTTPBatchSink, MemorySink, NoopSink, StdoutSink,
+    MultiSink, multi_sink, drain, pause, resume, queue_size, health, otlp_sink,
+    MultiSinkFactory, Drain, Pause, Resume, QueueSize, Health, OTLPSink,
+)
 from .core.http_client import CollectorClient
 from .cortex import CortexClient, GraphView, IncidentContext, Remediation, RemediationFeedback
-from .core.timing import ProcessHandle, TimerHandle, GroupHandle, StopwatchHandle
-from .core.timing import with_process, with_group, with_timer, finish_group_error, measure, step, phase, span
+from .core.timing import (
+    ProcessHandle, TimerHandle, GroupHandle, StopwatchHandle,
+    with_process, with_group, with_timer, finish_group_error, measure, step, phase, span,
+)
+from .testkit import (  # noqa: F403
+    TestLogger, Capture, AssertEvent, AssertRedacted, AssertHasCheckpoint,
+    DecodeEvents, CapturingLogger, expect_event, expect_attr,
+    snapshot_event, mock_sink, fake_clock, set_id_generator,
+)
 
-# Restore loxa.Any after star-imports shadow it with typing.Any
-from .core.attr import Any as _loxa_Any  # noqa: E402
-Any = _loxa_Any  # noqa: F811
-
-from .testkit import *  # noqa: F403
+# Re-export AttrAny as loxa.Any (hides typing.Any at top level)
+from .core import AttrAny as _loxa_Any, MetricsCollector, MetricsSnapshot
+Any = _loxa_Any
 
 # ---------------------------------------------------------------------------
 # Default logger instance
@@ -61,8 +122,7 @@ def try_new(config: Config) -> Logger:
 
 
 def new_client(config: Config) -> Logger:
-    from .core.config import new_client as _new_client
-    return _new_client(config)
+    return _new_client_core(config)
 
 
 def create_loxa(service: str = "", **kwargs: Any) -> Logger:
@@ -341,17 +401,22 @@ Configure = configure
 Default = default
 New = new
 TryNew = try_new
-NewClient = new_client
+NewClient = _new_client_core
 Dev = dev
 Production = production
 Test = test
 
 StartEvent = start_event_from  # backward compat: StartEvent(parent_ctx, params)
-StartHTTPEvent = lambda ctx, params: start_event_from(ctx, replace(params, kind="http"))
-StartJobEvent = lambda ctx, params: start_event_from(ctx, replace(params, kind="job"))
-StartQueueEvent = lambda ctx, params: start_event_from(ctx, replace(params, kind="queue"))
-StartCLIEvent = lambda ctx, params: start_event_from(ctx, replace(params, kind="cli"))
-StartCronEvent = lambda ctx, params: start_event_from(ctx, replace(params, kind="cron"))
+def StartHTTPEvent(ctx, params):
+    return start_event_from(ctx, replace(params, kind="http"))
+def StartJobEvent(ctx, params):
+    return start_event_from(ctx, replace(params, kind="job"))
+def StartQueueEvent(ctx, params):
+    return start_event_from(ctx, replace(params, kind="queue"))
+def StartCLIEvent(ctx, params):
+    return start_event_from(ctx, replace(params, kind="cli"))
+def StartCronEvent(ctx, params):
+    return start_event_from(ctx, replace(params, kind="cron"))
 
 Append = append
 Enrich = enrich

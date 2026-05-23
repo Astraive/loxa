@@ -22,7 +22,7 @@ import loxa
 def run_middleware_simulation_benchmark(iterations: int = 10000) -> dict:
     """Simulate what ASGI middleware does per request and measure overhead."""
     sink = loxa.MemorySink()
-    logger = loxa.new(loxa.test("bench").with_sink(sink))
+    loxa.new(loxa.test("bench").with_sink(sink))
 
     latencies: list[float] = []
 

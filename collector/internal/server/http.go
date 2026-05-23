@@ -120,17 +120,17 @@ func (s *HTTPServer) handleIngest(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"accepted":` + itoa(accepted) + `}`))
+	_, _ = w.Write([]byte(`{"accepted":` + itoa(accepted) + `}`))
 }
 
 func (s *HTTPServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if s.state.IsHealthy() {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok"}`))
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(`{"status":"unhealthy"}`))
+		_, _ = w.Write([]byte(`{"status":"unhealthy"}`))
 	}
 }
 

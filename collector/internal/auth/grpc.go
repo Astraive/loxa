@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"strings"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -106,8 +107,8 @@ func grpcAuthenticate(ctx context.Context, store KeyStore, cache *MemoryKeyCache
 	if record.RevokedAt != nil {
 		return nil, status.Error(codes.Unauthenticated, "api key revoked")
 	}
-	if record.ExpiresAt != nil {
-		// expiresAt check would go here
+	if record.ExpiresAt != nil && time.Now().After(*record.ExpiresAt) {
+		return nil, status.Error(codes.Unauthenticated, "api key expired")
 	}
 
 	// Verify secret

@@ -21,16 +21,11 @@ impl Default for AsyncConfig {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub enum BackpressurePolicy {
+    #[default]
     DropNewest,
     DropOldest,
     Block,
     Error,
-}
-
-impl Default for BackpressurePolicy {
-    fn default() -> Self {
-        Self::DropNewest
-    }
 }

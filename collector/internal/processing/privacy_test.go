@@ -122,7 +122,7 @@ func TestRedactPIIAllowlist(t *testing.T) {
 	}
 
 	var result map[string]interface{}
-	json.Unmarshal(redacted, &result)
+	_ = json.Unmarshal(redacted, &result)
 
 	// name and age should be unchanged
 	if result["name"] != "Alice" {
@@ -197,7 +197,7 @@ func TestRedactNestedArrays(t *testing.T) {
 	}
 
 	var result map[string]interface{}
-	json.Unmarshal(redacted, &result)
+	_ = json.Unmarshal(redacted, &result)
 
 	users := result["users"].([]interface{})
 	alice := users[0].(map[string]interface{})

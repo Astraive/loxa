@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	loxav1 "github.com/astraive/loxa/spec/proto/loxa/v1"
+	loxav1 "github.com/astraive/loxa/gen/go/loxa/v1"
 	"github.com/astraive/loxa-collector/internal/ingest"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/time/rate"

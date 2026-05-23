@@ -228,7 +228,9 @@ func (s *collectorState) processSpoolEvent(raw []byte) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	s.processorMu.RLock()
 	result := s.processor.Process(ctx, raw)
+	s.processorMu.RUnlock()
 	if failures := result.Outcome.FailureCount(); failures > 0 {
 		s.metrics.sinkWriteErrors.Add(int64(failures))
 	}
@@ -245,13 +247,19 @@ func (s *collectorState) processSpoolEvent(raw []byte) {
 }
 
 func (s *collectorState) maybeWriteDLQ(raw []byte, err error) {
-	if s.processor == nil {
+	s.processorMu.RLock()
+	proc := s.processor
+	s.processorMu.RUnlock()
+	if proc == nil {
 		if initErr := s.ensureProcessor(); initErr != nil {
 			logJSON("error", "collector_dlq_processor_not_initialized", map[string]any{"error": initErr.Error()})
 			return
 		}
+		s.processorMu.RLock()
+		proc = s.processor
+		s.processorMu.RUnlock()
 	}
-	s.processor.WriteDLQ(raw, err)
+	proc.WriteDLQ(raw, err)
 }
 
 func (s *collectorState) markSpoolDelivered(raw []byte) {
@@ -446,7 +454,3 @@ func (s *collectorState) quarantineBadSpoolLine(raw []byte) {
 	}
 }
 
-type spoolDeliveryResult struct {
-	Success bool
-	Size    int
-}

@@ -59,6 +59,7 @@ export class DefaultSchema implements Schema {
     if (view.durationMs) out.duration_ms = view.durationMs;
     if (view.traceId) out.trace_id = view.traceId;
     if (view.spanId) out.span_id = view.spanId;
+    if (view.incidentId) out.incident_id = view.incidentId;
     if (view.parentId) out.parent_id = view.parentId;
     if (view.finishedAt) out.finished_at = new Date(view.finishedAt).toISOString();
 

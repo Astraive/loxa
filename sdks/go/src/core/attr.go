@@ -120,6 +120,9 @@ func Path(path string) Attr { return String("path", path) }
 // Route sets the canonical route field.
 func Route(route string) Attr { return String("route", route) }
 
+// IncidentID sets the canonical incident_id field.
+func IncidentID(id string) Attr { return String("incident_id", id) }
+
 // StatusCode sets the canonical status_code field.
 func StatusCode(code int) Attr { return Int("status_code", code) }
 

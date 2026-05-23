@@ -43,14 +43,17 @@ func ValidateSpecAssets(specRepoPath string) error {
 		firstExisting(
 			filepath.Join(specRepoPath, "spec", "proto", "loxa", "v1", "event.proto"),
 			filepath.Join(specRepoPath, "proto", "loxa", "v1", "event.proto"),
+			filepath.Join(specRepoPath, "releases", "v1", "proto", "loxa", "v1", "event.proto"),
 		),
 		firstExisting(
 			filepath.Join(specRepoPath, "spec", "proto", "loxa", "v1", "ingest.proto"),
 			filepath.Join(specRepoPath, "proto", "loxa", "v1", "ingest.proto"),
+			filepath.Join(specRepoPath, "releases", "v1", "proto", "loxa", "v1", "ingest.proto"),
 		),
 		firstExisting(
 			filepath.Join(specRepoPath, "spec", "proto", "loxa", "v1", "collector.proto"),
 			filepath.Join(specRepoPath, "proto", "loxa", "v1", "collector.proto"),
+			filepath.Join(specRepoPath, "releases", "v1", "proto", "loxa", "v1", "collector.proto"),
 		),
 		filepath.Join(specRepoPath, "generated", "go", "contract", "contract.go"),
 		firstExisting(

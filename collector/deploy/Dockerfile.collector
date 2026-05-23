@@ -2,14 +2,25 @@ FROM golang:1.25-bookworm AS builder
 
 WORKDIR /build
 
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential pkg-config ca-certificates && rm -rf /var/lib/apt/lists/*
+# Install protoc and Go protobuf plugins for proto generation
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential pkg-config ca-certificates protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36 && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5
 
-COPY go.mod go.sum ./
-RUN go mod download
+# Copy module files and download dependencies
+COPY collector/go.mod collector/go.sum ./collector/
+RUN cd collector && go mod download
 
+# Copy the entire repo (proto/ and gen/ are needed for proto generation)
 COPY . .
 
-RUN CGO_ENABLED=1 GOOS=linux go build -o /out/loxa-collector ./cmd/loxa-collector
+# Generate protobuf code from proto/loxa/v1/ into gen/go/loxa/v1/
+RUN make proto
+
+# Build the collector binary
+RUN cd collector && CGO_ENABLED=1 GOOS=linux go build -o /out/loxa-collector ./cmd/loxa-collector
 
 FROM debian:bookworm-slim
 
@@ -18,12 +29,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 WORKDIR /app
 
 COPY --from=builder /out/loxa-collector /usr/local/bin/loxa-collector
-COPY deploy/docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-COPY loxa-collector.defaults.yaml /app/config.yaml
+COPY collector/deploy/docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY collector/loxa-collector.defaults.yaml /app/config.yaml
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-EXPOSE 9090
+EXPOSE 9090 9092
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["loxa-collector", "run", "-c", "/app/config.yaml"]

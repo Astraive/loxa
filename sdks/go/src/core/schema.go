@@ -20,6 +20,7 @@ type EventView interface {
 	TraceID() string
 	SpanID() string
 	ParentID() string
+	IncidentID() string
 	Timestamp() time.Time
 	StartedAt() time.Time
 	FinishedAt() time.Time
@@ -276,6 +277,13 @@ func (v *readOnlyEventView) ParentID() string {
 	return v.ev.ParentID
 }
 
+func (v *readOnlyEventView) IncidentID() string {
+	if v.ev == nil {
+		return ""
+	}
+	return v.ev.IncidentID
+}
+
 func (v *readOnlyEventView) Timestamp() time.Time {
 	if v.ev == nil {
 		return time.Time{}
@@ -464,6 +472,9 @@ func defaultSchemaMap(ev EventView) map[string]any {
 	}
 	if parentID := ev.ParentID(); parentID != "" {
 		out["parent_id"] = parentID
+	}
+	if incidentID := ev.IncidentID(); incidentID != "" {
+		out["incident_id"] = incidentID
 	}
 	if svc := ev.Service(); svc != "" {
 		out["service"] = svc

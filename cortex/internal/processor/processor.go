@@ -13,6 +13,7 @@ import (
 	"github.com/astraive/loxa/loxa-cortex/internal/models"
 	"github.com/astraive/loxa/loxa-cortex/internal/redaction"
 	"github.com/astraive/loxa/loxa-cortex/internal/storage"
+	"github.com/rs/zerolog/log"
 )
 
 type EventProcessor struct {
@@ -177,25 +178,26 @@ func (p *EventProcessor) createGraphNodes(ctx context.Context, event *models.Eve
 	if err := p.saveCoreGraphArtifacts(ctx, event, canonicalService); err != nil {
 		return err
 	}
-
 	if event.TraceID != "" {
-		relatedEvents, err := p.eventStore.FindByTraceID(ctx, event.TraceID)
-		if err == nil {
-			for _, related := range relatedEvents {
-				if related.ID != event.ID {
-					edge := &models.Edge{
-						ID:         fmt.Sprintf("%s->%s", event.ID, related.ID),
-						FromNodeID: event.ID,
-						ToNodeID:   related.ID,
-						Type:       models.EdgeTypeSameTrace,
-						Weight:     1.0,
-						CreatedAt:  time.Now(),
+			relatedEvents, err := p.eventStore.FindByTraceID(ctx, event.TraceID)
+			if err == nil {
+				for _, related := range relatedEvents {
+					if related.ID != event.ID {
+						edge := &models.Edge{
+							ID:         fmt.Sprintf("%s->%s", event.ID, related.ID),
+							FromNodeID: event.ID,
+							ToNodeID:   related.ID,
+							Type:       models.EdgeTypeSameTrace,
+							Weight:     1.0,
+							CreatedAt:  time.Now(),
+						}
+						if saveErr := p.graph.SaveEdge(ctx, edge); saveErr != nil {
+							log.Warn().Err(saveErr).Str("edge_id", edge.ID).Msg("failed to save trace edge")
+						}
 					}
-					p.graph.SaveEdge(ctx, edge)
 				}
 			}
 		}
-	}
 
 	if event.IncidentID != "" {
 		relatedEvents, err := p.eventStore.FindByIncidentID(ctx, event.IncidentID)
@@ -210,7 +212,9 @@ func (p *EventProcessor) createGraphNodes(ctx context.Context, event *models.Eve
 						Weight:     1.0,
 						CreatedAt:  time.Now(),
 					}
-					p.graph.SaveEdge(ctx, edge)
+					if saveErr := p.graph.SaveEdge(ctx, edge); saveErr != nil {
+						log.Warn().Err(saveErr).Str("edge_id", edge.ID).Msg("failed to save incident edge")
+					}
 				}
 			}
 		}
@@ -227,7 +231,9 @@ func (p *EventProcessor) createGraphNodes(ctx context.Context, event *models.Eve
 				Weight:     1.0,
 				CreatedAt:  time.Now(),
 			}
-			p.graph.SaveEdge(ctx, edge)
+			if saveErr := p.graph.SaveEdge(ctx, edge); saveErr != nil {
+				log.Warn().Err(saveErr).Str("edge_id", edge.ID).Msg("failed to save link edge")
+			}
 		}
 	}
 
@@ -269,7 +275,9 @@ func (p *EventProcessor) createGraphNodesBatch(ctx context.Context, events []*mo
 					Weight:     1.0,
 					CreatedAt:  time.Now(),
 				}
-				p.graph.SaveEdge(ctx, edge)
+				if saveErr := p.graph.SaveEdge(ctx, edge); saveErr != nil {
+				log.Warn().Err(saveErr).Str("edge_id", edge.ID).Msg("failed to save link edge during batch")
+			}
 			}
 		}
 	}
@@ -513,9 +521,13 @@ func (ap *AsyncProcessor) Ingest(event *models.Event) {
 
 // Sync flushes all pending events and waits for completion.
 func (ap *AsyncProcessor) Sync() error {
-	ch := make(chan struct{})
-	ap.flushCh <- ch
-	<-ch
+	done := make(chan struct{}, ap.workers)
+	for i := 0; i < ap.workers; i++ {
+		ap.flushCh <- done
+	}
+	for i := 0; i < ap.workers; i++ {
+		<-done
+	}
 	return nil
 }
 
@@ -554,15 +566,15 @@ func (ap *AsyncProcessor) worker() {
 						batch = batch[:0]
 					}
 				default:
-					goto done
+					goto doneFlush
 				}
 			}
-		done:
+		doneFlush:
 			if len(batch) > 0 {
 				ap.flushBatch(batch)
 				batch = batch[:0]
 			}
-			close(syncCh)
+			syncCh <- struct{}{}
 		}
 	}
 }
@@ -572,5 +584,7 @@ func (ap *AsyncProcessor) flushBatch(batch []*models.Event) {
 		return
 	}
 	ctx := context.Background()
-	_ = ap.processor.ProcessBatch(ctx, batch)
+	if err := ap.processor.ProcessBatch(ctx, batch); err != nil {
+		log.Error().Err(err).Int("batch_size", len(batch)).Msg("async processor: batch processing failed")
+	}
 }

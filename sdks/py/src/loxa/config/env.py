@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from typing import Any
 
 ENV_SERVICE_NAME = "LOXA_SERVICE_NAME"
 ENV_SERVICE_VERSION = "LOXA_SERVICE_VERSION"

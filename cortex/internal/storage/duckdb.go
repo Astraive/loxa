@@ -11,6 +11,7 @@ import (
 
 	"github.com/astraive/loxa/loxa-cortex/internal/models"
 	_ "github.com/marcboeker/go-duckdb"
+	"github.com/rs/zerolog/log"
 )
 
 type DuckDBStorage struct {
@@ -253,7 +254,7 @@ func (s *DuckDBEventStore) SaveBatch(ctx context.Context, events []*models.Event
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	stmt, err := tx.PrepareContext(ctx,
 		`INSERT INTO events (id, event_id, timestamp, service, environment, release,
@@ -313,38 +314,54 @@ func scanRowEvent(scanner interface{ Scan(dest ...any) error }) (*models.Event, 
 	if err != nil {
 		return nil, err
 	}
-	json.Unmarshal(rawJSON, &event.Raw)
-	json.Unmarshal(attrsJSON, &event.Attrs)
-	json.Unmarshal(httpJSON, &event.HTTP)
-	json.Unmarshal(userJSON, &event.User)
-	json.Unmarshal(tenantJSON, &event.Tenant)
-	json.Unmarshal(errorJSON, &event.Error)
-	json.Unmarshal(checkpointsJSON, &event.Checkpoints)
-	json.Unmarshal(processesJSON, &event.Processes)
-	json.Unmarshal(groupsJSON, &event.Groups)
-	json.Unmarshal(timersJSON, &event.Timers)
-	json.Unmarshal(linksJSON, &event.Links)
+	if err := json.Unmarshal(rawJSON, &event.Raw); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal raw event JSON")
+	}
+	if err := json.Unmarshal(attrsJSON, &event.Attrs); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal attrs JSON")
+	}
+	if err := json.Unmarshal(httpJSON, &event.HTTP); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal http JSON")
+	}
+	if err := json.Unmarshal(userJSON, &event.User); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal user JSON")
+	}
+	if err := json.Unmarshal(tenantJSON, &event.Tenant); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal tenant JSON")
+	}
+	if err := json.Unmarshal(errorJSON, &event.Error); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal error JSON")
+	}
+	if err := json.Unmarshal(checkpointsJSON, &event.Checkpoints); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal checkpoints JSON")
+	}
+	if err := json.Unmarshal(processesJSON, &event.Processes); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal processes JSON")
+	}
+	if err := json.Unmarshal(groupsJSON, &event.Groups); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal groups JSON")
+	}
+	if err := json.Unmarshal(timersJSON, &event.Timers); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal timers JSON")
+	}
+	if err := json.Unmarshal(linksJSON, &event.Links); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal links JSON")
+	}
 	return &event, nil
 }
 
 func queryAllEvents(ctx context.Context, db *sql.DB, query string, args ...interface{}) ([]*models.Event, error) {
-	rows, err := db.QueryContext(ctx, query, args...)
+	selectCols := "id, event_id, timestamp, service, environment, release, schema_version, event_version, event, kind, level, outcome, duration_ms, trace_id, span_id, trace_flags, request_id, http, user, tenant, attrs, error, checkpoints, processes, groups, timers, links, sdk_name, sdk_version, sdk_language, raw, provenance, incident_id, created_at"
+	fullQuery := "SELECT " + selectCols + " FROM events " + query
+	rows, err := db.QueryContext(ctx, fullQuery, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	selectCols := "id, event_id, timestamp, service, environment, release, schema_version, event_version, event, kind, level, outcome, duration_ms, trace_id, span_id, trace_flags, request_id, http, user, tenant, attrs, error, checkpoints, processes, groups, timers, links, sdk_name, sdk_version, sdk_language, raw, provenance, incident_id, created_at"
-	fullQuery := "SELECT " + selectCols + " FROM events " + query
-	rows2, err := db.QueryContext(ctx, fullQuery, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows2.Close()
-
 	var events []*models.Event
-	for rows2.Next() {
-		event, err := scanRowEvent(rows2)
+	for rows.Next() {
+		event, err := scanRowEvent(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -655,7 +672,9 @@ func (s *DuckDBGraphStore) GetNode(ctx context.Context, id string) (*models.Node
 	if err != nil {
 		return nil, err
 	}
-	json.Unmarshal(attrsJSON, &node.Attributes)
+	if err := json.Unmarshal(attrsJSON, &node.Attributes); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal node attributes")
+	}
 	return &node, nil
 }
 
@@ -682,7 +701,9 @@ func (s *DuckDBGraphStore) ListNodes(ctx context.Context, nodeType string, limit
 		if err := rows.Scan(&node.ID, &node.Type, &node.Label, &attrsJSON, &node.CreatedAt, &node.UpdatedAt); err != nil {
 			return nil, err
 		}
-		json.Unmarshal(attrsJSON, &node.Attributes)
+		if err := json.Unmarshal(attrsJSON, &node.Attributes); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal node attributes")
+	}
 		nodes = append(nodes, &node)
 	}
 	return nodes, nil
@@ -718,7 +739,9 @@ func (s *DuckDBGraphStore) GetEdges(ctx context.Context, nodeID string, edgeType
 		if err := rows.Scan(&edge.ID, &edge.FromNodeID, &edge.ToNodeID, &edge.Type, &edge.Weight, &attrsJSON, &edge.CreatedAt); err != nil {
 			return nil, err
 		}
-		json.Unmarshal(attrsJSON, &edge.Attributes)
+		if err := json.Unmarshal(attrsJSON, &edge.Attributes); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal edge attributes")
+	}
 		edges = append(edges, &edge)
 	}
 	return edges, nil
@@ -791,10 +814,11 @@ func (s *DuckDBGraphStore) Traverse(ctx context.Context, startNodeID string, opt
 		var nodeCreated, nodeUpdated time.Time
 		var edgeID, fromNodeID, toNodeID, edgeType string
 		var weight float64
-		var edgeAttrsJSON, edgeCreated []byte
+		var edgeAttrsJSON []byte
+		var createdAt time.Time
 
 		if err := rows.Scan(&nodeID, &nodeType, &label, &nodeAttrsJSON, &nodeCreated, &nodeUpdated,
-			&edgeID, &fromNodeID, &toNodeID, &edgeType, &weight, &edgeAttrsJSON, &edgeCreated); err != nil {
+			&edgeID, &fromNodeID, &toNodeID, &edgeType, &weight, &edgeAttrsJSON, &createdAt); err != nil {
 			continue
 		}
 
@@ -802,7 +826,9 @@ func (s *DuckDBGraphStore) Traverse(ctx context.Context, startNodeID string, opt
 		if !seenNodes[nodeID] {
 			seenNodes[nodeID] = true
 			nodeAttrs := make(map[string]interface{})
-			json.Unmarshal(nodeAttrsJSON, &nodeAttrs)
+			if err := json.Unmarshal(nodeAttrsJSON, &nodeAttrs); err != nil {
+				log.Warn().Err(err).Msg("failed to unmarshal node attrs JSON")
+			}
 			resultNodes = append(resultNodes, &models.Node{
 				ID:        nodeID,
 				Type:      models.NodeType(nodeType),
@@ -815,10 +841,8 @@ func (s *DuckDBGraphStore) Traverse(ctx context.Context, startNodeID string, opt
 
 		// Add edge
 		edgeAttrs := make(map[string]interface{})
-		json.Unmarshal(edgeAttrsJSON, &edgeAttrs)
-		createdAt := time.Time{}
-		if len(edgeCreated) > 0 {
-			json.Unmarshal(edgeCreated, &createdAt)
+		if err := json.Unmarshal(edgeAttrsJSON, &edgeAttrs); err != nil {
+			log.Warn().Err(err).Msg("failed to unmarshal edge attrs JSON")
 		}
 		resultEdges = append(resultEdges, &models.Edge{
 			ID:         edgeID,
@@ -854,7 +878,9 @@ func (s *DuckDBIncidentStore) Get(ctx context.Context, id string) (*models.Incid
 	if err != nil {
 		return nil, err
 	}
-	json.Unmarshal(servicesJSON, &inc.AffectedServices)
+	if err := json.Unmarshal(servicesJSON, &inc.AffectedServices); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal incident affected services")
+	}
 	return &inc, nil
 }
 
@@ -866,7 +892,9 @@ func (s *DuckDBIncidentStore) GetBySignature(ctx context.Context, signatureID st
 	if err != nil {
 		return nil, err
 	}
-	json.Unmarshal(servicesJSON, &inc.AffectedServices)
+	if err := json.Unmarshal(servicesJSON, &inc.AffectedServices); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal incident affected services")
+	}
 	return &inc, nil
 }
 
@@ -884,7 +912,9 @@ func (s *DuckDBIncidentStore) List(ctx context.Context, limit, offset int) ([]*m
 		if err := rows.Scan(&inc.ID, &inc.Timestamp, &inc.SignatureID, &inc.Status, &inc.Severity, &inc.PrimaryService, &servicesJSON, &inc.CreatedAt, &inc.ResolvedAt); err != nil {
 			return nil, err
 		}
-		json.Unmarshal(servicesJSON, &inc.AffectedServices)
+		if err := json.Unmarshal(servicesJSON, &inc.AffectedServices); err != nil {
+			log.Warn().Err(err).Msg("failed to unmarshal incident affected services")
+		}
 		incidents = append(incidents, &inc)
 	}
 	return incidents, nil
@@ -923,12 +953,24 @@ func (s *DuckDBSignatureStore) Get(ctx context.Context, id string) (*models.Inci
 	if err != nil {
 		return nil, err
 	}
-	json.Unmarshal(rolesJSON, &sig.ServiceRoles)
-	json.Unmarshal(symptomsJSON, &sig.Symptoms)
-	json.Unmarshal(patternJSON, &sig.TemporalPattern)
-	json.Unmarshal(remediationJSON, &sig.Remediation)
-	json.Unmarshal(vectorJSON, &sig.FeatureVector)
-	json.Unmarshal(weightsJSON, &sig.FeatureWeights)
+	if err := json.Unmarshal(rolesJSON, &sig.ServiceRoles); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature service roles")
+	}
+	if err := json.Unmarshal(symptomsJSON, &sig.Symptoms); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature symptoms")
+	}
+	if err := json.Unmarshal(patternJSON, &sig.TemporalPattern); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature temporal pattern")
+	}
+	if err := json.Unmarshal(remediationJSON, &sig.Remediation); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature remediation")
+	}
+	if err := json.Unmarshal(vectorJSON, &sig.FeatureVector); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature feature vector")
+	}
+	if err := json.Unmarshal(weightsJSON, &sig.FeatureWeights); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature feature weights")
+	}
 	return &sig, nil
 }
 
@@ -946,12 +988,24 @@ func (s *DuckDBSignatureStore) List(ctx context.Context, limit int) ([]*models.I
 		if err := rows.Scan(&sig.SignatureID, &sig.Shape, &rolesJSON, &symptomsJSON, &patternJSON, &remediationJSON, &vectorJSON, &weightsJSON, &sig.OccurrenceCount, &sig.AvgResolutionTime, &sig.Version, &sig.ParentSignatureID, &sig.DecayFactor, &sig.LastMatchedAt, &sig.BehavioralHash, &sig.CreatedAt, &sig.UpdatedAt); err != nil {
 			return nil, err
 		}
-		json.Unmarshal(rolesJSON, &sig.ServiceRoles)
-		json.Unmarshal(symptomsJSON, &sig.Symptoms)
-		json.Unmarshal(patternJSON, &sig.TemporalPattern)
-		json.Unmarshal(remediationJSON, &sig.Remediation)
-		json.Unmarshal(vectorJSON, &sig.FeatureVector)
-		json.Unmarshal(weightsJSON, &sig.FeatureWeights)
+		if err := json.Unmarshal(rolesJSON, &sig.ServiceRoles); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature service roles")
+	}
+	if err := json.Unmarshal(symptomsJSON, &sig.Symptoms); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature symptoms")
+	}
+	if err := json.Unmarshal(patternJSON, &sig.TemporalPattern); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature temporal pattern")
+	}
+	if err := json.Unmarshal(remediationJSON, &sig.Remediation); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature remediation")
+	}
+	if err := json.Unmarshal(vectorJSON, &sig.FeatureVector); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature feature vector")
+	}
+	if err := json.Unmarshal(weightsJSON, &sig.FeatureWeights); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature feature weights")
+	}
 		sigs = append(sigs, &sig)
 	}
 	return sigs, nil
@@ -971,12 +1025,24 @@ func (s *DuckDBSignatureStore) FindByBehavioralHash(ctx context.Context, hash st
 		if err := rows.Scan(&sig.SignatureID, &sig.Shape, &rolesJSON, &symptomsJSON, &patternJSON, &remediationJSON, &vectorJSON, &weightsJSON, &sig.OccurrenceCount, &sig.AvgResolutionTime, &sig.Version, &sig.ParentSignatureID, &sig.DecayFactor, &sig.LastMatchedAt, &sig.BehavioralHash, &sig.CreatedAt, &sig.UpdatedAt); err != nil {
 			continue
 		}
-		json.Unmarshal(rolesJSON, &sig.ServiceRoles)
-		json.Unmarshal(symptomsJSON, &sig.Symptoms)
-		json.Unmarshal(patternJSON, &sig.TemporalPattern)
-		json.Unmarshal(remediationJSON, &sig.Remediation)
-		json.Unmarshal(vectorJSON, &sig.FeatureVector)
-		json.Unmarshal(weightsJSON, &sig.FeatureWeights)
+		if err := json.Unmarshal(rolesJSON, &sig.ServiceRoles); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature service roles")
+	}
+	if err := json.Unmarshal(symptomsJSON, &sig.Symptoms); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature symptoms")
+	}
+	if err := json.Unmarshal(patternJSON, &sig.TemporalPattern); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature temporal pattern")
+	}
+	if err := json.Unmarshal(remediationJSON, &sig.Remediation); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature remediation")
+	}
+	if err := json.Unmarshal(vectorJSON, &sig.FeatureVector); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature feature vector")
+	}
+	if err := json.Unmarshal(weightsJSON, &sig.FeatureWeights); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal signature feature weights")
+	}
 		sigs = append(sigs, &sig)
 	}
 	return sigs, nil
@@ -1025,11 +1091,21 @@ func (s *DuckDBSignatureStore) FindSimilar(ctx context.Context, sig *models.Inci
 		if err := rows.Scan(&candidate.SignatureID, &candidate.Shape, &rolesJSON, &symptomsJSON, &patternJSON, &remediationJSON, &vectorJSON, &candidate.OccurrenceCount, &candidate.AvgResolutionTime, &candidate.DecayFactor); err != nil {
 			continue
 		}
-		json.Unmarshal(rolesJSON, &candidate.ServiceRoles)
-		json.Unmarshal(symptomsJSON, &candidate.Symptoms)
-		json.Unmarshal(patternJSON, &candidate.TemporalPattern)
-		json.Unmarshal(remediationJSON, &candidate.Remediation)
-		json.Unmarshal(vectorJSON, &candidate.FeatureVector)
+		if err := json.Unmarshal(rolesJSON, &candidate.ServiceRoles); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal candidate service roles")
+	}
+	if err := json.Unmarshal(symptomsJSON, &candidate.Symptoms); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal candidate symptoms")
+	}
+	if err := json.Unmarshal(patternJSON, &candidate.TemporalPattern); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal candidate temporal pattern")
+	}
+	if err := json.Unmarshal(remediationJSON, &candidate.Remediation); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal candidate remediation")
+	}
+	if err := json.Unmarshal(vectorJSON, &candidate.FeatureVector); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal candidate feature vector")
+	}
 
 		similarity := computeSimilarity(sig, &candidate)
 		if similarity >= 0.5 {
@@ -1152,12 +1228,15 @@ func (s *DuckDBSignatureStore) findSimilarSQL(ctx context.Context, sig *models.I
 	for rows.Next() {
 		var candidate models.SimilarIncident
 		var remediationJSON []byte
-		if err := rows.Scan(&candidate.IncidentID, &candidate.Shape, &candidate.ResolutionTime, &candidate.ResolutionTime, &remediationJSON, &candidate.Similarity); err != nil {
+		var occCount int64
+		if err := rows.Scan(&candidate.IncidentID, &candidate.Shape, &occCount, &candidate.ResolutionTime, &remediationJSON, &candidate.Similarity); err != nil {
 			continue
 		}
 		if len(remediationJSON) > 0 {
 			var remediations []string
-			json.Unmarshal(remediationJSON, &remediations)
+			if err := json.Unmarshal(remediationJSON, &remediations); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal remediations")
+	}
 			if len(remediations) > 0 {
 				candidate.Resolution = remediations[0]
 			}
@@ -1187,7 +1266,9 @@ func (s *DuckDBRemediationStore) Get(ctx context.Context, id string) (*models.Re
 	if err != nil {
 		return nil, err
 	}
-	json.Unmarshal(attrsJSON, &rem.Attributes)
+	if err := json.Unmarshal(attrsJSON, &rem.Attributes); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal remediation attributes")
+	}
 	return &rem, nil
 }
 
@@ -1205,7 +1286,9 @@ func (s *DuckDBRemediationStore) ListByIncident(ctx context.Context, incidentID 
 		if err := rows.Scan(&rem.RemediationID, &rem.IncidentID, &rem.SignatureID, &rem.Action, &rem.Timestamp, &rem.Operator, &attrsJSON); err != nil {
 			return nil, err
 		}
-		json.Unmarshal(attrsJSON, &rem.Attributes)
+		if err := json.Unmarshal(attrsJSON, &rem.Attributes); err != nil {
+		log.Warn().Err(err).Msg("failed to unmarshal remediation attributes")
+	}
 		remediations = append(remediations, &rem)
 	}
 	return remediations, nil

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	loxav1 "github.com/astraive/loxa/spec/proto/loxa/v1"
+	loxav1 "github.com/astraive/loxa/gen/go/loxa/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -210,11 +210,12 @@ func rawToCortexEvent(raw []byte) (*loxav1.IngestEventRequest, error) {
 	}
 
 	pe := &loxav1.Event{
-		EventId: stringValue(payload["event_id"]),
-		Service: stringValue(payload["service"]),
-		Release: stringValue(payload["release"]),
-		TraceId: stringValue(payload["trace_id"]),
-		SpanId:  stringValue(payload["span_id"]),
+		EventId:    stringValue(payload["event_id"]),
+		Service:    stringValue(payload["service"]),
+		Release:    stringValue(payload["release"]),
+		TraceId:    stringValue(payload["trace_id"]),
+		SpanId:     stringValue(payload["span_id"]),
+		IncidentId: stringValue(payload["incident_id"]),
 	}
 
 	kind := strings.ToLower(stringValue(payload["kind"]))
@@ -241,7 +242,9 @@ func rawToCortexEvent(raw []byte) (*loxav1.IngestEventRequest, error) {
 
 	// Store remaining raw payload as attrs
 	rawStruct, err := structpb.NewStruct(payload)
-	if err == nil {
+	if err != nil {
+		logJSON("warn", "collector_cortex_bridge_struct_convert_failed", map[string]any{"error": err.Error()})
+	} else {
 		pe.Attrs = rawStruct
 	}
 

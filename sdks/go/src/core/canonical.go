@@ -99,9 +99,9 @@ func runEventWithStarter(ctx context.Context, params Params, fn EventFunc, start
 		}
 
 		if err != nil {
-			Default().FinishError(evCtx, err, finishAttrs...)
+			_ = Default().FinishError(evCtx, err, finishAttrs...)
 		} else {
-			Default().Finish(evCtx, "success", finishAttrs...)
+			_ = Default().Finish(evCtx, "success", finishAttrs...)
 		}
 
 		if emitErr := Default().Emit(evCtx); emitErr != nil {

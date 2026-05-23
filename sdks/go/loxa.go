@@ -163,15 +163,21 @@ const (
 
 	// Duplicate field policies
 	CanonicalWins      = core.CanonicalWins
-	AttrWins           = core.AttrWins // Deprecated: Use UserWins.
-	AttrsWin           = core.AttrsWin // Deprecated: Use UserWins.
 	UserWins           = core.UserWins
 	FirstWins          = core.FirstWins
 	LastWins           = core.LastWins
-	KeepBothUnderAttrs = core.KeepBothUnderAttrs // Deprecated: Use KeepBoth.
-	DropDuplicateAttr  = core.DropDuplicateAttr  // Deprecated: Use CanonicalWins.
-	ErrorOnDuplicate   = core.ErrorOnDuplicate
 	KeepBoth           = core.KeepBoth
+	ErrorOnDuplicate   = core.ErrorOnDuplicate
+
+	// Deprecated aliases — kept for backward compatibility
+	//nolint:staticcheck
+	AttrWins = core.AttrWins
+	//nolint:staticcheck
+	AttrsWin = core.AttrsWin
+	//nolint:staticcheck
+	KeepBothUnderAttrs = core.KeepBothUnderAttrs
+	//nolint:staticcheck
+	DropDuplicateAttr = core.DropDuplicateAttr
 
 	EventStateCreated          = core.EventStateCreated
 	EventStateActive           = core.EventStateActive
@@ -636,6 +642,11 @@ func SpanIDFromContext(ctx context.Context) string {
 	return core.SpanIDFromContext(ctx)
 }
 
+// IncidentIDFromContext returns the incident ID of the active event.
+func IncidentIDFromContext(ctx context.Context) string {
+	return core.IncidentIDFromContext(ctx)
+}
+
 // RequestIDFromHTTP resolves request id from header or active event context.
 func RequestIDFromHTTP(r *http.Request) string {
 	return core.RequestIDFromHTTP(r)
@@ -687,6 +698,7 @@ var (
 	RequestID    = core.RequestID
 	TraceID      = core.TraceID
 	SpanID       = core.SpanID
+	IncidentID   = core.IncidentID
 	Service      = core.Service
 	Version      = core.Version
 	DeploymentID = core.DeploymentID

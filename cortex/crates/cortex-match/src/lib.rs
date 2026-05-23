@@ -11,7 +11,7 @@
 
 pub mod graph;
 pub mod signature;
-pub mod similarity;
+pub(crate) mod similarity;
 pub mod topk;
 
 pub use graph::{Edge, EdgeType, IncidentGraph, Node, NodeType};

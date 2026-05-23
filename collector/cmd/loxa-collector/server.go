@@ -338,6 +338,9 @@ func shutdownCollector(server *http.Server, auxServers []serverruntime.Server, s
 		close(schedulersStop)
 		schedWG.Wait()
 	}
+	if state.retentionStop != nil {
+		close(state.retentionStop)
+	}
 	logJSON("info", "collector_shutdown_complete", nil)
 }
 

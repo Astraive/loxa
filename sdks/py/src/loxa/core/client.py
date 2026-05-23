@@ -31,7 +31,7 @@ from .pipeline import MemoryOfflineBuffer, Pipeline
 from .redactor import default_redactor
 from .schema import DefaultSchema
 from ..sinks.httpbatch import HTTPBatchSink
-from ..generated.spec_contract import ALLOWED_KINDS, ALLOWED_LEVELS, validate_event_payload
+from ..generated.spec_contract import validate_event_payload
 
 
 class Logger:

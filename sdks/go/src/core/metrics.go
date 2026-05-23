@@ -3,7 +3,6 @@ package core
 import (
 	"net/http"
 	"strconv"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -266,7 +265,6 @@ func (mc *MetricsCollector) Registry() *prometheus.Registry {
 // Requirements: 34.3, 34.4
 type PrometheusStatsHandler struct {
 	metrics *MetricsCollector
-	mu      sync.Mutex
 }
 
 // NewPrometheusStatsHandler creates a new StatsHandler backed by Prometheus metrics.

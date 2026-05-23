@@ -12,6 +12,7 @@ import (
 	"github.com/astraive/loxa/loxa-cortex/internal/config"
 	"github.com/astraive/loxa/loxa-cortex/internal/models"
 	_ "github.com/lib/pq"
+	"github.com/rs/zerolog/log"
 )
 
 type PostgresStorage struct {
@@ -245,7 +246,7 @@ func (s *PostgresEventStore) SaveBatch(ctx context.Context, events []*models.Eve
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	stmt, err := tx.PrepareContext(ctx,
 		`INSERT INTO events (id, event_id, timestamp, service, environment, release,
@@ -888,7 +889,9 @@ func (s *PostgresGraphStore) Traverse(ctx context.Context, startNodeID string, o
 				if err := edgeRows.Scan(&edge.ID, &edge.FromNodeID, &edge.ToNodeID, &edge.Type, &edge.Weight, &attrsJSON, &edge.CreatedAt); err != nil {
 					continue
 				}
-				json.Unmarshal(attrsJSON, &edge.Attributes)
+				if err := json.Unmarshal(attrsJSON, &edge.Attributes); err != nil {
+					log.Warn().Err(err).Msg("failed to unmarshal edge attributes JSON")
+				}
 
 				if len(opts.EdgeTypes) > 0 {
 					found := false

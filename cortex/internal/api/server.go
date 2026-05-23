@@ -169,16 +169,22 @@ func (s *Server) Router() http.Handler {
 
 func (s *Server) Healthz(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	if _, err := w.Write([]byte("OK")); err != nil {
+		log.Warn().Err(err).Msg("failed to write healthz response")
+	}
 }
 
 func (s *Server) Readyz(w http.ResponseWriter, r *http.Request) {
 	if s.ready {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		if _, err := w.Write([]byte("OK")); err != nil {
+			log.Warn().Err(err).Msg("failed to write readyz response")
+		}
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte("NOT READY"))
+		if _, err := w.Write([]byte("NOT READY")); err != nil {
+			log.Warn().Err(err).Msg("failed to write not ready response")
+		}
 	}
 }
 
@@ -195,7 +201,9 @@ func (s *Server) IngestEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(map[string]string{"status": "accepted"})
+	if err := json.NewEncoder(w).Encode(map[string]string{"status": "accepted"}); err != nil {
+		log.Error().Err(err).Msg("failed to encode ingest response")
+	}
 }
 
 func (s *Server) IngestBatch(w http.ResponseWriter, r *http.Request) {
@@ -218,7 +226,9 @@ func (s *Server) IngestBatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(map[string]string{"status": "accepted"})
+	if err := json.NewEncoder(w).Encode(map[string]string{"status": "accepted"}); err != nil {
+		log.Error().Err(err).Msg("failed to encode ingest response")
+	}
 }
 
 func (s *Server) IngestJSONL(w http.ResponseWriter, r *http.Request) {
@@ -228,7 +238,9 @@ func (s *Server) IngestJSONL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(map[string]string{"status": "accepted"})
+	if err := json.NewEncoder(w).Encode(map[string]string{"status": "accepted"}); err != nil {
+		log.Error().Err(err).Msg("failed to encode ingest response")
+	}
 }
 
 type ReconstructRequest struct {
@@ -258,7 +270,9 @@ func (s *Server) Reconstruct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ctx)
+	if err := json.NewEncoder(w).Encode(ctx); err != nil {
+		log.Error().Err(err).Msg("failed to encode reconstruct response")
+	}
 }
 
 func (s *Server) ReconstructIncident(w http.ResponseWriter, r *http.Request) {
@@ -280,7 +294,9 @@ func (s *Server) ReconstructIncident(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ctx)
+	if err := json.NewEncoder(w).Encode(ctx); err != nil {
+		log.Error().Err(err).Msg("failed to encode reconstruct response")
+	}
 }
 
 func (s *Server) RecordRemediation(w http.ResponseWriter, r *http.Request) {
@@ -296,7 +312,9 @@ func (s *Server) RecordRemediation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "recorded"})
+	if err := json.NewEncoder(w).Encode(map[string]string{"status": "recorded"}); err != nil {
+		log.Error().Err(err).Msg("failed to encode remediation response")
+	}
 }
 
 func (s *Server) RecordIncidentFeedback(w http.ResponseWriter, r *http.Request) {
@@ -312,7 +330,9 @@ func (s *Server) RecordIncidentFeedback(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "recorded"})
+	if err := json.NewEncoder(w).Encode(map[string]string{"status": "recorded"}); err != nil {
+		log.Error().Err(err).Msg("failed to encode remediation response")
+	}
 }
 
 func (s *Server) ServiceGraph(w http.ResponseWriter, r *http.Request) {
@@ -331,7 +351,9 @@ func (s *Server) ServiceGraph(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(graphView)
+	if err := json.NewEncoder(w).Encode(graphView); err != nil {
+		log.Error().Err(err).Msg("failed to encode graph response")
+	}
 }
 
 func (s *Server) IncidentGraph(w http.ResponseWriter, r *http.Request) {
@@ -350,7 +372,9 @@ func (s *Server) IncidentGraph(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(graphView)
+	if err := json.NewEncoder(w).Encode(graphView); err != nil {
+		log.Error().Err(err).Msg("failed to encode graph response")
+	}
 }
 
 func (s *Server) Start(addr string) error {
@@ -393,5 +417,8 @@ func bodySizeLimit(maxBytes int64) func(http.Handler) http.Handler {
 var _ io.Closer = (*Server)(nil)
 
 func (s *Server) Close() error {
+	if s.asyncProc != nil {
+		s.asyncProc.Stop()
+	}
 	return nil
 }

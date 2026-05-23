@@ -66,6 +66,9 @@ func (e *JSONEventEncoder) EncodeEvent(dst []byte, ev *Event) ([]byte, error) {
 	if ev.ParentID != "" {
 		w.AppendStringField("parent_id", ev.ParentID)
 	}
+	if ev.IncidentID != "" {
+		w.AppendStringField("incident_id", ev.IncidentID)
+	}
 
 	// 7. level
 	w.AppendStringField("level", ev.Level.String())

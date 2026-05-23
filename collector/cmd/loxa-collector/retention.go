@@ -14,6 +14,7 @@ func (s *collectorState) initRetention() {
 	if s.cfg.retentionDays <= 0 && s.cfg.retentionMaxSize <= 0 {
 		return
 	}
+	s.retentionStop = make(chan struct{})
 	go s.retentionWorker()
 }
 
@@ -27,7 +28,7 @@ func (s *collectorState) retentionWorker() {
 			if err := s.executeRetention(); err != nil {
 				logJSON("error", "retention_execution_failed", map[string]any{"error": err.Error()})
 			}
-		case <-s.reliabilityCtx.Done():
+		case <-s.retentionStop:
 			return
 		}
 	}
@@ -62,10 +63,14 @@ func (s *collectorState) executeRetention() error {
 }
 
 func (s *collectorState) deleteByAge(ctx context.Context, db *sql.DB, cutoffTime time.Time) error {
+	tableIdent, err := quoteSQLIdent(s.cfg.duckDBTable)
+	if err != nil {
+		return err
+	}
 	query := fmt.Sprintf(`
 		DELETE FROM %s
 		WHERE timestamp IS NOT NULL AND timestamp < $1
-	`, s.cfg.duckDBTable)
+	`, tableIdent)
 
 	result, err := db.ExecContext(ctx, query, cutoffTime.Format(time.RFC3339Nano))
 	if err != nil {
@@ -81,8 +86,12 @@ func (s *collectorState) deleteByAge(ctx context.Context, db *sql.DB, cutoffTime
 }
 
 func (s *collectorState) deleteBySize(ctx context.Context, db *sql.DB) error {
+	tableIdent, err := quoteSQLIdent(s.cfg.duckDBTable)
+	if err != nil {
+		return err
+	}
 	var currentSize int64
-	err := db.QueryRowContext(ctx, "SELECT SUM(octet_length(raw)) FROM "+s.cfg.duckDBTable).Scan(&currentSize)
+	err = db.QueryRowContext(ctx, "SELECT SUM(octet_length(raw)) FROM "+tableIdent).Scan(&currentSize)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
@@ -99,7 +108,7 @@ func (s *collectorState) deleteBySize(ctx context.Context, db *sql.DB) error {
 			ORDER BY timestamp ASC
 			LIMIT (SELECT COUNT(*) FROM %s WHERE octet_length(raw) > 0 LIMIT CEIL($1 / (SELECT AVG(octet_length(raw)) FROM %s)))
 		)
-	`, s.cfg.duckDBTable, s.cfg.duckDBTable, s.cfg.duckDBTable, s.cfg.duckDBTable)
+	`, tableIdent, tableIdent, tableIdent, tableIdent)
 
 	result, err := db.ExecContext(ctx, query, excessSize)
 	if err != nil {

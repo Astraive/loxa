@@ -75,3 +75,14 @@ func SpanIDFromContext(ctx context.Context) string {
 	defer ev.MuUnlock()
 	return ev.SpanID
 }
+
+// IncidentIDFromContext returns the incident id from ctx when present.
+func IncidentIDFromContext(ctx context.Context) string {
+	ev := loadEvent(ctx)
+	if ev == nil {
+		return ""
+	}
+	ev.MuLock()
+	defer ev.MuUnlock()
+	return ev.IncidentID
+}

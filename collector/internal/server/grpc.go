@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/astraive/loxa-collector/internal/otlpconv"
-	loxav1 "github.com/astraive/loxa/spec/proto/loxa/v1"
+	loxav1 "github.com/astraive/loxa/gen/go/loxa/v1"
 	collectorlogsv1 "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -24,7 +23,6 @@ type GRPCServer struct {
 	cfg   GRPCConfig
 	state State
 	ready atomic.Bool
-	mu    sync.Mutex
 	lis   net.Listener
 	srv   *grpc.Server
 }

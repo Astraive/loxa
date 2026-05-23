@@ -17,6 +17,7 @@ import (
 	"github.com/astraive/loxa/loxa-cortex/internal/reconstructor"
 	"github.com/astraive/loxa/loxa-cortex/internal/storage"
 	"github.com/astraive/loxa/loxa-cortex/internal/topology"
+	"github.com/rs/zerolog/log"
 )
 
 type GraphQLServer struct {
@@ -87,7 +88,9 @@ func (s *GraphQLServer) handleGraphQL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := transportcontracts.GraphQLResponse{Data: result}
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Error().Err(err).Msg("failed to encode graphql response")
+	}
 }
 
 func (s *GraphQLServer) writeError(w http.ResponseWriter, status int, message string) {
@@ -95,7 +98,9 @@ func (s *GraphQLServer) writeError(w http.ResponseWriter, status int, message st
 	response := transportcontracts.GraphQLResponse{
 		Errors: []transportcontracts.GraphQLError{{Message: message}},
 	}
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Error().Err(err).Msg("failed to encode error response")
+	}
 }
 
 func (s *GraphQLServer) executeQuery(ctx context.Context, query string, vars map[string]interface{}) (interface{}, error) {
@@ -128,7 +133,7 @@ func (s *GraphQLServer) executeQuery(ctx context.Context, query string, vars map
 }
 
 func containsOperation(query, op string) bool {
-	return len(query) > len(op) && (query[:len(op)] == op[:len(op)] || len(query) > len(op)+10 && containsWord(query, op))
+	return len(query) > len(op) && (query[:len(op)] == op || len(query) > len(op)+10 && containsWord(query, op))
 }
 
 func containsWord(s, word string) bool {

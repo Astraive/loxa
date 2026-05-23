@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/astraive/loxa/loxa-cortex/internal/collectorsync"
 	"github.com/astraive/loxa/loxa-cortex/internal/config"
@@ -76,15 +77,24 @@ func main() {
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}
-	err = httpSrv.ListenAndServe()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Server failed")
-	}
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
+	go func() {
+		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal().Err(err).Msg("Server failed")
+		}
+	}()
+
 	<-sigChan
+	log.Info().Msg("Shutting down server...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := httpSrv.Shutdown(shutdownCtx); err != nil {
+		log.Error().Err(err).Msg("Server shutdown error")
+	}
 	log.Info().Msg("Server shutdown complete")
 }
 
@@ -96,14 +106,16 @@ func startGRPCServer(cfg *config.Config, stor storage.Storage) {
 	if cfg.TLS.Enabled {
 		creds, err := credentials.NewServerTLSFromFile(cfg.TLS.CertFile, cfg.TLS.KeyFile)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to load TLS certs")
+			log.Error().Err(err).Msg("Failed to load TLS certs")
+			return
 		}
 		opts = append(opts, grpc.Creds(creds))
 	}
 
 	listener, err := net.Listen("tcp", grpcAddr)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to create listener")
+		log.Error().Err(err).Msg("Failed to create listener")
+		return
 	}
 
 	server := grpc.NewServer(opts...)
@@ -112,6 +124,6 @@ func startGRPCServer(cfg *config.Config, stor storage.Storage) {
 
 	log.Info().Str("addr", grpcAddr).Msg("gRPC server ready")
 	if err := server.Serve(listener); err != nil {
-		log.Fatal().Err(err).Msg("gRPC server failed")
+		log.Error().Err(err).Msg("gRPC server failed")
 	}
 }

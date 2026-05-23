@@ -54,8 +54,15 @@ git push origin collector/v0.0.1
 
 ## Docker Release
 
+The Dockerfile expects the build context to be the **repo root** (not `collector/`):
+
 ```bash
-docker build -t ghcr.io/astraive/loxa:0.0.1 .
+# Build from repo root (required for proto file access)
+docker build -t ghcr.io/astraive/loxa:0.0.1 -f collector/Dockerfile .
+
+# Or via docker-compose (already sets context correctly)
+docker compose -f collector/deploy/docker-compose.yml build
+
 docker push ghcr.io/astraive/loxa:0.0.1
 ```
 

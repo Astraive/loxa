@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import gzip as gzip_mod
-import json
 import time
 import urllib.request
 from dataclasses import dataclass, field

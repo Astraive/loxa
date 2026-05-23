@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 
-import pytest
 
 import loxa
 
@@ -20,12 +19,12 @@ def test_oversized_event_handled_gracefully() -> None:
     """Verify oversized events are rejected cleanly."""
     logger = loxa.New(loxa.Test("test"))
     ctx = logger.start_event(loxa.Params(event="test"))
-    
+
     # Try to add extremely large attribute
     huge_value = "x" * (10 * 1024 * 1024)  # 10MB string
     logger.enrich(ctx, loxa.String("huge", huge_value))
     logger.finish(ctx, "success")
-    
+
     # Should either emit empty (dropped) or raise ValueError, not crash
     try:
         payload = logger.emit(ctx)
@@ -41,14 +40,14 @@ def test_oversized_event_handled_gracefully() -> None:
 def test_invalid_event_name_handled() -> None:
     """Verify invalid event names are handled."""
     logger = loxa.New(loxa.Test("test"))
-    
+
     # Python SDK accepts various types, so just verify no crashes
     try:
         ctx = logger.start_event(loxa.Params(event=" "))
         logger.finish(ctx, "success")
-        payload = logger.emit(ctx)
+        logger.emit(ctx)
         # Should handle without crashing
-    except Exception as e:
+    except Exception:
         # Should be a known error type, not a panic
         pass
 
@@ -62,14 +61,14 @@ def test_sink_write_failure_doesnt_crash() -> None:
             pass
         def close(self) -> None:
             pass
-    
+
     logger = loxa.New(loxa.Test("test").with_sink(FailingSink()))
     ctx = logger.start_event(loxa.Params(event="test"))
     logger.finish(ctx, "success")
-    
+
     # emit() should complete even if sink fails
     try:
-        payload = logger.emit(ctx)
+        logger.emit(ctx)
         # Event may still emit to caller even if sink fails
     except Exception as e:
         # Should be a known error, not a panic
@@ -87,7 +86,7 @@ def test_invalid_duplicate_policy_rejected() -> None:
         # If it doesn't raise, continue
         ctx = logger.start_event(loxa.Params(event="test"))
         logger.finish(ctx, "success")
-    except (TypeError, ValueError, AttributeError) as e:
+    except (TypeError, ValueError, AttributeError):
         # Expected to reject invalid policy
         pass
 
@@ -136,9 +135,9 @@ def test_finish_twice_handled() -> None:
     """Verify calling finish() twice is handled."""
     logger = loxa.New(loxa.Test("test"))
     ctx = logger.start_event(loxa.Params(event="test"))
-    
+
     logger.finish(ctx, "success")
-    
+
     # Calling finish again should raise an error (not panic)
     try:
         logger.finish(ctx, "error")
@@ -152,7 +151,7 @@ def test_emit_before_finish_handled() -> None:
     """Verify emitting before finish is allowed or errors cleanly."""
     logger = loxa.New(loxa.Test("test"))
     ctx = logger.start_event(loxa.Params(event="test"))
-    
+
     # Emitting without finish may be allowed or error
     try:
         payload = logger.emit(ctx)
@@ -169,12 +168,12 @@ def test_null_attribute_values_handled() -> None:
     """Verify null/None values in attributes are handled."""
     logger = loxa.New(loxa.Test("test"))
     ctx = logger.start_event(loxa.Params(event="test"))
-    
+
     # Try to enrich with None value
     try:
         logger.enrich(ctx, loxa.String("attr", None))
         logger.finish(ctx, "success")
-        payload = logger.emit(ctx)
+        logger.emit(ctx)
         # Should handle without crashing
     except (TypeError, ValueError):
         # Known error is acceptable
@@ -185,7 +184,7 @@ def test_special_characters_in_attributes() -> None:
     """Verify special characters are handled."""
     logger = loxa.New(loxa.Test("test"))
     ctx = logger.start_event(loxa.Params(event="test"))
-    
+
     special_values = [
         "\x00null byte",
         "\uffff unicode",
@@ -193,13 +192,13 @@ def test_special_characters_in_attributes() -> None:
         "\\nnewlines\\n",
         "{}[]()\"quotes'",
     ]
-    
+
     for value in special_values:
         try:
             logger.enrich(ctx, loxa.String("attr", value))
         except (ValueError, TypeError):
             pass
-    
+
     logger.finish(ctx, "success")
     payload = logger.emit(ctx)
     # Should emit without crashing
@@ -212,14 +211,14 @@ def test_deeply_nested_attributes() -> None:
     """Verify deeply nested attribute structures are handled."""
     logger = loxa.New(loxa.Test("test"))
     ctx = logger.start_event(loxa.Params(event="test"))
-    
+
     # Python SDK may not support nested objects directly
     # But it should handle without crashing
     try:
         for i in range(1000):
             logger.enrich(ctx, loxa.String(f"attr_{i}", f"value_{i}"))
         logger.finish(ctx, "success")
-        payload = logger.emit(ctx)
+        logger.emit(ctx)
         # Should complete without crashing
     except (ValueError, RuntimeError, MemoryError):
         # Known errors are acceptable

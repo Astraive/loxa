@@ -63,11 +63,10 @@ pub fn assert_has_checkpoint(encoded: &str, name: &str) {
     }
 }
 
-pub fn expect_event(_logger: &Logger, _name: &str, _f: impl FnOnce(&EventContext)) {
-}
+pub fn expect_event(_logger: &Logger, _name: &str, _f: impl FnOnce(&EventContext)) {}
 
 pub fn expect_attr(event: &EventContext, key: &str, expected: &serde_json::Value) -> bool {
-    event.attrs.get(key).map_or(false, |v| v == expected)
+    event.attrs.get(key) == Some(expected)
 }
 
 pub fn snapshot_event(event: &EventContext) -> String {

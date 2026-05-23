@@ -53,7 +53,7 @@ func DashboardCommand(cfg config.Config, args []string) error {
 }
 
 func generateDashboardConfig(cfg config.Config) string {
-	return fmt.Sprintf(`{
+	return `{
   "dashboard": {
     "title": "LOXA Collector",
     "tags": ["loxa", "collector"],
@@ -73,5 +73,5 @@ func generateDashboardConfig(cfg config.Config) string {
       }
     ]
   }
-}`)
+}`
 }

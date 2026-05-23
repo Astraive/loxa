@@ -1,4 +1,3 @@
-from pathlib import Path
 
 from loxa.core.config import load_layered_config
 

@@ -13,11 +13,6 @@ MIRROR_PAIRS: tuple[tuple[str, str], ...] = (
     ("spec/schemas/json/event.loose.schema.json", "schema/event.loose.schema.json"),
     ("spec/schemas/json/ingest-envelope.schema.json", "schema/ingest.schema.json"),
     ("spec/schemas/json/collector-response.schema.json", "schema/collector-response.schema.json"),
-    ("spec/openapi/collector.openapi.yaml", "openapi/collector.openapi.yaml"),
-    ("spec/proto/loxa/v1/collector.proto", "proto/loxa/v1/collector.proto"),
-    ("spec/proto/loxa/v1/event.proto", "proto/loxa/v1/event.proto"),
-    ("spec/proto/loxa/v1/ingest.proto", "proto/loxa/v1/ingest.proto"),
-    ("spec/proto/loxa/v1/cortex.proto", "proto/loxa/v1/cortex.proto"),
 )
 
 

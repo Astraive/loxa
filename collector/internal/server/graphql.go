@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -16,7 +15,6 @@ type GraphQLServer struct {
 	cfg    GraphQLConfig
 	state  State
 	ready  atomic.Bool
-	mu     sync.Mutex
 	server *http.Server
 }
 
@@ -111,7 +109,7 @@ func (s *GraphQLServer) Start(ctx context.Context) error {
 		})
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 	})
 
 	s.server = &http.Server{

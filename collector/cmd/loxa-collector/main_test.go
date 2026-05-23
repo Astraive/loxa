@@ -1082,7 +1082,7 @@ func TestTailStreamsAcceptedEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("post ingest: %v", err)
 	}
-	io.Copy(io.Discard, postResp.Body)
+	_, _ = io.Copy(io.Discard, postResp.Body)
 	postResp.Body.Close()
 
 	select {
@@ -1133,7 +1133,7 @@ func TestControlEndpointsRequireAPIKeyWhenAuthEnabled(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request %s %s: %v", tc.method, tc.path, err)
 		}
-		io.Copy(io.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 		if resp.StatusCode != http.StatusUnauthorized {
 			t.Fatalf("expected 401 for %s %s, got %d", tc.method, tc.path, resp.StatusCode)

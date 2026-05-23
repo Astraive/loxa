@@ -91,7 +91,7 @@ func BenchmarkAuthMiddlewareHit(b *testing.B) {
 	middleware := auth.Middleware(store, cache, benchServerSecret)
 	handler := middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte(`{"status":"accepted"}`))
+		_, _ = w.Write([]byte(`{"status":"accepted"}`))
 	}))
 
 	b.ReportAllocs()
@@ -119,7 +119,7 @@ func BenchmarkAuthMiddlewareMiss(b *testing.B) {
 	middleware := auth.Middleware(store, cache, benchServerSecret)
 	handler := middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte(`{"status":"accepted"}`))
+		_, _ = w.Write([]byte(`{"status":"accepted"}`))
 	}))
 
 	b.ReportAllocs()
@@ -147,7 +147,7 @@ func BenchmarkAuthLocalKey(b *testing.B) {
 	middleware := auth.Middleware(store, cache, benchServerSecret)
 	handler := middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte(`{"status":"accepted"}`))
+		_, _ = w.Write([]byte(`{"status":"accepted"}`))
 	}))
 
 	b.ReportAllocs()

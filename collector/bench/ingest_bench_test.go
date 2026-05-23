@@ -119,7 +119,7 @@ func BenchmarkIngestParseGzip(b *testing.B) {
 
 	var gzipBuf bytes.Buffer
 	gz := gzip.NewWriter(&gzipBuf)
-	gz.Write(jsonData)
+	_, _ = gz.Write(jsonData)
 	gz.Close()
 	compressed := gzipBuf.Bytes()
 

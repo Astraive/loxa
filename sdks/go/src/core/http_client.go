@@ -41,7 +41,7 @@ func (rt *loxaRoundTripper) RoundTrip(req *http.Request) (*http.Response, error)
 		propagation.TraceContext{}.Inject(ctx, propagation.HeaderCarrier(req.Header))
 	}
 	if HasEvent(ctx) {
-		Default().Checkpoint(ctx, "http.client.started",
+		_ = Default().Checkpoint(ctx, "http.client.started",
 			String("http.client.method", req.Method),
 			String("http.client.url", req.URL.String()),
 		)
@@ -57,7 +57,7 @@ func (rt *loxaRoundTripper) RoundTrip(req *http.Request) (*http.Response, error)
 		if err != nil {
 			attrs = append(attrs, String("http.client.error", err.Error()))
 		}
-		Default().Checkpoint(ctx, "http.client.finished", attrs...)
+		_ = Default().Checkpoint(ctx, "http.client.finished", attrs...)
 	}
 	return resp, err
 }

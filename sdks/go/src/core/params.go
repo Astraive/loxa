@@ -14,10 +14,11 @@ type Params struct {
 	Level   Level
 
 	// ── Correlation IDs ──────────────────────────────────────────────────────
-	RequestID string
-	TraceID   string
-	SpanID    string
-	ParentID  string
+	RequestID  string
+	TraceID    string
+	SpanID     string
+	ParentID   string
+	IncidentID string
 
 	// ── Service metadata ─────────────────────────────────────────────────────
 	Service      string

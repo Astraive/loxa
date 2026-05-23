@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -381,7 +382,12 @@ func newGCSFanoutSink(cfg workerConfig, output workerFanoutOutput) (collectoreve
 	ctx := context.Background()
 	opts := []option.ClientOption{}
 	if output.gcsCredsFile != "" {
-		opts = append(opts, option.WithCredentialsFile(output.gcsCredsFile))
+		credsJSON, err := os.ReadFile(output.gcsCredsFile)
+		if err != nil {
+			return nil, fmt.Errorf("fanout output %q: read gcs creds: %w", output.name, err)
+		}
+		//nolint:staticcheck // file-based GCS auth
+		opts = append(opts, option.WithCredentialsJSON(credsJSON))
 	}
 
 	gcsClient, err := storage.NewClient(ctx, opts...)

@@ -22,14 +22,14 @@ def WithDeploymentID(value: str) -> ConfigOption: return lambda cfg: setattr(cfg
 def WithIncludeHost(value: bool) -> ConfigOption: return lambda cfg: setattr(cfg, "include_host", value) or cfg
 def WithPanicRecovery(value: bool) -> ConfigOption: return lambda cfg: setattr(cfg, "panic_recovery", value) or cfg
 def WithExitOnFatal(enabled: bool = True) -> ConfigOption: return lambda cfg: cfg.with_exit_on_fatal(enabled)
-def WithRelease(value: str) -> ConfigOption: return lambda cfg: setattr(cfg, "release", value) or cfg
-def WithNamespace(value: str) -> ConfigOption: return lambda cfg: setattr(cfg, "namespace", value) or cfg
+def WithRelease(value: str) -> ConfigOption: return lambda cfg: cfg.with_release(value)
+def WithNamespace(value: str) -> ConfigOption: return lambda cfg: cfg.with_namespace(value)
 def WithApiKey(value: str) -> ConfigOption: return lambda cfg: cfg.with_api_key(value)
-def WithOtelBridge(value: bool) -> ConfigOption: return lambda cfg: setattr(cfg, "otel_bridge", value) or cfg
-def WithRetry(value: bool) -> ConfigOption: return lambda cfg: setattr(cfg, "retry", value) or cfg
-def WithTimeout(value: float) -> ConfigOption: return lambda cfg: setattr(cfg, "timeout", value) or cfg
+def WithOtelBridge(value: bool) -> ConfigOption: return lambda cfg: cfg.with_otel_bridge(value)
+def WithRetry(value: bool) -> ConfigOption: return lambda cfg: cfg.with_retry(value)
+def WithTimeout(value: float) -> ConfigOption: return lambda cfg: cfg.with_timeout(value)
 def WithQueueSize(value: int) -> ConfigOption: return lambda cfg: setattr(cfg.async_config, "queue_size", value) or cfg
-def WithLogger(value: Any) -> ConfigOption: return lambda cfg: setattr(cfg, "logger", value) or cfg
+def WithLogger(value: Any) -> ConfigOption: return lambda cfg: cfg.with_logger(value)
 def Disabled() -> Config:
     return Config.disabled()
 def FromEnv() -> Config:

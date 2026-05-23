@@ -1,5 +1,3 @@
-use loxa;
-
 #[test]
 fn alias_creates_logger_with_alias_metadata() {
     let logger = loxa::Logger::new(loxa::Config::dev("api"));
