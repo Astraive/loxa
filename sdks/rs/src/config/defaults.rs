@@ -49,6 +49,7 @@ impl Config {
     pub(crate) fn base() -> Self {
         Self {
             service: String::new(),
+            alias: String::new(),
             version: String::new(),
             environment: "development".to_string(),
             region: String::new(),

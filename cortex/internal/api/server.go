@@ -18,6 +18,7 @@ import (
 	"github.com/astraive/loxa/loxa-cortex/internal/models"
 	"github.com/astraive/loxa/loxa-cortex/internal/processor"
 	"github.com/astraive/loxa/loxa-cortex/internal/reconstructor"
+	"github.com/astraive/loxa/loxa-cortex/internal/redaction"
 	"github.com/astraive/loxa/loxa-cortex/internal/storage"
 	"github.com/astraive/loxa/loxa-cortex/internal/topology"
 	"github.com/go-chi/chi/v5"
@@ -73,7 +74,11 @@ func NewServer(cfg *config.Config, stor storage.Storage) *Server {
 
 	eventProc := processor.NewEventProcessor(stor.Events(), stor.Topology(), stor.Graph())
 	if cfg.PIIRedaction.Enabled {
-		eventProc.WithRedactor(&processor.Redactor{Mode: cfg.PIIRedaction.Mode})
+		eventProc.WithRedactor(redaction.NewWithConfig(redaction.Config{
+			Mode:      redaction.Mode(cfg.PIIRedaction.Mode),
+			Blocklist: cfg.PIIRedaction.Blocklist,
+			Allowlist: cfg.PIIRedaction.Allowlist,
+		}))
 	}
 
 	authMiddleware := middleware.NewAuthMiddleware(cfg.Authentication)

@@ -31,8 +31,10 @@ func convertResourceLogs(resourceLogs []*logsv1.ResourceLogs, cfg Config) ([][]b
 		resourceAttrs := kvToMap(nil, resourceLog.GetResource().GetAttributes())
 		service := stringValue(resourceAttrs["service.name"])
 		environment := stringValue(resourceAttrs["deployment.environment"])
+		release := stringValue(resourceAttrs["service.version"])
 		for _, scopeLogs := range resourceLog.GetScopeLogs() {
 			for _, record := range scopeLogs.GetLogRecords() {
+				attrs := kvToMap(resourceAttrs, record.GetAttributes())
 				event := map[string]any{
 					"schema_version": cfg.SchemaVersion,
 					"event_version":  cfg.EventVersion,
@@ -42,10 +44,21 @@ func convertResourceLogs(resourceLogs []*logsv1.ResourceLogs, cfg Config) ([][]b
 					"event":          bodyToEventName(record.GetBody()),
 					"kind":           "log",
 					"level":          strings.ToLower(strings.TrimSpace(record.GetSeverityText())),
-					"attrs":          kvToMap(resourceAttrs, record.GetAttributes()),
+					"outcome":        outcomeFromAttrs(attrs),
+					"attrs":          attrs,
 					"source": map[string]any{
 						"sdk": "otlp",
 					},
+				}
+				if release != "" {
+					event["release"] = release
+				}
+				if errors := errorsFromAttrs(attrs); len(errors) > 0 {
+					event["errors"] = errors
+				}
+				traceFlags := traceFlagsFromRecord(record)
+				if traceFlags != "" {
+					event["trace_flags"] = traceFlags
 				}
 				if environment != "" {
 					event["deployment"] = map[string]any{"environment": environment}
@@ -59,6 +72,65 @@ func convertResourceLogs(resourceLogs []*logsv1.ResourceLogs, cfg Config) ([][]b
 		}
 	}
 	return out, nil
+}
+
+func outcomeFromAttrs(attrs map[string]any) string {
+	for _, key := range []string{"event.outcome", "outcome"} {
+		if v, ok := attrs[key].(string); ok {
+			v = strings.ToLower(strings.TrimSpace(v))
+			switch v {
+			case "success", "error", "partial", "abandoned", "retried",
+				"cancelled", "canceled", "timeout", "skipped", "rejected",
+				"quarantined", "unknown":
+				if v == "canceled" {
+					return "cancelled"
+				}
+				return v
+			default:
+				return "unknown"
+			}
+		}
+	}
+	// Map from SeverityNumber as fallback
+	return severityToOutcome(attrs)
+}
+
+func severityToOutcome(attrs map[string]any) string {
+	if sevNum, ok := attrs["severity_number"]; ok {
+		switch sevNum {
+		case float64(9), float64(10), float64(11), float64(12):
+			return "success"
+		case float64(13), float64(14), float64(15), float64(16):
+			return "partial"
+		case float64(17), float64(18), float64(19), float64(20):
+			return "error"
+		case float64(21), float64(22), float64(23), float64(24):
+			return "error"
+		}
+	}
+	return "unknown"
+}
+
+func errorsFromAttrs(attrs map[string]any) []any {
+	if raw, ok := attrs["event.errors"]; ok {
+		if arr, ok := raw.([]any); ok {
+			return arr
+		}
+	}
+	if raw, ok := attrs["errors"]; ok {
+		if arr, ok := raw.([]any); ok {
+			return arr
+		}
+	}
+	return nil
+}
+
+func traceFlagsFromRecord(record *logsv1.LogRecord) string {
+	flags := record.GetFlags()
+	if flags&0xFF != 0 {
+		return fmt.Sprintf("%02x", flags&0xFF)
+	}
+	return ""
 }
 
 func kvToMap(base map[string]any, attrs []*commonv1.KeyValue) map[string]any {

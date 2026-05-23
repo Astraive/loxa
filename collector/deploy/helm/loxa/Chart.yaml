@@ -2,8 +2,8 @@ apiVersion: v2
 name: loxa
 description: Loxa wide-event logging system
 type: application
-version: 1.0.0
-appVersion: "1.0.0"
+version: 0.0.1
+appVersion: "0.0.1"
 keywords:
   - logging
   - events

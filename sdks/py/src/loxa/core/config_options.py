@@ -22,3 +22,45 @@ def WithDeploymentID(value: str) -> ConfigOption: return lambda cfg: setattr(cfg
 def WithIncludeHost(value: bool) -> ConfigOption: return lambda cfg: setattr(cfg, "include_host", value) or cfg
 def WithPanicRecovery(value: bool) -> ConfigOption: return lambda cfg: setattr(cfg, "panic_recovery", value) or cfg
 def WithExitOnFatal(enabled: bool = True) -> ConfigOption: return lambda cfg: cfg.with_exit_on_fatal(enabled)
+def WithRelease(value: str) -> ConfigOption: return lambda cfg: setattr(cfg, "release", value) or cfg
+def WithNamespace(value: str) -> ConfigOption: return lambda cfg: setattr(cfg, "namespace", value) or cfg
+def WithApiKey(value: str) -> ConfigOption: return lambda cfg: cfg.with_api_key(value)
+def WithOtelBridge(value: bool) -> ConfigOption: return lambda cfg: setattr(cfg, "otel_bridge", value) or cfg
+def WithRetry(value: bool) -> ConfigOption: return lambda cfg: setattr(cfg, "retry", value) or cfg
+def WithTimeout(value: float) -> ConfigOption: return lambda cfg: setattr(cfg, "timeout", value) or cfg
+def WithQueueSize(value: int) -> ConfigOption: return lambda cfg: setattr(cfg.async_config, "queue_size", value) or cfg
+def WithLogger(value: Any) -> ConfigOption: return lambda cfg: setattr(cfg, "logger", value) or cfg
+def Disabled() -> Config:
+    return Config.disabled()
+def FromEnv() -> Config:
+    from .config import _apply_env_vars
+    return _apply_env_vars(Config())
+
+# --- snake_case aliases ---
+with_service = WithService
+with_version = WithVersion
+with_environment = WithEnvironment
+with_sink = WithSink
+with_sampler = WithSampler
+with_redactor = WithRedactor
+with_metrics = WithMetrics
+with_schema = WithSchema
+with_event_schema = WithEventSchema
+with_async = WithAsync
+with_collector_endpoint = WithCollectorEndpoint
+with_duplicate_policy = WithDuplicatePolicy
+with_stats_handler = WithStatsHandler
+with_deployment_id = WithDeploymentID
+with_include_host = WithIncludeHost
+with_panic_recovery = WithPanicRecovery
+with_exit_on_fatal = WithExitOnFatal
+with_release = WithRelease
+with_namespace = WithNamespace
+with_api_key = WithApiKey
+with_otel_bridge = WithOtelBridge
+with_retry = WithRetry
+with_timeout = WithTimeout
+with_queue_size = WithQueueSize
+with_logger = WithLogger
+disabled = Disabled
+from_env = FromEnv

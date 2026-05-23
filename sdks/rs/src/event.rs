@@ -308,7 +308,7 @@ pub struct EventContext {
     pub error: Option<Map<String, Value>>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub checkpoints: Vec<Map<String, Value>>,
-    #[serde(rename = "process", skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub processes: Vec<Map<String, Value>>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub groups: Vec<Map<String, Value>>,
@@ -651,6 +651,7 @@ impl EventContext {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn apply_sensitive_flags(&mut self) {
         for key in &self.sensitive_keys {
             let k = key.clone();

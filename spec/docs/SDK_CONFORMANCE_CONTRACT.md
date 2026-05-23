@@ -1,8 +1,8 @@
-# LOXA SDK Conformance Contract (v1.0.0)
+# LOXA SDK Conformance Contract (v0.0.2)
 
 ## Purpose
 
-This document defines the canonical behavior all SDKs (Go, Python, Rust, JavaScript) MUST implement for stable-v1 conformance and beyond.
+This document defines the canonical behavior all SDKs (Go, Python, Rust, JavaScript) MUST implement for the v0.0.2 product-parity contract and beyond.
 
 Stable-v1 scope is intentionally **collector-first**:
 
@@ -12,9 +12,24 @@ Stable-v1 scope is intentionally **collector-first**:
 
 ---
 
+## 0. Cross-Language Client Parity
+
+Every SDK MUST expose the same mental model:
+
+- Default/global client: `loxa.<method>()` or package/module equivalents.
+- Cross-language factory: `createLoxa` / `create_loxa` / `CreateLoxa`.
+- Idiomatic constructor: optional language-native constructor (`Loxa`, `New`, `Loxa::new`).
+- Same-config alias: `alias(name)` returns an immutable child client.
+
+Alias semantics are fixed in v0.0.2:
+
+- `alias(name)` MUST preserve parent config, including `service`, endpoint, auth, sampling, redaction, and sink configuration.
+- `alias(name)` MUST NOT mutate the parent/default client.
+- Events emitted by an alias MUST include custom metadata key `loxa.alias` with the alias name.
+
 ## 1. Event Lifecycle
 
-### 1.1 StartEvent → Finish → Emit Flow
+### 1.1 StartEvent → Append/Enrich → Primitives → Finish → Emit Flow
 - **StartEvent(ctx, Params)** creates a new event context
   - MUST set canonical fields: service, event, kind, level (default: info)
   - MUST initialize state machine to STARTED
@@ -22,8 +37,15 @@ Stable-v1 scope is intentionally **collector-first**:
   - MUST capture timestamp at creation time (immutable)
   - MUST capture duration_start for later duration_ms calculation
 
+- **Append/Enrich(ctx, attrs...)** adds business attributes to `attrs` or canonical nested objects.
+- **Checkpoint(ctx, name, attrs...)** records a breadcrumb with offset time and no duration.
+- **Process(ctx, name, attrs...)** records an ordered numbered step with duration.
+- **Group(ctx, name, attrs...)** records a named phase/block with duration.
+- **Timer(ctx, name, attrs...)** records an independent latency measurement.
+- **Stopwatch()** records local elapsed time before optional attachment to an event.
+
 - **Finish(ctx, outcome, attrs...)** transitions event to FINISHED
-  - MUST set outcome field (success, error, partial, abandoned, retried)
+  - MUST set outcome field (minimum stable outcomes: success, error, partial, abandoned, retried)
   - MUST calculate duration_ms = now - duration_start
   - MUST accept optional attrs to merge into event
   - MUST NOT allow state transitions after Finish (idempotent)
@@ -41,12 +63,18 @@ Stable-v1 scope is intentionally **collector-first**:
 INIT → STARTED → FINISHED → EMITTED
          ↓         ↓
        INVALID   DROPPED
+                 EMIT_FAILED
+                 SPOOLED
+                 DLQ_WRITTEN
 ```
 - INIT: Event created but not started
 - STARTED: Between StartEvent and Finish
 - FINISHED: Finish called, ready for Emit
 - EMITTED: Successfully sent to sink
 - DROPPED: Dropped by SDK or collector (sampler, validation, capacity)
+- EMIT_FAILED: Sink/transport delivery failed
+- SPOOLED: Event was durably spooled
+- DLQ_WRITTEN: Event was written to DLQ
 - INVALID: Failed state transition (e.g., Emit before Finish)
 
 ---
@@ -71,6 +99,16 @@ These MUST NOT be overridden by custom attributes:
 - http (nested object for HTTP events)
 - user (nested object for user identity)
 - tenant (nested object for multi-tenancy)
+- attrs (business-specific attributes)
+- checkpoints (breadcrumb timeline)
+- processes (ordered numbered steps)
+- groups (named phases)
+- timers (latency measurements)
+- links (cross-event/trace/job relationships)
+- sdk (SDK metadata)
+- collector (collector metadata)
+- sampling (sampling decision metadata)
+- redaction (redaction policy metadata)
 
 ### 2.2 Duplicate Field Policy
 - SDKs MAY warn (log) if custom attrs collide with canonical names
@@ -256,7 +294,7 @@ All SDKs test against golden fixtures in:
 - event_version: Always "v1" in v1.x releases
 - FUTURE: May introduce v2 with backward compatibility path
 
-### 10.2 SDK Maturity Status (v1.0.0)
+### 10.2 SDK Maturity Status (v0.0.1)
 - **Go**: Stable - Full conformance, production-ready
 - **Python**: Stable - Full conformance, production-ready
 - **Rust**: Stable - Full conformance, production-ready
@@ -368,5 +406,5 @@ For a release to be marked "stable" (not alpha), SDKs must pass:
 ---
 
 **Last Updated**: May 15, 2026
-**Version**: 1.0.0
+**Version**: 0.0.1
 **Status**: Stable v1

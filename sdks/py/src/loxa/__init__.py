@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 
 from .core.attr import *  # exports Any, String, Int, etc.
@@ -17,12 +18,18 @@ from .core.schema import *
 from .metrics import *
 from .core.standard_sinks import StderrSink, RotatingFileSink, CollectorSink
 from .sinks import FileSink, HTTPBatchSink, MemorySink, NoopSink, StdoutSink
+from .sinks import MultiSink, multi_sink, drain, pause, resume, queue_size, health, otlp_sink
+from .sinks import MultiSinkFactory, Drain, Pause, Resume, QueueSize, Health, OTLPSink
+from .core.http_client import CollectorClient
 from .cortex import CortexClient, GraphView, IncidentContext, Remediation, RemediationFeedback
 from .core.timing import ProcessHandle, TimerHandle, GroupHandle, StopwatchHandle
+from .core.timing import with_process, with_group, with_timer, finish_group_error, measure, step, phase, span
 
 # Restore loxa.Any after star-imports shadow it with typing.Any
 from .core.attr import Any as _loxa_Any  # noqa: E402
 Any = _loxa_Any  # noqa: F811
+
+from .testkit import *  # noqa: F403
 
 # ---------------------------------------------------------------------------
 # Default logger instance
@@ -68,9 +75,9 @@ def create_loxa(service: str = "", **kwargs: Any) -> Logger:
     return new(cfg)
 
 
-def alias(service: str) -> Logger:
-    """Create a new Logger with the same config as _default but different service."""
-    return _default.alias(service)
+def alias(name: str) -> Logger:
+    """Create a same-config Logger that emits loxa.alias metadata."""
+    return _default.alias(name)
 
 
 def dev(service: str = "") -> Config:
@@ -217,6 +224,116 @@ def fatal(message: str, **attrs: Any) -> str:
     return _default.fatal(message, **attrs)
 
 
+def notice(message: str, **attrs: Any) -> str:
+    return _default.notice(message, **attrs)
+
+
+def event(name: str, **attrs: Any) -> str:
+    ctx = _default.start_event(Params(event=name, kind="event", level="info", message=name))
+    _default.enrich(ctx, **attrs)
+    _default.finish(ctx, "success")
+    return _default.emit(ctx)
+
+
+def track(name: str, **attrs: Any) -> str:
+    ctx = _default.start_event(Params(event=name, kind="event", level="info", message=name))
+    _default.enrich(ctx, **attrs)
+    _default.finish(ctx, "success")
+    return _default.emit(ctx)
+
+
+def audit(name: str, **attrs: Any) -> str:
+    ctx = _default.start_event(Params(event=name, kind="event", level="info", message=name))
+    _default.enrich(ctx, **attrs)
+    _default.finish(ctx, "success")
+    return _default.emit(ctx)
+
+
+def security(name: str, **attrs: Any) -> str:
+    ctx = _default.start_event(Params(event=name, kind="event", level="warn", message=name))
+    _default.enrich(ctx, **attrs)
+    _default.finish(ctx, "success")
+    return _default.emit(ctx)
+
+
+def metric(name: str, value: Any, **attrs: Any) -> str:
+    ctx = _default.start_event(Params(event=name, kind="event", level="info", message=name))
+    _default.enrich(ctx, metric_value=value, **attrs)
+    _default.finish(ctx, "success")
+    return _default.emit(ctx)
+
+
+def count(name: str, value: int = 1, **attrs: Any) -> str:
+    ctx = _default.start_event(Params(event=name, kind="event", level="info", message=name))
+    _default.enrich(ctx, metric_kind="count", count=value, **attrs)
+    _default.finish(ctx, "success")
+    return _default.emit(ctx)
+
+
+def gauge(name: str, value: float, **attrs: Any) -> str:
+    ctx = _default.start_event(Params(event=name, kind="event", level="info", message=name))
+    _default.enrich(ctx, metric_kind="gauge", gauge=value, **attrs)
+    _default.finish(ctx, "success")
+    return _default.emit(ctx)
+
+
+def histogram(name: str, value: float, **attrs: Any) -> str:
+    ctx = _default.start_event(Params(event=name, kind="event", level="info", message=name))
+    _default.enrich(ctx, metric_kind="histogram", histogram_value=value, **attrs)
+    _default.finish(ctx, "success")
+    return _default.emit(ctx)
+
+
+def breadcrumb(name: str, **attrs: Any) -> str:
+    ctx = _default.start_event(Params(event=name, kind="checkpoint", level="debug", message=name))
+    _default.enrich(ctx, **attrs)
+    _default.finish(ctx, "success")
+    return _default.emit(ctx)
+
+
+# ---------------------------------------------------------------------------
+# Lifecycle extras
+# ---------------------------------------------------------------------------
+def drop(ctx: EventContext, reason: str = "dropped", *attrs: Attr, **named: Any) -> None:
+    _default.drop(ctx, reason, *attrs, **named)
+
+
+def cancel(ctx: EventContext, reason: str = "cancelled", *attrs: Attr, **named: Any) -> None:
+    _default.cancel(ctx, reason, *attrs, **named)
+
+
+def abandon(ctx: EventContext, reason: str = "abandoned", *attrs: Attr, **named: Any) -> None:
+    _default.abandon(ctx, reason, *attrs, **named)
+
+
+def retry(ctx: EventContext, *attrs: Attr, **named: Any) -> None:
+    _default.retry(ctx, *attrs, **named)
+
+
+def partial(ctx: EventContext, reason: str = "partial", *attrs: Attr, **named: Any) -> None:
+    _default.partial(ctx, reason, *attrs, **named)
+
+
+def clone_event(ctx: EventContext) -> EventContext:
+    return _default.clone_event(ctx)
+
+
+def link_event(parent: EventContext, child: EventContext) -> None:
+    _default.link_event(parent, child)
+
+
+def current_event() -> EventContext | None:
+    return _default.current_event()
+
+
+def bind_event(ctx: EventContext) -> Logger:
+    return _default.bind_event(ctx)
+
+
+def wrap(ctx: EventContext, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    return _default.wrap(ctx, fn, *args, **kwargs)
+
+
 # ---------------------------------------------------------------------------
 # Go-style uppercase aliases — import loxa as logger; logger.Enrich(...)
 # ---------------------------------------------------------------------------
@@ -259,9 +376,31 @@ Shutdown = shutdown
 
 Debug = debug
 Info = info
+Notice = notice
 Warn = warn
 Error = error
 Fatal = fatal
+
+Event = event
+Track = track
+Audit = audit
+Security = security
+Metric = metric
+Count = count
+Gauge = gauge
+Histogram = histogram
+Breadcrumb = breadcrumb
+
+Drop = drop
+Cancel = cancel
+Abandon = abandon
+Retry = retry
+Partial = partial
+CloneEvent = clone_event
+LinkEvent = link_event
+CurrentEvent = current_event
+BindEvent = bind_event
+Wrap = wrap
 
 
 # ---------------------------------------------------------------------------
@@ -496,7 +635,7 @@ __all__ = [
     "CanonicalWins", "UserWins", "FirstWins", "LastWins", "KeepBoth", "ErrorOnDuplicate",
     "ExpandDotKeys", "PreserveDotKeys", "SnakeCaseKeys", "CamelCaseKeys",
     # Levels
-    "LevelDebug", "LevelInfo", "LevelWarn", "LevelError", "LevelFatal", "ParseLevel",
+    "LevelDebug", "LevelInfo", "LevelNotice", "LevelWarn", "LevelError", "LevelFatal", "ParseLevel",
     # Lowercase facade
     "configure", "default", "new", "create_loxa", "alias", "dev", "production", "test",
     "start_event", "start_http_event", "start_job_event", "start_queue_event", "start_cli_event", "start_cron_event",
@@ -504,7 +643,10 @@ __all__ = [
     "append", "enrich", "set", "merge", "delete", "get", "get_group",
     "checkpoint", "finish", "finish_error", "emit", "emit_event",
     "flush", "shutdown",
-    "debug", "info", "warn", "error", "fatal",
+    "debug", "info", "notice", "warn", "error", "fatal",
+    "event", "track", "audit", "security", "metric", "count", "gauge", "histogram", "breadcrumb",
+    "drop", "cancel", "abandon", "retry", "partial",
+    "clone_event", "link_event", "current_event", "bind_event", "wrap",
     # Uppercase aliases
     "Configure", "Default", "New", "Dev", "Production", "Test",
     "TryNew", "NewClient", "CreateLoxa", "Alias",
@@ -512,7 +654,10 @@ __all__ = [
     "Append", "Enrich", "Set", "Merge", "Delete", "Get", "GetGroup",
     "Checkpoint", "Finish", "FinishError", "Emit", "EmitEvent",
     "Flush", "Shutdown",
-    "Debug", "Info", "Warn", "Error", "Fatal",
+    "Debug", "Info", "Notice", "Warn", "Error", "Fatal",
+    "Event", "Track", "Audit", "Security", "Metric", "Count", "Gauge", "Histogram", "Breadcrumb",
+    "Drop", "Cancel", "Abandon", "Retry", "Partial",
+    "CloneEvent", "LinkEvent", "CurrentEvent", "BindEvent", "Wrap",
     # Attr constructors
     "String", "Int", "Int64", "Uint64", "Float64", "Bool", "Time", "Duration", "Any", "Null", "Group",
     "SensitiveString", "HashString", "MarkSensitive",
@@ -521,21 +666,65 @@ __all__ = [
     "FeatureFlag", "FeatureFlagBool", "Experiment",
     "OrderID", "CartID", "ProductID", "CustomerID", "Plan", "Currency", "Amount", "Country", "Device", "Platform", "AppVersion",
     "ErrorType", "ErrorCode", "ErrorMessage", "ErrorStack", "Retryable",
+    # Domain helpers
+    "payment_id", "subscription_id", "invoice_id", "job_id", "message_id", "correlation_id",
+    "commit_sha", "release",
+    "PaymentID", "SubscriptionID", "InvoiceID", "JobID", "MessageID", "CorrelationID",
+    "CommitSHA", "Release",
+    "money", "percent", "bytes_attr", "http_status", "status_code", "error_code",
+    "bucket", "tags", "masked", "url", "email_hash", "ip_hash", "region",
+    "Money", "Percent", "Bytes", "HTTPStatus", "StatusCode", "ErrorCode",
+    "Bucket", "Tags", "Masked", "URL", "EmailHash", "IPHash", "Region",
+    # Domain packs
+    "checkout_cart_item_count", "checkout_cart_total", "checkout_payment_method", "checkout_status",
+    "payment_provider", "payment_method", "payment_intent_id", "payment_failure_code", "payment_retry_attempt",
+    "billing_plan", "billing_subscription_id", "billing_invoice_id", "billing_amount", "billing_interval",
+    "agent_name", "agent_provider", "agent_model", "agent_run_type", "agent_tool_name", "agent_tool_outcome",
+    "agent_input_tokens", "agent_output_tokens", "agent_cost",
+    "rag_index", "rag_embedding_model", "rag_chunks_retrieved", "rag_top_score", "rag_query_hash",
+    "rag_citation_count", "rag_retrieval_latency",
+    "CheckoutCartItemCount", "CheckoutCartTotal", "CheckoutPaymentMethod", "CheckoutStatus",
+    "PaymentProvider", "PaymentMethod", "PaymentIntentID", "PaymentFailureCode", "PaymentRetryAttempt",
+    "BillingPlan", "BillingSubscriptionID", "BillingInvoiceID", "BillingAmount", "BillingInterval",
+    "AgentName", "AgentProvider", "AgentModel", "AgentRunType", "AgentToolName", "AgentToolOutcome",
+    "AgentInputTokens", "AgentOutputTokens", "AgentCost",
+    "RAGIndex", "RAGEmbeddingModel", "RAGChunksRetrieved", "RAGTopScore", "RAGQueryHash",
+    "RAGCitationCount", "RAGRetrievalLatency",
     # Schema
     "Schema", "SchemaFunc", "EventView", "DefaultSchema", "FlatSchema", "NestedSchema", "ECSchema", "OTelLogSchema", "OTelSchema", "DatadogSchema", "CustomSchema",
     # Sampler
     "SampleAll", "SampleNone", "SampleRandom", "SampleErrors", "SampleSlowRequests", "SampleStatusCodes", "SampleRoutes", "SampleUsers", "SampleTenants", "SampleFeatureFlag", "SampleByHeader", "SampleRateLimited", "AnySampler", "AllSampler", "NotSampler",
     "sample_rate_limited",
+    "SampleByEvent", "SampleByOutcome", "ShouldSample", "AllowFields", "BlockFields",
+    "sample_by_event", "sample_by_outcome", "should_sample", "allow_fields", "block_fields",
     # Redactor
     "DefaultRedactor", "RedactKeys", "RedactPatterns", "HashKeys", "MaskKeys", "DropKeys", "ComposeRedactors",
     # Metrics
     "MetricsCollector", "MetricsSnapshot", "NewMetricsCollector", "RenderPrometheus",
     # Sinks
     "StdoutSink", "StderrSink", "FileSink", "RotatingFileSink", "MemorySink", "NoopSink", "CollectorSink", "HTTPBatchSink",
+    "MultiSink", "multi_sink", "MultiSinkFactory", "otlp_sink", "OTLPSink",
+    "drain", "Drain", "pause", "Pause", "resume", "Resume", "queue_size", "QueueSize", "health", "Health",
     # Config options
     "WithService", "WithVersion", "WithEnvironment", "WithSink", "WithSampler", "WithRedactor", "WithMetrics", "WithSchema", "WithEventSchema", "WithAsync", "WithCollectorEndpoint", "WithDuplicatePolicy", "WithStatsHandler", "WithDeploymentID", "WithIncludeHost", "WithPanicRecovery", "WithExitOnFatal",
+    "WithRelease", "WithNamespace", "WithApiKey", "WithOtelBridge", "WithRetry", "WithTimeout", "WithQueueSize", "WithLogger",
+    "with_service", "with_version", "with_environment", "with_sink", "with_sampler", "with_redactor",
+    "with_metrics", "with_schema", "with_event_schema", "with_async", "with_collector_endpoint",
+    "with_duplicate_policy", "with_stats_handler", "with_deployment_id", "with_include_host",
+    "with_panic_recovery", "with_exit_on_fatal",
+    "with_release", "with_namespace", "with_api_key", "with_otel_bridge", "with_retry", "with_timeout", "with_queue_size", "with_logger",
+    "Disabled", "disabled", "FromEnv", "from_env",
+    # Timing
+    "ProcessHandle", "TimerHandle", "GroupHandle", "StopwatchHandle",
+    "with_process", "with_group", "with_timer", "finish_group_error",
+    "measure", "step", "phase", "span",
     # Context helpers
     "FromContext", "HasEvent", "EventID", "RequestIDFromContext", "TraceIDFromContext", "SpanIDFromContext",
+    # Testkit
+    "TestLogger", "Capture", "AssertEvent", "AssertRedacted", "AssertHasCheckpoint", "DecodeEvents", "CapturingLogger",
+    "expect_event", "expect_attr", "snapshot_event", "mock_sink", "fake_clock", "set_id_generator",
+    # Collector
+    "CollectorClient",
     # Cortex
     "CortexClient", "IncidentContext", "GraphView", "Remediation", "RemediationFeedback",
 ]

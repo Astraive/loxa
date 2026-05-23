@@ -4,7 +4,7 @@ This document defines the compatibility rules and version coexistence policies f
 
 ## Version Information
 
-- **Schema Version**: v1.0.0
+- **Schema Version**: v0.0.1
 - **Status**: Active
 - **Release Date**: 2024-01-15
 - **Compatibility Level**: Baseline
@@ -19,22 +19,22 @@ LOXA schemas follow semantic versioning (MAJOR.MINOR.PATCH):
   - Required field additions
   - Enum value removal
   
-- **MINOR** (v1.0.0): Backward-compatible additions
+- **MINOR** (v0.0.1): Backward-compatible additions
   - New optional fields
   - New enum values
   - Documentation enhancements
   
-- **PATCH** (v1.0.0 → v1.0.0): Non-functional changes
+- **PATCH** (v0.0.1 → v0.0.1): Non-functional changes
   - Documentation fixes
   - Example updates
   - Clarifications
 
 ## Compatibility Guarantees
 
-### Within Major Version (v1.0.0)
+### Within Major Version (v0.0.1)
 
-- **Backward Compatible**: All v1.0.0 schemas are backward compatible
-- **Forward Compatible**: Older collectors can process events from newer v1.0.0 schemas (unknown fields ignored)
+- **Backward Compatible**: All v0.0.1 schemas are backward compatible
+- **Forward Compatible**: Older collectors can process events from newer v0.0.1 schemas (unknown fields ignored)
 - **Migration Period**: Not required for minor/patch updates
 
 ### Across Major Versions (v1 → v2)
@@ -50,9 +50,9 @@ LOXA schemas follow semantic versioning (MAJOR.MINOR.PATCH):
 
 | SDK Version | Collector Version | Status |
 |-------------|-------------------|--------|
-| v1.0.0      | v1.0.0           | ✅ Fully Supported |
-| v1.0.0      | v1.0.0           | ✅ Supported (migration) |
-| v1.0.0      | v1.0.0           | ⚠️ Limited (v2 features unavailable) |
+| v0.0.1      | v0.0.1           | ✅ Fully Supported |
+| v0.0.1      | v0.0.1           | ✅ Supported (migration) |
+| v0.0.1      | v0.0.1           | ⚠️ Limited (v2 features unavailable) |
 
 ### Migration Strategy
 
@@ -128,7 +128,7 @@ Collectors support multiple validation modes for compatibility:
 loxa schema validate --file event.json --schema-version v1
 
 # Check compatibility between versions
-loxa schema diff --from v1.0.0 --to v1.0.0
+loxa schema diff --from v0.0.1 --to v0.0.1
 
 # List all schema versions
 loxa schema list
@@ -146,23 +146,23 @@ Use golden test files in `examples/golden/` for validation:
 ### ❌ Breaking: Removing a field
 
 ```json
-// v1.0.0
+// v0.0.1
 {
   "event_id": "...",
   "event_type": "...",
-  "deprecated_field": "value"  // ← Removed in v1.0.0
+  "deprecated_field": "value"  // ← Removed in v0.0.1
 }
 ```
 
 ### ❌ Breaking: Changing field type
 
 ```json
-// v1.0.0
+// v0.0.1
 {
   "duration_ms": 123  // number
 }
 
-// v1.0.0 (BREAKING)
+// v0.0.1 (BREAKING)
 {
   "duration_ms": "123ms"  // string
 }
@@ -171,13 +171,13 @@ Use golden test files in `examples/golden/` for validation:
 ### ✅ Non-Breaking: Adding optional field
 
 ```json
-// v1.0.0
+// v0.0.1
 {
   "event_id": "...",
   "event_type": "..."
 }
 
-// v1.0.0 (Compatible)
+// v0.0.1 (Compatible)
 {
   "event_id": "...",
   "event_type": "...",
@@ -228,7 +228,7 @@ Example:
 
 | Version | Status | Support End Date | Notes |
 |---------|--------|------------------|-------|
-| v1.0.0  | Active | N/A              | Current stable version |
+| v0.0.1  | Active | N/A              | Current stable version |
 
 ## Contact
 

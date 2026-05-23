@@ -25,5 +25,5 @@ Compatibility matrix:
 
 Current required SDKs are Go, Python, Rust, and JavaScript.
 
-Future SDKs such as Java/Kotlin and .NET are outside the v1.0.0 stable parity
+Future SDKs such as Java/Kotlin and .NET are outside the v0.0.1 stable parity
 gate until repositories and conformance tests exist for them.

@@ -265,6 +265,30 @@ func ListBlueprints(ctx context.Context, baseURL string) ([]byte, error) {
 	return getJSON(baseURL, "/v1/schema/blueprint")
 }
 
+func FetchQuarantine(baseURL string) ([]byte, error) {
+	return getJSON(baseURL, "/v1/quarantine")
+}
+
+func ReplayQuarantineItem(ctx context.Context, baseURL, id string) ([]byte, error) {
+	return postJSON(ctx, baseURL, "/v1/quarantine/"+id+"/replay", nil)
+}
+
+func DeleteQuarantineItem(ctx context.Context, baseURL, id string) ([]byte, error) {
+	return deleteJSON(ctx, baseURL, "/v1/quarantine/"+id, "")
+}
+
+func CreateAPIKey(ctx context.Context, baseURL string, payload []byte) ([]byte, error) {
+	return postJSON(ctx, baseURL, "/v1/keys", payload)
+}
+
+func RevokeAPIKey(ctx context.Context, baseURL, id string) ([]byte, error) {
+	return postJSON(ctx, baseURL, "/v1/keys/"+id+"/revoke", nil)
+}
+
+func RotateAPIKey(ctx context.Context, baseURL, id string) ([]byte, error) {
+	return postJSON(ctx, baseURL, "/v1/keys/"+id+"/rotate", nil)
+}
+
 func WatchStream(ctx context.Context, baseURL string, filters map[string]string) (io.ReadCloser, error) {
 	base := strings.TrimRight(baseURL, "/") + "/v1/tail"
 	if len(filters) > 0 {

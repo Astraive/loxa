@@ -11,6 +11,7 @@ export {
   CANONICAL_FIELDS,
   ALLOWED_TOP_LEVEL_FIELDS,
   buildIngestEnvelope,
+  normalizeEventAliases,
   parseCollectorResponse,
   isCanonical,
 } from './generated/spec-contract.ts';
@@ -42,8 +43,22 @@ export {
   OrderID, CartID, ProductID, CustomerID,
   Plan, Currency, Amount, Country, Device, Platform, AppVersion,
   ErrorType, ErrorCode, ErrorMessage, ErrorStack, Retryable,
+  // PascalCase new domain helpers
+  PaymentID, SubscriptionID, InvoiceID, JobID, MessageID, CorrelationID,
+  CommitSha, Release,
+  Money, Percent, Bytes, HttpStatus, StatusCode as StatusCodeFn, ErrorCodeExt,
+  Bucket, Tags, Masked, Url, EmailHash, IpHash,
+  RegionEx,
+  // PascalCase domain packs
+  CheckoutCartItemCount, CheckoutCartTotal, CheckoutPaymentMethod, CheckoutStatus,
+  PaymentProvider, PaymentMethod, PaymentIntentId, PaymentFailureCode, PaymentRetryAttempt,
+  BillingPlan, BillingSubscriptionId, BillingInvoiceId, BillingAmount, BillingInterval,
+  AgentName, AgentProvider, AgentModel, AgentRunType, AgentToolName, AgentToolOutcome,
+  AgentInputTokens, AgentOutputTokens, AgentCost,
+  RagIndex, RagEmbeddingModel, RagChunksRetrieved, RagTopScore, RagQueryHash,
+  RagCitationCount, RagRetrievalLatency,
   // camelCase aliases (primary v1 API)
-  string, int, int64, uint64, float64, bool, null_ as nullAttr, any, group, time, duration,
+  string, int, int64, uint64, float64, float, bool, null_ as nullAttr, any, group, time, duration,
   sensitiveString, hashString, markSensitive,
   userId, tenantId, workspaceId, organizationId, sessionId,
   requestId, traceId, spanId,
@@ -51,6 +66,20 @@ export {
   orderId, cartId, productId, customerId,
   plan, currency, amount, country, device, platform, appVersion,
   errorType, errorCode, errorMessage, errorStack, retryable,
+  // camelCase new domain helpers
+  paymentId, subscriptionId, invoiceId, jobId, messageId, correlationId,
+  commitSha, release,
+  money, percent, bytes, httpStatus, statusCodeFn, errorCodeExt,
+  bucket, tags, masked, url, emailHash, ipHash,
+  regionEx,
+  // camelCase domain packs
+  checkoutCartItemCount, checkoutCartTotal, checkoutPaymentMethod, checkoutStatus,
+  paymentProvider, paymentMethod, paymentIntentId, paymentFailureCode, paymentRetryAttempt,
+  billingPlan, billingSubscriptionId, billingInvoiceId, billingAmount, billingInterval,
+  agentName, agentProvider, agentModel, agentRunType, agentToolName, agentToolOutcome,
+  agentInputTokens, agentOutputTokens, agentCost,
+  ragIndex, ragEmbeddingModel, ragChunksRetrieved, ragTopScore, ragQueryHash,
+  ragCitationCount, ragRetrievalLatency,
   // State constants
   EventStateCreated, EventStateActive, EventStateFinished,
   EventStateEmitting, EventStateEmitted,
@@ -58,27 +87,36 @@ export {
 } from './core/event.ts';
 
 export type { Attr, AttrKind, Params, EventState } from './core/event.ts';
-export { ProcessHandle, TimerHandle, GroupHandle, StopwatchHandle, stopwatch } from './core/timing.ts';
+export {
+  ProcessHandle, TimerHandle, GroupHandle, StopwatchHandle, stopwatch,
+  withProcess, withGroup, withTimer,
+  measure, phase, span, step,
+} from './core/timing.ts';
 export type { ProcessEntry, GroupEntry, TimerEntry } from './core/timing.ts';
 
 // --- EventView ---
 export { EventView } from './core/event-view.ts';
 
 // --- Level ---
-export { LevelDebug, LevelInfo, LevelWarn, LevelError, LevelFatal, parseLevel, levelName } from './core/level.ts';
+export { LevelDebug, LevelInfo, LevelNotice, LevelWarn, LevelError, LevelFatal, parseLevel, levelName } from './core/level.ts';
 export type { Level } from './core/level.ts';
 
 // --- Logger ---
 export { Logger, New, TryNew, Default, Configure, getDefault, reset } from './core/logger.ts';
+export type { Logger as LoggerType } from './core/logger.ts';
+export { bindEvent, wrap } from './core/logger.ts';
 
 // --- Config + Builder ---
 export {
-  defaultConfig, dev, production, test, withOptions, ConfigBuilder,
-  dev as Dev, production as Production, test as Test,
-  WithService, WithVersion, WithEnvironment, WithSink, WithSampler,
+  defaultConfig, dev, development, production, test, withOptions, ConfigBuilder,
+  fromEnv, disabled,
+  dev as Dev, development as Development, production as Production, test as Test,
+  WithService, WithAlias, WithVersion, WithEnvironment, WithSink, WithSampler,
   WithRedactor, WithSchema, WithEventSchema, WithAsync,
   WithCollectorEndpoint, WithDuplicatePolicy, WithStatsHandler,
   WithDeploymentID, WithIncludeHost, WithPanicRecovery,
+  WithApiKey,
+  WithRelease, WithNamespace, WithOtelBridge, WithRetry, WithTimeout, WithQueueSize, WithLogger,
 } from './config/config.ts';
 export type { Config, AsyncConfig, SecurityConfig, ConfigOptions } from './config/config.ts';
 
@@ -91,7 +129,9 @@ export type { Sink } from './sinks/sink.ts';
 // --- Standard sinks + factories ---
 export {
   StdoutSink, StderrSink, FileSink, RotatingFileSink, NoopSink, MemorySink, HTTPBatchSink, CollectorSink,
+  MultiSink, OtlpSink,
   stdoutSink, stderrSink, fileSink, rotatingFileSink, noopSink, memorySink, httpBatchSink, collectorSink,
+  multiSink, otlpSink,
 } from './sinks/standard-sinks.ts';
 export type { StatsHandler, DeliveryFailureHandler, HTTPBatchSinkOptions } from './sinks/standard-sinks.ts';
 
@@ -116,6 +156,8 @@ export {
   sampleUsers, sampleTenants, sampleFeatureFlag,
   anySampler, allSampler, notSampler,
   sampleRateLimited, sampleByHeader,
+  sampleByEvent, sampleByOutcome,
+  allowFields, blockFields,
   sampleAll as SampleAll,
   sampleNone as SampleNone,
   sampleRandom as SampleRandom,
@@ -127,11 +169,15 @@ export {
   sampleTenants as SampleTenants,
   sampleFeatureFlag as SampleFeatureFlag,
   sampleByHeader as SampleByHeader,
+  sampleByEvent as SampleByEvent,
+  sampleByOutcome as SampleByOutcome,
+  allowFields as AllowFields,
+  blockFields as BlockFields,
   anySampler as AnySampler,
   allSampler as AllSampler,
   notSampler as NotSampler,
 } from './sampling/sampler.ts';
-export type { Sampler } from './sampling/sampler.ts';
+export type { Sampler, ShouldSample } from './sampling/sampler.ts';
 
 // --- Schema ---
 export { DefaultSchema, FlatSchema, NestedSchema, OTelLogSchema, OTelSchema, ECSchema, DatadogSchema, CustomSchema } from './core/schema.ts';
@@ -159,21 +205,26 @@ export { SecurityLimiter } from './config/security.ts';
 export type { SecurityConfig as SecurityLimiterConfig } from './config/security.ts';
 
 // --- Testkit ---
-export { testLogger, capture, assertEvent, assertAttr, assertRedacted, assertHasCheckpoint } from './testkit/helpers.ts';
+export { testLogger, capture, assertEvent, assertAttr, expectEvent, expectAttr, assertRedacted, assertHasCheckpoint, snapshotEvent, MockSink, FakeClock, setIdGenerator } from './testkit/helpers.ts';
 export type { TestLoggerResult } from './testkit/helpers.ts';
 
 // --- Default facade (loxa.*) ---
 export {
   loxa,
+  Loxa,
   defaultLogger,
   configure,
   createLoxa,
   alias,
   startEvent, startHttpEvent, startJobEvent, startQueueEvent, startCliEvent, startCronEvent,
   append, enrich, set, merge, del, get, getGroup,
-  checkpoint, finish, finishError, emit, runEvent,
+  checkpoint, process, startTimer, startGroup, finish, finishError, emit, runEvent,
   flush, shutdown,
   debug, info, warn, error, fatal,
+  notice,
+  event, track, audit, security, metric, count, gauge, histogram, breadcrumb,
+  drop, cancel, abandon, retry, partial,
+  cloneEvent, linkEvent, currentEvent,
   startEvent as StartEvent,
   startHttpEvent as StartHTTPEvent,
   startJobEvent as StartJobEvent,
@@ -188,6 +239,9 @@ export {
   get as Get,
   getGroup as GetGroup,
   checkpoint as Checkpoint,
+  process as Process,
+  startTimer as StartTimer,
+  startGroup as StartGroup,
   finish as Finish,
   finishError as FinishError,
   emit as Emit,
@@ -196,9 +250,27 @@ export {
   shutdown as Shutdown,
   debug as Debug,
   info as Info,
+  notice as Notice,
   warn as Warn,
   error as Error,
   fatal as Fatal,
+  event as EventLogger,
+  track as Track,
+  audit as Audit,
+  security as Security,
+  metric as Metric,
+  count as Count,
+  gauge as Gauge,
+  histogram as Histogram,
+  breadcrumb as Breadcrumb,
+  drop as Drop,
+  cancel as Cancel,
+  abandon as Abandon,
+  retry as Retry,
+  partial as Partial,
+  cloneEvent as CloneEvent,
+  linkEvent as LinkEvent,
+  currentEvent as CurrentEvent,
   createLoxa as CreateLoxa,
   alias as Alias,
 } from './loxa.ts';

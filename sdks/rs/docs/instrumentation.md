@@ -1,7 +1,7 @@
 # LOXA Rust SDK -- Instrumentation Guide
 
 > **Audience**: Rust engineers instrumenting production services with LOXA structured events.
-> **SDK version**: loxa-rs v1.0.0 | **Spec version**: see `LOXA_SPEC_VERSION`
+> **SDK version**: loxa-rs v0.0.1 | **Spec version**: see `LOXA_SPEC_VERSION`
 
 ---
 
@@ -181,7 +181,7 @@ fn main() {
     "checkout.express": true,
     "cart.item_count": 3
   },
-  "process": [
+  "processes": [
     { "step": 1, "name": "validate_cart", "duration_ms": 12, "status": "valid" },
     { "step": 2, "name": "charge_payment", "duration_ms": 680, "payment.provider": "stripe" },
     { "step": 3, "name": "create_fulfillment", "duration_ms": 95 }
@@ -401,7 +401,7 @@ match payment_result {
 **Output in event JSON:**
 
 ```json
-"process": [
+"processes": [
   { "step": 1, "name": "validate_input", "started_at_ms": 0, "ended_at_ms": 12, "duration_ms": 12, "fields_checked": "email,password" },
   { "step": 2, "name": "check_inventory", "started_at_ms": 12, "ended_at_ms": 45, "duration_ms": 33, "items_available": 5 },
   { "step": 3, "name": "process_payment", "started_at_ms": 45, "ended_at_ms": 680, "duration_ms": 635, "provider": "stripe" }

@@ -102,6 +102,9 @@ func buildEvent(params Params, cfg *Config) *Event {
 	if params.SessionID != "" {
 		ev.AddAttrs([]Attr{SessionID(params.SessionID)})
 	}
+	if cfg.Alias != "" {
+		ev.AddAttrs([]Attr{String("loxa.alias", cfg.Alias)})
+	}
 	// Copy custom params into Attrs
 	if len(params.Custom) > 0 {
 		attrs := make([]Attr, len(params.Custom))

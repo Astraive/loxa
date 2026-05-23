@@ -1,7 +1,7 @@
 {
   "name": "loxa-js",
   "type": "module",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "LOXA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loxa-collector",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,6 +10,8 @@
     "./middleware/express": "./dist/middleware/express.js",
     "./middleware/koa": "./dist/middleware/koa.js",
     "./middleware/fastify": "./dist/middleware/fastify.js",
+    "./middleware/hono": "./dist/middleware/hono.js",
+    "./middleware/next": "./dist/middleware/next.js",
     "./middleware/http": "./dist/middleware/http.js"
   },
   "scripts": {

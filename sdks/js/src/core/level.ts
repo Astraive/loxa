@@ -1,15 +1,17 @@
 /** Log levels matching the LOXA spec. */
 export const LevelDebug = 0;
 export const LevelInfo = 1;
-export const LevelWarn = 2;
-export const LevelError = 3;
-export const LevelFatal = 4;
+export const LevelNotice = 2;
+export const LevelWarn = 3;
+export const LevelError = 4;
+export const LevelFatal = 5;
 
-export type Level = typeof LevelDebug | typeof LevelInfo | typeof LevelWarn | typeof LevelError | typeof LevelFatal;
+export type Level = typeof LevelDebug | typeof LevelInfo | typeof LevelNotice | typeof LevelWarn | typeof LevelError | typeof LevelFatal;
 
 const LEVEL_NAMES: Record<number, string> = {
   [LevelDebug]: 'debug',
   [LevelInfo]: 'info',
+  [LevelNotice]: 'notice',
   [LevelWarn]: 'warn',
   [LevelError]: 'error',
   [LevelFatal]: 'fatal',

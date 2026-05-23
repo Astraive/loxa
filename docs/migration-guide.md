@@ -1,8 +1,8 @@
-# LOXA v1.0.0 Migration Guide
+# LOXA v0.0.1 Migration Guide
 
 ## For Existing LOXA Users
 
-### Upgrade from Pre-Release (v0.x) to v1.0.0
+### Upgrade from Pre-Release (v0.x) to v0.0.1
 
 If you've been using LOXA pre-release versions, follow these steps to upgrade safely.
 
@@ -30,7 +30,7 @@ storage:
   path: "/data/events.db"
 ```
 
-**After (v1.0.0)**:
+**After (v0.0.1)**:
 ```yaml
 collector:
   http_listen: "0.0.0.0:8080"
@@ -59,10 +59,10 @@ auth:
 
 ```bash
 # Go
-go get github.com/astraive/loxa/sdks/go@v1.0.0
+go get github.com/astraive/loxa/sdks/go@v0.0.1
 
 # Python
-pip install --upgrade loxa==1.0.0
+pip install --upgrade loxa==0.0.1
 
 # Rust
 cargo update loxa --allow-prerelease
@@ -70,7 +70,7 @@ cargo update loxa --allow-prerelease
 
 #### 4. Data Migration
 
-**No automatic data migration required** - v1.0.0 is compatible with v0.x event schemas.
+**No automatic data migration required** - v0.0.1 is compatible with v0.x event schemas.
 
 However, if you're upgrading storage backends:
 
@@ -86,8 +86,8 @@ loxa import --file events_backup.jsonl --target postgres://localhost/loxa_events
 
 ```bash
 # Upgrade binary
-go install github.com/astraive/loxa/collector/cmd/loxa-collector@v1.0.0
-go install github.com/astraive/loxa/cli/cmd/loxa@v1.0.0
+go install github.com/astraive/loxa/collector/cmd/loxa-collector@v0.0.1
+go install github.com/astraive/loxa/cli/cmd/loxa@v0.0.1
 
 # Update config
 vi ~/.loxa/loxa.yaml  # Apply changes from step 2
@@ -104,7 +104,7 @@ curl http://localhost:8080/status
 
 ```bash
 # Emit test event
-loxa emit --event upgrade.test --key version --value 1.0.0
+loxa emit --event upgrade.test --key version --value 0.0.1
 
 # Query events
 loxa query --sql "SELECT * FROM events WHERE event_type = 'upgrade.test'"
@@ -115,13 +115,13 @@ curl http://localhost:8080/metrics | grep collector_events_total
 
 ### Breaking Changes
 
-**None in v1.0.0** - All v0.x APIs are compatible.
+**None in v0.0.1** - All v0.x APIs are compatible.
 
 ### Deprecations
 
-**None in v1.0.0** - This is the first stable release.
+**None in v0.0.1** - This is the first stable release.
 
-### New in v1.0.0
+### New in v0.0.1
 
 - ✨ **Retention Policies**: Age-based and size-based automatic deletion
 - ✨ **Privacy Enforcement**: Field-level redaction with configurable modes

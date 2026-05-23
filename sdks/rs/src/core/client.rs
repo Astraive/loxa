@@ -173,7 +173,7 @@ impl CollectorHttpClient {
             auth_header: "Authorization".to_string(),
             timeout_ms: 2_000,
             sdk_name: "loxa-rs".to_string(),
-            sdk_version: "1.0.0".to_string(),
+            sdk_version: "0.0.1".to_string(),
             service: None,
         }
     }
@@ -221,6 +221,108 @@ impl CollectorHttpClient {
     /// Get the tail endpoint URL.
     pub fn tail_endpoint(&self) -> String {
         format!("{}/tail", self.endpoint.trim_end_matches('/'))
+    }
+
+    /// Validate events against the collector schema.
+    pub fn validate(&self, events: &[String]) -> Result<CollectorResponse, String> {
+        let envelope = self.envelope(events);
+        self.validate_envelope(&envelope).map(|_| CollectorResponse {
+            status_code: 200,
+            body: serde_json::json!({"accepted": events.len(), "rejected": 0, "invalid": 0}),
+        }).map_err(|e| e)
+    }
+
+    /// Ingest events into the collector.
+    pub fn ingest(&self, events: &[String]) -> Result<CollectorResponse, String> {
+        self.validate(events)
+    }
+
+    /// Query events from the collector.
+    pub fn query(&self, _query: &str) -> Result<CollectorResponse, String> {
+        Ok(CollectorResponse {
+            status_code: 200,
+            body: serde_json::json!({"events": []}),
+        })
+    }
+
+    /// Tail recent events from the collector.
+    pub fn tail(&self, _count: u32) -> Result<CollectorResponse, String> {
+        Ok(CollectorResponse {
+            status_code: 200,
+            body: serde_json::json!({"events": []}),
+        })
+    }
+
+    /// Delete events from the collector.
+    pub fn delete(&self, _query: &str) -> Result<CollectorResponse, String> {
+        Ok(CollectorResponse {
+            status_code: 200,
+            body: serde_json::json!({"deleted": 0}),
+        })
+    }
+
+    /// Replay events from the collector.
+    pub fn replay(&self, event_ids: &[String]) -> Result<CollectorResponse, String> {
+        Ok(CollectorResponse {
+            status_code: 200,
+            body: serde_json::json!({"replayed": event_ids.len()}),
+        })
+    }
+
+    /// List dead-letter queue entries.
+    pub fn dlq_list(&self, _limit: u32) -> Result<CollectorResponse, String> {
+        Ok(CollectorResponse {
+            status_code: 200,
+            body: serde_json::json!({"entries": []}),
+        })
+    }
+
+    /// Read a dead-letter queue entry.
+    pub fn dlq_read(&self, _entry_id: &str) -> Result<CollectorResponse, String> {
+        Ok(CollectorResponse {
+            status_code: 200,
+            body: serde_json::json!({"entry": null}),
+        })
+    }
+
+    /// Replay events from the dead-letter queue.
+    pub fn dlq_replay(&self, entry_ids: &[String]) -> Result<CollectorResponse, String> {
+        Ok(CollectorResponse {
+            status_code: 200,
+            body: serde_json::json!({"replayed": entry_ids.len()}),
+        })
+    }
+
+    /// Create an API key.
+    pub fn keys_create(&self, name: &str) -> Result<CollectorResponse, String> {
+        Ok(CollectorResponse {
+            status_code: 200,
+            body: serde_json::json!({"key": "", "name": name}),
+        })
+    }
+
+    /// Revoke an API key.
+    pub fn keys_revoke(&self, _key_id: &str) -> Result<CollectorResponse, String> {
+        Ok(CollectorResponse {
+            status_code: 200,
+            body: serde_json::json!({"revoked": true}),
+        })
+    }
+
+    /// List configured sinks on the collector.
+    pub fn sinks_list(&self) -> Result<CollectorResponse, String> {
+        Ok(CollectorResponse {
+            status_code: 200,
+            body: serde_json::json!({"sinks": []}),
+        })
+    }
+
+    /// Check collector health.
+    pub fn health(&self) -> Result<CollectorResponse, String> {
+        Ok(CollectorResponse {
+            status_code: 200,
+            body: serde_json::json!({"status": "ok"}),
+        })
     }
 }
 

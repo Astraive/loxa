@@ -174,20 +174,20 @@ pytest tests/conformance.py --fixtures fixtures/valid/
 | Phase | When | Action |
 |-------|------|--------|
 | **Phase 1** | Now | New code uses `spec/` and `spec/cortex/` |
-| **Phase 2** | v1.0.0 releases | Mirror folders remain for backward compat, but undocumented |
-| **Phase 3** | v1.0.0 | Mirror folders removed |
-| **Phase 4** | v1.0.0 | Legacy path support removed from SDKs |
+| **Phase 2** | v0.0.1 releases | Mirror folders remain for backward compat, but undocumented |
+| **Phase 3** | v0.0.1 | Mirror folders removed |
+| **Phase 4** | v0.0.1 | Legacy path support removed from SDKs |
 
 ## Common Questions
 
 ### Q: Will the legacy folders be maintained?
-**A:** Yes, through the v1.0.0 release cycle. CI enforces via `scripts/check_mirrors.py` that mirrors stay in sync with canonical sources.
+**A:** Yes, through the v0.0.1 release cycle. CI enforces via `scripts/check_mirrors.py` that mirrors stay in sync with canonical sources.
 
 ### Q: When should I migrate?
-**A:** Ideally before the next major version (v1.0.0). Minor version v1.0.0 can use either path.
+**A:** Ideally before the next major version (v0.0.1). Minor version v0.0.1 can use either path.
 
 ### Q: What if I still reference the old paths?
-**A:** They'll continue to work until v1.0.0, but you'll get warnings in logs and may miss updates.
+**A:** They'll continue to work until v0.0.1, but you'll get warnings in logs and may miss updates.
 
 ### Q: How do I consume the generated contract?
 **A:** Load `generated/contract/loxa-contract.json` or `generated/contract/cortex-contract.json` at startup. These are deterministic artifacts generated from `spec/`.

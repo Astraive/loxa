@@ -33,8 +33,8 @@ export { reset };
 /** Create a new Logger instance with the given config. */
 export function createLoxa(cfg?: Partial<Config>): Logger { return new Logger(cfg); }
 
-/** Create a new Logger with the same config as default but a different service name. */
-export function alias(service: string): Logger { return loxa.alias(service); }
+/** Create a same-config child logger with loxa.alias metadata. */
+export function alias(name: string): Logger { return loxa.alias(name); }
 
 // --- Event lifecycle ---
 
@@ -78,14 +78,49 @@ export async function shutdown(): Promise<void> { return loxa.shutdown(); }
 
 export async function debug(message: string, ...attrs: Attr[]): Promise<void> { return loxa.debug(message, ...attrs); }
 export async function info(message: string, ...attrs: Attr[]): Promise<void> { return loxa.info(message, ...attrs); }
+export async function notice(message: string, ...attrs: Attr[]): Promise<void> { return loxa.notice(message, ...attrs); }
 export async function warn(message: string, ...attrs: Attr[]): Promise<void> { return loxa.warn(message, ...attrs); }
 export async function error(message: string, ...attrs: Attr[]): Promise<void> { return loxa.error(message, ...attrs); }
 export async function fatal(message: string, ...attrs: Attr[]): Promise<void> { return loxa.fatal(message, ...attrs); }
 
+// --- Logging helpers ---
+
+export async function event(name: string, ...attrs: Attr[]): Promise<void> { return loxa.event(name, ...attrs); }
+export async function track(name: string, ...attrs: Attr[]): Promise<void> { return loxa.track(name, ...attrs); }
+export async function audit(name: string, ...attrs: Attr[]): Promise<void> { return loxa.audit(name, ...attrs); }
+export async function security(name: string, ...attrs: Attr[]): Promise<void> { return loxa.security(name, ...attrs); }
+export async function metric(name: string, value: number, ...attrs: Attr[]): Promise<void> { return loxa.metric(name, value, ...attrs); }
+export async function count(name: string, value: number, ...attrs: Attr[]): Promise<void> { return loxa.count(name, value, ...attrs); }
+export async function gauge(name: string, value: number, ...attrs: Attr[]): Promise<void> { return loxa.gauge(name, value, ...attrs); }
+export async function histogram(name: string, value: number, ...attrs: Attr[]): Promise<void> { return loxa.histogram(name, value, ...attrs); }
+export async function breadcrumb(name: string, ...attrs: Attr[]): Promise<void> { return loxa.breadcrumb(name, ...attrs); }
+
+// --- Lifecycle outcome helpers ---
+
+export async function drop(ctx: Event, reason: string, ...attrs: Attr[]): Promise<string | null> { return loxa.drop(ctx, reason, ...attrs); }
+export async function cancel(ctx: Event, reason: string, ...attrs: Attr[]): Promise<string | null> { return loxa.cancel(ctx, reason, ...attrs); }
+export async function abandon(ctx: Event, reason: string, ...attrs: Attr[]): Promise<string | null> { return loxa.abandon(ctx, reason, ...attrs); }
+export async function retry(ctx: Event, ...attrs: Attr[]): Promise<string | null> { return loxa.retry(ctx, ...attrs); }
+export async function partial(ctx: Event, ...attrs: Attr[]): Promise<string | null> { return loxa.partial(ctx, ...attrs); }
+
+// --- Clone / Link / Current ---
+
+export function cloneEvent(ctx: Event): Event { return loxa.cloneEvent(ctx); }
+export function linkEvent(ctx: Event, target: string, ...attrs: Attr[]): Event { return loxa.linkEvent(ctx, target, ...attrs); }
+export function currentEvent(): Event | undefined { return loxa.currentEvent(); }
+
 // --- Testkit ---
-export { testLogger, capture, assertEvent, assertAttr, assertRedacted, assertHasCheckpoint } from './testkit/helpers.ts';
+export { testLogger, capture, assertEvent, assertAttr, assertRedacted, assertHasCheckpoint, expectEvent, expectAttr, snapshotEvent, MockSink, FakeClock, setIdGenerator } from './testkit/helpers.ts';
 export type { TestLoggerResult } from './testkit/helpers.ts';
 
 // --- SecurityLimiter ---
 export { SecurityLimiter } from './config/security.ts';
 export type { SecurityConfig as SecurityLimiterConfig } from './config/security.ts';
+
+// --- Loxa class for named export parity ---
+
+export class Loxa extends Logger {
+  constructor(cfg?: Partial<import('./config/config.ts').Config>) {
+    super(cfg);
+  }
+}

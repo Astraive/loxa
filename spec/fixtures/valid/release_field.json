@@ -1,0 +1,29 @@
+{
+  "schema_version": "v1",
+  "event_version": "v1",
+  "event_id": "evt_018f7f3a-bb00-7b00-8000-000000000003",
+  "timestamp": "2026-05-22T06:10:42.120Z",
+  "service": "checkout",
+  "event": "checkout.request",
+  "kind": "http",
+  "level": "info",
+  "outcome": "success",
+  "duration_ms": 842,
+  "release": "3.1.0",
+  "trace_flags": "01",
+  "request_id": "req_123",
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "span_id": "00f067aa0ba902b7",
+  "http": { "method": "POST", "route": "/checkout", "path": "/checkout", "status_code": 200 },
+  "user": { "id": "user_456" },
+  "tenant": { "id": "tenant_123" },
+  "attrs": {
+    "cart.item_count": 3,
+    "cart.total_cents": 1399900,
+    "checkout.payment_method": "card",
+    "payment.provider": "stripe",
+    "order.id": "ord_83k2"
+  },
+  "sdk": { "name": "loxa-go", "version": "0.1.0", "language": "go" },
+  "collector": { "received_at": "2026-05-22T06:10:42.511Z" }
+}

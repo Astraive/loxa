@@ -248,8 +248,10 @@ type TLSConfig struct {
 
 // PIIRedactionConfig contains PII redaction settings
 type PIIRedactionConfig struct {
-	Enabled bool   `yaml:"enabled"`
-	Mode    string `yaml:"mode"` // "enforce" or "log"
+	Enabled   bool     `yaml:"enabled"`
+	Mode      string   `yaml:"mode"` // "enforce" or "log"
+	Blocklist []string `yaml:"blocklist"`
+	Allowlist []string `yaml:"allowlist"`
 }
 
 // LoggingConfig contains logging settings

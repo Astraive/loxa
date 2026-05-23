@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/astraive/loxa/actions/workflows/sdks-go-ci.yml/badge.svg)](https://github.com/astraive/loxa/actions/workflows/sdks-go-ci.yml)
 
-**Status**: 🟢 **STABLE** (v1.0.0) - Production-ready, collector-first stable-v1 SDK
+**Status**: 🟢 **STABLE** (v0.0.1) - Production-ready, collector-first stable-v1 SDK
 
 Full emitter SDK conformance is tracked through `spec/`:
 
@@ -108,7 +108,7 @@ logger.Info(ctx, "payment processed")
 logger, _ := loxa.New(loxa.Config{Service: "checkout-api"})
 logger.Info(ctx, "payment processed")
 
-// Alias — same config as default, different service name
+// Alias -- same config as default, loxa.alias metadata
 audit, _ := loxa.Alias("audit-service")
 audit.Info(ctx, "permission changed")
 ```

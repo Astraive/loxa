@@ -10,35 +10,37 @@ import (
 	"github.com/astraive/loxa-cli/internal/output"
 )
 
-const version = "1.0.0"
+const version = "0.0.2"
 
 var CommandMaturity = map[string]string{
-	"init":       "stable",
-	"cortex":     "beta",
-	"dev":        "stable",
-	"config":     "stable",
-	"schema":     "stable",
-	"collector":  "stable",
-	"worker":     "beta",
-	"emit":       "stable",
-	"query":      "stable",
-	"tail":       "stable",
-	"watch":      "experimental",
-	"status":     "stable",
-	"sinks":      "beta",
-	"dlq":        "beta",
-	"export":     "experimental",
-	"replay":     "beta",
-	"delete":     "beta",
-	"audit":      "beta",
-	"doctor":     "experimental",
-	"bench":      "stable",
-	"deploy":     "beta",
-	"dashboard":  "experimental",
-	"incident":   "beta",
-	"graph":      "experimental",
-	"signatures": "experimental",
-	"debug":      "experimental",
+	"init":        "stable",
+	"cortex":      "beta",
+	"dev":         "stable",
+	"config":      "stable",
+	"schema":      "stable",
+	"collector":   "stable",
+	"worker":      "beta",
+	"emit":        "stable",
+	"query":       "stable",
+	"tail":        "stable",
+	"watch":       "experimental",
+	"status":      "stable",
+	"sinks":       "beta",
+	"dlq":         "beta",
+	"quarantine":  "beta",
+	"keys":        "beta",
+	"export":      "experimental",
+	"replay":      "beta",
+	"delete":      "beta",
+	"audit":       "beta",
+	"doctor":      "experimental",
+	"bench":       "stable",
+	"deploy":      "beta",
+	"dashboard":   "experimental",
+	"incident":    "beta",
+	"graph":       "experimental",
+	"signatures":  "experimental",
+	"debug":       "experimental",
 }
 
 func Run(args []string) error {
@@ -151,6 +153,10 @@ func Run(args []string) error {
 		return commands.GraphCommand(ctx, cfg, args[1:])
 	case "signatures":
 		return commands.SignaturesCommand(ctx, cfg, args[1:])
+	case "quarantine":
+		return commands.QuarantineCommand(ctx, cfg, args[1:])
+	case "keys":
+		return commands.KeysCommand(ctx, cfg, args[1:])
 	case "debug":
 		return commands.DebugCommand(ctx, cfg, args[1:])
 	default:
@@ -183,6 +189,8 @@ func printHelp() {
 	fmt.Println("  config       Configuration management")
 	fmt.Println("  collector    Manage collector binary")
 	fmt.Println("  worker       Manage worker binary")
+	fmt.Println("  quarantine   Manage quarantined events")
+	fmt.Println("  keys         API key management")
 	fmt.Println("  bench        Load generation benchmark")
 	fmt.Println("  deploy       Deployment asset management")
 	fmt.Println("  dashboard    Grafana dashboard management")

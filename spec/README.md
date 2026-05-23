@@ -8,7 +8,7 @@ LOXA Spec defines the shared contract between SDKs and collectors.
 
 ## Current Versions
 
-- **Schema Version**: `v1.0.0`
+- **Schema Version**: `v0.0.1`
 - **Ingest API Version**: `v1`
 - **Status**: Active, stable-v1 emitter contract
 
@@ -86,7 +86,7 @@ echo '{"event_id":"...","event_type":"user.login",...}' | loxa schema validate
 loxa schema list
 
 # Show differences between versions
-loxa schema diff --from v1.0.0 --to v1.0.0
+loxa schema diff --from v0.0.1 --to v0.0.1
 ```
 
 ## Schema Overview
@@ -141,8 +141,8 @@ The specification generates authoritative contracts for both Loxa and Cortex:
 ### Loxa Contract
 ```json
 {
-  "spec_version": "1.0.0",
-  "event_version": "1.0.0",
+  "spec_version": "0.0.1",
+  "event_version": "0.0.1",
   "api_version": "v1",
   "kinds": ["event"],
   "levels": ["debug", "info", "warn", "error"],
@@ -167,7 +167,7 @@ Generated at: `generated/contract/loxa-contract.json`
 ### Cortex Contract
 ```json
 {
-  "spec_version": "1.0.0",
+  "spec_version": "0.0.1",
   "api_version": "v1",
   "kinds": ["event", "metric", "log", ...],
   "provenance_types": ["loxa", "collector", "otlp", "jsonl", "manual", "replay"],
@@ -223,8 +223,8 @@ See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for detailed integration steps.
 LOXA schemas follow [Semantic Versioning](https://semver.org/):
 
 - **MAJOR** (v1 → v2): Breaking changes (field removal, type changes)
-- **MINOR** (v1.0.0): Backward-compatible additions (new optional fields)
-- **PATCH** (v1.0.0 → v1.0.1): Documentation updates
+- **MINOR** (v0.0.1): Backward-compatible additions (new optional fields)
+- **PATCH** (v0.0.1 → v1.0.1): Documentation updates
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 
@@ -253,7 +253,7 @@ python scripts/check_conformance.py
 loxa schema validate-schema --file v1/event.schema.json
 
 # Check backward compatibility
-loxa schema check-compatibility --base v1.0.0 --target v1.0.0
+loxa schema check-compatibility --base v0.0.1 --target v0.0.1
 ```
 
 ## License

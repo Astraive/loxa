@@ -34,7 +34,7 @@ def test_validate_ingest_envelope_rejects_missing_events() -> None:
         _validate_ingest_envelope(
             {
                 "api_version": "v1",
-                "source": {"sdk": "loxa-py", "version": "1.0.0", "service": "checkout"},
+                "source": {"sdk": "loxa-py", "version": "0.0.1", "service": "checkout"},
                 "events": [],
             }
         )

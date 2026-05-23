@@ -269,7 +269,7 @@ Each route has its own permission requirement:
 | `key.origin_denied` | Origin not allowed |
 | `key.payload_too_large` | Payload exceeds limit |
 
-## Future: HMAC Signed Requests (post-v1.0.0)
+## Future: HMAC Signed Requests (post-v0.0.1)
 
 For enterprise high-security mode:
 

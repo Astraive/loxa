@@ -2,9 +2,35 @@ package storage
 
 import (
 	"context"
+	"time"
 
 	"github.com/astraive/loxa/loxa-cortex/internal/models"
 )
+
+// LifecycleData contains the extracted lifecycle primitives for indexing
+type LifecycleData struct {
+	EventID         string
+	EventName       string
+	Service         string
+	Outcome         string
+	DurationMs      float64
+	TraceID         string
+	SpanID          string
+	Level           string
+	Environment     string
+	Release         string
+	CheckpointCount int
+	ProcessCount    int
+	GroupCount      int
+	TimerCount      int
+	LinkCount       int
+	Checkpoints     []*models.EventCheckpoint
+	Processes       []*models.EventProcess
+	Groups          []*models.EventGroup
+	Timers          []*models.EventTimer
+	Links           []*models.EventLink
+	Attrs           map[string]interface{}
+}
 
 type Storage interface {
 	Init(ctx context.Context) error
@@ -20,13 +46,56 @@ type Storage interface {
 }
 
 type EventStore interface {
-	Save(ctx context.Context, event *models.Event) error
-	SaveBatch(ctx context.Context, events []*models.Event) error
+	// Core CRUD
+	Save(ctx context.Context, event *models.Event, lifecycle *LifecycleData) error
+	SaveBatch(ctx context.Context, events []*models.Event, lifecycles []*LifecycleData) error
 	Get(ctx context.Context, id string) (*models.Event, error)
 	List(ctx context.Context, limit, offset int) ([]*models.Event, error)
+
+	// Trace and incident queries
 	FindByTraceID(ctx context.Context, traceID string) ([]*models.Event, error)
 	FindByIncidentID(ctx context.Context, incidentID string) ([]*models.Event, error)
 	FindByService(ctx context.Context, service string, from, to string) ([]*models.Event, error)
+
+	// Lifecycle-aware queries
+	FindByEventName(ctx context.Context, eventName string, limit int, offset int) ([]*models.Event, error)
+	FindByOutcome(ctx context.Context, outcome string, limit int, offset int) ([]*models.Event, error)
+	FindByLevel(ctx context.Context, level string, limit int, offset int) ([]*models.Event, error)
+	FindByDurationRange(ctx context.Context, minMs, maxMs float64, limit int, offset int) ([]*models.Event, error)
+	FindByEnvironment(ctx context.Context, env string, limit int, offset int) ([]*models.Event, error)
+	FindByRelease(ctx context.Context, release string, limit int, offset int) ([]*models.Event, error)
+
+	// Aggregate queries
+	CountByOutcome(ctx context.Context, service string, from, to time.Time) (map[string]int64, error)
+	CountByEventName(ctx context.Context, service string, from, to time.Time) (map[string]int64, error)
+	AverageDuration(ctx context.Context, eventName string, from, to time.Time) (float64, error)
+	PercentileDuration(ctx context.Context, eventName string, percentile float64, from, to time.Time) (float64, error)
+	DistinctServices(ctx context.Context) ([]string, error)
+	DistinctEventNames(ctx context.Context) ([]string, error)
+
+	// Lifecycle summary
+	ListLifecycleSummaries(ctx context.Context, filter *LifecycleFilter) ([]*models.LifecycleSummary, int, error)
+}
+
+// LifecycleFilter provides filtering for lifecycle-aware queries
+type LifecycleFilter struct {
+	Service      string
+	EventName    string
+	Outcome      string
+	Level        string
+	Environment  string
+	TraceID      string
+	From         time.Time
+	To           time.Time
+	Limit        int
+	Offset       int
+	MinDuration  float64
+	MaxDuration  float64
+	HasCheckpoints *bool
+	HasProcesses   *bool
+	HasGroups      *bool
+	HasTimers      *bool
+	HasLinks       *bool
 }
 
 type TopologyStore interface {

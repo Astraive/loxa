@@ -4,6 +4,8 @@
 
 LOXA is a five-tier event observability system designed for high-volume, reliable event capture and analysis across distributed systems.
 
+v0.0.2 positions Loxa as the business event lifecycle layer beside OpenTelemetry traces. The canonical product doc is [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md).
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  Application Layer (SDKs)                                        │

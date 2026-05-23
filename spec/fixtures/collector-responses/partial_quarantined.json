@@ -1,0 +1,36 @@
+{
+  "name": "partial_quarantined",
+  "http_status": 207,
+  "response": {
+    "request_id": "ing_018f7f3a-bb00-7b00-8000-000000000005",
+    "status": "quarantined",
+    "accepted": 8,
+    "rejected": 0,
+    "quarantined": 2,
+    "invalid": 0,
+    "errors": [
+      {
+        "index": 3,
+        "event_id": "evt_018f7f3a-bb00-7b00-8000-000000000006",
+        "code": "validation_failed",
+        "message": "Missing required field 'event'",
+        "retryable": false
+      },
+      {
+        "index": 7,
+        "event_id": "evt_018f7f3a-bb00-7b00-8000-000000000007",
+        "code": "invalid_kind",
+        "message": "Event kind 'invalid' is not allowed",
+        "retryable": false
+      }
+    ],
+    "acks": [
+      { "index": 0, "event_id": "evt_0", "status": "accepted", "reason": "accepted", "retryable": false, "code": "accepted", "message": "event accepted" },
+      { "index": 3, "event_id": "evt_018f7f3a-bb00-7b00-8000-000000000006", "status": "quarantined", "reason": "validation_failed", "retryable": false, "code": "validation_failed", "message": "Missing required field 'event'" },
+      { "index": 7, "event_id": "evt_018f7f3a-bb00-7b00-8000-000000000007", "status": "quarantined", "reason": "invalid_kind", "retryable": false, "code": "invalid_kind", "message": "Event kind 'invalid' is not allowed" }
+    ]
+  },
+  "expected": {
+    "outcome": "success"
+  }
+}

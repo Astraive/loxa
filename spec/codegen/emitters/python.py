@@ -4,6 +4,32 @@ import json
 from typing import Any
 
 
+def _py_val(v: Any) -> str:
+    """Convert a JSON value to Python repr."""
+    if v is True:
+        return "True"
+    if v is False:
+        return "False"
+    if v is None:
+        return "None"
+    if isinstance(v, str):
+        return json.dumps(v)
+    if isinstance(v, (int, float)):
+        return json.dumps(v)
+    if isinstance(v, list):
+        items = ",\n".join("  " + _py_val(x) for x in v)
+        return "[\n" + items + "\n]"
+    if isinstance(v, dict):
+        items = ",\n".join(f"  {json.dumps(k)}: {_py_val(x)}" for k, x in v.items())
+        return "{\n" + items + "\n}"
+    return json.dumps(v)
+
+
+def _py_dict_repr(d: dict) -> str:
+    """Render a nested dict as a Python literal with True/False/None."""
+    return _py_val(d)
+
+
 def render_python_contract(contract: dict[str, Any]) -> str:
     return (
         "from __future__ import annotations\n\n"
@@ -11,7 +37,7 @@ def render_python_contract(contract: dict[str, Any]) -> str:
         "import re\n"
         "from dataclasses import dataclass, field\n"
         "from typing import Any, Iterable\n\n"
-        f"CONTRACT = {json.dumps(contract, indent=2)}\n"
+        f"CONTRACT = {_py_dict_repr(contract)}\n"
         "LOXA_SPEC_VERSION = CONTRACT['spec_version']\n"
         "LOXA_INGEST_API_VERSION = CONTRACT['api_version']\n"
         "LOXA_EVENT_VERSION = CONTRACT['event_version']\n"

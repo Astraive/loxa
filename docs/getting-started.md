@@ -1,7 +1,9 @@
 # Getting Started with LOXA
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-0.0.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
+
+> v0.0.2 makes the lifecycle primitives first class across every SDK. For the canonical product plan and full method catalog, see [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md) and [business-instrumentation.md](./business-instrumentation.md).
 
 ## Table of Contents
 
@@ -222,7 +224,7 @@ logger.info("payment processed");
 
 ## Aliases (`loxa.alias`)
 
-Create a variant with the same config but a different service name:
+Create a same-config variant that preserves `service` and emits `loxa.alias` metadata:
 
 ### Go
 ```go

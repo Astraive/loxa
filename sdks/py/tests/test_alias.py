@@ -1,4 +1,6 @@
 """Tests for create_loxa and alias functions."""
+import json
+
 import loxa
 
 
@@ -22,6 +24,17 @@ def test_alias_preserves_config():
     logger = loxa.create_loxa(service="api")
     aliased = logger.alias("audit")
     assert isinstance(aliased, loxa.Logger)
+
+
+def test_alias_emits_metadata_without_changing_service():
+    sink = loxa.MemorySink()
+    logger = loxa.Logger(loxa.Config(service="api", environment="test", sinks=[sink]))
+    aliased = logger.alias("audit")
+    ctx = aliased.start_event(loxa.Params(event="permission.changed"))
+    aliased.finish(ctx, "success")
+    payload = json.loads(aliased.emit(ctx))
+    assert payload["service"] == "api"
+    assert payload["attrs"]["loxa"]["alias"] == "audit"
 
 
 def test_uppercase_aliases():

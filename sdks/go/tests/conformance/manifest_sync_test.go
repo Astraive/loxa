@@ -25,11 +25,11 @@ func TestParityManifestMatchesStableLifecycleDoc(t *testing.T) {
 	if err := json.Unmarshal(raw, &manifest); err != nil {
 		t.Fatalf("unmarshal parity manifest: %v", err)
 	}
-	if manifest.Version != "1.0.0" {
-		t.Fatalf("expected stable manifest version 1.0.0, got %q", manifest.Version)
+	if manifest.Version != "0.0.2" {
+		t.Fatalf("expected product parity manifest version 0.0.2, got %q", manifest.Version)
 	}
-	if manifest.Stability != "stable-v1" {
-		t.Fatalf("expected stability stable-v1, got %q", manifest.Stability)
+	if manifest.Stability != "product-parity-v0.0.2" {
+		t.Fatalf("expected stability product-parity-v0.0.2, got %q", manifest.Stability)
 	}
 
 	docPath := filepath.Join("..", "..", "docs", "public-api.md")

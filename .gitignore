@@ -44,3 +44,6 @@ tmp_*/
 # OS
 .DS_Store
 Thumbs.db
+
+# Benchmark results
+bench/results/

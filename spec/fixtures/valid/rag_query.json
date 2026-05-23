@@ -1,0 +1,44 @@
+{
+  "schema_version": "v1",
+  "event_version": "v1",
+  "event_id": "evt_018f7f3a-bb00-7b00-8000-000000000002",
+  "timestamp": "2026-05-22T06:10:42.120Z",
+  "service": "rag-service",
+  "event": "rag.query",
+  "kind": "ai",
+  "level": "info",
+  "outcome": "success",
+  "duration_ms": 850,
+  "release": "2.0.1",
+  "trace_id": "5bf92f3577b34da6a3ce929d0e0e4737",
+  "span_id": "10f067aa0ba902b8",
+  "user": { "id": "user_789" },
+  "tenant": { "id": "tenant_456" },
+  "attrs": {
+    "rag.index": "docs-v3",
+    "rag.embedding_model": "text-embedding-3-large",
+    "rag.chunks.retrieved": 5,
+    "rag.top_score": 0.92,
+    "rag.query_hash": "a1b2c3d4e5f6",
+    "rag.citation_count": 3,
+    "rag.retrieval_latency_ms": 120,
+    "agent.tokens.input": 800,
+    "agent.tokens.output": 320,
+    "agent.cost_cents": 8
+  },
+  "checkpoints": [
+    { "name": "embedding_generated", "at_ms": 50 }
+  ],
+  "processes": [
+    { "step": 1, "name": "vector.search", "started_at_ms": 50, "ended_at_ms": 170, "duration_ms": 120, "outcome": "success" },
+    { "step": 2, "name": "llm.generate_answer", "started_at_ms": 170, "ended_at_ms": 850, "duration_ms": 680, "outcome": "success" }
+  ],
+  "groups": [
+    { "name": "rag_retrieval_phase", "started_at_ms": 0, "ended_at_ms": 170, "duration_ms": 170, "outcome": "success" }
+  ],
+  "timers": [
+    { "name": "embedding.generate", "duration_ms": 50 }
+  ],
+  "sdk": { "name": "loxa-py", "version": "0.1.0", "language": "python" },
+  "collector": { "received_at": "2026-05-22T06:10:43.511Z" }
+}

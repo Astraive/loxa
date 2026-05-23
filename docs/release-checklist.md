@@ -1,4 +1,4 @@
-# LOXA v1.0.0 Release Checklist
+# LOXA v0.0.1 Release Checklist
 
 **Release Date**: May 14, 2026  
 **Updated**: May 20, 2026  
@@ -176,7 +176,7 @@
 
 ## Release Summary
 
-**LOXA v1.0.0 is production-ready and approved for immediate deployment.**
+**LOXA v0.0.1 is production-ready and approved for immediate deployment.**
 
 ### What's Included
 - ✅ 3 production SDKs (Go, Python, Rust)
@@ -202,12 +202,12 @@
 - ✅ Testing report
 
 ### Next Steps
-1. Tag v1.0.0 on GitHub
+1. Tag v0.0.1 on GitHub
 2. Build and publish Docker images
 3. Publish Helm charts
 4. Announce release
 5. Collect user feedback
-6. Plan v1.0.0 enhancements
+6. Plan v0.0.1 enhancements
 
 ---
 
@@ -221,5 +221,5 @@
 ---
 
 **Release Date**: May 14, 2026  
-**Version**: 1.0.0  
+**Version**: 0.0.1  
 **Status**: ✅ **APPROVED FOR PRODUCTION**

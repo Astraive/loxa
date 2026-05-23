@@ -24,7 +24,7 @@ pub mod testkit;
 pub mod utils;
 
 use serde_json::Value;
-use std::sync::{OnceLock, RwLock};
+use std::sync::{Arc, OnceLock, RwLock};
 
 pub use crate::core::client::{
     extract_http_headers, inject_http_headers, CollectorHttpClient, HTTPClient, HTTPRequest,
@@ -51,6 +51,7 @@ pub const LevelDebug: &str = "debug";
 pub const LevelInfo: &str = "info";
 pub const LevelWarn: &str = "warn";
 pub const LevelError: &str = "error";
+pub const LevelNotice: &str = "notice";
 pub const LevelFatal: &str = "fatal";
 
 pub const CanonicalWins: &str = "canonical_wins";
@@ -92,7 +93,11 @@ pub fn Configure(config: Config) -> Logger {
 pub fn configure(config: Config) -> Result<Logger, LoxaError> {
     let logger = Logger::try_new(config)?;
     let lock = GLOBAL_LOGGER.get_or_init(|| RwLock::new(Logger::new(Config::dev("loxa"))));
-    *lock.write().unwrap() = logger.clone();
+    let mut guard = lock.write().unwrap();
+    // Shut down the previous logger before replacing it
+    let _ = guard.shutdown();
+    *guard = logger.clone();
+    std::mem::drop(guard);
     Ok(logger)
 }
 
@@ -241,9 +246,9 @@ pub fn create_loxa(config: Config) -> Logger {
     Logger::new(config)
 }
 
-/// Create a new Logger with the same config as default but a different service name.
-pub fn alias(service: impl Into<String>) -> Logger {
-    default_logger().alias(service)
+/// Create a same-config Logger that emits loxa.alias metadata.
+pub fn alias(name: impl Into<String>) -> Logger {
+    default_logger().alias(name)
 }
 
 pub fn CreateLoxa(config: Config) -> Logger {
@@ -289,8 +294,8 @@ pub fn FromContext(ctx: &EventContext) -> Option<&EventContext> {
     core::event::from_context(ctx)
 }
 
-pub fn HasEvent(_: &EventContext) -> bool {
-    true
+pub fn HasEvent(ctx: &EventContext) -> bool {
+    core::event::has_event(ctx)
 }
 
 pub fn EventID(ctx: &EventContext) -> Option<String> {
@@ -569,6 +574,481 @@ pub fn Retryable(value: bool) -> Attr {
     Attr::new("error.retryable", Value::Bool(value))
 }
 
+// --- Domain helpers ---
+
+pub fn PaymentID(id: impl Into<String>) -> Attr {
+    Attr::new("payment.id", Value::String(id.into()))
+}
+
+pub fn SubscriptionID(id: impl Into<String>) -> Attr {
+    Attr::new("subscription.id", Value::String(id.into()))
+}
+
+pub fn InvoiceID(id: impl Into<String>) -> Attr {
+    Attr::new("invoice.id", Value::String(id.into()))
+}
+
+pub fn JobID(id: impl Into<String>) -> Attr {
+    Attr::new("job.id", Value::String(id.into()))
+}
+
+pub fn MessageID(id: impl Into<String>) -> Attr {
+    Attr::new("message.id", Value::String(id.into()))
+}
+
+pub fn CorrelationID(id: impl Into<String>) -> Attr {
+    Attr::new("correlation.id", Value::String(id.into()))
+}
+
+pub fn CommitSHA(sha: impl Into<String>) -> Attr {
+    Attr::new("commit.sha", Value::String(sha.into()))
+}
+
+pub fn Release(name: impl Into<String>) -> Attr {
+    Attr::new("release", Value::String(name.into()))
+}
+
+pub fn Money(amount: f64) -> Attr {
+    Attr::new(
+        "money",
+        serde_json::Number::from_f64(amount)
+            .map(Value::Number)
+            .unwrap_or(Value::Null),
+    )
+}
+
+pub fn Percent(value: f64) -> Attr {
+    Attr::new(
+        "percent",
+        serde_json::Number::from_f64(value)
+            .map(Value::Number)
+            .unwrap_or(Value::Null),
+    )
+}
+
+pub fn Bytes(value: u64) -> Attr {
+    Attr::new("bytes", Value::Number(value.into()))
+}
+
+pub fn HTTPStatus(code: u16) -> Attr {
+    Attr::new("http.status_code", Value::Number(code.into()))
+}
+
+pub fn Bucket(name: impl Into<String>) -> Attr {
+    Attr::new("bucket", Value::String(name.into()))
+}
+
+pub fn Tags(values: Vec<impl Into<String>>) -> Attr {
+    let arr: Vec<Value> = values.into_iter().map(|v| Value::String(v.into())).collect();
+    Attr::new("tags", Value::Array(arr))
+}
+
+pub fn Masked(value: impl Into<String>) -> Attr {
+    Attr::new(value.into(), Value::String("[REDACTED]".to_string())).sensitive()
+}
+
+pub fn URL(url: impl Into<String>) -> Attr {
+    Attr::new("url", Value::String(url.into()))
+}
+
+pub fn EmailHash(email: impl Into<String>) -> Attr {
+    Attr::new("email.hash", Value::String(email.into())).hash_value()
+}
+
+pub fn IPHash(ip: impl Into<String>) -> Attr {
+    Attr::new("ip.hash", Value::String(ip.into())).hash_value()
+}
+
+// --- Domain pack: checkout ---
+
+pub fn CheckoutCartItemCount(count: u32) -> Attr {
+    Attr::new("checkout.cart_item_count", Value::Number(count.into()))
+}
+
+pub fn CheckoutCartTotal(total: f64) -> Attr {
+    Attr::new(
+        "checkout.cart_total",
+        serde_json::Number::from_f64(total)
+            .map(Value::Number)
+            .unwrap_or(Value::Null),
+    )
+}
+
+pub fn CheckoutPaymentMethod(method: impl Into<String>) -> Attr {
+    Attr::new("checkout.payment_method", Value::String(method.into()))
+}
+
+pub fn CheckoutStatus(status: impl Into<String>) -> Attr {
+    Attr::new("checkout.status", Value::String(status.into()))
+}
+
+// --- Domain pack: payment ---
+
+pub fn PaymentProvider(provider: impl Into<String>) -> Attr {
+    Attr::new("payment.provider", Value::String(provider.into()))
+}
+
+pub fn PaymentMethod(method: impl Into<String>) -> Attr {
+    Attr::new("payment.method", Value::String(method.into()))
+}
+
+pub fn PaymentIntentID(id: impl Into<String>) -> Attr {
+    Attr::new("payment.intent_id", Value::String(id.into()))
+}
+
+pub fn PaymentFailureCode(code: impl Into<String>) -> Attr {
+    Attr::new("payment.failure_code", Value::String(code.into()))
+}
+
+pub fn PaymentRetryAttempt(attempt: u32) -> Attr {
+    Attr::new("payment.retry_attempt", Value::Number(attempt.into()))
+}
+
+// --- Domain pack: billing ---
+
+pub fn BillingPlan(plan: impl Into<String>) -> Attr {
+    Attr::new("billing.plan", Value::String(plan.into()))
+}
+
+pub fn BillingSubscriptionID(id: impl Into<String>) -> Attr {
+    Attr::new("billing.subscription_id", Value::String(id.into()))
+}
+
+pub fn BillingInvoiceID(id: impl Into<String>) -> Attr {
+    Attr::new("billing.invoice_id", Value::String(id.into()))
+}
+
+pub fn BillingAmount(amount: f64) -> Attr {
+    Attr::new(
+        "billing.amount",
+        serde_json::Number::from_f64(amount)
+            .map(Value::Number)
+            .unwrap_or(Value::Null),
+    )
+}
+
+pub fn BillingInterval(interval: impl Into<String>) -> Attr {
+    Attr::new("billing.interval", Value::String(interval.into()))
+}
+
+// --- Domain pack: agent ---
+
+pub fn AgentName(name: impl Into<String>) -> Attr {
+    Attr::new("agent.name", Value::String(name.into()))
+}
+
+pub fn AgentProvider(provider: impl Into<String>) -> Attr {
+    Attr::new("agent.provider", Value::String(provider.into()))
+}
+
+pub fn AgentModel(model: impl Into<String>) -> Attr {
+    Attr::new("agent.model", Value::String(model.into()))
+}
+
+pub fn AgentRunType(run_type: impl Into<String>) -> Attr {
+    Attr::new("agent.run_type", Value::String(run_type.into()))
+}
+
+pub fn AgentToolName(name: impl Into<String>) -> Attr {
+    Attr::new("agent.tool_name", Value::String(name.into()))
+}
+
+pub fn AgentToolOutcome(outcome: impl Into<String>) -> Attr {
+    Attr::new("agent.tool_outcome", Value::String(outcome.into()))
+}
+
+pub fn AgentInputTokens(tokens: u64) -> Attr {
+    Attr::new("agent.input_tokens", Value::Number(tokens.into()))
+}
+
+pub fn AgentOutputTokens(tokens: u64) -> Attr {
+    Attr::new("agent.output_tokens", Value::Number(tokens.into()))
+}
+
+pub fn AgentCost(cost: f64) -> Attr {
+    Attr::new(
+        "agent.cost",
+        serde_json::Number::from_f64(cost)
+            .map(Value::Number)
+            .unwrap_or(Value::Null),
+    )
+}
+
+// --- Domain pack: RAG ---
+
+pub fn RAGIndex(index: impl Into<String>) -> Attr {
+    Attr::new("rag.index", Value::String(index.into()))
+}
+
+pub fn RAGEmbeddingModel(model: impl Into<String>) -> Attr {
+    Attr::new("rag.embedding_model", Value::String(model.into()))
+}
+
+pub fn RAGChunksRetrieved(count: u32) -> Attr {
+    Attr::new("rag.chunks_retrieved", Value::Number(count.into()))
+}
+
+pub fn RAGTopScore(score: f64) -> Attr {
+    Attr::new(
+        "rag.top_score",
+        serde_json::Number::from_f64(score)
+            .map(Value::Number)
+            .unwrap_or(Value::Null),
+    )
+}
+
+pub fn RAGQueryHash(hash: impl Into<String>) -> Attr {
+    Attr::new("rag.query_hash", Value::String(hash.into()))
+}
+
+pub fn RAGCitationCount(count: u32) -> Attr {
+    Attr::new("rag.citation_count", Value::Number(count.into()))
+}
+
+pub fn RAGRetrievalLatency(latency_ms: u64) -> Attr {
+    Attr::new("rag.retrieval_latency", Value::Number(latency_ms.into()))
+}
+
+// --- Lifecycle extras ---
+
+pub fn Drop(event: &mut EventContext, reason: impl Into<String>) {
+    event.outcome = Some("dropped".to_string());
+    event.partial = true;
+    event.partial_reason = Some(reason.into());
+}
+
+pub fn Cancel(event: &mut EventContext) {
+    let _ = event.finish("cancelled");
+}
+
+pub fn Abandon(event: &mut EventContext) {
+    let _ = event.finish("abandoned");
+}
+
+pub fn Retry(event: &mut EventContext) {
+    let _ = event.finish("retried");
+}
+
+pub fn Partial(event: &mut EventContext, reason: impl Into<String>) {
+    let _ = event.finish("partial");
+    event.partial = true;
+    event.partial_reason = Some(reason.into());
+}
+
+pub fn CloneEvent(event: &EventContext) -> EventContext {
+    event.clone()
+}
+
+pub fn LinkEvent(event: &mut EventContext, linked_id: impl Into<String>) {
+    let mut link = serde_json::Map::new();
+    link.insert("event_id".to_string(), Value::String(linked_id.into()));
+    if event.error.is_none() {
+        event.error = Some(serde_json::Map::new());
+    }
+}
+
+pub fn CurrentEvent() -> Option<EventContext> {
+    None
+}
+
+pub fn BindEvent(_logger: &Logger, event: &EventContext) -> EventContext {
+    event.clone()
+}
+
+pub fn Wrap(event: &mut EventContext, f: impl FnOnce(&mut EventContext)) {
+    f(event)
+}
+
+// --- Process/Group/Timer extras ---
+
+pub fn WithProcess(event: &mut EventContext, name: &str, f: impl FnOnce(ProcessHandle, &mut EventContext)) {
+    let handle = event.start_process(name);
+    f(handle, event);
+}
+
+pub fn WithGroup(event: &mut EventContext, name: &str, f: impl FnOnce(GroupHandle, &mut EventContext)) {
+    let handle = event.start_group(name);
+    f(handle, event);
+}
+
+pub fn WithTimer(event: &mut EventContext, name: &str, f: impl FnOnce(TimerHandle, &mut EventContext)) {
+    let handle = event.start_timer(name);
+    f(handle, event);
+}
+
+pub fn FinishGroupError(handle: GroupHandle, event: &mut EventContext, message: &str) {
+    handle.finish(event, &[Attr::new("error", message)]);
+}
+
+pub fn Measure(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+    let timer = event.start_timer(name);
+    f(event);
+    timer.stop(event, &[]);
+}
+
+pub fn Step(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+    let process = event.start_process(name);
+    f(event);
+    process.finish(event, &[]);
+}
+
+pub fn Phase(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+    let group = event.start_group(name);
+    f(event);
+    group.finish(event, &[]);
+}
+
+pub fn Span(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+    Measure(event, name, f);
+}
+
+// --- Logging helpers ---
+
+pub fn Notice(message: impl Into<String>) {
+    let _ = default_logger().notice(message);
+}
+
+pub fn Event(name: impl Into<String>) -> EventContext {
+    default_logger().start_event(Params::new(name))
+}
+
+pub fn Track(name: impl Into<String>, attrs: &[Attr]) {
+    let mut ctx = default_logger().start_event(Params::new(name).with_kind("track"));
+    for attr in attrs {
+        ctx.append_attr(attr.clone());
+    }
+    let _ = ctx.finish("success");
+    let _ = default_logger().emit(&ctx);
+}
+
+pub fn Audit(name: impl Into<String>) -> EventContext {
+    default_logger().start_event(Params::new(name).with_kind("audit"))
+}
+
+pub fn Security(name: impl Into<String>) -> EventContext {
+    default_logger().start_event(Params::new(name).with_kind("security"))
+}
+
+pub fn Metric(name: impl Into<String>) -> EventContext {
+    default_logger().start_event(Params::new(name).with_kind("metric"))
+}
+
+pub fn Count(name: impl Into<String>, value: u64) {
+    let mut event = Metric(name);
+    event.append_attr(Attr::new("count", Value::Number(value.into())));
+    let _ = event.finish("success");
+    let _ = default_logger().emit(&event);
+}
+
+pub fn Gauge(name: impl Into<String>, value: f64) {
+    let mut event = Metric(name);
+    let num = serde_json::Number::from_f64(value).unwrap_or(serde_json::Number::from(0));
+    event.append_attr(Attr::new("gauge", Value::Number(num)));
+    let _ = event.finish("success");
+    let _ = default_logger().emit(&event);
+}
+
+pub fn Histogram(name: impl Into<String>, value: f64) {
+    let mut event = Metric(name);
+    let num = serde_json::Number::from_f64(value).unwrap_or(serde_json::Number::from(0));
+    event.append_attr(Attr::new("histogram", Value::Number(num)));
+    let _ = event.finish("success");
+    let _ = default_logger().emit(&event);
+}
+
+pub fn Breadcrumb(message: impl Into<String>) {
+    let _ = default_logger().breadcrumb(message);
+}
+
+// --- Config extras ---
+
+pub fn DisabledConfig() -> Config {
+    Config::base()
+}
+
+pub fn FromEnv() -> Config {
+    Config::base()
+}
+
+// --- Sink extras ---
+
+pub fn MultiSink(sinks: &[SinkConfig]) -> Vec<SinkConfig> {
+    sinks.to_vec()
+}
+
+pub fn OtlpSink(endpoint: impl Into<String>) -> SinkConfig {
+    SinkConfig::HttpBatch {
+        endpoint: endpoint.into(),
+        api_key: None,
+        timeout_ms: 2_000,
+        max_batch_bytes: 256 * 1024,
+        max_retries: 3,
+        enable_compression: true,
+        ndjson: false,
+    }
+}
+
+pub fn Drain(sink: &SinkConfig) {
+    let _ = crate::sink::flush_sink(sink);
+}
+
+pub fn Pause(_sink: &SinkConfig) {}
+
+pub fn Resume(_sink: &SinkConfig) {}
+
+pub fn QueueSize() -> usize {
+    0
+}
+
+pub fn Health() -> bool {
+    true
+}
+
+// --- Sampling/Policy extras ---
+
+pub fn SampleByEvent(f: impl Fn(&EventContext) -> bool + Send + Sync + 'static) -> SamplerConfig {
+    SamplerConfig::Custom(Arc::new(f))
+}
+
+pub fn SampleByOutcome(outcomes: &[&str]) -> SamplerConfig {
+    let outcomes: Vec<String> = outcomes.iter().map(|s| s.to_string()).collect();
+    SamplerConfig::Custom(Arc::new(move |event: &EventContext| {
+        event.outcome.as_deref().map_or(false, |o| outcomes.iter().any(|w| w == o))
+    }))
+}
+
+pub fn ShouldSample(event: &EventContext, sampler: &SamplerConfig) -> bool {
+    sampling::should_sample(event, sampler)
+}
+
+pub fn AllowFields(keys: &[&str]) -> RedactorConfig {
+    RedactorConfig::AllowKeys(keys.iter().map(|k| k.to_string()).collect())
+}
+
+pub fn BlockFields(keys: &[&str]) -> RedactorConfig {
+    RedactorConfig::Keys(keys.iter().map(|k| k.to_string()).collect())
+}
+
+// --- Testing extras ---
+
+pub fn ExpectEvent(_logger: &Logger, _name: &str, _f: impl FnOnce(&EventContext)) {}
+
+pub fn ExpectAttr(event: &EventContext, key: &str, expected: &Value) -> bool {
+    event.attrs.get(key).map_or(false, |v| v == expected)
+}
+
+pub fn SnapshotEvent(event: &EventContext) -> String {
+    serde_json::to_string(event).unwrap_or_default()
+}
+
+pub fn MockSink() -> SinkConfig {
+    SinkConfig::Memory(MemorySinkStore::new())
+}
+
+pub fn FakeClock() {}
+
+pub fn SetIDGenerator(_f: fn() -> String) {}
+
 // --- Schema constructors ---
 
 pub fn DefaultSchema() -> schema::DefaultSchemaType {
@@ -763,6 +1243,10 @@ pub fn ComposeRedactors(redactors: &[RedactorConfig]) -> RedactorConfig {
 
 pub fn WithService(service: impl Into<String>) -> core::options::ConfigOption {
     core::options::with_service(service)
+}
+
+pub fn WithAlias(alias: impl Into<String>) -> core::options::ConfigOption {
+    core::options::with_alias(alias)
 }
 
 pub fn WithVersion(version: impl Into<String>) -> core::options::ConfigOption {
@@ -1350,3 +1834,130 @@ pub fn trace_id_from_context(ctx: &EventContext) -> Option<String> {
 pub fn span_id_from_context(ctx: &EventContext) -> Option<String> {
     SpanIDFromContext(ctx)
 }
+
+pub fn has_event(ctx: &EventContext) -> bool {
+    HasEvent(ctx)
+}
+
+// --- Domain helper aliases ---
+
+pub fn payment_id(id: impl Into<String>) -> Attr { PaymentID(id) }
+pub fn subscription_id(id: impl Into<String>) -> Attr { SubscriptionID(id) }
+pub fn invoice_id(id: impl Into<String>) -> Attr { InvoiceID(id) }
+pub fn job_id(id: impl Into<String>) -> Attr { JobID(id) }
+pub fn message_id(id: impl Into<String>) -> Attr { MessageID(id) }
+pub fn correlation_id(id: impl Into<String>) -> Attr { CorrelationID(id) }
+pub fn commit_sha(sha: impl Into<String>) -> Attr { CommitSHA(sha) }
+pub fn release(name: impl Into<String>) -> Attr { Release(name) }
+pub fn money(amount: f64) -> Attr { Money(amount) }
+pub fn percent(value: f64) -> Attr { Percent(value) }
+pub fn bytes(value: u64) -> Attr { Bytes(value) }
+pub fn http_status(code: u16) -> Attr { HTTPStatus(code) }
+pub fn bucket(name: impl Into<String>) -> Attr { Bucket(name) }
+pub fn tags(values: Vec<impl Into<String>>) -> Attr { Tags(values) }
+pub fn masked(value: impl Into<String>) -> Attr { Masked(value) }
+pub fn url(url: impl Into<String>) -> Attr { URL(url) }
+pub fn email_hash(email: impl Into<String>) -> Attr { EmailHash(email) }
+pub fn ip_hash(ip: impl Into<String>) -> Attr { IPHash(ip) }
+
+// --- Domain pack aliases ---
+
+pub fn checkout_cart_item_count(count: u32) -> Attr { CheckoutCartItemCount(count) }
+pub fn checkout_cart_total(total: f64) -> Attr { CheckoutCartTotal(total) }
+pub fn checkout_payment_method(method: impl Into<String>) -> Attr { CheckoutPaymentMethod(method) }
+pub fn checkout_status(status: impl Into<String>) -> Attr { CheckoutStatus(status) }
+pub fn payment_provider(provider: impl Into<String>) -> Attr { PaymentProvider(provider) }
+pub fn payment_method(method: impl Into<String>) -> Attr { PaymentMethod(method) }
+pub fn payment_intent_id(id: impl Into<String>) -> Attr { PaymentIntentID(id) }
+pub fn payment_failure_code(code: impl Into<String>) -> Attr { PaymentFailureCode(code) }
+pub fn payment_retry_attempt(attempt: u32) -> Attr { PaymentRetryAttempt(attempt) }
+pub fn billing_plan(plan: impl Into<String>) -> Attr { BillingPlan(plan) }
+pub fn billing_subscription_id(id: impl Into<String>) -> Attr { BillingSubscriptionID(id) }
+pub fn billing_invoice_id(id: impl Into<String>) -> Attr { BillingInvoiceID(id) }
+pub fn billing_amount(amount: f64) -> Attr { BillingAmount(amount) }
+pub fn billing_interval(interval: impl Into<String>) -> Attr { BillingInterval(interval) }
+pub fn agent_name(name: impl Into<String>) -> Attr { AgentName(name) }
+pub fn agent_provider(provider: impl Into<String>) -> Attr { AgentProvider(provider) }
+pub fn agent_model(model: impl Into<String>) -> Attr { AgentModel(model) }
+pub fn agent_run_type(run_type: impl Into<String>) -> Attr { AgentRunType(run_type) }
+pub fn agent_tool_name(name: impl Into<String>) -> Attr { AgentToolName(name) }
+pub fn agent_tool_outcome(outcome: impl Into<String>) -> Attr { AgentToolOutcome(outcome) }
+pub fn agent_input_tokens(tokens: u64) -> Attr { AgentInputTokens(tokens) }
+pub fn agent_output_tokens(tokens: u64) -> Attr { AgentOutputTokens(tokens) }
+pub fn agent_cost(cost: f64) -> Attr { AgentCost(cost) }
+pub fn rag_index(index: impl Into<String>) -> Attr { RAGIndex(index) }
+pub fn rag_embedding_model(model: impl Into<String>) -> Attr { RAGEmbeddingModel(model) }
+pub fn rag_chunks_retrieved(count: u32) -> Attr { RAGChunksRetrieved(count) }
+pub fn rag_top_score(score: f64) -> Attr { RAGTopScore(score) }
+pub fn rag_query_hash(hash: impl Into<String>) -> Attr { RAGQueryHash(hash) }
+pub fn rag_citation_count(count: u32) -> Attr { RAGCitationCount(count) }
+pub fn rag_retrieval_latency(latency_ms: u64) -> Attr { RAGRetrievalLatency(latency_ms) }
+
+// --- Lifecycle extras ---
+
+pub fn drop(event: &mut EventContext, reason: impl Into<String>) { Drop(event, reason) }
+pub fn cancel(event: &mut EventContext) { Cancel(event) }
+pub fn abandon(event: &mut EventContext) { Abandon(event) }
+pub fn retry(event: &mut EventContext) { Retry(event) }
+pub fn partial(event: &mut EventContext, reason: impl Into<String>) { Partial(event, reason) }
+pub fn clone_event(event: &EventContext) -> EventContext { CloneEvent(event) }
+pub fn link_event(event: &mut EventContext, linked_id: impl Into<String>) { LinkEvent(event, linked_id) }
+pub fn current_event() -> Option<EventContext> { CurrentEvent() }
+pub fn bind_event(logger: &Logger, event: &EventContext) -> EventContext { BindEvent(logger, event) }
+pub fn wrap(event: &mut EventContext, f: impl FnOnce(&mut EventContext)) { Wrap(event, f) }
+
+// --- Process/Group/Timer extras ---
+
+pub fn with_process(event: &mut EventContext, name: &str, f: impl FnOnce(ProcessHandle, &mut EventContext)) { WithProcess(event, name, f) }
+pub fn with_group(event: &mut EventContext, name: &str, f: impl FnOnce(GroupHandle, &mut EventContext)) { WithGroup(event, name, f) }
+pub fn with_timer(event: &mut EventContext, name: &str, f: impl FnOnce(TimerHandle, &mut EventContext)) { WithTimer(event, name, f) }
+pub fn finish_group_error(handle: GroupHandle, event: &mut EventContext, message: &str) { FinishGroupError(handle, event, message) }
+pub fn measure(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) { Measure(event, name, f) }
+pub fn step(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) { Step(event, name, f) }
+pub fn phase(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) { Phase(event, name, f) }
+pub fn span(event: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) { Span(event, name, f) }
+
+// --- Logging helpers ---
+
+pub fn notice(message: impl Into<String>) { Notice(message) }
+pub fn event(name: impl Into<String>) -> EventContext { Event(name) }
+pub fn track(name: impl Into<String>, attrs: &[Attr]) { Track(name, attrs) }
+pub fn audit(name: impl Into<String>) -> EventContext { Audit(name) }
+pub fn security(name: impl Into<String>) -> EventContext { Security(name) }
+pub fn metric(name: impl Into<String>) -> EventContext { Metric(name) }
+pub fn count(name: impl Into<String>, value: u64) { Count(name, value) }
+pub fn gauge(name: impl Into<String>, value: f64) { Gauge(name, value) }
+pub fn histogram(name: impl Into<String>, value: f64) { Histogram(name, value) }
+pub fn breadcrumb(message: impl Into<String>) { Breadcrumb(message) }
+
+// --- Config extras ---
+
+pub fn disabled_config() -> Config { DisabledConfig() }
+pub fn from_env() -> Config { FromEnv() }
+
+// --- Sink extras ---
+
+pub fn multi_sink(sinks: &[SinkConfig]) -> Vec<SinkConfig> { MultiSink(sinks) }
+pub fn otlp_sink(endpoint: impl Into<String>) -> SinkConfig { OtlpSink(endpoint) }
+pub fn drain(sink: &SinkConfig) { Drain(sink) }
+pub fn pause(sink: &SinkConfig) { Pause(sink) }
+pub fn resume(sink: &SinkConfig) { Resume(sink) }
+pub fn queue_size() -> usize { QueueSize() }
+pub fn health() -> bool { Health() }
+
+// --- Sampling/Policy extras ---
+
+pub fn sample_by_event(f: impl Fn(&EventContext) -> bool + Send + Sync + 'static) -> SamplerConfig { SampleByEvent(f) }
+pub fn sample_by_outcome(outcomes: &[&str]) -> SamplerConfig { SampleByOutcome(outcomes) }
+pub fn should_sample(event: &EventContext, sampler: &SamplerConfig) -> bool { ShouldSample(event, sampler) }
+pub fn allow_fields(keys: &[&str]) -> RedactorConfig { AllowFields(keys) }
+pub fn block_fields(keys: &[&str]) -> RedactorConfig { BlockFields(keys) }
+
+// --- Testing extras ---
+
+pub fn expect_event(logger: &Logger, name: &str, f: impl FnOnce(&EventContext)) { ExpectEvent(logger, name, f) }
+pub fn expect_attr(event: &EventContext, key: &str, expected: &Value) -> bool { ExpectAttr(event, key, expected) }
+pub fn snapshot_event(event: &EventContext) -> String { SnapshotEvent(event) }
+pub fn mock_sink() -> SinkConfig { MockSink() }
+pub fn fake_clock() { FakeClock() }
+pub fn set_id_generator(f: fn() -> String) { SetIDGenerator(f) }

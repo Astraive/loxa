@@ -11,7 +11,7 @@
 | Fanout | The collector mechanism that routes each accepted event to all configured sinks simultaneously (DuckDB, Kafka, ClickHouse, Postgres, Loki, OTLP, S3, GCS). | Collector |
 | Ingest Envelope | The wire format for POST /ingest requests, defined in `spec/contracts/ingest-envelope.schema.json`, wrapping one or more events with metadata. | Spec, Collector |
 | PCE (Persistent Context Engine) | The cortex subsystem that maintains long-lived context across events, enabling incident reconstruction, causal chains, service graphs, and remediation learning. | Cortex |
-| Parity | The state of all 4 SDKs implementing the same feature set, verified by conformance tests. v1.0.0 achieved full P0-P3 parity. | SDKs, Spec |
+| Parity | The state of all 4 SDKs implementing the same feature set, verified by conformance tests. v0.0.1 achieved full P0-P3 parity. | SDKs, Spec |
 | Queue Mode | A delivery mode where the collector buffers events in an on-disk queue and a background worker drains them to sinks, providing durability and retry semantics. | Collector |
 | Safety-Net Redactor | A redactor that scans all event attributes for 14 predefined PII key patterns (e.g., password, ssn, credit_card, api_key) and redacts values regardless of SDK-level redaction rules. | SDKs, Collector |
 | Schema Version | A numeric version on the event schema that enables forward/backward compatibility. The collector validates events against the registered schema version. | Spec, Collector |

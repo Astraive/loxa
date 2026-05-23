@@ -70,6 +70,7 @@ export function Duration(key: string, value: number): Attr {
 export const string = String;
 export const int = Int;
 export const float64 = Float64;
+export const float = Float64;
 export const bool = Bool;
 export const null_ = Null;
 export const any = Any;
@@ -101,6 +102,82 @@ export function CustomerID(id: string): Attr { return String('customer.id', id);
 export function Plan(plan: string): Attr { return String('customer.plan', plan); }
 export function Currency(currency: string): Attr { return String('payment.currency', currency); }
 export function Amount(amount: number): Attr { return Float64('payment.amount', amount); }
+
+// Domain helper pack — ID fields
+export function PaymentID(id: string): Attr { return String('payment.id', id); }
+export function SubscriptionID(id: string): Attr { return String('subscription.id', id); }
+export function InvoiceID(id: string): Attr { return String('invoice.id', id); }
+export function JobID(id: string): Attr { return String('job.id', id); }
+export function MessageID(id: string): Attr { return String('message.id', id); }
+export function CorrelationID(id: string): Attr { return String('correlation.id', id); }
+export function CommitSha(sha: string): Attr { return String('deployment.commit_sha', sha); }
+export function Release(ver: string): Attr { return String('release', ver); }
+
+// Money helper — stores {key.amount_cents, key.currency}
+export function Money(key: string, amountCents: number, currency: string): Attr {
+  return Group(key, [Int64(`${key}.amount_cents`, amountCents), String(`${key}.currency`, currency)]);
+}
+
+// Percent/bytes helpers
+export function Percent(key: string, value: number): Attr { return Float64(key, value); }
+export function Bytes(key: string, value: number): Attr { return Int64(key, value); }
+
+// HTTP/status helpers
+export function HttpStatus(key: string, code: number): Attr { return Int(key, code); }
+export function StatusCode(key: string, code: number): Attr { return Int(key, code); }
+export function ErrorCodeExt(key: string, code: string): Attr { return String(key, code); }
+
+// Bucket / tags / masked / url / hash helpers
+export function Bucket(key: string, bucket: string): Attr { return String(key, bucket); }
+export function Tags(key: string, ...values: string[]): Attr { return Any(key, values); }
+export function Masked(key: string, value: string): Attr { return String(key, value); } // sensitive via callers
+export function Url(key: string, value: string): Attr { return HashString(key, value); }
+export function EmailHash(key: string, value: string): Attr { return HashString(key, value); }
+export function IpHash(key: string, value: string): Attr { return HashString(key, value); }
+
+// Additional canonical field
+export function RegionEx(region: string): Attr { return String('region', region); }
+
+// Checkout domain pack
+export function CheckoutCartItemCount(count: number): Attr { return Int('checkout.cart_item_count', count); }
+export function CheckoutCartTotal(totalCents: number): Attr { return Int64('checkout.cart_total_cents', totalCents); }
+export function CheckoutPaymentMethod(method: string): Attr { return String('checkout.payment_method', method); }
+export function CheckoutStatus(status: string): Attr { return String('checkout.status', status); }
+
+// Payment domain pack
+export function PaymentProvider(provider: string): Attr { return String('payment.provider', provider); }
+export function PaymentMethod(method: string): Attr { return String('payment.method', method); }
+export function PaymentIntentId(id: string): Attr { return String('payment.intent_id', id); }
+export function PaymentFailureCode(code: string): Attr { return String('payment.failure_code', code); }
+export function PaymentRetryAttempt(attempt: number): Attr { return Int('payment.retry_attempt', attempt); }
+
+// Billing domain pack
+export function BillingPlan(plan: string): Attr { return String('billing.plan', plan); }
+export function BillingSubscriptionId(id: string): Attr { return String('billing.subscription_id', id); }
+export function BillingInvoiceId(id: string): Attr { return String('billing.invoice_id', id); }
+export function BillingAmount(cents: number): Attr { return Int64('billing.amount_cents', cents); }
+export function BillingInterval(interval: string): Attr { return String('billing.interval', interval); }
+
+// Agent/AI domain pack
+export function AgentName(name: string): Attr { return String('agent.name', name); }
+export function AgentProvider(provider: string): Attr { return String('agent.provider', provider); }
+export function AgentModel(model: string): Attr { return String('agent.model', model); }
+export function AgentRunType(runType: string): Attr { return String('agent.run_type', runType); }
+export function AgentToolName(name: string): Attr { return String('agent.tool_name', name); }
+export function AgentToolOutcome(outcome: string): Attr { return String('agent.tool_outcome', outcome); }
+export function AgentInputTokens(count: number): Attr { return Int64('agent.input_tokens', count); }
+export function AgentOutputTokens(count: number): Attr { return Int64('agent.output_tokens', count); }
+export function AgentCost(cents: number): Attr { return Int64('agent.cost_micros', cents); }
+
+// RAG domain pack
+export function RagIndex(index: string): Attr { return String('rag.index', index); }
+export function RagEmbeddingModel(model: string): Attr { return String('rag.embedding_model', model); }
+export function RagChunksRetrieved(count: number): Attr { return Int('rag.chunks_retrieved', count); }
+export function RagTopScore(score: number): Attr { return Float64('rag.top_score', score); }
+export function RagQueryHash(hash: string): Attr { return String('rag.query_hash', hash); }
+export function RagCitationCount(count: number): Attr { return Int('rag.citation_count', count); }
+export function RagRetrievalLatency(ms: number): Attr { return Float64('rag.retrieval_latency_ms', ms); }
+
 export function Country(country: string): Attr { return String('geo.country', country); }
 export function Device(device: string): Attr { return String('device.name', device); }
 export function Platform(platform: string): Attr { return String('device.platform', platform); }
@@ -139,6 +216,59 @@ export const errorCode = ErrorCode;
 export const errorMessage = ErrorMessage;
 export const errorStack = ErrorStack;
 export const retryable = Retryable;
+
+// camelCase aliases for new domain helpers
+export const paymentId = PaymentID;
+export const subscriptionId = SubscriptionID;
+export const invoiceId = InvoiceID;
+export const jobId = JobID;
+export const messageId = MessageID;
+export const correlationId = CorrelationID;
+export const commitSha = CommitSha;
+export const release = Release;
+export const money = Money;
+export const percent = Percent;
+export const bytes = Bytes;
+export const httpStatus = HttpStatus;
+export const statusCodeFn = StatusCode;
+export const errorCodeExt = ErrorCodeExt;
+export const bucket = Bucket;
+export const tags = Tags;
+export const masked = Masked;
+export const url = Url;
+export const emailHash = EmailHash;
+export const ipHash = IpHash;
+export const regionEx = RegionEx;
+export const checkoutCartItemCount = CheckoutCartItemCount;
+export const checkoutCartTotal = CheckoutCartTotal;
+export const checkoutPaymentMethod = CheckoutPaymentMethod;
+export const checkoutStatus = CheckoutStatus;
+export const paymentProvider = PaymentProvider;
+export const paymentMethod = PaymentMethod;
+export const paymentIntentId = PaymentIntentId;
+export const paymentFailureCode = PaymentFailureCode;
+export const paymentRetryAttempt = PaymentRetryAttempt;
+export const billingPlan = BillingPlan;
+export const billingSubscriptionId = BillingSubscriptionId;
+export const billingInvoiceId = BillingInvoiceId;
+export const billingAmount = BillingAmount;
+export const billingInterval = BillingInterval;
+export const agentName = AgentName;
+export const agentProvider = AgentProvider;
+export const agentModel = AgentModel;
+export const agentRunType = AgentRunType;
+export const agentToolName = AgentToolName;
+export const agentToolOutcome = AgentToolOutcome;
+export const agentInputTokens = AgentInputTokens;
+export const agentOutputTokens = AgentOutputTokens;
+export const agentCost = AgentCost;
+export const ragIndex = RagIndex;
+export const ragEmbeddingModel = RagEmbeddingModel;
+export const ragChunksRetrieved = RagChunksRetrieved;
+export const ragTopScore = RagTopScore;
+export const ragQueryHash = RagQueryHash;
+export const ragCitationCount = RagCitationCount;
+export const ragRetrievalLatency = RagRetrievalLatency;
 
 // --- Event states ---
 
@@ -458,7 +588,10 @@ export class Event {
   /** Clone the event (deep copy). */
   clone(): Event {
     const ev = new Event({ event: this.event, service: this.service }, this.service, this.environment);
-    Object.assign(ev, this);
+    // Use property descriptors to preserve getters/setters instead of Object.assign
+    const descriptors = Object.getOwnPropertyDescriptors(this);
+    Object.defineProperties(ev, descriptors);
+    // Deep-clone mutable collections so the clone is independent
     ev.attrs = { ...this.attrs };
     ev.checkpoints = [...this.checkpoints];
     ev.error = this.error ? { ...this.error } : null;

@@ -4,6 +4,8 @@
 
 LOXA is a collector-first wide-event observability stack. The SDKs stay lightweight and application-friendly. The collector owns validation, durability, fanout, deletion, DLQ, and production sinks.
 
+For the v0.0.2 canonical product shape and full SDK method catalog, see [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md). For the concise business instrumentation guide, see [business-instrumentation.md](./business-instrumentation.md).
+
 This guide explains how to instrument real business flows using LOXA's event lifecycle:
 
 ```

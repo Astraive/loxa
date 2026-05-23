@@ -179,11 +179,12 @@ describe('loxa default instance', () => {
     assert.notEqual(logger, loxa);
   });
 
-  it('loxa.alias creates child with different service', () => {
+  it('loxa.alias creates same-service child with alias metadata', () => {
     configure(production('api').withSink(memorySink()));
     const audit = loxa.alias('audit');
     assert.ok(audit instanceof Logger);
-    assert.equal(audit.getConfig().service, 'audit');
+    assert.equal(audit.getConfig().service, 'api');
+    assert.equal(audit.getConfig().alias, 'audit');
     assert.notEqual(audit, loxa);
   });
 
@@ -206,17 +207,30 @@ describe('createLoxa and alias', () => {
     assert.equal(logger.getConfig().service, 'test-svc');
   });
 
-  it('alias creates Logger with different service', () => {
+  it('alias creates same-service Logger with alias metadata', () => {
     configure(production('api').withSink(memorySink()));
     const audit = alias('audit');
     assert.ok(audit instanceof Logger);
-    assert.equal(audit.getConfig().service, 'audit');
+    assert.equal(audit.getConfig().service, 'api');
+    assert.equal(audit.getConfig().alias, 'audit');
   });
 
-  it('Logger.alias creates child with different service', () => {
+  it('Logger.alias preserves service and does not mutate original', () => {
     const logger = new Logger({ service: 'api' });
     const child = logger.alias('child-svc');
-    assert.equal(child.getConfig().service, 'child-svc');
+    assert.equal(child.getConfig().service, 'api');
+    assert.equal(child.getConfig().alias, 'child-svc');
     assert.equal(logger.getConfig().service, 'api');
+    assert.equal(logger.getConfig().alias, '');
+  });
+
+  it('alias emits loxa.alias without changing service', async () => {
+    const sink = memorySink();
+    const logger = new Logger({ service: 'api', sink });
+    const audit = logger.alias('audit');
+    await audit.info('permission changed');
+    const parsed = JSON.parse(sink.getEvents()[0]);
+    assert.equal(parsed.service, 'api');
+    assert.equal(parsed.attrs.loxa.alias, 'audit');
   });
 });

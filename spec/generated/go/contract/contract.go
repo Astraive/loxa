@@ -84,14 +84,14 @@ func set(values ...string) map[string]struct{} {
 	return out
 }
 
-var AllowedKinds = set("event", "http", "job", "queue", "cli", "cron", "log", "checkpoint")
-var AllowedLevels = set("debug", "info", "warn", "error", "fatal")
-var AllowedOutcomes = set("success", "error", "timeout", "cancelled", "rejected", "abandoned", "partial", "unknown")
+var AllowedKinds = set("event", "http", "job", "queue", "cli", "cron", "log", "checkpoint", "agent", "ai")
+var AllowedLevels = set("debug", "info", "notice", "warn", "error", "fatal")
+var AllowedOutcomes = set("success", "error", "partial", "abandoned", "retried", "cancelled", "timeout", "skipped", "rejected", "quarantined", "unknown")
 var AllowedPartialReasons = set("not_finished", "process_exit", "timeout", "panic", "collector_unavailable")
-var AllowedEventStates = set("created", "active", "finished", "emitting", "emitted", "failed_validation", "delivery_failed")
+var AllowedEventStates = set("created", "active", "finished", "emitting", "emitted", "invalid", "dropped", "emit_failed", "spooled", "dlq_written", "failed_validation", "delivery_failed")
 var AllowedSourceSDKs = set("loxa-cli", "loxa-go", "loxa-py", "loxa-rs")
-var AllowedTopLevelFields = set("attrs", "delivery_attempts", "deployment", "duration_ms", "environment", "error", "event", "event_id", "event_state", "event_version", "http", "kind", "level", "message", "method", "organization", "outcome", "partial", "partial_reason", "path", "pii", "request_id", "resource", "route", "schema_version", "service", "source", "span_id", "status_code", "tenant", "timestamp", "trace_id", "user", "version", "workspace")
-var AllowedCollectorStatuses = set("accepted", "partial", "rejected", "invalid")
+var AllowedTopLevelFields = set("attrs", "checkpoints", "collector", "delivery_attempts", "deployment", "duration_ms", "environment", "error", "errors", "event", "event_id", "event_state", "event_version", "groups", "http", "kind", "level", "links", "message", "method", "organization", "outcome", "partial", "partial_reason", "path", "pii", "processes", "redaction", "release", "request_id", "resource", "route", "sampling", "schema_version", "sdk", "service", "source", "span_id", "status_code", "tenant", "timers", "timestamp", "trace_flags", "trace_id", "user", "version", "workspace")
+var AllowedCollectorStatuses = set("accepted", "partial", "rejected", "invalid", "quarantined")
 var CanonicalFieldSet = AllowedTopLevelFields
 
 func IsCanonical(key string) bool {
@@ -241,7 +241,7 @@ func ValidateCollectorResponseMap(payload map[string]any) error {
 	// Validate status is one of the allowed values
 	if status, ok := payload["status"].(string); ok {
 		if _, exists := AllowedCollectorStatuses[strings.TrimSpace(status)]; !exists {
-			errs = append(errs, ValidationError{Field: "status", Code: "invalid_status", Message: fmt.Sprintf("field \"status\" must be one of: accepted, partial, rejected, invalid; got %q", status)})
+			errs = append(errs, ValidationError{Field: "status", Code: "invalid_status", Message: fmt.Sprintf("field \"status\" must be one of: accepted, partial, rejected, invalid, quarantined; got %q", status)})
 		}
 	}
 	

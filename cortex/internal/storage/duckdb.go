@@ -39,19 +39,49 @@ func (s *DuckDBStorage) Init(ctx context.Context) error {
 	schema := `
 	CREATE TABLE IF NOT EXISTS events (
 		id TEXT PRIMARY KEY,
+		event_id TEXT,
 		timestamp TIMESTAMP NOT NULL,
-		kind TEXT NOT NULL,
 		service TEXT NOT NULL,
+		environment TEXT,
+		release TEXT,
+		schema_version TEXT,
+		event_version TEXT,
+		event TEXT,
+		kind TEXT NOT NULL,
+		level TEXT,
+		outcome TEXT,
+		duration_ms DOUBLE,
 		trace_id TEXT,
-		incident_id TEXT,
+		span_id TEXT,
+		trace_flags TEXT,
+		request_id TEXT,
+		http JSON,
+		user JSON,
+		tenant JSON,
+		attrs JSON,
+		error JSON,
+		checkpoints JSON,
+		processes JSON,
+		groups JSON,
+		timers JSON,
+		links JSON,
+		sdk_name TEXT,
+		sdk_version TEXT,
+		sdk_language TEXT,
 		raw JSON,
 		provenance TEXT NOT NULL,
+		incident_id TEXT,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
 	CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp);
 	CREATE INDEX IF NOT EXISTS idx_events_service ON events(service);
+	CREATE INDEX IF NOT EXISTS idx_events_event ON events(event);
 	CREATE INDEX IF NOT EXISTS idx_events_trace_id ON events(trace_id);
 	CREATE INDEX IF NOT EXISTS idx_events_incident_id ON events(incident_id);
+	CREATE INDEX IF NOT EXISTS idx_events_outcome ON events(outcome);
+	CREATE INDEX IF NOT EXISTS idx_events_level ON events(level);
+	CREATE INDEX IF NOT EXISTS idx_events_environment ON events(environment);
+	CREATE INDEX IF NOT EXISTS idx_events_duration_ms ON events(duration_ms);
 
 	CREATE TABLE IF NOT EXISTS topology_aliases (
 		id TEXT PRIMARY KEY,
@@ -186,15 +216,39 @@ type DuckDBEventStore struct {
 	db *sql.DB
 }
 
-func (s *DuckDBEventStore) Save(ctx context.Context, event *models.Event) error {
+func (s *DuckDBEventStore) Save(ctx context.Context, event *models.Event, lifecycle *LifecycleData) error {
 	rawJSON, _ := json.Marshal(event.Raw)
+	attrsJSON, _ := json.Marshal(event.Attrs)
+	checkpointsJSON, _ := json.Marshal(event.Checkpoints)
+	processesJSON, _ := json.Marshal(event.Processes)
+	groupsJSON, _ := json.Marshal(event.Groups)
+	timersJSON, _ := json.Marshal(event.Timers)
+	linksJSON, _ := json.Marshal(event.Links)
+	httpJSON, _ := json.Marshal(event.HTTP)
+	userJSON, _ := json.Marshal(event.User)
+	tenantJSON, _ := json.Marshal(event.Tenant)
+	errorJSON, _ := json.Marshal(event.Error)
+
 	_, err := s.db.ExecContext(ctx,
-		"INSERT INTO events (id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		event.ID, event.Timestamp, event.Kind, event.Service, event.TraceID, event.IncidentID, rawJSON, event.Provenance, time.Now())
+		`INSERT INTO events (id, event_id, timestamp, service, environment, release,
+			schema_version, event_version, event, kind, level, outcome, duration_ms,
+			trace_id, span_id, trace_flags, request_id,
+			http, user, tenant, attrs, error,
+			checkpoints, processes, groups, timers, links,
+			sdk_name, sdk_version, sdk_language,
+			raw, provenance, incident_id, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		event.ID, event.EventID, event.Timestamp, event.Service, event.Environment, event.Release,
+		event.SchemaVersion, event.EventVersion, event.Event, event.Kind, event.Level, event.Outcome, event.DurationMs,
+		event.TraceID, event.SpanID, event.TraceFlags, event.RequestID,
+		httpJSON, userJSON, tenantJSON, attrsJSON, errorJSON,
+		checkpointsJSON, processesJSON, groupsJSON, timersJSON, linksJSON,
+		event.SDKName, event.SDKVersion, event.SDKLanguage,
+		rawJSON, event.Provenance, event.IncidentID, time.Now())
 	return err
 }
 
-func (s *DuckDBEventStore) SaveBatch(ctx context.Context, events []*models.Event) error {
+func (s *DuckDBEventStore) SaveBatch(ctx context.Context, events []*models.Event, lifecycles []*LifecycleData) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -202,7 +256,14 @@ func (s *DuckDBEventStore) SaveBatch(ctx context.Context, events []*models.Event
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx,
-		"INSERT INTO events (id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		`INSERT INTO events (id, event_id, timestamp, service, environment, release,
+			schema_version, event_version, event, kind, level, outcome, duration_ms,
+			trace_id, span_id, trace_flags, request_id,
+			http, user, tenant, attrs, error,
+			checkpoints, processes, groups, timers, links,
+			sdk_name, sdk_version, sdk_language,
+			raw, provenance, incident_id, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		return err
 	}
@@ -210,90 +271,114 @@ func (s *DuckDBEventStore) SaveBatch(ctx context.Context, events []*models.Event
 
 	for _, e := range events {
 		rawJSON, _ := json.Marshal(e.Raw)
-		if _, err := stmt.ExecContext(ctx, e.ID, e.Timestamp, e.Kind, e.Service, e.TraceID, e.IncidentID, rawJSON, e.Provenance, time.Now()); err != nil {
+		attrsJSON, _ := json.Marshal(e.Attrs)
+		checkpointsJSON, _ := json.Marshal(e.Checkpoints)
+		processesJSON, _ := json.Marshal(e.Processes)
+		groupsJSON, _ := json.Marshal(e.Groups)
+		timersJSON, _ := json.Marshal(e.Timers)
+		linksJSON, _ := json.Marshal(e.Links)
+		httpJSON, _ := json.Marshal(e.HTTP)
+		userJSON, _ := json.Marshal(e.User)
+		tenantJSON, _ := json.Marshal(e.Tenant)
+		errorJSON, _ := json.Marshal(e.Error)
+
+		if _, err := stmt.ExecContext(ctx,
+			e.ID, e.EventID, e.Timestamp, e.Service, e.Environment, e.Release,
+			e.SchemaVersion, e.EventVersion, e.Event, e.Kind, e.Level, e.Outcome, e.DurationMs,
+			e.TraceID, e.SpanID, e.TraceFlags, e.RequestID,
+			httpJSON, userJSON, tenantJSON, attrsJSON, errorJSON,
+			checkpointsJSON, processesJSON, groupsJSON, timersJSON, linksJSON,
+			e.SDKName, e.SDKVersion, e.SDKLanguage,
+			rawJSON, e.Provenance, e.IncidentID, time.Now()); err != nil {
 			return err
 		}
+		_ = lifecycles // lifecycles are embedded in the event struct
 	}
 
 	return tx.Commit()
 }
 
-func (s *DuckDBEventStore) Get(ctx context.Context, id string) (*models.Event, error) {
+func scanRowEvent(scanner interface{ Scan(dest ...any) error }) (*models.Event, error) {
 	var event models.Event
-	var rawJSON []byte
-	err := s.db.QueryRowContext(ctx, "SELECT id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at FROM events WHERE id = ?", id).
-		Scan(&event.ID, &event.Timestamp, &event.Kind, &event.Service, &event.TraceID, &event.IncidentID, &rawJSON, &event.Provenance, &event.CreatedAt)
+	var rawJSON, attrsJSON, httpJSON, userJSON, tenantJSON, errorJSON []byte
+	var checkpointsJSON, processesJSON, groupsJSON, timersJSON, linksJSON []byte
+	err := scanner.Scan(
+		&event.ID, &event.EventID, &event.Timestamp, &event.Service, &event.Environment, &event.Release,
+		&event.SchemaVersion, &event.EventVersion, &event.Event, &event.Kind, &event.Level, &event.Outcome, &event.DurationMs,
+		&event.TraceID, &event.SpanID, &event.TraceFlags, &event.RequestID,
+		&httpJSON, &userJSON, &tenantJSON, &attrsJSON, &errorJSON,
+		&checkpointsJSON, &processesJSON, &groupsJSON, &timersJSON, &linksJSON,
+		&event.SDKName, &event.SDKVersion, &event.SDKLanguage,
+		&rawJSON, &event.Provenance, &event.IncidentID, &event.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
 	json.Unmarshal(rawJSON, &event.Raw)
+	json.Unmarshal(attrsJSON, &event.Attrs)
+	json.Unmarshal(httpJSON, &event.HTTP)
+	json.Unmarshal(userJSON, &event.User)
+	json.Unmarshal(tenantJSON, &event.Tenant)
+	json.Unmarshal(errorJSON, &event.Error)
+	json.Unmarshal(checkpointsJSON, &event.Checkpoints)
+	json.Unmarshal(processesJSON, &event.Processes)
+	json.Unmarshal(groupsJSON, &event.Groups)
+	json.Unmarshal(timersJSON, &event.Timers)
+	json.Unmarshal(linksJSON, &event.Links)
 	return &event, nil
 }
 
-func (s *DuckDBEventStore) List(ctx context.Context, limit, offset int) ([]*models.Event, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at FROM events ORDER BY timestamp DESC LIMIT ? OFFSET ?", limit, offset)
+func queryAllEvents(ctx context.Context, db *sql.DB, query string, args ...interface{}) ([]*models.Event, error) {
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
+	selectCols := "id, event_id, timestamp, service, environment, release, schema_version, event_version, event, kind, level, outcome, duration_ms, trace_id, span_id, trace_flags, request_id, http, user, tenant, attrs, error, checkpoints, processes, groups, timers, links, sdk_name, sdk_version, sdk_language, raw, provenance, incident_id, created_at"
+	fullQuery := "SELECT " + selectCols + " FROM events " + query
+	rows2, err := db.QueryContext(ctx, fullQuery, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows2.Close()
+
 	var events []*models.Event
-	for rows.Next() {
-		var event models.Event
-		var rawJSON []byte
-		if err := rows.Scan(&event.ID, &event.Timestamp, &event.Kind, &event.Service, &event.TraceID, &event.IncidentID, &rawJSON, &event.Provenance, &event.CreatedAt); err != nil {
+	for rows2.Next() {
+		event, err := scanRowEvent(rows2)
+		if err != nil {
 			return nil, err
 		}
-		json.Unmarshal(rawJSON, &event.Raw)
-		events = append(events, &event)
+		events = append(events, event)
 	}
 	return events, nil
+}
+
+func (s *DuckDBEventStore) Get(ctx context.Context, id string) (*models.Event, error) {
+	return querySingleEvent(ctx, s.db, "WHERE id = ?", id)
+}
+
+func querySingleEvent(ctx context.Context, db *sql.DB, where string, args ...interface{}) (*models.Event, error) {
+	selectCols := "id, event_id, timestamp, service, environment, release, schema_version, event_version, event, kind, level, outcome, duration_ms, trace_id, span_id, trace_flags, request_id, http, user, tenant, attrs, error, checkpoints, processes, groups, timers, links, sdk_name, sdk_version, sdk_language, raw, provenance, incident_id, created_at"
+	query := "SELECT " + selectCols + " FROM events " + where + " LIMIT 1"
+	row := db.QueryRowContext(ctx, query, args...)
+	return scanRowEvent(row)
+}
+
+func (s *DuckDBEventStore) List(ctx context.Context, limit, offset int) ([]*models.Event, error) {
+	return queryAllEvents(ctx, s.db, "ORDER BY timestamp DESC LIMIT ? OFFSET ?", limit, offset)
 }
 
 func (s *DuckDBEventStore) FindByTraceID(ctx context.Context, traceID string) ([]*models.Event, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at FROM events WHERE trace_id = ? ORDER BY timestamp", traceID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var events []*models.Event
-	for rows.Next() {
-		var event models.Event
-		var rawJSON []byte
-		if err := rows.Scan(&event.ID, &event.Timestamp, &event.Kind, &event.Service, &event.TraceID, &event.IncidentID, &rawJSON, &event.Provenance, &event.CreatedAt); err != nil {
-			return nil, err
-		}
-		json.Unmarshal(rawJSON, &event.Raw)
-		events = append(events, &event)
-	}
-	return events, nil
+	return queryAllEvents(ctx, s.db, "WHERE trace_id = ? ORDER BY timestamp", traceID)
 }
 
 func (s *DuckDBEventStore) FindByIncidentID(ctx context.Context, incidentID string) ([]*models.Event, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at FROM events WHERE incident_id = ? ORDER BY timestamp", incidentID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var events []*models.Event
-	for rows.Next() {
-		var event models.Event
-		var rawJSON []byte
-		if err := rows.Scan(&event.ID, &event.Timestamp, &event.Kind, &event.Service, &event.TraceID, &event.IncidentID, &rawJSON, &event.Provenance, &event.CreatedAt); err != nil {
-			return nil, err
-		}
-		json.Unmarshal(rawJSON, &event.Raw)
-		events = append(events, &event)
-	}
-	return events, nil
+	return queryAllEvents(ctx, s.db, "WHERE incident_id = ? ORDER BY timestamp", incidentID)
 }
 
 func (s *DuckDBEventStore) FindByService(ctx context.Context, service string, from, to string) ([]*models.Event, error) {
-	query := "SELECT id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at FROM events WHERE service = ?"
+	query := "WHERE service = ?"
 	args := []interface{}{service}
-
 	if from != "" {
 		query += " AND timestamp >= ?"
 		args = append(args, from)
@@ -303,24 +388,211 @@ func (s *DuckDBEventStore) FindByService(ctx context.Context, service string, fr
 		args = append(args, to)
 	}
 	query += " ORDER BY timestamp"
+	return queryAllEvents(ctx, s.db, query, args...)
+}
 
-	rows, err := s.db.QueryContext(ctx, query, args...)
+// Lifecycle-aware query methods
+func (s *DuckDBEventStore) FindByEventName(ctx context.Context, eventName string, limit, offset int) ([]*models.Event, error) {
+	return queryAllEvents(ctx, s.db, "WHERE event = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?", eventName, limit, offset)
+}
+
+func (s *DuckDBEventStore) FindByOutcome(ctx context.Context, outcome string, limit, offset int) ([]*models.Event, error) {
+	return queryAllEvents(ctx, s.db, "WHERE outcome = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?", outcome, limit, offset)
+}
+
+func (s *DuckDBEventStore) FindByLevel(ctx context.Context, level string, limit, offset int) ([]*models.Event, error) {
+	return queryAllEvents(ctx, s.db, "WHERE level = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?", level, limit, offset)
+}
+
+func (s *DuckDBEventStore) FindByDurationRange(ctx context.Context, minMs, maxMs float64, limit, offset int) ([]*models.Event, error) {
+	return queryAllEvents(ctx, s.db, "WHERE duration_ms >= ? AND duration_ms <= ? ORDER BY duration_ms DESC LIMIT ? OFFSET ?", minMs, maxMs, limit, offset)
+}
+
+func (s *DuckDBEventStore) FindByEnvironment(ctx context.Context, env string, limit, offset int) ([]*models.Event, error) {
+	return queryAllEvents(ctx, s.db, "WHERE environment = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?", env, limit, offset)
+}
+
+func (s *DuckDBEventStore) FindByRelease(ctx context.Context, release string, limit, offset int) ([]*models.Event, error) {
+	return queryAllEvents(ctx, s.db, "WHERE release = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?", release, limit, offset)
+}
+
+func (s *DuckDBEventStore) CountByOutcome(ctx context.Context, service string, from, to time.Time) (map[string]int64, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT outcome, COUNT(*) as cnt FROM events WHERE service = ? AND timestamp >= ? AND timestamp <= ? GROUP BY outcome", service, from, to)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
-	var events []*models.Event
+	result := make(map[string]int64)
 	for rows.Next() {
-		var event models.Event
-		var rawJSON []byte
-		if err := rows.Scan(&event.ID, &event.Timestamp, &event.Kind, &event.Service, &event.TraceID, &event.IncidentID, &rawJSON, &event.Provenance, &event.CreatedAt); err != nil {
+		var outcome string
+		var count int64
+		if err := rows.Scan(&outcome, &count); err != nil {
 			return nil, err
 		}
-		json.Unmarshal(rawJSON, &event.Raw)
-		events = append(events, &event)
+		result[outcome] = count
 	}
-	return events, nil
+	return result, nil
+}
+
+func (s *DuckDBEventStore) CountByEventName(ctx context.Context, service string, from, to time.Time) (map[string]int64, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT event, COUNT(*) as cnt FROM events WHERE service = ? AND timestamp >= ? AND timestamp <= ? AND event IS NOT NULL GROUP BY event", service, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make(map[string]int64)
+	for rows.Next() {
+		var eventName string
+		var count int64
+		if err := rows.Scan(&eventName, &count); err != nil {
+			return nil, err
+		}
+		result[eventName] = count
+	}
+	return result, nil
+}
+
+func (s *DuckDBEventStore) AverageDuration(ctx context.Context, eventName string, from, to time.Time) (float64, error) {
+	var avg sql.NullFloat64
+	err := s.db.QueryRowContext(ctx, "SELECT AVG(duration_ms) FROM events WHERE event = ? AND timestamp >= ? AND timestamp <= ? AND duration_ms IS NOT NULL", eventName, from, to).Scan(&avg)
+	if err != nil || !avg.Valid {
+		return 0, err
+	}
+	return avg.Float64, nil
+}
+
+func (s *DuckDBEventStore) PercentileDuration(ctx context.Context, eventName string, percentile float64, from, to time.Time) (float64, error) {
+	var val sql.NullFloat64
+	// Use DuckDB's approx_quantile function
+	err := s.db.QueryRowContext(ctx, "SELECT approx_quantile(duration_ms, ?) FROM events WHERE event = ? AND timestamp >= ? AND timestamp <= ? AND duration_ms IS NOT NULL", percentile, eventName, from, to).Scan(&val)
+	if err != nil || !val.Valid {
+		return 0, err
+	}
+	return val.Float64, nil
+}
+
+func (s *DuckDBEventStore) DistinctServices(ctx context.Context) ([]string, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT DISTINCT service FROM events ORDER BY service")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var services []string
+	for rows.Next() {
+		var svc string
+		if err := rows.Scan(&svc); err != nil {
+			return nil, err
+		}
+		services = append(services, svc)
+	}
+	return services, nil
+}
+
+func (s *DuckDBEventStore) DistinctEventNames(ctx context.Context) ([]string, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT DISTINCT event FROM events WHERE event IS NOT NULL ORDER BY event")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var names []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		names = append(names, name)
+	}
+	return names, nil
+}
+
+func (s *DuckDBEventStore) ListLifecycleSummaries(ctx context.Context, filter *LifecycleFilter) ([]*models.LifecycleSummary, int, error) {
+	where := "WHERE 1=1"
+	var args []interface{}
+	if filter != nil {
+		if filter.Service != "" {
+			where += " AND service = ?"
+			args = append(args, filter.Service)
+		}
+		if filter.EventName != "" {
+			where += " AND event = ?"
+			args = append(args, filter.EventName)
+		}
+		if filter.Outcome != "" {
+			where += " AND outcome = ?"
+			args = append(args, filter.Outcome)
+		}
+		if filter.Level != "" {
+			where += " AND level = ?"
+			args = append(args, filter.Level)
+		}
+		if filter.TraceID != "" {
+			where += " AND trace_id = ?"
+			args = append(args, filter.TraceID)
+		}
+		if !filter.From.IsZero() {
+			where += " AND timestamp >= ?"
+			args = append(args, filter.From)
+		}
+		if !filter.To.IsZero() {
+			where += " AND timestamp <= ?"
+			args = append(args, filter.To)
+		}
+		if filter.MinDuration > 0 {
+			where += " AND duration_ms >= ?"
+			args = append(args, filter.MinDuration)
+		}
+		if filter.MaxDuration > 0 {
+			where += " AND duration_ms <= ?"
+			args = append(args, filter.MaxDuration)
+		}
+	}
+
+	// Count total
+	var total int
+	countQuery := "SELECT COUNT(*) FROM events " + where
+	if err := s.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	// Fetch summaries
+	limit := 50
+	offset := 0
+	if filter != nil {
+		if filter.Limit > 0 {
+			limit = filter.Limit
+		}
+		if filter.Offset > 0 {
+			offset = filter.Offset
+		}
+	}
+
+	query := "SELECT id, event, service, outcome, duration_ms," +
+		" (SELECT COUNT(*) FROM json_array_length(COALESCE(checkpoints, '[]'))) as cp_count," +
+		" (SELECT COUNT(*) FROM json_array_length(COALESCE(processes, '[]'))) as pr_count," +
+		" (SELECT COUNT(*) FROM json_array_length(COALESCE(groups, '[]'))) as gr_count," +
+		" (SELECT COUNT(*) FROM json_array_length(COALESCE(timers, '[]'))) as ti_count," +
+		" (SELECT COUNT(*) FROM json_array_length(COALESCE(links, '[]'))) as li_count," +
+		" trace_id" +
+		" FROM events " + where + " ORDER BY timestamp DESC LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var summaries []*models.LifecycleSummary
+	for rows.Next() {
+		var s models.LifecycleSummary
+		if err := rows.Scan(&s.EventID, &s.Event, &s.Service, &s.Outcome, &s.DurationMs,
+			&s.CheckpointCount, &s.ProcessCount, &s.GroupCount, &s.TimerCount, &s.LinkCount,
+			&s.TraceID); err != nil {
+			return nil, 0, err
+		}
+		summaries = append(summaries, &s)
+	}
+	return summaries, total, nil
 }
 
 type DuckDBTopologyStore struct {

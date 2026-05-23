@@ -1,4 +1,3 @@
-use crate::{Logger, Params};
 
 pub fn middleware_name() -> &'static str {
     "loxa-axum"

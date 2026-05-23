@@ -153,18 +153,18 @@ class Logger:
             self._delete_path(ctx.attrs, key)
 
     def finish(self, ctx: EventContext, outcome: str, *attrs: Attr, **named: Any) -> None:
+        if attrs or named:
+            self.enrich(ctx, *attrs, **named)
         ctx.finish(outcome)
         if self._metrics is not None:
             self._metrics.on_event_finished()
-        if attrs or named:
-            self.enrich(ctx, *attrs, **named)
 
     def finish_error(self, ctx: EventContext, error: Exception, *attrs: Attr, **named: Any) -> None:
+        if attrs or named:
+            self.enrich(ctx, *attrs, **named)
         ctx.finish_error(error)
         if self._metrics is not None:
             self._metrics.on_event_finished()
-        if attrs or named:
-            self.enrich(ctx, *attrs, **named)
 
     def emit(self, ctx: EventContext) -> str:
         if self._config.panic_recovery:

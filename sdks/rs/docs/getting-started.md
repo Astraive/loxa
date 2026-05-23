@@ -2,6 +2,18 @@
 
 A 5-minute quickstart for the LOXA Rust SDK. By the end you will have a working application that creates, enriches, finishes, and emits a wide-event.
 
+## Default Client
+
+Use module-level `loxa::<method>()` calls for quick starts and single-client applications.
+
+## Custom Client / Alias
+
+Use `create_loxa(config)` for an independent client, `Loxa::new(config)`/`Logger::new(config)` for idiomatic construction, and `loxa::alias("name")` for a same-config child that emits `loxa.alias`.
+
+## Cross-Language Parity
+
+Rust maps to the v0.0.2 parity family as module-level `loxa`, `create_loxa`, constructor APIs, and user-defined variables such as `logger.info(...)`.
+
 ## Add Dependency
 
 Add to your `Cargo.toml`:
@@ -92,7 +104,7 @@ Custom instances do not affect the global default logger. Call `loxa::configure(
 
 ## Aliases
 
-Use `loxa::alias("service-name")` to create a logger that shares the global config but uses a different service name. This is useful for emitting events from a logical subsystem without duplicating configuration.
+Use `loxa::alias("name")` to create a logger that shares the global config and emits `loxa.alias` metadata. This is useful for emitting events from a logical subsystem without duplicating configuration.
 
 ```rust
 use loxa;

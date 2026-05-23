@@ -77,6 +77,8 @@ type (
 	PrometheusStatsHandler = core.PrometheusStatsHandler
 	// ConfigOption mutates and returns Config.
 	ConfigOption = core.ConfigOption
+	// IDGenerator generates unique string IDs for events.
+	IDGenerator = core.IDGenerator
 
 	// ── Sink config types ────────────────────────────────────────────────────
 
@@ -114,6 +116,20 @@ type (
 	GroupHandle = core.GroupHandle
 	// StopwatchHandle is a standalone elapsed-time measurer.
 	StopwatchHandle = core.StopwatchHandle
+
+	// ── Collector types ─────────────────────────────────────────────────────────
+
+	// CollectorClient communicates with the LOXA collector REST API.
+	CollectorClient = core.CollectorClient
+	// CollectorClientConfig configures the collector client.
+	CollectorClientConfig = core.CollectorClientConfig
+
+	// ── Test types ───────────────────────────────────────────────────────────────
+
+	// MockSink is a test sink that records events.
+	MockSink = core.MockSink
+	// FakeClock implements the Clock interface with a controllable time.
+	FakeClock = core.FakeClock
 )
 
 var (
@@ -130,11 +146,12 @@ const (
 	LOXA_INGEST_API_VERSION = core.LOXA_INGEST_API_VERSION
 	LOXA_EVENT_VERSION      = core.LOXA_EVENT_VERSION
 
-	LevelDebug = core.LevelDebug
-	LevelInfo  = core.LevelInfo
-	LevelWarn  = core.LevelWarn
-	LevelError = core.LevelError
-	LevelFatal = core.LevelFatal
+	LevelDebug  = core.LevelDebug
+	LevelInfo   = core.LevelInfo
+	LevelNotice = core.LevelNotice
+	LevelWarn   = core.LevelWarn
+	LevelError  = core.LevelError
+	LevelFatal  = core.LevelFatal
 
 	// Backpressure policies
 	Block        = core.Block
@@ -161,6 +178,11 @@ const (
 	EventStateFinished         = core.EventStateFinished
 	EventStateEmitting         = core.EventStateEmitting
 	EventStateEmitted          = core.EventStateEmitted
+	EventStateInvalid          = core.EventStateInvalid
+	EventStateDropped          = core.EventStateDropped
+	EventStateEmitFailed       = core.EventStateEmitFailed
+	EventStateSpooled          = core.EventStateSpooled
+	EventStateDLQWritten       = core.EventStateDLQWritten
 	EventStateFailedValidation = core.EventStateFailedValidation
 	EventStateDeliveryFailed   = core.EventStateDeliveryFailed
 )
@@ -472,6 +494,23 @@ func Stopwatch() *StopwatchHandle {
 	return core.Stopwatch()
 }
 
+// Measure runs fn, measures its duration, and returns it as an Attr.
+func Measure(name string, fn func()) Attr { return core.Measure(name, fn) }
+
+// Step runs fn as a named process step on the event in ctx.
+func Step(ctx context.Context, name string, fn func() error) error { return core.Step(ctx, name, fn) }
+
+// Phase runs fn as a named group phase on the event in ctx.
+func Phase(ctx context.Context, name string, fn func() error) error { return core.Phase(ctx, name, fn) }
+
+// Span runs fn as a named timer span on the event in ctx.
+func Span(ctx context.Context, name string, fn func() error) error { return core.Span(ctx, name, fn) }
+
+// FinishGroupError completes a group handle with an error.
+func FinishGroupError(h *GroupHandle, err error, attrs ...Attr) error {
+	return core.FinishGroupError(h, err, attrs...)
+}
+
 // Flush drains the queue.
 func Flush(ctx context.Context) error {
 	return Default().Flush(ctx)
@@ -499,18 +538,43 @@ func MustShutdown(timeout time.Duration) {
 	}
 }
 
-// Alias creates a new Logger with the same config as Default() but a different service name.
+// Alias creates a same-config child Logger that emits loxa.alias metadata.
 func Alias(service string) (*Logger, error) {
 	return Default().Alias(service)
 }
 
+// ── Lifecycle outcome helpers ─────────────────────────────────────────────────
+
+func Drop(ctx context.Context, reason string) error    { return Default().Drop(ctx, reason) }
+func Cancel(ctx context.Context, reason string) error  { return Default().Cancel(ctx, reason) }
+func Abandon(ctx context.Context, reason string) error { return Default().Abandon(ctx, reason) }
+func Retry(ctx context.Context, attrs ...Attr) error    { return Default().Retry(ctx, attrs...) }
+func Partial(ctx context.Context, attrs ...Attr) error  { return Default().Partial(ctx, attrs...) }
+func CloneEvent(ctx context.Context) (*Event, error)  { return Default().CloneEvent(ctx) }
+func LinkEvent(ctx context.Context, target string, attrs ...Attr) (context.Context, error) {
+	return Default().LinkEvent(ctx, target, attrs...)
+}
+func CurrentEvent(ctx context.Context) (*Event, bool) { return Default().CurrentEvent(ctx) }
+
+// Wrap wraps fn in a named event lifecycle and returns the error.
+func Wrap(name string, fn func() error) error { return core.Wrap(name, fn) }
+
 // ── Immediate logging API ─────────────────────────────────────────────────────
 
-func Debug(msg string, attrs ...Attr) { Default().Debug(msg, attrs...) }
-func Info(msg string, attrs ...Attr)  { Default().Info(msg, attrs...) }
-func Warn(msg string, attrs ...Attr)  { Default().Warn(msg, attrs...) }
-func Error(msg string, attrs ...Attr) { Default().Error(msg, attrs...) }
-func Fatal(msg string, attrs ...Attr) { Default().Fatal(msg, attrs...) }
+func Debug(msg string, attrs ...Attr)  { Default().Debug(msg, attrs...) }
+func Info(msg string, attrs ...Attr)   { Default().Info(msg, attrs...) }
+func Notice(msg string, attrs ...Attr) { Default().Notice(msg, attrs...) }
+func Warn(msg string, attrs ...Attr)   { Default().Warn(msg, attrs...) }
+func Error(msg string, attrs ...Attr)  { Default().Error(msg, attrs...) }
+func Fatal(msg string, attrs ...Attr)  { Default().Fatal(msg, attrs...) }
+func Track(name string, attrs ...Attr)    { Default().Track(name, attrs...) }
+func Audit(name string, attrs ...Attr)    { Default().Audit(name, attrs...) }
+func Security(name string, attrs ...Attr) { Default().Security(name, attrs...) }
+func Metric(name string, value float64, attrs ...Attr)   { Default().Metric(name, value, attrs...) }
+func Count(name string, value int64, attrs ...Attr)      { Default().Count(name, value, attrs...) }
+func Gauge(name string, value float64, attrs ...Attr)    { Default().Gauge(name, value, attrs...) }
+func Histogram(name string, value float64, attrs ...Attr) { Default().Histogram(name, value, attrs...) }
+func Breadcrumb(name string, attrs ...Attr) { Default().Breadcrumb(name, attrs...) }
 
 // DebugContext emits an immediate debug log line with explicit context and event name.
 func DebugContext(ctx context.Context, msg, event string, attrs ...Attr) {
@@ -535,6 +599,11 @@ func ErrorContext(ctx context.Context, msg string, err error, event string, attr
 // FatalContext emits an immediate fatal log line with explicit context and exits the process.
 func FatalContext(ctx context.Context, msg string, err error, event string, attrs ...Attr) {
 	Default().FatalContext(ctx, msg, err, event, attrs...)
+}
+
+// NoticeContext emits an immediate notice log line with explicit context and event name.
+func NoticeContext(ctx context.Context, msg, event string, attrs ...Attr) {
+	Default().NoticeContext(ctx, msg, event, attrs...)
 }
 
 // FromContext retrieves the active Event from ctx.
@@ -661,6 +730,64 @@ var (
 	SensitiveString = core.SensitiveString
 	HashString      = core.HashString
 
+	// Additional domain helpers
+	PaymentID         = core.PaymentID
+	SubscriptionID    = core.SubscriptionID
+	InvoiceID         = core.InvoiceID
+	JobID             = core.JobID
+	CorrelationID     = core.CorrelationID
+	CommitSha         = core.CommitSha
+	Release           = core.Release
+	Money             = core.Money
+	Percent           = core.Percent
+	Bytes             = core.Bytes
+	HTTPStatus        = core.HTTPStatus
+	Bucket            = core.Bucket
+	Tags              = core.Tags
+	Masked            = core.Masked
+	URL               = core.URL
+	EmailHash         = core.EmailHash
+	IPHash            = core.IPHash
+
+	// Checkout domain helpers
+	CheckoutCartItemCount  = core.CheckoutCartItemCount
+	CheckoutCartTotal      = core.CheckoutCartTotal
+	CheckoutPaymentMethod  = core.CheckoutPaymentMethod
+	CheckoutStatus         = core.CheckoutStatus
+
+	// Payment domain helpers
+	PaymentMethod      = core.PaymentMethod
+	PaymentIntentID    = core.PaymentIntentID
+	PaymentFailureCode = core.PaymentFailureCode
+	PaymentRetryAttempt = core.PaymentRetryAttempt
+
+	// Billing domain helpers
+	BillingPlan           = core.BillingPlan
+	BillingSubscriptionID = core.BillingSubscriptionID
+	BillingInvoiceID      = core.BillingInvoiceID
+	BillingAmount         = core.BillingAmount
+	BillingInterval       = core.BillingInterval
+
+	// Agent/AI domain helpers
+	AgentName         = core.AgentName
+	AgentProvider     = core.AgentProvider
+	AgentModel        = core.AgentModel
+	AgentRunType      = core.AgentRunType
+	AgentToolName     = core.AgentToolName
+	AgentToolOutcome  = core.AgentToolOutcome
+	AgentInputTokens  = core.AgentInputTokens
+	AgentOutputTokens = core.AgentOutputTokens
+	AgentCost         = core.AgentCost
+
+	// RAG domain helpers
+	RAGIndex           = core.RAGIndex
+	RAGEmbeddingModel  = core.RAGEmbeddingModel
+	RAGChunksRetrieved = core.RAGChunksRetrieved
+	RAGTopScore        = core.RAGTopScore
+	RAGQueryHash       = core.RAGQueryHash
+	RAGCitationCount   = core.RAGCitationCount
+	RAGRetrievalLatency = core.RAGRetrievalLatency
+
 	// Domain logic
 	FeatureFlag     = core.FeatureFlag
 	FeatureFlagBool = core.FeatureFlagBool
@@ -681,6 +808,27 @@ func TestLogger() (*Logger, *MemorySinkStore, error) { return core.TestLogger() 
 // Capture runs fn and returns all events emitted during execution.
 func Capture(fn func()) ([]*Event, error) { return core.Capture(fn) }
 
+// MultiSink fans out events to multiple sinks.
+func MultiSink(sinks ...Sink) Sink { return core.MultiSink(sinks...) }
+
+// OTLSink sends events to an OpenTelemetry-compatible endpoint.
+func OTLSink(endpoint string) Sink { return core.OTLSink(endpoint) }
+
+// Drain empties the sink's buffer if it implements Drainable, else flushes.
+func Drain(ctx context.Context, s Sink) error { return core.Drain(ctx, s) }
+
+// Pause pauses a sink if it implements Pauseable.
+func Pause(s Sink) { core.Pause(s) }
+
+// Resume resumes a paused sink if it implements Pauseable.
+func Resume(s Sink) { core.Resume(s) }
+
+// QueueSize returns the sink's queue size if it implements Sized, or 0.
+func QueueSize(s Sink) int { return core.QueueSize(s) }
+
+// Health checks sink health if it implements Checkable.
+func Health(ctx context.Context, s Sink) error { return core.Health(ctx, s) }
+
 // AssertEvent checks that ev has the expected value at the given key.
 func AssertEvent(t testing.TB, ev *Event, key string, expected any) {
 	core.AssertEvent(t, ev, key, expected)
@@ -694,6 +842,32 @@ func AssertRedacted(t testing.TB, ev *Event, key string) {
 // AssertHasCheckpoint checks that ev contains a checkpoint with the given name.
 func AssertHasCheckpoint(t testing.TB, ev *Event, name string) {
 	core.AssertHasCheckpoint(t, ev, name)
+}
+
+// ExpectEvent asserts that store contains at least one event and returns it.
+func ExpectEvent(t testing.TB, store *MemorySinkStore) *Event {
+	return core.ExpectEvent(t, store)
+}
+
+// ExpectAttr asserts ev contains an attr with the given key and value.
+func ExpectAttr(t testing.TB, ev *Event, key string, expected any) {
+	core.ExpectAttr(t, ev, key, expected)
+}
+
+// SnapshotEvent returns a JSON snapshot of the event for comparison.
+func SnapshotEvent(t testing.TB, ev *Event) string {
+	return core.SnapshotEvent(t, ev)
+}
+
+// NewMockSink creates a new MockSink for testing.
+func NewMockSink() *MockSink { return core.NewMockSink() }
+
+// NewFakeClock creates a new FakeClock for testing.
+func NewFakeClock(t time.Time) *FakeClock { return core.NewFakeClock(t) }
+
+// SetIDGenerator replaces the ID generator on a Config for deterministic IDs.
+func SetIDGenerator(cfg Config, gen IDGenerator) Config {
+	return core.SetIDGenerator(cfg, gen)
 }
 func NoopSink() Sink                                      { return core.NoopSink() }
 func CollectorSink(cfg CollectorSinkConfig) (Sink, error) { return core.CollectorSink(cfg) }
@@ -727,6 +901,7 @@ func ApplyConfig(cfg Config, options ...ConfigOption) Config {
 }
 
 func WithService(service string) ConfigOption         { return core.WithService(service) }
+func WithAlias(alias string) ConfigOption             { return core.WithAlias(alias) }
 func WithVersion(version string) ConfigOption         { return core.WithVersion(version) }
 func WithEnvironment(environment string) ConfigOption { return core.WithEnvironment(environment) }
 func WithSink(sink Sink) ConfigOption                 { return core.WithSink(sink) }
@@ -775,6 +950,14 @@ func WithConnectionTimeout(timeout time.Duration) ConfigOption {
 func WithCompression(enabled bool) ConfigOption { return core.WithCompression(enabled) }
 func WithLevel(level Level) ConfigOption        { return core.WithLevel(level) }
 func WithRegion(region string) ConfigOption     { return core.WithRegion(region) }
+func WithRelease(release string) ConfigOption   { return core.WithRelease(release) }
+func WithNamespace(namespace string) ConfigOption { return core.WithNamespace(namespace) }
+func WithAPIKey(apiKey string) ConfigOption      { return core.WithAPIKey(apiKey) }
+func WithOtelBridge(enabled bool) ConfigOption   { return core.WithOtelBridge(enabled) }
+func WithRetry(maxRetries int) ConfigOption     { return core.WithRetry(maxRetries) }
+func WithQueueSize(size int) ConfigOption       { return core.WithQueueSize(size) }
+func WithLogger(l *Logger) ConfigOption          { return core.WithLogger(l) }
+func Disabled() Config                           { return core.Disabled() }
 func NewMetricsCollector(namespace string, maxBufferSize int) *MetricsCollector {
 	return core.NewMetricsCollector(namespace, maxBufferSize)
 }
@@ -798,7 +981,11 @@ func SampleRandom(rate float64) Sampler { return core.SampleRandom(rate) }
 func SampleRateLimited(rate float64, window time.Duration) Sampler {
 	return core.SampleRateLimited(rate, window)
 }
-func SampleByHeader(header, value string) Sampler { return core.SampleByHeader(header, value) }
+func SampleByHeader(header, value string) Sampler        { return core.SampleByHeader(header, value) }
+func SampleByEvent(names ...string) Sampler               { return core.SampleByEvent(names...) }
+func SampleByOutcome(outcomes ...string) Sampler          { return core.SampleByOutcome(outcomes...) }
+func AllowFields(keys ...string) Sampler                  { return core.AllowFields(keys...) }
+func BlockFields(keys ...string) Sampler                  { return core.BlockFields(keys...) }
 func SampleErrors() Sampler                       { return core.SampleErrors() }
 func SampleSlowRequests(d time.Duration) Sampler  { return core.SampleSlowRequests(d) }
 func SampleStatusCodes(codes ...int) Sampler      { return core.SampleStatusCodes(codes...) }
@@ -848,6 +1035,13 @@ func PrettyJSONEncoder() *JSONEventEncoder { return core.PrettyJSONEncoder() }
 
 func WrapHTTPClient(client *http.Client) *http.Client          { return core.WrapHTTPClient(client) }
 func NewRoundTripper(base http.RoundTripper) http.RoundTripper { return core.NewRoundTripper(base) }
+
+// ── Collector Client ───────────────────────────────────────────────────────
+
+// NewCollectorClient creates a new collector REST API client.
+func NewCollectorClient(cfg CollectorClientConfig) *CollectorClient {
+	return core.NewCollectorClient(cfg)
+}
 
 // ── Cortex Client ───────────────────────────────────────────────────────────
 

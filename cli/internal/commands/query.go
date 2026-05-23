@@ -94,7 +94,7 @@ func extractRow(r any, cols []any) []string {
 	if row, ok := r.([]any); ok {
 		cells := []string{}
 		for _, c := range row {
-			cells = append(cells, fmt.Sprintf("%v", c))
+			cells = append(cells, formatCell(c))
 		}
 		return cells
 	}
@@ -102,9 +102,23 @@ func extractRow(r any, cols []any) []string {
 		cells := []string{}
 		for _, c := range cols {
 			key := fmt.Sprintf("%v", c)
-			cells = append(cells, fmt.Sprintf("%v", row[key]))
+			cells = append(cells, formatCell(row[key]))
 		}
 		return cells
 	}
-	return []string{fmt.Sprintf("%v", r)}
+	return []string{formatCell(r)}
+}
+
+func formatCell(v any) string {
+	if v == nil {
+		return "NULL"
+	}
+	switch val := v.(type) {
+	case map[string]any, []any:
+		b, err := json.Marshal(val)
+		if err == nil {
+			return string(b)
+		}
+	}
+	return fmt.Sprintf("%v", v)
 }

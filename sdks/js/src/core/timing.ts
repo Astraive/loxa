@@ -132,6 +132,24 @@ export class TimerHandle {
   }
 }
 
+/** withProcess wraps fn inside a named process step. */
+export function withProcess(event: any, name: string, fn: () => void, ...attrs: any[]): void {
+  const h = event.startProcess(name, ...attrs);
+  try { fn(); h.finish(); } catch (e) { h.finishError(e); throw e; }
+}
+
+/** withGroup wraps fn inside a named group phase. */
+export function withGroup(event: any, name: string, fn: () => void, ...attrs: any[]): void {
+  const h = event.startGroup(name, ...attrs);
+  try { fn(); h.finish(); } catch (e) { h.finishError(e); throw e; }
+}
+
+/** withTimer wraps fn inside a named timer. */
+export function withTimer(event: any, name: string, fn: () => void, ...attrs: any[]): void {
+  const h = event.startTimer(name, ...attrs);
+  try { fn(); h.stop(); } catch (e) { throw e; }
+}
+
 /** Handle for a named group phase with automatic duration tracking. */
 export class GroupHandle {
   private _event: any;
@@ -172,9 +190,32 @@ export class GroupHandle {
     this._event.groups.push(entry);
   }
 
+  finishGroupError(err: unknown, ...attrs: any[]): void {
+    const extra = { error_message: String(err) };
+    this.finish(...attrs);
+  }
+
   duration(): number {
     return Date.now() - this._startedAt;
   }
+}
+
+/** Measure creates a standalone stopwatch. */
+export function measure(): StopwatchHandle { return new StopwatchHandle(); }
+
+/** Phase is a convenience alias for starting a group on an event. */
+export function phase(event: any, name: string, ...attrs: any[]): GroupHandle {
+  return event.startGroup(name, ...attrs);
+}
+
+/** Span is a convenience alias for starting a timer on an event. */
+export function span(event: any, name: string, ...attrs: any[]): TimerHandle {
+  return event.startTimer(name, ...attrs);
+}
+
+/** Step is a convenience alias for starting a process on an event. */
+export function step(event: any, name: string, ...attrs: any[]): ProcessHandle {
+  return event.startProcess(name, ...attrs);
 }
 
 /** Standalone elapsed-time measurer with no event reference. */

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	loxav1 "github.com/astraive/loxa/spec/proto/loxa/v1"
 	"github.com/astraive/loxa-collector/internal/ingest"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/time/rate"
@@ -57,10 +58,9 @@ func TestCollectorHTTPIngestBridgesToCortexBatch(t *testing.T) {
 	batch := fake.lastBatch()
 	require.NotNil(t, batch)
 	require.Len(t, batch.Events, 1)
-	require.Equal(t, "evt-bridge-http", batch.Events[0].Id)
+	require.Equal(t, "evt-bridge-http", batch.Events[0].EventId)
 	require.Equal(t, "checkout", batch.Events[0].Service)
-	require.Equal(t, "http", batch.Events[0].Kind)
-	require.Equal(t, "collector", batch.Events[0].Provenance)
+	require.Equal(t, loxav1.EventKind_EVENT_KIND_EVENT, batch.Events[0].Kind)
 	require.Equal(t, "tr-http-1", batch.Events[0].TraceId)
 }
 

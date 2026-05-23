@@ -20,6 +20,11 @@ func WithService(service string) ConfigOption {
 	return func(cfg Config) Config { return cfg.WithService(service) }
 }
 
+// WithAlias applies logical alias metadata without changing service.
+func WithAlias(alias string) ConfigOption {
+	return func(cfg Config) Config { return cfg.WithAlias(alias) }
+}
+
 // WithVersion applies version.
 func WithVersion(version string) ConfigOption {
 	return func(cfg Config) Config { return cfg.WithVersion(version) }
@@ -231,5 +236,71 @@ func WithRegion(region string) ConfigOption {
 	return func(cfg Config) Config {
 		cfg.Region = region
 		return cfg
+	}
+}
+
+// WithRelease applies the release version (alias for WithVersion).
+func WithRelease(release string) ConfigOption { return WithVersion(release) }
+
+// WithNamespace sets the logical namespace for the SDK client (multi-tenant).
+func WithNamespace(namespace string) ConfigOption {
+	return func(cfg Config) Config {
+		cfg.Environment = namespace
+		return cfg
+	}
+}
+
+// WithAPIKey sets the ingest API key for collector authentication.
+func WithAPIKey(apiKey string) ConfigOption {
+	return func(cfg Config) Config {
+		cfg.APIKey = apiKey
+		return cfg
+	}
+}
+
+// WithOtelBridge enables or disables OpenTelemetry bridge integration.
+func WithOtelBridge(enabled bool) ConfigOption {
+	return func(cfg Config) Config {
+		if enabled {
+			cfg.Async.Enabled = true
+		}
+		return cfg
+	}
+}
+
+// WithRetry configures the maximum retry attempts.
+func WithRetry(maxRetries int) ConfigOption { return WithMaxRetries(maxRetries) }
+
+// WithQueueSize sets the async queue size.
+func WithQueueSize(size int) ConfigOption { return WithAsyncQueue(size) }
+
+// WithLogger sets a custom logger instance as the parent.
+func WithLogger(l *Logger) ConfigOption {
+	return func(cfg Config) Config {
+		if l != nil {
+			l.mu.RLock()
+			cfg = l.cfg
+			l.mu.RUnlock()
+		}
+		return cfg
+	}
+}
+
+// Disabled returns a config preset that disables all output (no-op).
+func Disabled() Config {
+	return Config{
+		Level:   LevelFatal,
+		Encoder: JSONEncoder(),
+		Sinks:   []Sink{NoopSink()},
+		Sampler: SampleNone(),
+		Async: AsyncConfig{
+			Enabled: false,
+		},
+		FieldNaming: FieldNamingConfig{
+			ExpandDotKeys: true,
+		},
+		DuplicateFieldPolicy: CanonicalWins,
+		IDGen:                globalIDGen,
+		Clock:                realClock{},
 	}
 }

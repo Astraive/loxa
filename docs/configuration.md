@@ -272,7 +272,7 @@ identity:
   
   # Bound identity (for single-tenant deployments)
   service_name: my-service
-  service_version: 1.0.0
+  service_version: 0.0.1
   deployment_environment: production
   deployment_region: us-west-2
   tenant_id: tenant-123

@@ -33,8 +33,8 @@ Edit `CHANGELOG.md` at the repository root. Add a new section for the release ve
 Create a Git tag following the `go/vX.Y.Z` convention required by Go modules:
 
 ```bash
-git tag -a sdks/go/v1.0.0 -m "Go SDK v1.0.0"
-git push origin sdks/go/v1.0.0
+git tag -a sdks/go/v0.0.1 -m "Go SDK v0.0.1"
+git push origin sdks/go/v0.0.1
 ```
 
 The `go/` prefix is required because the Go SDK lives in a subdirectory of a monorepo. The Go module proxy at `proxy.golang.org` will pick up the new tag automatically.
@@ -44,13 +44,13 @@ The `go/` prefix is required because the Go SDK lives in a subdirectory of a mon
 After pushing the tag, verify that the module proxy has indexed the new version:
 
 ```bash
-GOPROXY=https://proxy.golang.org go list -m github.com/astraive/loxa/sdks/go@v1.0.0
+GOPROXY=https://proxy.golang.org go list -m github.com/astraive/loxa/sdks/go@v0.0.1
 ```
 
 If the proxy has not yet indexed the version, wait a few minutes and retry. You can also force a re-fetch:
 
 ```bash
-curl https://proxy.golang.org/github.com/astraive/loxa/sdks/go/@v/v1.0.0.info
+curl https://proxy.golang.org/github.com/astraive/loxa/sdks/go/@v/v0.0.1.info
 ```
 
 ### 4. Verify Downstream Consumers
@@ -60,7 +60,7 @@ Confirm that the new version resolves cleanly in a fresh module:
 ```bash
 mkdir /tmp/loxa-verify && cd /tmp/loxa-verify
 go mod init verify
-go get github.com/astraive/loxa/sdks/go@v1.0.0
+go get github.com/astraive/loxa/sdks/go@v0.0.1
 go build ./...
 ```
 
@@ -69,8 +69,8 @@ go build ./...
 If middleware or integration submodules also changed, tag them independently:
 
 ```bash
-git tag -a sdks/go/src/middleware/v1.0.0 -m "Go SDK middleware v1.0.0"
-git push origin sdks/go/src/middleware/v1.0.0
+git tag -a sdks/go/src/middleware/v0.0.1 -m "Go SDK middleware v0.0.1"
+git push origin sdks/go/src/middleware/v0.0.1
 ```
 
 ### 6. Create a GitHub Release
@@ -78,16 +78,16 @@ git push origin sdks/go/src/middleware/v1.0.0
 Create a GitHub Release from the tag with release notes copied from the changelog:
 
 ```bash
-gh release create sdks/go/v1.0.0 --title "Go SDK v1.0.0" --notes-file release-notes.md
+gh release create sdks/go/v0.0.1 --title "Go SDK v0.0.1" --notes-file release-notes.md
 ```
 
 ## Version Policy
 
 The Go SDK follows Semantic Versioning:
 
-- **Major** (v1.0.0): Breaking changes to the public API.
-- **Minor** (v1.0.0): New features, backward-compatible.
-- **Patch** (v1.0.0): Bug fixes, backward-compatible.
+- **Major** (v0.0.1): Breaking changes to the public API.
+- **Minor** (v0.0.1): New features, backward-compatible.
+- **Patch** (v0.0.1): Bug fixes, backward-compatible.
 
 ## Go Module Proxy Notes
 

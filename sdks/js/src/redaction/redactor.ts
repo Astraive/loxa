@@ -11,13 +11,18 @@ const DEFAULT_KEYS: Set<string> = new Set([
   'api_key', 'apikey', 'auth', 'authorization', 'credential', 'private_key', 'client_secret',
 ]);
 
-/** Case-insensitive key match against a set. */
+/** Case-insensitive key match against a set.
+ *  Checks the full key and every segment split by . _ or -.
+ *  This handles both dotted paths (user.password) and compound names (credit_card_number). */
 function matchesKey(key: string, keys: Set<string>): boolean {
   const lower = key.toLowerCase();
-  const lastDot = lower.split('.').pop()!;
-  const lastUnderscore = lower.split('_').pop()!;
-  const lastHyphen = lower.split('-').pop()!;
-  return keys.has(lower) || keys.has(lastDot) || keys.has(lastUnderscore) || keys.has(lastHyphen);
+  if (keys.has(lower)) return true;
+  // Collect all segments split by common delimiters
+  const segments = lower.split(/[._-]+/);
+  for (const segment of segments) {
+    if (keys.has(segment)) return true;
+  }
+  return false;
 }
 
 /** Walk a payload recursively, applying a transform to matching keys. */

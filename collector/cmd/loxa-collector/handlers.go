@@ -229,6 +229,15 @@ func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 				resp.AddDuplicate(i, eventID)
 				continue
 			}
+			if result.Quarantined {
+				s.metrics.eventsInvalid.Add(1)
+				message := "schema validation failed"
+				if result.Err != nil {
+					message = result.Err.Error()
+				}
+				resp.AddQuarantined(i, eventID, "schema_quarantined", message)
+				continue
+			}
 			if result.Invalid {
 				s.metrics.eventsInvalid.Add(1)
 				message := "schema validation failed"
@@ -268,11 +277,13 @@ func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 	resp.Finalize()
 	status := http.StatusAccepted
 	switch {
-	case resp.Accepted == 0 && resp.Invalid > 0 && resp.Rejected == 0:
+	case resp.Accepted == 0 && resp.Invalid > 0 && resp.Rejected == 0 && resp.Quarantined == 0:
 		status = http.StatusBadRequest
+	case resp.Accepted == 0 && resp.Quarantined > 0 && resp.Invalid == 0 && resp.Rejected == 0:
+		status = http.StatusUnprocessableEntity
 	case resp.Accepted == 0 && resp.Rejected > 0:
 		status = http.StatusServiceUnavailable
-	case resp.Accepted > 0 && (resp.Invalid > 0 || resp.Rejected > 0):
+	case resp.Accepted > 0 && (resp.Invalid > 0 || resp.Rejected > 0 || resp.Quarantined > 0):
 		status = http.StatusMultiStatus
 	}
 

@@ -22,8 +22,8 @@ pub fn from_context(ctx: &EventContext) -> Option<&EventContext> {
     Some(ctx)
 }
 
-pub fn has_event(_: &EventContext) -> bool {
-    true
+pub fn has_event(ctx: &EventContext) -> bool {
+    !ctx.is_emitted()
 }
 
 pub fn event_id(ctx: &EventContext) -> &str {

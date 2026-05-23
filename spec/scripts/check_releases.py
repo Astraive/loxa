@@ -19,7 +19,7 @@ def check_releases_immutability() -> tuple[bool, list[str]]:
     Returns (is_valid, messages).
     Checks:
     - Each release has a manifest or README documenting its contents
-    - Releases are named semantically (v1, v1.0.0, v2.0.0, etc.)
+    - Releases are named semantically (v1, v0.0.1, v2.0.0, etc.)
     """
     spec_root = Path(__file__).resolve().parents[1]
     releases_dir = spec_root / "releases"
@@ -69,7 +69,7 @@ def check_releases_immutability() -> tuple[bool, list[str]]:
 
 
 def _is_semantic_version(name: str) -> bool:
-    """Check if name looks like a version (v1, v1.0, v1.0.0, etc.)."""
+    """Check if name looks like a version (v1, v1.0, v0.0.1, etc.)."""
     if not name.startswith("v"):
         return False
     version_part = name[1:]

@@ -399,6 +399,41 @@ func quoteSQLString(v string) string {
 	return "'" + strings.ReplaceAll(v, "'", "''") + "'"
 }
 
+func (c *Client) FindByEventName(ctx context.Context, eventName string, limit int) ([]*models.Event, error) {
+	query, err := c.buildJSONFieldQuery("event", eventName, limit)
+	if err != nil {
+		return nil, err
+	}
+	return c.queryEvents(ctx, query, limit)
+}
+
+func (c *Client) FindByOutcome(ctx context.Context, outcome string, limit int) ([]*models.Event, error) {
+	query, err := c.buildJSONFieldQuery("outcome", outcome, limit)
+	if err != nil {
+		return nil, err
+	}
+	return c.queryEvents(ctx, query, limit)
+}
+
+func (c *Client) DistinctServices(ctx context.Context) ([]string, error) {
+	table, rawCol, _, err := c.sqlParts()
+	if err != nil {
+		return nil, err
+	}
+	query := fmt.Sprintf("SELECT DISTINCT json_extract_string(%s, '$.service') AS service FROM %s ORDER BY service", rawCol, table)
+	rows, err := c.queryRows(ctx, query, 10000)
+	if err != nil {
+		return nil, err
+	}
+	services := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if svc, ok := row["service"].(string); ok && strings.TrimSpace(svc) != "" {
+			services = append(services, svc)
+		}
+	}
+	return services, nil
+}
+
 func (c *Client) tailURL(path string, websocketScheme bool) string {
 	base := strings.TrimRight(c.cfg.URL, "/")
 	if websocketScheme {

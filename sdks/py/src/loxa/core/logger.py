@@ -75,9 +75,9 @@ class Logger:
     def _is_default_terminal_sink(sink: object) -> bool:
         return sink.__class__.__name__ in {"StdoutSink", "StderrSink"}
 
-    def alias(self, service: str) -> "Logger":
-        """Create a new Logger with the same config but a different service name."""
-        cfg = replace(self._config, service=service)
+    def alias(self, name: str) -> "Logger":
+        """Create an immutable child logger that preserves config and emits loxa.alias."""
+        cfg = replace(self._config, alias=name)
         return Logger(cfg)
 
     def _reconfigure(self, config: Config) -> None:
@@ -117,6 +117,8 @@ class Logger:
             params.version = self._config.version
         if not params.environment and self._config.environment:
             params.environment = self._config.environment
+        if self._config.alias:
+            params.custom.append(Attr("loxa.alias", self._config.alias))
         if not params.region and self._config.region:
             params.region = self._config.region
         if not params.deployment_id and self._config.deployment_id:
@@ -265,7 +267,10 @@ class Logger:
                     raise EventValidationError("async pipeline backpressure drop")
             else:
                 for sink in self._config.sinks:
-                    sink.write(encoded)
+                    try:
+                        sink.write(encoded)
+                    except Exception as sink_err:
+                        self._notify_delivery_failed(ctx, sink_err)
             ctx.emitted = True
             ctx.event_state = EVENT_EMITTED
             ctx.emitted_payload = encoded
@@ -319,6 +324,9 @@ class Logger:
     def info(self, message: str, **attrs: Any) -> str:
         return self._emit_immediate("info", message, **attrs)
 
+    def notice(self, message: str, **attrs: Any) -> str:
+        return self._emit_immediate("notice", message, **attrs)
+
     def warn(self, message: str, **attrs: Any) -> str:
         return self._emit_immediate("warn", message, **attrs)
 
@@ -332,11 +340,122 @@ class Logger:
             sys.exit(1)
         return result
 
+    def event(self, name: str, **attrs: Any) -> str:
+        ctx = self.start_event(Params(event=name, kind="event", level="info", message=name))
+        self.enrich(ctx, **attrs)
+        self.finish(ctx, "success")
+        return self.emit(ctx)
+
+    def track(self, name: str, **attrs: Any) -> str:
+        ctx = self.start_event(Params(event=name, kind="event", level="info", message=name))
+        self.enrich(ctx, **attrs)
+        self.finish(ctx, "success")
+        return self.emit(ctx)
+
+    def audit(self, name: str, **attrs: Any) -> str:
+        ctx = self.start_event(Params(event=name, kind="event", level="info", message=name))
+        self.enrich(ctx, **attrs)
+        self.finish(ctx, "success")
+        return self.emit(ctx)
+
+    def security(self, name: str, **attrs: Any) -> str:
+        ctx = self.start_event(Params(event=name, kind="event", level="warn", message=name))
+        self.enrich(ctx, **attrs)
+        self.finish(ctx, "success")
+        return self.emit(ctx)
+
+    def metric(self, name: str, value: Any, **attrs: Any) -> str:
+        ctx = self.start_event(Params(event=name, kind="event", level="info", message=name))
+        self.enrich(ctx, metric_value=value, **attrs)
+        self.finish(ctx, "success")
+        return self.emit(ctx)
+
+    def count(self, name: str, value: int = 1, **attrs: Any) -> str:
+        ctx = self.start_event(Params(event=name, kind="event", level="info", message=name))
+        self.enrich(ctx, metric_kind="count", count=value, **attrs)
+        self.finish(ctx, "success")
+        return self.emit(ctx)
+
+    def gauge(self, name: str, value: float, **attrs: Any) -> str:
+        ctx = self.start_event(Params(event=name, kind="event", level="info", message=name))
+        self.enrich(ctx, metric_kind="gauge", gauge=value, **attrs)
+        self.finish(ctx, "success")
+        return self.emit(ctx)
+
+    def histogram(self, name: str, value: float, **attrs: Any) -> str:
+        ctx = self.start_event(Params(event=name, kind="event", level="info", message=name))
+        self.enrich(ctx, metric_kind="histogram", histogram_value=value, **attrs)
+        self.finish(ctx, "success")
+        return self.emit(ctx)
+
+    def breadcrumb(self, name: str, **attrs: Any) -> str:
+        ctx = self.start_event(Params(event=name, kind="checkpoint", level="debug", message=name))
+        self.enrich(ctx, **attrs)
+        self.finish(ctx, "success")
+        return self.emit(ctx)
+
     def _emit_immediate(self, level: str, message: str, **attrs: Any) -> str:
         ctx = self.start_event(Params(event=f"log.{level}", kind="log", message=message, level=level))
         self.enrich(ctx, **attrs)
         self.finish(ctx, "success")
         return self.emit(ctx)
+
+    def drop(self, ctx: EventContext, reason: str = "dropped", *attrs: Attr, **named: Any) -> None:
+        if attrs or named:
+            self.enrich(ctx, *attrs, **named)
+        ctx.finish("abandoned")
+        ctx.event_state = EVENT_EMITTED
+        ctx.emitted = True
+        ctx.emitted_payload = ""
+
+    def cancel(self, ctx: EventContext, reason: str = "cancelled", *attrs: Attr, **named: Any) -> None:
+        if attrs or named:
+            self.enrich(ctx, *attrs, **named)
+        ctx.finish("cancelled")
+        ctx.event_state = EVENT_EMITTED
+        ctx.emitted = True
+        ctx.emitted_payload = ""
+
+    def abandon(self, ctx: EventContext, reason: str = "abandoned", *attrs: Attr, **named: Any) -> None:
+        if attrs or named:
+            self.enrich(ctx, *attrs, **named)
+        ctx.finish("abandoned")
+
+    def retry(self, ctx: EventContext, *attrs: Attr, **named: Any) -> None:
+        if attrs or named:
+            self.enrich(ctx, *attrs, **named)
+        ctx.finish("retried")
+
+    def partial(self, ctx: EventContext, reason: str = "partial", *attrs: Attr, **named: Any) -> None:
+        if attrs or named:
+            self.enrich(ctx, *attrs, **named)
+        ctx.mark_partial(reason)
+
+    def clone_event(self, ctx: EventContext) -> EventContext:
+        import copy
+        return copy.deepcopy(ctx)
+
+    def link_event(self, parent: EventContext, child: EventContext) -> None:
+        if not parent.params.trace_id and child.params.trace_id:
+            parent.params.trace_id = child.params.trace_id
+        if not parent.params.span_id and child.params.span_id:
+            parent.params.span_id = child.params.span_id
+        parent.params.links = list(parent.params.links) + [child.event_id]
+
+    def current_event(self) -> EventContext | None:
+        return None
+
+    def bind_event(self, ctx: EventContext) -> "Logger":
+        return self
+
+    def wrap(self, ctx: EventContext, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        try:
+            result = fn(*args, **kwargs)
+            self.finish(ctx, "success")
+            return result
+        except Exception as exc:
+            self.finish_error(ctx, exc)
+            raise
 
     def _emit_checkpoint_immediate(self, ctx: EventContext, checkpoint: dict[str, object]) -> None:
         try:

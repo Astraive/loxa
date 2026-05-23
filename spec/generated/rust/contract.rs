@@ -21,18 +21,23 @@ pub const CONTRACT_JSON: &str = r#"{
   ],
   \"allowed_top_level_fields\": [
     \"attrs\",
+    \"checkpoints\",
+    \"collector\",
     \"delivery_attempts\",
     \"deployment\",
     \"duration_ms\",
     \"environment\",
     \"error\",
+    \"errors\",
     \"event\",
     \"event_id\",
     \"event_state\",
     \"event_version\",
+    \"groups\",
     \"http\",
     \"kind\",
     \"level\",
+    \"links\",
     \"message\",
     \"method\",
     \"organization\",
@@ -41,16 +46,23 @@ pub const CONTRACT_JSON: &str = r#"{
     \"partial_reason\",
     \"path\",
     \"pii\",
+    \"processes\",
+    \"redaction\",
+    \"release\",
     \"request_id\",
     \"resource\",
     \"route\",
+    \"sampling\",
     \"schema_version\",
+    \"sdk\",
     \"service\",
     \"source\",
     \"span_id\",
     \"status_code\",
     \"tenant\",
+    \"timers\",
     \"timestamp\",
+    \"trace_flags\",
     \"trace_id\",
     \"user\",
     \"version\",
@@ -58,18 +70,23 @@ pub const CONTRACT_JSON: &str = r#"{
   ],
   \"canonical_fields\": [
     \"attrs\",
+    \"checkpoints\",
+    \"collector\",
     \"delivery_attempts\",
     \"deployment\",
     \"duration_ms\",
     \"environment\",
     \"error\",
+    \"errors\",
     \"event\",
     \"event_id\",
     \"event_state\",
     \"event_version\",
+    \"groups\",
     \"http\",
     \"kind\",
     \"level\",
+    \"links\",
     \"message\",
     \"method\",
     \"organization\",
@@ -78,16 +95,23 @@ pub const CONTRACT_JSON: &str = r#"{
     \"partial_reason\",
     \"path\",
     \"pii\",
+    \"processes\",
+    \"redaction\",
+    \"release\",
     \"request_id\",
     \"resource\",
     \"route\",
+    \"sampling\",
     \"schema_version\",
+    \"sdk\",
     \"service\",
     \"source\",
     \"span_id\",
     \"status_code\",
     \"tenant\",
+    \"timers\",
     \"timestamp\",
+    \"trace_flags\",
     \"trace_id\",
     \"user\",
     \"version\",
@@ -108,11 +132,14 @@ pub const CONTRACT_JSON: &str = r#"{
       \"cli\",
       \"cron\",
       \"log\",
-      \"checkpoint\"
+      \"checkpoint\",
+      \"agent\",
+      \"ai\"
     ],
     \"levels\": [
       \"debug\",
       \"info\",
+      \"notice\",
       \"warn\",
       \"error\",
       \"fatal\"
@@ -120,11 +147,14 @@ pub const CONTRACT_JSON: &str = r#"{
     \"outcomes\": [
       \"success\",
       \"error\",
-      \"timeout\",
-      \"cancelled\",
-      \"rejected\",
-      \"abandoned\",
       \"partial\",
+      \"abandoned\",
+      \"retried\",
+      \"cancelled\",
+      \"timeout\",
+      \"skipped\",
+      \"rejected\",
+      \"quarantined\",
       \"unknown\"
     ],
     \"partial_reasons\": [
@@ -140,6 +170,11 @@ pub const CONTRACT_JSON: &str = r#"{
       \"finished\",
       \"emitting\",
       \"emitted\",
+      \"invalid\",
+      \"dropped\",
+      \"emit_failed\",
+      \"spooled\",
+      \"dlq_written\",
       \"failed_validation\",
       \"delivery_failed\"
     ],
@@ -154,7 +189,8 @@ pub const CONTRACT_JSON: &str = r#"{
     \"accepted\",
     \"partial\",
     \"rejected\",
-    \"invalid\"
+    \"invalid\",
+    \"quarantined\"
   ],
   \"collector_ack_statuses\": [
     \"accepted\",
@@ -185,11 +221,45 @@ pub const CONTRACT_JSON: &str = r#"{
     \"normalize_aliases\": true
   },
   \"validation_modes\": {
+    \"off\": {
+      \"name\": \"off\",
+      \"description\": \"Accept everything, still normalize payload\",
+      \"accept_all\": true,
+      \"normalize\": true,
+      \"validate\": false,
+      \"reject_on_failure\": false
+    },
+    \"warn\": {
+      \"name\": \"warn\",
+      \"description\": \"Accept and report schema issues as warnings\",
+      \"accept_all\": true,
+      \"normalize\": true,
+      \"validate\": true,
+      \"reject_on_failure\": false
+    },
+    \"enforce\": {
+      \"name\": \"enforce\",
+      \"description\": \"Reject invalid events, accept valid ones only\",
+      \"accept_all\": false,
+      \"normalize\": true,
+      \"validate\": true,
+      \"reject_on_failure\": true
+    },
+    \"quarantine\": {
+      \"name\": \"quarantine\",
+      \"description\": \"Store invalid events separately in quarantine, accept valid ones\",
+      \"accept_all\": false,
+      \"normalize\": true,
+      \"validate\": true,
+      \"reject_on_failure\": false,
+      \"quarantine_on_failure\": true
+    },
     \"strict\": {
       \"name\": \"strict\",
       \"description\": \"Reject unknown fields, aliases, and enforce all constraints\",
       \"allow_aliases\": false,
-      \"allow_unknown_top_level_fields\": false
+      \"allow_unknown_top_level_fields\": false,
+      \"reject_on_failure\": true
     },
     \"loose\": {
       \"name\": \"loose\",
@@ -214,8 +284,8 @@ pub const CONTRACT_JSON: &str = r#"{
   },
   \"fixtures\": {
     \"version\": \"v1\",
-    \"strict_schema\": \"../spec/schemas/json/event.strict.schema.json\",
-    \"loose_schema\": \"../spec/schemas/json/event.loose.schema.json\",
+    \"strict_schema\": \"../schema/event.strict.schema.json\",
+    \"loose_schema\": \"../schema/event.loose.schema.json\",
     \"valid\": [
       \"valid/http_success.json\",
       \"valid/http_error.json\",
@@ -227,7 +297,11 @@ pub const CONTRACT_JSON: &str = r#"{
       \"valid/duplicate_fields.json\",
       \"valid/minimal_event.json\",
       \"valid/error_event.json\",
-      \"valid/trace_context_event.json\"
+      \"valid/trace_context_event.json\",
+      \"valid/agent_run.json\",
+      \"valid/rag_query.json\",
+      \"valid/release_field.json\",
+      \"valid/notice_level.json\"
     ],
     \"loose_only_valid\": [
       \"valid/loose_event_type_alias.json\"
@@ -259,7 +333,8 @@ pub const CONTRACT_JSON: &str = r#"{
       \"collector-acks/accepted_clean.json\",
       \"collector-acks/accepted_duplicate.json\",
       \"collector-acks/partial_invalid.json\",
-      \"collector-acks/retryable_rate_limited.json\"
+      \"collector-acks/retryable_rate_limited.json\",
+      \"collector-acks/partial_quarantined.json\"
     ],
     \"ingest_envelopes\": [
       \"ingest-envelopes/single_event_json.json\",
@@ -284,6 +359,10 @@ pub const CONTRACT_JSON: &str = r#"{
       \"bad_ingest_events_array.json\": \"Ingest envelope with non-array events should fail ingest schema\",
       \"bad_collector_status.json\": \"Collector response with unsupported status should fail collector schema\",
       \"trace_context_event.json\": \"Distributed trace context propagation\",
+      \"agent_run.json\": \"AI agent run event with agent kind and processes\",
+      \"rag_query.json\": \"RAG pipeline query event with ai kind\",
+      \"release_field.json\": \"Event with release and trace_flags fields\",
+      \"notice_level.json\": \"Event with notice level\",
       \"structured_http_success.json\": \"Cross-SDK emitted payload layout with structured groups and finished event_state\",
       \"accepted_clean.json\": \"Collector sink should treat clean accepted acknowledgements as success\",
       \"accepted_duplicate.json\": \"Collector sink should treat duplicate accepted acknowledgements as success\",

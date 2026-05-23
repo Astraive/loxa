@@ -1,6 +1,6 @@
 # LOXA Python SDK
 
-**Status**: STABLE (v1.0.0) - Production-ready, full feature conformance
+**Status**: STABLE (v0.0.1) - Production-ready, full feature conformance
 
 Full API conformance with specification is complete. See [SDK_CONFORMANCE_CONTRACT.md](../../spec/docs/SDK_CONFORMANCE_CONTRACT.md) for detailed guarantees.
 
@@ -227,7 +227,7 @@ loxa.info("server started")
 logger = loxa.create_loxa(service="checkout-api", collector_endpoint="http://127.0.0.1:9090")
 logger.info("custom instance ready")
 
-# Alias — same config, different service name
+# Alias -- same config, loxa.alias metadata
 audit = loxa.alias("audit-service")
 audit.info("audit trail started")
 

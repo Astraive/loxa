@@ -4,7 +4,8 @@ import random
 import threading
 import time
 from datetime import timedelta
-from typing import Callable, Any
+from collections.abc import Callable
+from typing import Any
 
 from .event import EventContext
 
@@ -104,3 +105,34 @@ def sample_rate_limited(rate: float, window: float = 1.0) -> Sampler:
     if rate <= 0 or window <= 0:
         return sample_none()
     return _RateLimitedSampler(rate, window)
+
+
+def sample_by_event(fn: Callable[[EventContext], bool]) -> Sampler:
+    return fn
+
+
+def sample_by_outcome(*outcomes: str) -> Sampler:
+    wanted = set(outcomes)
+    return lambda event: event.outcome in wanted or event.params.outcome in wanted
+
+
+def should_sample(sampler: Sampler, event: EventContext) -> bool:
+    return sampler(event)
+
+
+def allow_fields(*keys: str) -> Sampler:
+    allowed = set(keys)
+    return lambda event: all(k in event.attrs for k in allowed)
+
+
+def block_fields(*keys: str) -> Sampler:
+    blocked = set(keys)
+    return lambda event: not any(k in event.attrs for k in blocked)
+
+
+# PascalCase aliases
+SampleByEvent = sample_by_event
+SampleByOutcome = sample_by_outcome
+ShouldSample = should_sample
+AllowFields = allow_fields
+BlockFields = block_fields

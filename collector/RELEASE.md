@@ -2,7 +2,7 @@
 
 ## Versioning
 
-The collector follows semantic versioning. The current stable release is **v1.0.0**.
+The collector follows semantic versioning. The current stable release is **v0.0.1**.
 
 ## Pre-release Checklist
 
@@ -48,15 +48,15 @@ go build -o loxa-loadgen.exe ./cmd/loxa-loadgen
 ## Tagging
 
 ```bash
-git tag -a collector/v1.0.0 -m "collector v1.0.0"
-git push origin collector/v1.0.0
+git tag -a collector/v0.0.1 -m "collector v0.0.1"
+git push origin collector/v0.0.1
 ```
 
 ## Docker Release
 
 ```bash
-docker build -t ghcr.io/astraive/loxa:1.0.0 .
-docker push ghcr.io/astraive/loxa:1.0.0
+docker build -t ghcr.io/astraive/loxa:0.0.1 .
+docker push ghcr.io/astraive/loxa:0.0.1
 ```
 
 ## Kubernetes Deployment

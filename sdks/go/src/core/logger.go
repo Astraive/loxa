@@ -50,9 +50,9 @@ func (l *Logger) Child(options ...ConfigOption) (*Logger, error) {
 	return New(cfg)
 }
 
-// Alias creates a new Logger with the same config but a different service name.
-func (l *Logger) Alias(service string) (*Logger, error) {
-	return l.Child(WithService(service))
+// Alias creates an immutable child logger that preserves config and emits loxa.alias.
+func (l *Logger) Alias(name string) (*Logger, error) {
+	return l.Child(WithAlias(name))
 }
 
 // WithSchema creates a nested logger with a different output schema.
@@ -837,6 +837,150 @@ func (l *Logger) FatalContext(ctx context.Context, msg string, err error, event 
 	defer cancel()
 	_ = l.Flush(flushCtx)
 	os.Exit(1)
+}
+
+// ── Lifecycle outcome helpers ──────────────────────────────────────────────────
+
+// Drop marks the event as dropped with a reason and emits it.
+func (l *Logger) Drop(ctx context.Context, reason string) error {
+	ev := loadEvent(ctx)
+	if ev == nil {
+		return nil
+	}
+	l.mu.RLock()
+	clock := l.cfg.Clock
+	l.mu.RUnlock()
+	if err := ev.finish(clock.Now(), "dropped", []Attr{String("drop_reason", reason)}); err != nil {
+		return err
+	}
+	return l.Emit(ctx)
+}
+
+// Cancel marks the event as cancelled with a reason and emits it.
+func (l *Logger) Cancel(ctx context.Context, reason string) error {
+	return l.Finish(ctx, "cancelled", String("cancel_reason", reason))
+}
+
+// Abandon marks the event as abandoned with a reason and emits it.
+func (l *Logger) Abandon(ctx context.Context, reason string) error {
+	return l.Finish(ctx, "abandoned", String("abandon_reason", reason))
+}
+
+// Retry marks the event for retry with attrs and emits it.
+func (l *Logger) Retry(ctx context.Context, attrs ...Attr) error {
+	return l.Finish(ctx, "retried", attrs...)
+}
+
+// Partial marks the event as partially completed with attrs and emits it.
+func (l *Logger) Partial(ctx context.Context, attrs ...Attr) error {
+	return l.Finish(ctx, "partial", attrs...)
+}
+
+// CloneEvent clones the event in ctx and returns a standalone copy.
+func (l *Logger) CloneEvent(ctx context.Context) (*Event, error) {
+	ev := loadEvent(ctx)
+	if ev == nil {
+		return nil, nil
+	}
+	cp := ev.Clone()
+	cp.logger = l
+	return cp, nil
+}
+
+// LinkEvent creates a linked child event from the current event in ctx.
+func (l *Logger) LinkEvent(ctx context.Context, target string, attrs ...Attr) (context.Context, error) {
+	ev := loadEvent(ctx)
+	if ev == nil {
+		return ctx, nil
+	}
+	ev.MuLock()
+	params := Params{
+		Event:   target,
+		Kind:    ev.Kind,
+		TraceID: ev.TraceID,
+		SpanID:  ev.SpanID,
+		Service: ev.Service,
+	}
+	ev.MuUnlock()
+	childCtx := l.StartEvent(ctx, params)
+	if len(attrs) > 0 {
+		_ = l.Enrich(childCtx, attrs...)
+	}
+	return childCtx, nil
+}
+
+// CurrentEvent returns the active event from ctx.
+func (l *Logger) CurrentEvent(ctx context.Context) (*Event, bool) {
+	return FromContext(ctx)
+}
+
+// BindEvent wraps fn with the event lifecycle, similar to RunEvent but returns directly.
+func BindEvent(ctx context.Context, params Params, fn EventFunc, finishAttrs ...Attr) error {
+	return RunEvent(ctx, params, fn, finishAttrs...)
+}
+
+// Wrap wraps fn in a named event lifecycle returning the error.
+func Wrap(name string, fn func() error) error {
+	ctx := context.Background()
+	return RunEvent(ctx, Params{Event: name}, func(_ context.Context) error {
+		return fn()
+	})
+}
+
+// ── Logging helper methods ────────────────────────────────────────────────────
+
+// Notice emits an immediate notice log line.
+func (l *Logger) Notice(msg string, attrs ...Attr) {
+	l.logImmediate(context.Background(), LevelNotice, msg, "log.notice", nil, attrs)
+}
+
+// NoticeContext emits an immediate notice log line with explicit context and event name.
+func (l *Logger) NoticeContext(ctx context.Context, msg, event string, attrs ...Attr) {
+	l.logImmediate(ctx, LevelNotice, msg, event, nil, attrs)
+}
+
+// Track logs a track event at info level.
+func (l *Logger) Track(name string, attrs ...Attr) {
+	l.logImmediate(context.Background(), LevelInfo, name, name, nil, attrs)
+}
+
+// Audit logs an audit event at info level.
+func (l *Logger) Audit(name string, attrs ...Attr) {
+	l.logImmediate(context.Background(), LevelInfo, name, "audit."+name, nil, attrs)
+}
+
+// Security logs a security event at warn level.
+func (l *Logger) Security(name string, attrs ...Attr) {
+	l.logImmediate(context.Background(), LevelWarn, name, "security."+name, nil, attrs)
+}
+
+// Metric logs a metric measurement at info level.
+func (l *Logger) Metric(name string, value float64, attrs ...Attr) {
+	attrs = append([]Attr{Float64("value", value)}, attrs...)
+	l.logImmediate(context.Background(), LevelInfo, name, "metric."+name, nil, attrs)
+}
+
+// Count logs a count metric at info level.
+func (l *Logger) Count(name string, value int64, attrs ...Attr) {
+	attrs = append([]Attr{Int64("count", value)}, attrs...)
+	l.logImmediate(context.Background(), LevelInfo, name, "metric."+name, nil, attrs)
+}
+
+// Gauge logs a gauge metric at info level.
+func (l *Logger) Gauge(name string, value float64, attrs ...Attr) {
+	attrs = append([]Attr{Float64("gauge", value)}, attrs...)
+	l.logImmediate(context.Background(), LevelInfo, name, "metric."+name, nil, attrs)
+}
+
+// Histogram logs a histogram observation at info level.
+func (l *Logger) Histogram(name string, value float64, attrs ...Attr) {
+	attrs = append([]Attr{Float64("observation", value)}, attrs...)
+	l.logImmediate(context.Background(), LevelInfo, name, "metric."+name, nil, attrs)
+}
+
+// Breadcrumb logs a breadcrumb at debug level for tracing user flows.
+func (l *Logger) Breadcrumb(name string, attrs ...Attr) {
+	l.logImmediate(context.Background(), LevelDebug, name, "breadcrumb."+name, nil, attrs)
 }
 
 // ── Global default logger ─────────────────────────────────────────────────────

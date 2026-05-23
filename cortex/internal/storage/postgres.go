@@ -42,19 +42,49 @@ func (s *PostgresStorage) Init(ctx context.Context) error {
 	schema := `
 	CREATE TABLE IF NOT EXISTS events (
 		id TEXT PRIMARY KEY,
+		event_id TEXT,
 		timestamp TIMESTAMP NOT NULL,
-		kind TEXT NOT NULL,
 		service TEXT NOT NULL,
+		environment TEXT,
+		release TEXT,
+		schema_version TEXT,
+		event_version TEXT,
+		event TEXT,
+		kind TEXT NOT NULL,
+		level TEXT,
+		outcome TEXT,
+		duration_ms DOUBLE PRECISION,
 		trace_id TEXT,
-		incident_id TEXT,
+		span_id TEXT,
+		trace_flags TEXT,
+		request_id TEXT,
+		http JSONB,
+		"user" JSONB,
+		tenant JSONB,
+		attrs JSONB,
+		error JSONB,
+		checkpoints JSONB,
+		processes JSONB,
+		groups JSONB,
+		timers JSONB,
+		links JSONB,
+		sdk_name TEXT,
+		sdk_version TEXT,
+		sdk_language TEXT,
 		raw JSONB,
 		provenance TEXT NOT NULL,
+		incident_id TEXT,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
 	CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp);
 	CREATE INDEX IF NOT EXISTS idx_events_service ON events(service);
+	CREATE INDEX IF NOT EXISTS idx_events_event ON events(event);
 	CREATE INDEX IF NOT EXISTS idx_events_trace_id ON events(trace_id);
 	CREATE INDEX IF NOT EXISTS idx_events_incident_id ON events(incident_id);
+	CREATE INDEX IF NOT EXISTS idx_events_outcome ON events(outcome);
+	CREATE INDEX IF NOT EXISTS idx_events_level ON events(level);
+	CREATE INDEX IF NOT EXISTS idx_events_environment ON events(environment);
+	CREATE INDEX IF NOT EXISTS idx_events_duration_ms ON events(duration_ms);
 
 	CREATE TABLE IF NOT EXISTS topology_aliases (
 		id TEXT PRIMARY KEY,
@@ -178,15 +208,39 @@ type PostgresEventStore struct {
 	db *sql.DB
 }
 
-func (s *PostgresEventStore) Save(ctx context.Context, event *models.Event) error {
+func (s *PostgresEventStore) Save(ctx context.Context, event *models.Event, lifecycle *LifecycleData) error {
 	rawJSON, _ := json.Marshal(event.Raw)
+	attrsJSON, _ := json.Marshal(event.Attrs)
+	checkpointsJSON, _ := json.Marshal(event.Checkpoints)
+	processesJSON, _ := json.Marshal(event.Processes)
+	groupsJSON, _ := json.Marshal(event.Groups)
+	timersJSON, _ := json.Marshal(event.Timers)
+	linksJSON, _ := json.Marshal(event.Links)
+	httpJSON, _ := json.Marshal(event.HTTP)
+	userJSON, _ := json.Marshal(event.User)
+	tenantJSON, _ := json.Marshal(event.Tenant)
+	errorJSON, _ := json.Marshal(event.Error)
+
 	_, err := s.db.ExecContext(ctx,
-		"INSERT INTO events (id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-		event.ID, event.Timestamp, event.Kind, event.Service, event.TraceID, event.IncidentID, rawJSON, event.Provenance, time.Now())
+		`INSERT INTO events (id, event_id, timestamp, service, environment, release,
+			schema_version, event_version, event, kind, level, outcome, duration_ms,
+			trace_id, span_id, trace_flags, request_id,
+			http, user, tenant, attrs, error,
+			checkpoints, processes, groups, timers, links,
+			sdk_name, sdk_version, sdk_language,
+			raw, provenance, incident_id, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34)`,
+		event.ID, event.EventID, event.Timestamp, event.Service, event.Environment, event.Release,
+		event.SchemaVersion, event.EventVersion, event.Event, event.Kind, event.Level, event.Outcome, event.DurationMs,
+		event.TraceID, event.SpanID, event.TraceFlags, event.RequestID,
+		httpJSON, userJSON, tenantJSON, attrsJSON, errorJSON,
+		checkpointsJSON, processesJSON, groupsJSON, timersJSON, linksJSON,
+		event.SDKName, event.SDKVersion, event.SDKLanguage,
+		rawJSON, event.Provenance, event.IncidentID, time.Now())
 	return err
 }
 
-func (s *PostgresEventStore) SaveBatch(ctx context.Context, events []*models.Event) error {
+func (s *PostgresEventStore) SaveBatch(ctx context.Context, events []*models.Event, lifecycles []*LifecycleData) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -194,7 +248,14 @@ func (s *PostgresEventStore) SaveBatch(ctx context.Context, events []*models.Eve
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx,
-		"INSERT INTO events (id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)")
+		`INSERT INTO events (id, event_id, timestamp, service, environment, release,
+			schema_version, event_version, event, kind, level, outcome, duration_ms,
+			trace_id, span_id, trace_flags, request_id,
+			http, user, tenant, attrs, error,
+			checkpoints, processes, groups, timers, links,
+			sdk_name, sdk_version, sdk_language,
+			raw, provenance, incident_id, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34)`)
 	if err != nil {
 		return err
 	}
@@ -202,28 +263,73 @@ func (s *PostgresEventStore) SaveBatch(ctx context.Context, events []*models.Eve
 
 	for _, e := range events {
 		rawJSON, _ := json.Marshal(e.Raw)
-		if _, err := stmt.ExecContext(ctx, e.ID, e.Timestamp, e.Kind, e.Service, e.TraceID, e.IncidentID, rawJSON, e.Provenance, time.Now()); err != nil {
+		attrsJSON, _ := json.Marshal(e.Attrs)
+		checkpointsJSON, _ := json.Marshal(e.Checkpoints)
+		processesJSON, _ := json.Marshal(e.Processes)
+		groupsJSON, _ := json.Marshal(e.Groups)
+		timersJSON, _ := json.Marshal(e.Timers)
+		linksJSON, _ := json.Marshal(e.Links)
+		httpJSON, _ := json.Marshal(e.HTTP)
+		userJSON, _ := json.Marshal(e.User)
+		tenantJSON, _ := json.Marshal(e.Tenant)
+		errorJSON, _ := json.Marshal(e.Error)
+
+		if _, err := stmt.ExecContext(ctx,
+			e.ID, e.EventID, e.Timestamp, e.Service, e.Environment, e.Release,
+			e.SchemaVersion, e.EventVersion, e.Event, e.Kind, e.Level, e.Outcome, e.DurationMs,
+			e.TraceID, e.SpanID, e.TraceFlags, e.RequestID,
+			httpJSON, userJSON, tenantJSON, attrsJSON, errorJSON,
+			checkpointsJSON, processesJSON, groupsJSON, timersJSON, linksJSON,
+			e.SDKName, e.SDKVersion, e.SDKLanguage,
+			rawJSON, e.Provenance, e.IncidentID, time.Now()); err != nil {
 			return err
 		}
+		_ = lifecycles
 	}
 
 	return tx.Commit()
 }
 
-func (s *PostgresEventStore) Get(ctx context.Context, id string) (*models.Event, error) {
+func scanPostgresRow(scanner interface{ Scan(dest ...any) error }) (*models.Event, error) {
 	var event models.Event
-	var rawJSON []byte
-	err := s.db.QueryRowContext(ctx, "SELECT id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at FROM events WHERE id = $1", id).
-		Scan(&event.ID, &event.Timestamp, &event.Kind, &event.Service, &event.TraceID, &event.IncidentID, &rawJSON, &event.Provenance, &event.CreatedAt)
+	var rawJSON, attrsJSON, httpJSON, userJSON, tenantJSON, errorJSON []byte
+	var checkpointsJSON, processesJSON, groupsJSON, timersJSON, linksJSON []byte
+	err := scanner.Scan(
+		&event.ID, &event.EventID, &event.Timestamp, &event.Service, &event.Environment, &event.Release,
+		&event.SchemaVersion, &event.EventVersion, &event.Event, &event.Kind, &event.Level, &event.Outcome, &event.DurationMs,
+		&event.TraceID, &event.SpanID, &event.TraceFlags, &event.RequestID,
+		&httpJSON, &userJSON, &tenantJSON, &attrsJSON, &errorJSON,
+		&checkpointsJSON, &processesJSON, &groupsJSON, &timersJSON, &linksJSON,
+		&event.SDKName, &event.SDKVersion, &event.SDKLanguage,
+		&rawJSON, &event.Provenance, &event.IncidentID, &event.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
 	json.Unmarshal(rawJSON, &event.Raw)
+	json.Unmarshal(attrsJSON, &event.Attrs)
+	json.Unmarshal(httpJSON, &event.HTTP)
+	json.Unmarshal(userJSON, &event.User)
+	json.Unmarshal(tenantJSON, &event.Tenant)
+	json.Unmarshal(errorJSON, &event.Error)
+	json.Unmarshal(checkpointsJSON, &event.Checkpoints)
+	json.Unmarshal(processesJSON, &event.Processes)
+	json.Unmarshal(groupsJSON, &event.Groups)
+	json.Unmarshal(timersJSON, &event.Timers)
+	json.Unmarshal(linksJSON, &event.Links)
 	return &event, nil
 }
 
+var pgSelectCols = "id, event_id, timestamp, service, environment, release, schema_version, event_version, event, kind, level, outcome, duration_ms, trace_id, span_id, trace_flags, request_id, http, \"user\", tenant, attrs, error, checkpoints, processes, groups, timers, links, sdk_name, sdk_version, sdk_language, raw, provenance, incident_id, created_at"
+
+func (s *PostgresEventStore) Get(ctx context.Context, id string) (*models.Event, error) {
+	query := "SELECT " + pgSelectCols + " FROM events WHERE id = $1"
+	row := s.db.QueryRowContext(ctx, query, id)
+	return scanPostgresRow(row)
+}
+
 func (s *PostgresEventStore) List(ctx context.Context, limit, offset int) ([]*models.Event, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at FROM events ORDER BY timestamp DESC LIMIT $1 OFFSET $2", limit, offset)
+	query := "SELECT " + pgSelectCols + " FROM events ORDER BY timestamp DESC LIMIT $1 OFFSET $2"
+	rows, err := s.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -231,19 +337,18 @@ func (s *PostgresEventStore) List(ctx context.Context, limit, offset int) ([]*mo
 
 	var events []*models.Event
 	for rows.Next() {
-		var event models.Event
-		var rawJSON []byte
-		if err := rows.Scan(&event.ID, &event.Timestamp, &event.Kind, &event.Service, &event.TraceID, &event.IncidentID, &rawJSON, &event.Provenance, &event.CreatedAt); err != nil {
+		event, err := scanPostgresRow(rows)
+		if err != nil {
 			return nil, err
 		}
-		json.Unmarshal(rawJSON, &event.Raw)
-		events = append(events, &event)
+		events = append(events, event)
 	}
 	return events, nil
 }
 
 func (s *PostgresEventStore) FindByTraceID(ctx context.Context, traceID string) ([]*models.Event, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at FROM events WHERE trace_id = $1 ORDER BY timestamp", traceID)
+	query := "SELECT " + pgSelectCols + " FROM events WHERE trace_id = $1 ORDER BY timestamp"
+	rows, err := s.db.QueryContext(ctx, query, traceID)
 	if err != nil {
 		return nil, err
 	}
@@ -251,19 +356,18 @@ func (s *PostgresEventStore) FindByTraceID(ctx context.Context, traceID string) 
 
 	var events []*models.Event
 	for rows.Next() {
-		var event models.Event
-		var rawJSON []byte
-		if err := rows.Scan(&event.ID, &event.Timestamp, &event.Kind, &event.Service, &event.TraceID, &event.IncidentID, &rawJSON, &event.Provenance, &event.CreatedAt); err != nil {
+		event, err := scanPostgresRow(rows)
+		if err != nil {
 			return nil, err
 		}
-		json.Unmarshal(rawJSON, &event.Raw)
-		events = append(events, &event)
+		events = append(events, event)
 	}
 	return events, nil
 }
 
 func (s *PostgresEventStore) FindByIncidentID(ctx context.Context, incidentID string) ([]*models.Event, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at FROM events WHERE incident_id = $1 ORDER BY timestamp", incidentID)
+	query := "SELECT " + pgSelectCols + " FROM events WHERE incident_id = $1 ORDER BY timestamp"
+	rows, err := s.db.QueryContext(ctx, query, incidentID)
 	if err != nil {
 		return nil, err
 	}
@@ -271,19 +375,17 @@ func (s *PostgresEventStore) FindByIncidentID(ctx context.Context, incidentID st
 
 	var events []*models.Event
 	for rows.Next() {
-		var event models.Event
-		var rawJSON []byte
-		if err := rows.Scan(&event.ID, &event.Timestamp, &event.Kind, &event.Service, &event.TraceID, &event.IncidentID, &rawJSON, &event.Provenance, &event.CreatedAt); err != nil {
+		event, err := scanPostgresRow(rows)
+		if err != nil {
 			return nil, err
 		}
-		json.Unmarshal(rawJSON, &event.Raw)
-		events = append(events, &event)
+		events = append(events, event)
 	}
 	return events, nil
 }
 
 func (s *PostgresEventStore) FindByService(ctx context.Context, service string, from, to string) ([]*models.Event, error) {
-	query := "SELECT id, timestamp, kind, service, trace_id, incident_id, raw, provenance, created_at FROM events WHERE service = $1"
+	query := "SELECT " + pgSelectCols + " FROM events WHERE service = $1"
 	args := []interface{}{service}
 	argIdx := 2
 
@@ -306,15 +408,317 @@ func (s *PostgresEventStore) FindByService(ctx context.Context, service string, 
 
 	var events []*models.Event
 	for rows.Next() {
-		var event models.Event
-		var rawJSON []byte
-		if err := rows.Scan(&event.ID, &event.Timestamp, &event.Kind, &event.Service, &event.TraceID, &event.IncidentID, &rawJSON, &event.Provenance, &event.CreatedAt); err != nil {
+		event, err := scanPostgresRow(rows)
+		if err != nil {
 			return nil, err
 		}
-		json.Unmarshal(rawJSON, &event.Raw)
-		events = append(events, &event)
+		events = append(events, event)
 	}
 	return events, nil
+}
+
+// Lifecycle-aware query methods
+func (s *PostgresEventStore) FindByEventName(ctx context.Context, eventName string, limit, offset int) ([]*models.Event, error) {
+	query := "SELECT " + pgSelectCols + " FROM events WHERE event = $1 ORDER BY timestamp DESC LIMIT $2 OFFSET $3"
+	rows, err := s.db.QueryContext(ctx, query, eventName, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []*models.Event
+	for rows.Next() {
+		event, err := scanPostgresRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	return events, nil
+}
+
+func (s *PostgresEventStore) FindByOutcome(ctx context.Context, outcome string, limit, offset int) ([]*models.Event, error) {
+	query := "SELECT " + pgSelectCols + " FROM events WHERE outcome = $1 ORDER BY timestamp DESC LIMIT $2 OFFSET $3"
+	rows, err := s.db.QueryContext(ctx, query, outcome, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []*models.Event
+	for rows.Next() {
+		event, err := scanPostgresRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	return events, nil
+}
+
+func (s *PostgresEventStore) FindByLevel(ctx context.Context, level string, limit, offset int) ([]*models.Event, error) {
+	query := "SELECT " + pgSelectCols + " FROM events WHERE level = $1 ORDER BY timestamp DESC LIMIT $2 OFFSET $3"
+	rows, err := s.db.QueryContext(ctx, query, level, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []*models.Event
+	for rows.Next() {
+		event, err := scanPostgresRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	return events, nil
+}
+
+func (s *PostgresEventStore) FindByDurationRange(ctx context.Context, minMs, maxMs float64, limit, offset int) ([]*models.Event, error) {
+	query := "SELECT " + pgSelectCols + " FROM events WHERE duration_ms >= $1 AND duration_ms <= $2 ORDER BY duration_ms DESC LIMIT $3 OFFSET $4"
+	rows, err := s.db.QueryContext(ctx, query, minMs, maxMs, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []*models.Event
+	for rows.Next() {
+		event, err := scanPostgresRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	return events, nil
+}
+
+func (s *PostgresEventStore) FindByEnvironment(ctx context.Context, env string, limit, offset int) ([]*models.Event, error) {
+	query := "SELECT " + pgSelectCols + " FROM events WHERE environment = $1 ORDER BY timestamp DESC LIMIT $2 OFFSET $3"
+	rows, err := s.db.QueryContext(ctx, query, env, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []*models.Event
+	for rows.Next() {
+		event, err := scanPostgresRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	return events, nil
+}
+
+func (s *PostgresEventStore) FindByRelease(ctx context.Context, release string, limit, offset int) ([]*models.Event, error) {
+	query := "SELECT " + pgSelectCols + " FROM events WHERE release = $1 ORDER BY timestamp DESC LIMIT $2 OFFSET $3"
+	rows, err := s.db.QueryContext(ctx, query, release, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []*models.Event
+	for rows.Next() {
+		event, err := scanPostgresRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	return events, nil
+}
+
+func (s *PostgresEventStore) CountByOutcome(ctx context.Context, service string, from, to time.Time) (map[string]int64, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT outcome, COUNT(*) as cnt FROM events WHERE service = $1 AND timestamp >= $2 AND timestamp <= $3 GROUP BY outcome", service, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make(map[string]int64)
+	for rows.Next() {
+		var outcome string
+		var count int64
+		if err := rows.Scan(&outcome, &count); err != nil {
+			return nil, err
+		}
+		result[outcome] = count
+	}
+	return result, nil
+}
+
+func (s *PostgresEventStore) CountByEventName(ctx context.Context, service string, from, to time.Time) (map[string]int64, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT event, COUNT(*) as cnt FROM events WHERE service = $1 AND timestamp >= $2 AND timestamp <= $3 AND event IS NOT NULL GROUP BY event", service, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make(map[string]int64)
+	for rows.Next() {
+		var eventName string
+		var count int64
+		if err := rows.Scan(&eventName, &count); err != nil {
+			return nil, err
+		}
+		result[eventName] = count
+	}
+	return result, nil
+}
+
+func (s *PostgresEventStore) AverageDuration(ctx context.Context, eventName string, from, to time.Time) (float64, error) {
+	var avg sql.NullFloat64
+	err := s.db.QueryRowContext(ctx, "SELECT AVG(duration_ms) FROM events WHERE event = $1 AND timestamp >= $2 AND timestamp <= $3 AND duration_ms IS NOT NULL", eventName, from, to).Scan(&avg)
+	if err != nil || !avg.Valid {
+		return 0, err
+	}
+	return avg.Float64, nil
+}
+
+func (s *PostgresEventStore) PercentileDuration(ctx context.Context, eventName string, percentile float64, from, to time.Time) (float64, error) {
+	var val sql.NullFloat64
+	err := s.db.QueryRowContext(ctx, "SELECT percentile_cont($1) WITHIN GROUP (ORDER BY duration_ms) FROM events WHERE event = $2 AND timestamp >= $3 AND timestamp <= $4 AND duration_ms IS NOT NULL", percentile, eventName, from, to).Scan(&val)
+	if err != nil || !val.Valid {
+		return 0, err
+	}
+	return val.Float64, nil
+}
+
+func (s *PostgresEventStore) DistinctServices(ctx context.Context) ([]string, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT DISTINCT service FROM events ORDER BY service")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var services []string
+	for rows.Next() {
+		var svc string
+		if err := rows.Scan(&svc); err != nil {
+			return nil, err
+		}
+		services = append(services, svc)
+	}
+	return services, nil
+}
+
+func (s *PostgresEventStore) DistinctEventNames(ctx context.Context) ([]string, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT DISTINCT event FROM events WHERE event IS NOT NULL ORDER BY event")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var names []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		names = append(names, name)
+	}
+	return names, nil
+}
+
+func (s *PostgresEventStore) ListLifecycleSummaries(ctx context.Context, filter *LifecycleFilter) ([]*models.LifecycleSummary, int, error) {
+	where := "WHERE 1=1"
+	var args []interface{}
+	argIdx := 1
+
+	if filter != nil {
+		if filter.Service != "" {
+			where += fmt.Sprintf(" AND service = $%d", argIdx)
+			args = append(args, filter.Service)
+			argIdx++
+		}
+		if filter.EventName != "" {
+			where += fmt.Sprintf(" AND event = $%d", argIdx)
+			args = append(args, filter.EventName)
+			argIdx++
+		}
+		if filter.Outcome != "" {
+			where += fmt.Sprintf(" AND outcome = $%d", argIdx)
+			args = append(args, filter.Outcome)
+			argIdx++
+		}
+		if filter.Level != "" {
+			where += fmt.Sprintf(" AND level = $%d", argIdx)
+			args = append(args, filter.Level)
+			argIdx++
+		}
+		if filter.TraceID != "" {
+			where += fmt.Sprintf(" AND trace_id = $%d", argIdx)
+			args = append(args, filter.TraceID)
+			argIdx++
+		}
+		if !filter.From.IsZero() {
+			where += fmt.Sprintf(" AND timestamp >= $%d", argIdx)
+			args = append(args, filter.From)
+			argIdx++
+		}
+		if !filter.To.IsZero() {
+			where += fmt.Sprintf(" AND timestamp <= $%d", argIdx)
+			args = append(args, filter.To)
+			argIdx++
+		}
+		if filter.MinDuration > 0 {
+			where += fmt.Sprintf(" AND duration_ms >= $%d", argIdx)
+			args = append(args, filter.MinDuration)
+			argIdx++
+		}
+		if filter.MaxDuration > 0 {
+			where += fmt.Sprintf(" AND duration_ms <= $%d", argIdx)
+			args = append(args, filter.MaxDuration)
+			argIdx++
+		}
+	}
+
+	// Count total
+	var total int
+	countQuery := "SELECT COUNT(*) FROM events " + where
+	if err := s.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	// Fetch summaries
+	limit := 50
+	offset := 0
+	if filter != nil {
+		if filter.Limit > 0 {
+			limit = filter.Limit
+		}
+		if filter.Offset > 0 {
+			offset = filter.Offset
+		}
+	}
+
+	query := fmt.Sprintf("SELECT id, event, service, outcome, duration_ms,"+
+		" json_array_length(COALESCE(checkpoints, '[]'::jsonb)) as cp_count,"+
+		" json_array_length(COALESCE(processes, '[]'::jsonb)) as pr_count,"+
+		" json_array_length(COALESCE(groups, '[]'::jsonb)) as gr_count,"+
+		" json_array_length(COALESCE(timers, '[]'::jsonb)) as ti_count,"+
+		" json_array_length(COALESCE(links, '[]'::jsonb)) as li_count,"+
+		" trace_id"+
+		" FROM events %s ORDER BY timestamp DESC LIMIT $%d OFFSET $%d", where, argIdx, argIdx+1)
+	args = append(args, limit, offset)
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var summaries []*models.LifecycleSummary
+	for rows.Next() {
+		var s models.LifecycleSummary
+		if err := rows.Scan(&s.EventID, &s.Event, &s.Service, &s.Outcome, &s.DurationMs,
+			&s.CheckpointCount, &s.ProcessCount, &s.GroupCount, &s.TimerCount, &s.LinkCount,
+			&s.TraceID); err != nil {
+			return nil, 0, err
+		}
+		summaries = append(summaries, &s)
+	}
+	return summaries, total, nil
 }
 
 type PostgresTopologyStore struct {

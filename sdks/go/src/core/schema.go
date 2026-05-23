@@ -559,7 +559,7 @@ func defaultSchemaMap(ev EventView) map[string]any {
 			}
 			items = append(items, item)
 		}
-		out["process"] = items
+		out["processes"] = items
 	}
 	if grps := ev.Groups(); len(grps) > 0 {
 		items := make([]map[string]any, 0, len(grps))

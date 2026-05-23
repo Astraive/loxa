@@ -4,7 +4,7 @@ This document provides an overview of schema compatibility policies across all v
 
 ## Current Version
 
-- **Active Schema Version**: v1.0.0
+- **Active Schema Version**: v0.0.1
 - **Status**: Stable
 - **Location**: `v1/`
 
@@ -13,8 +13,8 @@ This document provides an overview of schema compatibility policies across all v
 LOXA schemas follow [Semantic Versioning](https://semver.org/):
 
 - **MAJOR** version (v1 → v2): Breaking changes
-- **MINOR** version (v1.0.0): Backward-compatible additions
-- **PATCH** version (v1.0.0 → v1.0.0): Documentation updates
+- **MINOR** version (v0.0.1): Backward-compatible additions
+- **PATCH** version (v0.0.1 → v0.0.1): Documentation updates
 
 ## Version-Specific Compatibility
 
@@ -56,7 +56,7 @@ SDKs should:
 loxa schema validate --file event.json --schema-version v1
 
 # Check compatibility between versions
-loxa schema diff --from v1.0.0 --to v1.0.0
+loxa schema diff --from v0.0.1 --to v0.0.1
 
 # List all available versions
 loxa schema list
@@ -147,8 +147,8 @@ Example:
   "old_field": {
     "type": "string",
     "x-loxa-deprecated": "use new_field instead",
-    "x-loxa-deprecated-since": "v1.0.0",
-    "x-loxa-removed-in": "v1.0.0"
+    "x-loxa-deprecated-since": "v0.0.1",
+    "x-loxa-removed-in": "v0.0.1"
   }
 }
 ```
@@ -157,7 +157,7 @@ Example:
 
 | Version | Status | Released | Support Ends | Notes |
 |---------|--------|----------|--------------|-------|
-| v1.0.0  | Active | 2024-01-15 | N/A | Current stable |
+| v0.0.1  | Active | 2024-01-15 | N/A | Current stable |
 
 ## Resources
 

@@ -1,7 +1,7 @@
 {
   "version": "v1",
-  "strict_schema": "../spec/schemas/json/event.strict.schema.json",
-  "loose_schema": "../spec/schemas/json/event.loose.schema.json",
+  "strict_schema": "../schema/event.strict.schema.json",
+  "loose_schema": "../schema/event.loose.schema.json",
   "valid": [
     "../fixtures/valid/http_success.json",
     "../fixtures/valid/http_error.json",
@@ -13,7 +13,11 @@
     "../fixtures/valid/duplicate_fields.json",
     "../fixtures/valid/minimal_event.json",
     "../fixtures/valid/error_event.json",
-    "../fixtures/valid/trace_context_event.json"
+    "../fixtures/valid/trace_context_event.json",
+    "../fixtures/valid/agent_run.json",
+    "../fixtures/valid/rag_query.json",
+    "../fixtures/valid/release_field.json",
+    "../fixtures/valid/notice_level.json"
   ],
   "loose_only_valid": [
     "../fixtures/valid/loose_event_type_alias.json"
@@ -45,7 +49,8 @@
     "../fixtures/collector-responses/accepted_clean.json",
     "../fixtures/collector-responses/accepted_duplicate.json",
     "../fixtures/collector-responses/partial_invalid.json",
-    "../fixtures/collector-responses/retryable_rate_limited.json"
+    "../fixtures/collector-responses/retryable_rate_limited.json",
+    "../fixtures/collector-responses/partial_quarantined.json"
   ],
   "ingest_envelopes": [
     "../fixtures/ingest/single_event_json.json",
@@ -70,6 +75,10 @@
     "bad_ingest_events_array.json": "Ingest envelope with non-array events should fail ingest schema",
     "bad_collector_status.json": "Collector response with unsupported status should fail collector schema",
     "trace_context_event.json": "Distributed trace context propagation",
+    "agent_run.json": "AI agent run event with agent kind and processes",
+    "rag_query.json": "RAG pipeline query event with ai kind",
+    "release_field.json": "Event with release and trace_flags fields",
+    "notice_level.json": "Event with notice level",
     "structured_http_success.json": "Cross-SDK emitted payload layout with structured groups and finished event_state",
     "accepted_clean.json": "Collector sink should treat clean accepted acknowledgements as success",
     "accepted_duplicate.json": "Collector sink should treat duplicate accepted acknowledgements as success",

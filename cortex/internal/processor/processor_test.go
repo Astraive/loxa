@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/astraive/loxa/loxa-cortex/internal/models"
+	"github.com/astraive/loxa/loxa-cortex/internal/storage"
 )
 
 type fakeEventStore struct {
@@ -19,12 +20,12 @@ type fakeEventStore struct {
 	incidentCalls int
 }
 
-func (f *fakeEventStore) Save(_ context.Context, event *models.Event) error {
+func (f *fakeEventStore) Save(_ context.Context, event *models.Event, _ *storage.LifecycleData) error {
 	f.saved = append(f.saved, event)
 	return nil
 }
 
-func (f *fakeEventStore) SaveBatch(_ context.Context, events []*models.Event) error {
+func (f *fakeEventStore) SaveBatch(_ context.Context, events []*models.Event, _ []*storage.LifecycleData) error {
 	batch := make([]*models.Event, len(events))
 	copy(batch, events)
 	f.batchSaved = append(f.batchSaved, batch)
@@ -51,6 +52,58 @@ func (f *fakeEventStore) FindByIncidentID(_ context.Context, incidentID string) 
 
 func (f *fakeEventStore) FindByService(context.Context, string, string, string) ([]*models.Event, error) {
 	return nil, nil
+}
+
+func (f *fakeEventStore) FindByEventName(context.Context, string, int, int) ([]*models.Event, error) {
+	return nil, nil
+}
+
+func (f *fakeEventStore) FindByOutcome(context.Context, string, int, int) ([]*models.Event, error) {
+	return nil, nil
+}
+
+func (f *fakeEventStore) FindByLevel(context.Context, string, int, int) ([]*models.Event, error) {
+	return nil, nil
+}
+
+func (f *fakeEventStore) FindByDurationRange(context.Context, float64, float64, int, int) ([]*models.Event, error) {
+	return nil, nil
+}
+
+func (f *fakeEventStore) FindByEnvironment(context.Context, string, int, int) ([]*models.Event, error) {
+	return nil, nil
+}
+
+func (f *fakeEventStore) FindByRelease(context.Context, string, int, int) ([]*models.Event, error) {
+	return nil, nil
+}
+
+func (f *fakeEventStore) AverageDuration(context.Context, string, time.Time, time.Time) (float64, error) {
+	return 0, nil
+}
+
+func (f *fakeEventStore) CountByEventName(context.Context, string, time.Time, time.Time) (map[string]int64, error) {
+	return nil, nil
+}
+
+func (f *fakeEventStore) CountByOutcome(context.Context, string, time.Time, time.Time) (map[string]int64, error) {
+	return nil, nil
+}
+
+func (f *fakeEventStore) PercentileDuration(context.Context, string, float64, time.Time, time.Time) (float64, error) {
+	return 0, nil
+}
+
+func (f *fakeEventStore) DistinctServices(context.Context) ([]string, error) {
+	return nil, nil
+}
+
+func (f *fakeEventStore) DistinctEventNames(context.Context) ([]string, error) {
+	return nil, nil
+}
+
+func (f *fakeEventStore) ListLifecycleSummaries(context.Context, *storage.LifecycleFilter) ([]*models.LifecycleSummary, int, error) {
+	return nil, 0, nil
 }
 
 type fakeTopologyStoreForProcessor struct {

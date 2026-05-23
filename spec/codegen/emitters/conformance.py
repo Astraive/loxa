@@ -18,8 +18,8 @@ def render_conformance_manifest(contract: dict[str, Any]) -> str:
         return f"../fixtures/{path}"
     payload = {
         "version": contract["spec_version"],
-        "strict_schema": "../spec/schemas/json/event.strict.schema.json",
-        "loose_schema": "../spec/schemas/json/event.loose.schema.json",
+        "strict_schema": "../schema/event.strict.schema.json",
+        "loose_schema": "../schema/event.loose.schema.json",
         "valid": [remap(path) for path in fixtures.get("valid", [])],
         "loose_only_valid": [remap(path) for path in fixtures.get("loose_only_valid", [])],
         "invalid": [remap(path) for path in fixtures.get("invalid", [])],

@@ -2,6 +2,18 @@
 
 A 5-minute quickstart for the LOXA Python SDK. By the end you will have a working application that creates, enriches, finishes, and emits a wide-event.
 
+## Default Client
+
+Use `loxa.<method>()` for quick starts and single-client applications.
+
+## Custom Client / Alias
+
+Use `create_loxa(...)` for an independent client and `loxa.alias("name")` for a same-config child that emits `loxa.alias`.
+
+## Cross-Language Parity
+
+Python maps to the v0.0.2 parity family as `loxa`, `create_loxa`, optional `Loxa`, and user-defined variables such as `logger.info(...)`.
+
 ## Install
 
 From the repository root:
@@ -140,7 +152,7 @@ logger = loxa.create_loxa(
 
 ## Aliases
 
-Use `loxa.alias("name")` to create a logger that inherits the default logger's config but uses a different service name. Aliases share the same sink and sampler as the default.
+Use `loxa.alias("name")` to create a logger that inherits the default logger's config and emits `loxa.alias` metadata. Aliases share the same service, sink, and sampler as the default.
 
 ```python
 import loxa
@@ -152,7 +164,7 @@ loxa.configure(
     .with_api_key(os.environ["LOXA_API_KEY"])
 )
 
-# Create an alias with a different service name.
+# Create an alias with the same config and loxa.alias metadata.
 audit = loxa.alias("audit")
 
 # Use the alias exactly like any other logger.
@@ -162,7 +174,7 @@ audit.finish(ctx, "success")
 audit.emit(ctx)
 ```
 
-Aliases are useful when a single process emits events under multiple service names (for example, an API server that also writes audit trails).
+Aliases are useful when a single process emits events for multiple logical streams (for example, an API server that also writes audit trails).
 
 ## Event Lifecycle
 

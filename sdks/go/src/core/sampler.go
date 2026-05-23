@@ -354,3 +354,67 @@ func normalizeHeaderKey(key string) string {
 	key = strings.ReplaceAll(key, "_", "-")
 	return key
 }
+
+// SampleByEvent keeps events whose event name matches one of names.
+func SampleByEvent(names ...string) Sampler {
+	allow := makeSet(names...)
+	return samplerFunc(func(ev *Event) bool {
+		if ev == nil || len(allow) == 0 {
+			return false
+		}
+		ev.MuLock()
+		defer ev.MuUnlock()
+		return hasSet(allow, ev.Event)
+	})
+}
+
+// SampleByOutcome keeps events whose outcome matches one of outcomes.
+func SampleByOutcome(outcomes ...string) Sampler {
+	allow := makeSet(outcomes...)
+	return samplerFunc(func(ev *Event) bool {
+		if ev == nil || len(allow) == 0 {
+			return false
+		}
+		ev.MuLock()
+		defer ev.MuUnlock()
+		return hasSet(allow, ev.Outcome)
+	})
+}
+
+// AllowFields returns a Sampler that keeps events when the attr list contains
+// any of the specified keys.
+func AllowFields(keys ...string) Sampler {
+	allow := makeSet(keys...)
+	return samplerFunc(func(ev *Event) bool {
+		if ev == nil || len(allow) == 0 {
+			return false
+		}
+		ev.MuLock()
+		defer ev.MuUnlock()
+		for _, a := range ev.Attrs {
+			if hasSet(allow, a.Key) {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+// BlockFields returns a Sampler that drops events when the attr list contains
+// any of the specified keys.
+func BlockFields(keys ...string) Sampler {
+	block := makeSet(keys...)
+	return samplerFunc(func(ev *Event) bool {
+		if ev == nil || len(block) == 0 {
+			return true
+		}
+		ev.MuLock()
+		defer ev.MuUnlock()
+		for _, a := range ev.Attrs {
+			if hasSet(block, a.Key) {
+				return false
+			}
+		}
+		return true
+	})
+}

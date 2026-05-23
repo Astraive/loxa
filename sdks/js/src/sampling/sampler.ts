@@ -98,3 +98,28 @@ export function sampleByHeader(header: string, value?: string): Sampler {
     return String(v) === value;
   };
 }
+
+/** Sample by event name match. */
+export function sampleByEvent(...events: string[]): Sampler {
+  const set = new Set(events);
+  return (ev) => set.has(ev.event);
+}
+
+/** Sample by outcome match. */
+export function sampleByOutcome(...outcomes: string[]): Sampler {
+  const set = new Set(outcomes);
+  return (ev) => set.has(ev.outcome);
+}
+
+/** shouldSample is a named Sampler type for interface parity. */
+export type ShouldSample = (event: Event) => boolean;
+
+/** Allow list field sampler — only keeps events that contain ALL allowed fields. */
+export function allowFields(...keys: string[]): Sampler {
+  return (ev) => keys.every(k => k in ev.attrs || (ev as any)[k] !== undefined);
+}
+
+/** Block list field sampler — drops events that contain ANY of the blocked fields. */
+export function blockFields(...keys: string[]): Sampler {
+  return (ev) => !keys.some(k => k in ev.attrs || (ev as any)[k] !== undefined);
+}

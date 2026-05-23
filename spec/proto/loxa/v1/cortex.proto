@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package loxa.v1;
 
-option go_package = "github.com/astraive/loxa-spec/proto/loxa/v1;loxav1";
+option go_package = "github.com/astraive/loxa/spec/proto/loxa/v1;loxav1";
 
-import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "loxa/v1/event.proto";
 
 service CortexService {
   rpc Healthz(HealthzRequest) returns (HealthzResponse);
@@ -14,7 +14,8 @@ service CortexService {
   rpc Reconstruct(ReconstructRequest) returns (ReconstructResponse);
   rpc GetGraph(GetGraphRequest) returns (GetGraphResponse);
   rpc RecordFeedback(RecordFeedbackRequest) returns (RecordFeedbackResponse);
-  rpc StreamEvents(StreamEventsRequest) returns (stream IngestEventRequest);
+  rpc StreamEvents(StreamEventsRequest) returns (stream Event);
+  rpc QueryLifecycle(QueryLifecycleRequest) returns (QueryLifecycleResponse);
 }
 
 message HealthzRequest {}
@@ -23,28 +24,25 @@ message HealthzResponse {
   string status = 1;
 }
 
+// Use the full Event proto from event.proto for lifecycle-aware ingestion
 message IngestEventRequest {
-  string id = 1;
-  google.protobuf.Timestamp timestamp = 2;
-  string kind = 3;
-  string service = 4;
-  string trace_id = 5;
-  string incident_id = 6;
-  string provenance = 7;
-  google.protobuf.Struct raw = 8;
+  Event event = 1;
 }
 
 message IngestEventResponse {
   string status = 1;
+  string event_id = 2;
+  repeated string warnings = 3;
 }
 
 message IngestBatchRequest {
-  repeated IngestEventRequest events = 1;
+  repeated Event events = 1;
 }
 
 message IngestBatchResponse {
   string status = 1;
   int32 count = 2;
+  repeated string warnings = 3;
 }
 
 message ReconstructRequest {
@@ -98,4 +96,37 @@ message RecordFeedbackResponse {
 
 message StreamEventsRequest {
   string incident_id = 1;
+  string service_filter = 2;
+  string event_filter = 3;
+  string outcome_filter = 4;
+}
+
+// Lifecycle-aware query support
+message QueryLifecycleRequest {
+  string event_id = 1;
+  string trace_id = 2;
+  string service = 3;
+  int32 limit = 4;
+  int32 offset = 5;
+  google.protobuf.Timestamp from = 6;
+  google.protobuf.Timestamp to = 7;
+}
+
+message LifecycleSummary {
+  string event_id = 1;
+  string event = 2;
+  string service = 3;
+  string outcome = 4;
+  double duration_ms = 5;
+  int32 checkpoint_count = 6;
+  int32 process_count = 7;
+  int32 group_count = 8;
+  int32 timer_count = 9;
+  int32 link_count = 10;
+  string trace_id = 11;
+}
+
+message QueryLifecycleResponse {
+  repeated LifecycleSummary summaries = 1;
+  int32 total = 2;
 }

@@ -30,7 +30,7 @@ func run(args []string) error {
 }
 
 func printUsage() {
-	fmt.Println("LOXA CLI v1.0.0")
+	fmt.Println("LOXA CLI v0.0.2")
 	fmt.Println("\nCommands:")
 	fmt.Println("  init         Initialize LOXA config")
 	fmt.Println("  dev          Start development server (collector + cortex)")
@@ -45,6 +45,8 @@ func printUsage() {
 	fmt.Println("  status       Show collector status")
 	fmt.Println("  sinks        Inspect sink health")
 	fmt.Println("  dlq          Dead letter queue management")
+	fmt.Println("  quarantine   Manage quarantined events")
+	fmt.Println("  keys         API key management")
 	fmt.Println("  schema       Schema validation and governance")
 	fmt.Println("  delete       GDPR event deletion")
 	fmt.Println("  audit        PII audit scanning")

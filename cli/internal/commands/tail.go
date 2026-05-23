@@ -65,12 +65,26 @@ func streamLines(ctx context.Context, body io.Reader) {
 				evt := fmt.Sprintf("%v", ev["event"])
 				switch level {
 				case "error":
-					fmt.Printf("%s %s %s %s\n", output.Dim(ts), output.Error(level), output.Bold(svc), evt)
+					fmt.Printf("%s %s %s %s", output.Dim(ts), output.Error(level), output.Bold(svc), evt)
 				case "warn":
-					fmt.Printf("%s %s %s %s\n", output.Dim(ts), output.Warning(level), output.Bold(svc), evt)
+					fmt.Printf("%s %s %s %s", output.Dim(ts), output.Warning(level), output.Bold(svc), evt)
 				default:
-					fmt.Printf("%s %s %s %s\n", output.Dim(ts), output.Info(level), output.Bold(svc), evt)
+					fmt.Printf("%s %s %s %s", output.Dim(ts), output.Info(level), output.Bold(svc), evt)
 				}
+				if rel, ok := ev["release"]; ok {
+					fmt.Printf(" release=%v", rel)
+				}
+				if tf, ok := ev["trace_flags"]; ok {
+					fmt.Printf(" trace_flags=%v", tf)
+				}
+				if errs, ok := ev["errors"]; ok {
+					if b, e := json.Marshal(errs); e == nil {
+						fmt.Printf(" errors=%s", string(b))
+					} else {
+						fmt.Printf(" errors=%v", errs)
+					}
+				}
+				fmt.Println()
 			} else {
 				fmt.Println(line)
 			}

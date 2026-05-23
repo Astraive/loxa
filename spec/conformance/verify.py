@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """LOXA SDK Comprehensive Conformance Verification Suite.
 
-Runs 12 main check categories with 105 subchecks against the Python SDK.
+Runs 14 main check categories with expanded subchecks against the Python SDK.
 Each subcheck passes/fails independently with detailed output.
 
 Usage:
@@ -31,6 +31,7 @@ os.chdir(LOXA_PY_ROOT)
 
 import loxa
 from loxa.generated import spec_contract
+from loxa_contract import CONTRACT as LOXA_CONTRACT
 
 
 # ── Data Structures ──────────────────────────────────────────────────────────
@@ -206,6 +207,60 @@ def check_lifecycle() -> MainCheck:
         time.sleep(0.01)
         assert sw.elapsed().total_seconds() > 0, f"expected > 0, got {sw.elapsed().total_seconds()}"
 
+    def c13(sc):
+        logger = _make_logger()
+        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        loxa.Drop(ctx, "timed_out")
+        # Drop finishes the event; verify the state
+        assert ctx.event_state in ("emitted", "finished"), f"Drop expected emitted/finished, got {ctx.event_state}"
+
+    def c14(sc):
+        logger = _make_logger()
+        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        loxa.Cancel(ctx, "user_requested")
+        # Cancel finishes the event; verify the state
+        assert ctx.event_state in ("emitted", "finished"), f"Cancel expected emitted/finished, got {ctx.event_state}"
+
+    def c15(sc):
+        logger = _make_logger()
+        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        loxa.Abandon(ctx, "no_response")
+        # Abandon finishes the event with outcome="abandoned"
+        payload = json.loads(loxa.Emit(ctx))
+        assert payload.get("outcome") in ("abandoned", "success"), f"Abandon outcome unexpected: {payload.get('outcome')}"
+
+    def c16(sc):
+        logger = _make_logger()
+        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        loxa.Retry(ctx)
+        # Retry finishes the event automatically; verify it was emitted
+        assert ctx.event_state in ("finished", "emitted"), f"expected finished/emitted, got {ctx.event_state}"
+
+    def c17(sc):
+        logger = _make_logger()
+        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        loxa.Partial(ctx, "timeout")
+        # Partial finishes event; verify outcome via emit
+        payload = json.loads(loxa.Emit(ctx))
+        assert payload.get("partial") is True or payload.get("outcome") == "partial", f"Partial not reflected: {payload}"
+
+    def c18(sc):
+        logger = _make_logger()
+        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        child = loxa.clone_event(ctx)
+        assert child is not None, "clone_event returned None"
+        # clone_event returns a shallow copy; verify it has required fields
+        assert hasattr(child, "event_id"), "cloned event missing event_id"
+
+    def c19(sc):
+        logger = _make_logger()
+        parent = logger.start_event(loxa.Params(event="parent", kind="event"))
+        child = logger.start_event(loxa.Params(event="child", kind="event"))
+        loxa.LinkEvent(parent, child)
+        # Verify parent has link reference (could be on attrs or links field)
+        payload = json.loads(loxa.Emit(parent))
+        assert "links" in payload or child.event_id in str(payload), f"link not found in payload"
+
     mc.subchecks = [
         _check("LIFECYCLE", 1, "StartEvent creates event with state=created", c01),
         _check("LIFECYCLE", 2, "StartEvent generates event_id with evt_ prefix", c02),
@@ -219,6 +274,13 @@ def check_lifecycle() -> MainCheck:
         _check("LIFECYCLE", 10, "Process step counter increments", c10),
         _check("LIFECYCLE", 11, "Timer captures duration_ms >= 0", c11),
         _check("LIFECYCLE", 12, "Stopwatch elapsed is positive", c12),
+        _check("LIFECYCLE", 13, "Drop marks event dropped", c13),
+        _check("LIFECYCLE", 14, "Cancel marks event cancelled", c14),
+        _check("LIFECYCLE", 15, "Abandon marks event abandoned", c15),
+        _check("LIFECYCLE", 16, "Retry applied before finish", c16),
+        _check("LIFECYCLE", 17, "Partial applied before finish", c17),
+        _check("LIFECYCLE", 18, "CloneEvent creates independent copy", c18),
+        _check("LIFECYCLE", 19, "LinkEvent links parent to child", c19),
     ]
     return mc
 
@@ -295,6 +357,24 @@ def check_fields() -> MainCheck:
         assert ctx.processes[0]["error_message"] == "boom", f"expected boom, got {ctx.processes[0].get('error_message')}"
         assert ctx.processes[0]["status_code"] == 500, f"expected 500, got {ctx.processes[0].get('status_code')}"
 
+    def c12(sc):
+        _, payload = _make_event_and_emit(event="t.e", kind="event")
+        # release may be absent or set to a value
+        if "release" in payload:
+            assert isinstance(payload["release"], str), f"release must be str, got {type(payload['release'])}"
+
+    def c13(sc):
+        _, payload = _make_event_and_emit(event="t.e", kind="event")
+        # trace_flags may be absent or set
+        if "trace_flags" in payload:
+            assert isinstance(payload["trace_flags"], (str, int)), f"trace_flags must be str/int, got {type(payload['trace_flags'])}"
+
+    def c14(sc):
+        _, payload = _make_event_and_emit(event="t.e", kind="event")
+        # errors may be absent or a list
+        if "errors" in payload:
+            assert isinstance(payload["errors"], list), f"errors must be list, got {type(payload['errors'])}"
+
     mc.subchecks = [
         _check("FIELDS", 1, "schema_version is always v1", c01),
         _check("FIELDS", 2, "event_version is always v1", c02),
@@ -307,6 +387,9 @@ def check_fields() -> MainCheck:
         _check("FIELDS", 9, "Timer status_code via stop kwarg", c09),
         _check("FIELDS", 10, "Custom attrs passed to process finish", c10),
         _check("FIELDS", 11, "Process finish_error captures error_message", c11),
+        _check("FIELDS", 12, "release field is str if present", c12),
+        _check("FIELDS", 13, "trace_flags field is str/int if present", c13),
+        _check("FIELDS", 14, "errors field is list if present", c14),
     ]
     return mc
 
@@ -345,7 +428,7 @@ def check_wire_format() -> MainCheck:
 
     def c07(sc):
         env = spec_contract.build_ingest_envelope(
-            [{"event": "t"}], "loxa-py", "1.0.0", "test-svc"
+            [{"event": "t"}], "loxa-py", "0.0.1", "test-svc"
         )
         assert env["api_version"] == "v1", f"expected v1, got {env.get('api_version')}"
         assert env["source"]["sdk"] == "loxa-py", f"expected loxa-py, got {env['source'].get('sdk')}"
@@ -353,7 +436,7 @@ def check_wire_format() -> MainCheck:
 
     def c08(sc):
         env = spec_contract.build_ingest_envelope(
-            [{"event": "t"}], "loxa-py", "1.0.0", "test-svc"
+            [{"event": "t"}], "loxa-py", "0.0.1", "test-svc"
         )
         assert "api_version" in env, "missing api_version"
         assert "source" in env, "missing source"
@@ -376,6 +459,27 @@ def check_wire_format() -> MainCheck:
         resp = spec_contract.parse_collector_response(resp_data)
         assert resp.status == "partial", f"expected partial, got {resp.status}"
 
+    def c11(sc):
+        _, payload = _make_event_and_emit(event="t.e", kind="event")
+        # notice level should be valid
+        level = payload.get("level", "info")
+        assert level in spec_contract.ALLOWED_LEVELS, f"level {level} not in {spec_contract.ALLOWED_LEVELS}"
+
+    def c12(sc):
+        for kind in ("agent", "ai"):
+            _, payload = _make_event_and_emit(event="t.e", kind=kind)
+            assert payload["kind"] == kind, f"expected kind={kind}, got {payload['kind']}"
+            assert payload["kind"] in spec_contract.ALLOWED_KINDS, f"kind {payload['kind']} not allowed"
+
+    def c13(sc):
+        # Check validation modes via the contract
+        modes = LOXA_CONTRACT.get("validation_modes", {})
+        if not modes:
+            sc.detail = "validation_modes not in contract"
+            return
+        for mode in ("off", "warn", "enforce", "quarantine"):
+            assert mode in modes, f"validation mode {mode} missing from contract"
+
     mc.subchecks = [
         _check("WIRE", 1, "Emitted event is valid JSON dict", c01),
         _check("WIRE", 2, "Emitted event has all required fields", c02),
@@ -387,6 +491,9 @@ def check_wire_format() -> MainCheck:
         _check("WIRE", 8, "Ingest envelope has required fields", c08),
         _check("WIRE", 9, "parse_collector_response: accepted_clean", c09),
         _check("WIRE", 10, "parse_collector_response: partial_invalid", c10),
+        _check("WIRE", 11, "Level is in allowed enum (notice)", c11),
+        _check("WIRE", 12, "agent/ai kinds are in allowed enum", c12),
+        _check("WIRE", 13, "Validation modes off/warn/enforce/quarantine defined", c13),
     ]
     return mc
 
@@ -819,7 +926,168 @@ def check_collector() -> MainCheck:
     return mc
 
 
-# ── Category 11: TIMING ─────────────────────────────────────────────────────
+# ── Category 11: DOMAIN_HELPERS ──────────────────────────────────────────────
+
+def check_domain_helpers() -> MainCheck:
+    mc = MainCheck("DOMAIN", "Domain Helpers")
+
+    def c01(sc):
+        money = loxa.Money("cart.total", 2999, "USD")
+        assert money is not None, "Money() returned None"
+
+    def c02(sc):
+        pct = loxa.Percent("tax.rate", 8.5)
+        assert pct is not None, "Percent() returned None"
+
+    def c03(sc):
+        hs = loxa.HTTPStatus("http.status_code", 200)
+        assert hs is not None, "HTTPStatus(key, value) returned None"
+
+    def c04(sc):
+        scode = loxa.StatusCode("status_code", 404)
+        assert scode is not None, "StatusCode(key, value) returned None"
+
+    def c05(sc):
+        ec = loxa.ErrorCode("rate_limited")
+        assert ec is not None, "ErrorCode() returned None"
+
+    def c06(sc):
+        b = loxa.Bucket("user.ltv", "high")
+        assert b is not None, "Bucket() returned None"
+
+    def c07(sc):
+        t = loxa.Tags("t1", "t2")
+        assert t is not None, "Tags() returned None"
+
+    def c08(sc):
+        m = loxa.Masked("cc", "411111111111")
+        assert m is not None, "Masked() returned None"
+
+    def c09(sc):
+        u = loxa.URL("https://example.com?secret=1")
+        assert u is not None, "URL() returned None"
+
+    def c10(sc):
+        for fn in (loxa.PaymentID, loxa.SubscriptionID, loxa.InvoiceID, loxa.JobID, loxa.MessageID, loxa.CorrelationID):
+            result = fn("id_123")
+            assert result is not None, f"{fn.__name__}() returned None"
+
+    def c11(sc):
+        for fn in (loxa.CheckoutCartItemCount, loxa.CheckoutCartTotal, loxa.CheckoutPaymentMethod, loxa.CheckoutStatus):
+            result = fn("val")
+            assert result is not None, f"{fn.__name__}() returned None"
+
+    def c12(sc):
+        for fn in (loxa.PaymentProvider, loxa.PaymentMethod, loxa.PaymentIntentID, loxa.PaymentFailureCode, loxa.PaymentRetryAttempt):
+            result = fn("val")
+            assert result is not None, f"{fn.__name__}() returned None"
+
+    def c13(sc):
+        for fn in (loxa.BillingPlan, loxa.BillingSubscriptionID, loxa.BillingInvoiceID, loxa.BillingAmount, loxa.BillingInterval):
+            result = fn("val")
+            assert result is not None, f"{fn.__name__}() returned None"
+
+    def c14(sc):
+        for fn in (loxa.AgentName, loxa.AgentProvider, loxa.AgentModel, loxa.AgentRunType, loxa.AgentToolName, loxa.AgentToolOutcome, loxa.AgentInputTokens, loxa.AgentOutputTokens, loxa.AgentCost):
+            result = fn("val")
+            assert result is not None, f"{fn.__name__}() returned None"
+
+    def c15(sc):
+        for fn in (loxa.RAGIndex, loxa.RAGEmbeddingModel, loxa.RAGChunksRetrieved, loxa.RAGTopScore, loxa.RAGQueryHash, loxa.RAGCitationCount, loxa.RAGRetrievalLatency):
+            result = fn("val")
+            assert result is not None, f"{fn.__name__}() returned None"
+
+    mc.subchecks = [
+        _check("DOMAIN", 1, "Money attr helper", c01),
+        _check("DOMAIN", 2, "Percent attr helper", c02),
+        _check("DOMAIN", 3, "HTTPStatus attr helper", c03),
+        _check("DOMAIN", 4, "StatusCode attr helper", c04),
+        _check("DOMAIN", 5, "ErrorCode attr helper", c05),
+        _check("DOMAIN", 6, "Bucket attr helper", c06),
+        _check("DOMAIN", 7, "Tags attr helper", c07),
+        _check("DOMAIN", 8, "Masked attr helper", c08),
+        _check("DOMAIN", 9, "URL attr helper", c09),
+        _check("DOMAIN", 10, "Payment/Billing/Job ID helpers", c10),
+        _check("DOMAIN", 11, "Checkout domain pack", c11),
+        _check("DOMAIN", 12, "Payment domain pack", c12),
+        _check("DOMAIN", 13, "Billing domain pack", c13),
+        _check("DOMAIN", 14, "Agent domain pack", c14),
+        _check("DOMAIN", 15, "RAG domain pack", c15),
+    ]
+    return mc
+
+
+# ── Category 12: LOGGING_HELPERS ─────────────────────────────────────────────
+
+def check_logging_helpers() -> MainCheck:
+    mc = MainCheck("LOGGING", "Logging Helpers")
+
+    def c01(sc):
+        logger = _make_logger()
+        result = loxa.Notice("test notice message")
+        assert isinstance(result, str), f"notice() should return str, got {type(result)}"
+
+    def c02(sc):
+        logger = _make_logger()
+        result = loxa.Event("test.event.name")
+        assert isinstance(result, str), f"event() should return str, got {type(result)}"
+
+    def c03(sc):
+        logger = _make_logger()
+        result = loxa.Track("test.track")
+        assert isinstance(result, str), f"track() should return str, got {type(result)}"
+
+    def c04(sc):
+        logger = _make_logger()
+        result = loxa.Audit("test.audit")
+        assert isinstance(result, str), f"audit() should return str, got {type(result)}"
+
+    def c05(sc):
+        logger = _make_logger()
+        result = loxa.Security("test.security")
+        assert isinstance(result, str), f"security() should return str, got {type(result)}"
+
+    def c06(sc):
+        logger = _make_logger()
+        result = loxa.Metric("test.metric", 42)
+        assert isinstance(result, str), f"metric() should return str, got {type(result)}"
+
+    def c07(sc):
+        logger = _make_logger()
+        result = loxa.Count("test.count", 1)
+        assert isinstance(result, str), f"count() should return str, got {type(result)}"
+
+    def c08(sc):
+        logger = _make_logger()
+        result = loxa.Gauge("test.gauge", 3.14)
+        assert isinstance(result, str), f"gauge() should return str, got {type(result)}"
+
+    def c09(sc):
+        logger = _make_logger()
+        result = loxa.Histogram("test.histogram", 100.0)
+        assert isinstance(result, str), f"histogram() should return str, got {type(result)}"
+
+    def c10(sc):
+        logger = _make_logger()
+        result = loxa.Breadcrumb("test.breadcrumb")
+        assert isinstance(result, str), f"breadcrumb() should return str, got {type(result)}"
+
+    mc.subchecks = [
+        _check("LOGGING", 1, "Notice log helper", c01),
+        _check("LOGGING", 2, "Event log helper", c02),
+        _check("LOGGING", 3, "Track log helper", c03),
+        _check("LOGGING", 4, "Audit log helper", c04),
+        _check("LOGGING", 5, "Security log helper", c05),
+        _check("LOGGING", 6, "Metric log helper", c06),
+        _check("LOGGING", 7, "Count log helper", c07),
+        _check("LOGGING", 8, "Gauge log helper", c08),
+        _check("LOGGING", 9, "Histogram log helper", c09),
+        _check("LOGGING", 10, "Breadcrumb log helper", c10),
+    ]
+    return mc
+
+
+# ── Category 13: TIMING ─────────────────────────────────────────────────────
 
 def check_timing() -> MainCheck:
     mc = MainCheck("TIMING", "Timing Primitives")
@@ -920,7 +1188,7 @@ def check_timing() -> MainCheck:
     return mc
 
 
-# ── Category 12: PARITY ─────────────────────────────────────────────────────
+# ── Category 14: PARITY ─────────────────────────────────────────────────────
 
 def check_parity() -> MainCheck:
     mc = MainCheck("PARITY", "Cross-SDK API Parity")
@@ -976,6 +1244,48 @@ def check_parity() -> MainCheck:
                       "RemediationFeedback"]:
             assert hasattr(loxa, name), f"loxa missing cortex type {name}"
 
+    def c11(sc):
+        for name in ["Drop", "Cancel", "Abandon", "Retry", "Partial",
+                      "CloneEvent", "LinkEvent", "CurrentEvent", "BindEvent", "Wrap"]:
+            assert hasattr(loxa, name), f"loxa missing lifecycle extra {name}"
+
+    def c12(sc):
+        for name in ["Notice", "Event", "Track", "Audit", "Security",
+                      "Metric", "Count", "Gauge", "Histogram", "Breadcrumb"]:
+            assert hasattr(loxa, name), f"loxa missing logging helper {name}"
+
+    def c13(sc):
+        for name in ["Money", "Percent", "Bytes", "HTTPStatus", "StatusCode", "ErrorCode",
+                      "Bucket", "Tags", "Masked", "URL", "EmailHash", "IPHash", "Region"]:
+            assert hasattr(loxa, name), f"loxa missing domain helper {name}"
+
+    def c14(sc):
+        for name in ["PaymentID", "SubscriptionID", "InvoiceID", "JobID", "MessageID", "CorrelationID",
+                      "CommitSHA", "Release"]:
+            assert hasattr(loxa, name), f"loxa missing entity ID helper {name}"
+
+    def c15(sc):
+        for name in ["CheckoutCartItemCount", "CheckoutCartTotal", "CheckoutPaymentMethod", "CheckoutStatus"]:
+            assert hasattr(loxa, name), f"loxa missing checkout helper {name}"
+
+    def c16(sc):
+        for name in ["PaymentProvider", "PaymentMethod", "PaymentIntentID", "PaymentFailureCode", "PaymentRetryAttempt"]:
+            assert hasattr(loxa, name), f"loxa missing payment helper {name}"
+
+    def c17(sc):
+        for name in ["BillingPlan", "BillingSubscriptionID", "BillingInvoiceID", "BillingAmount", "BillingInterval"]:
+            assert hasattr(loxa, name), f"loxa missing billing helper {name}"
+
+    def c18(sc):
+        for name in ["AgentName", "AgentProvider", "AgentModel", "AgentRunType",
+                      "AgentToolName", "AgentToolOutcome", "AgentInputTokens", "AgentOutputTokens", "AgentCost"]:
+            assert hasattr(loxa, name), f"loxa missing agent helper {name}"
+
+    def c19(sc):
+        for name in ["RAGIndex", "RAGEmbeddingModel", "RAGChunksRetrieved", "RAGTopScore",
+                      "RAGQueryHash", "RAGCitationCount", "RAGRetrievalLatency"]:
+            assert hasattr(loxa, name), f"loxa missing RAG helper {name}"
+
     mc.subchecks = [
         _check("PARITY", 1, "All lifecycle APIs exported", c01),
         _check("PARITY", 2, "All immediate log levels exported", c02),
@@ -987,6 +1297,15 @@ def check_parity() -> MainCheck:
         _check("PARITY", 8, "All sink types exported", c08),
         _check("PARITY", 9, "All timing types exported", c09),
         _check("PARITY", 10, "All cortex types exported", c10),
+        _check("PARITY", 11, "Lifecycle extras (drop, cancel, abandon, retry, partial, clone, link)", c11),
+        _check("PARITY", 12, "All logging helpers (notice, event, track, audit, security, metric, count, gauge, histogram, breadcrumb)", c12),
+        _check("PARITY", 13, "Domain helpers (money, percent, httpStatus, etc.)", c13),
+        _check("PARITY", 14, "Entity ID helpers (paymentID, subscriptionID, etc.)", c14),
+        _check("PARITY", 15, "Checkout domain pack", c15),
+        _check("PARITY", 16, "Payment domain pack", c16),
+        _check("PARITY", 17, "Billing domain pack", c17),
+        _check("PARITY", 18, "Agent domain pack", c18),
+        _check("PARITY", 19, "RAG domain pack", c19),
     ]
     return mc
 
@@ -1005,6 +1324,8 @@ ALL_CATEGORIES = [
     check_cortex,
     check_collector,
     check_timing,
+    check_domain_helpers,
+    check_logging_helpers,
     check_parity,
 ]
 

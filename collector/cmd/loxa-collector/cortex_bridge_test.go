@@ -77,11 +77,11 @@ func TestCortexBridgeSyncDelivery(t *testing.T) {
 	batch := fake.lastBatch()
 	require.NotNil(t, batch)
 	require.Len(t, batch.Events, 1)
-	require.Equal(t, "evt-sync", batch.Events[0].Id)
+	require.Equal(t, "evt-sync", batch.Events[0].EventId)
 	require.Equal(t, "checkout", batch.Events[0].Service)
-	require.Equal(t, "http", batch.Events[0].Kind)
+	require.Equal(t, loxav1.EventKind_EVENT_KIND_EVENT, batch.Events[0].Kind)
 	require.Equal(t, "tr_1", batch.Events[0].TraceId)
-	require.NotNil(t, batch.Events[0].Raw)
+	require.NotNil(t, batch.Events[0].Attrs)
 }
 
 func TestCortexBridgeAsyncFlush(t *testing.T) {

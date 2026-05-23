@@ -1,6 +1,6 @@
 # Canonical Duplicate Field Policy
 
-**Version**: 1.0.0  
+**Version**: 0.0.1  
 **Date**: May 15, 2026  
 **Status**: Production - All SDKs MUST implement this policy
 
@@ -190,10 +190,10 @@ SDK:
 
 | SDK | Default Policy | Minimum Version |
 |-----|---|---|
-| Go | CanonicalWins | 1.0.0 |
-| Python | CanonicalWins | 1.0.0 |
-| Rust | CanonicalWins | 1.0.0 |
-| Collector | CanonicalWins | 1.0.0 |
+| Go | CanonicalWins | 0.0.1 |
+| Python | CanonicalWins | 0.0.1 |
+| Rust | CanonicalWins | 0.0.1 |
+| Collector | CanonicalWins | 0.0.1 |
 
 **All SDKs MUST default to CanonicalWins for production safety.**
 
@@ -277,7 +277,7 @@ The collector MUST:
 
 | Version | Behavior |
 |---------|----------|
-| 1.0.0 | CanonicalWins default, support all 3 policies |
+| 0.0.1 | CanonicalWins default, support all 3 policies |
 
 ---
 
@@ -345,10 +345,10 @@ A: Yes. `method` is canonical, but `http.method` (nested) is separate. Only cust
 A: Use AttrWins policy (not recommended), but understand the risks.
 
 **Q: When will strict Error policy be default?**  
-A: v1.0.0 defaults to CanonicalWins.
+A: v0.0.1 defaults to CanonicalWins.
 
 ---
 
 **Last Updated**: May 15, 2026  
 **Status**: Production - Enforced across all SDKs  
-**All SDKs MUST implement this policy for v1.0.0 release.**
+**All SDKs MUST implement this policy for v0.0.1 release.**

@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "event_version": "v1",
+  "event_id": "evt_018f7f3a-bb00-7b00-8000-000000000004",
+  "timestamp": "2026-05-22T06:10:42.120Z",
+  "service": "checkout",
+  "event": "checkout.notification",
+  "kind": "event",
+  "level": "notice",
+  "outcome": "success",
+  "duration_ms": 10,
+  "attrs": {
+    "notification.type": "low_stock_warning",
+    "product.sku": "SKU-001"
+  },
+  "sdk": { "name": "loxa-rs", "version": "0.1.0", "language": "rust" },
+  "collector": { "received_at": "2026-05-22T06:10:42.511Z" }
+}

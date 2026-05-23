@@ -1,9 +1,12 @@
 """Timing primitives: Process, Timer, Group, Stopwatch."""
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any
+
+from .event import Attr
 
 
 @dataclass(slots=True)
@@ -186,3 +189,42 @@ class StopwatchHandle:
 
     def elapsed(self) -> timedelta:
         return datetime.now(timezone.utc) - self._started_at
+
+
+# --- Timing helper methods (added to EventContext at runtime) ---
+
+def with_process(ctx: Any, name: str, *attrs: Attr, **fields: Any) -> ProcessHandle:
+    return ctx.start_process(name, **fields)
+
+
+def with_group(ctx: Any, name: str, *attrs: Attr, **fields: Any) -> GroupHandle:
+    return ctx.start_group(name, **fields)
+
+
+def with_timer(ctx: Any, name: str, *attrs: Attr, **fields: Any) -> TimerHandle:
+    return ctx.start_timer(name, **fields)
+
+
+def finish_group_error(handle: GroupHandle, error: BaseException, **attrs: object) -> None:
+    attrs["error_message"] = str(error)
+    handle.finish(**attrs)
+
+
+def measure(ctx: Any, name: str, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    timer = ctx.start_timer(name)
+    try:
+        return fn(*args, **kwargs)
+    finally:
+        timer.stop()
+
+
+def step(ctx: Any, name: str) -> ProcessHandle:
+    return ctx.start_process(name)
+
+
+def phase(ctx: Any, name: str) -> GroupHandle:
+    return ctx.start_group(name)
+
+
+def span(ctx: Any, name: str) -> TimerHandle:
+    return ctx.start_timer(name)

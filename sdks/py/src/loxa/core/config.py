@@ -74,6 +74,7 @@ class FieldNamingConfig:
 @dataclass(slots=True)
 class Config:
     service: str = ""
+    alias: str = ""
     version: str = ""
     environment: str = "development"
     region: str = ""
@@ -112,6 +113,10 @@ class Config:
 
     def with_service(self, service: str) -> "Config":
         self.service = service
+        return self
+
+    def with_alias(self, alias: str) -> "Config":
+        self.alias = alias
         return self
 
     def with_version(self, version: str) -> "Config":
@@ -169,8 +174,18 @@ class Config:
         self.exit_on_fatal = enabled
         return self
 
+    @classmethod
+    def disabled(cls) -> "Config":
+        cfg = cls(environment="test", level="fatal", strict=False)
+        return cfg
+
+    @classmethod
+    def from_env(cls) -> "Config":
+        from .config import _apply_env_vars
+        return _apply_env_vars(cls())
+
     def validate(self) -> None:
-        if self.level not in {"debug", "info", "warn", "error", "fatal"}:
+        if self.level not in {"debug", "info", "notice", "warn", "error", "fatal"}:
             raise ValueError(f"unsupported level: {self.level}")
         if self.async_config.queue_size <= 0:
             raise ValueError("async queue_size must be positive")

@@ -11,7 +11,7 @@
     },
     "status": {
       "type": "string",
-      "enum": ["accepted", "partial", "rejected", "invalid"]
+      "enum": ["accepted", "partial", "rejected", "invalid", "quarantined"]
     },
     "accepted": {
       "type": "integer",
@@ -30,6 +30,10 @@
       "minimum": 0
     },
     "invalid": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "quarantined": {
       "type": "integer",
       "minimum": 0
     },

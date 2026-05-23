@@ -1,5 +1,7 @@
 # SDK Comparison
 
+v0.0.2 standardizes the same product shape in every SDK: default `loxa` client, cross-language factory, immutable same-config aliases, and first-class lifecycle primitives (`checkpoint`, `process`, `group`, `timer`, `stopwatch`). See [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md) for the canonical catalog.
+
 ## Feature Matrix
 
 | Feature | Go | Python | Rust | JavaScript |
@@ -16,7 +18,7 @@
 | Async Emit | Goroutine-based | Thread-based | Tokio async | Promise-based |
 | CortexClient | Yes (11 methods) | Yes (13 methods) | Yes | Yes |
 | Default API (`loxa.*` facade) | Yes | Yes | Yes | Yes |
-| `CreateLoxa()` factory | N/A (`New`) | `create_loxa` | `create_loxa` | `createLoxa` |
+| `CreateLoxa()` factory | `CreateLoxa` and `New` | `create_loxa` | `create_loxa` | `createLoxa` |
 | `Alias("name")` sugar | Yes | Yes | Yes | Yes |
 
 ## SDK Documentation
@@ -35,7 +37,7 @@ Each SDK maintains a parity manifest tracking feature implementation status:
 - Rust: `sdks/rs/docs/parity.md`
 - JavaScript: `sdks/js/docs/parity.md`
 
-All SDKs reached full P0-P3 parity at v1.0.0.
+v0.0.2 updates the parity target from stable-v1 parity to the full product-parity method family.
 
 ## Common Patterns
 

@@ -1,10 +1,11 @@
 package ingest
 
 const (
-	StatusAccepted = "accepted"
-	StatusPartial  = "partial"
-	StatusRejected = "rejected"
-	StatusInvalid  = "invalid"
+	StatusAccepted    = "accepted"
+	StatusPartial     = "partial"
+	StatusRejected    = "rejected"
+	StatusInvalid     = "invalid"
+	StatusQuarantined = "quarantined"
 )
 
 type EventAck struct {
@@ -34,6 +35,7 @@ type Response struct {
 	Duplicates   int          `json:"duplicates,omitempty"`
 	Deduped      int          `json:"deduped,omitempty"`
 	Invalid      int          `json:"invalid"`
+	Quarantined  int          `json:"quarantined"`
 	Errors       []EventError `json:"errors,omitempty"`
 	Acks         []EventAck   `json:"acks,omitempty"`
 	RetryAfterMS int          `json:"retry_after_ms,omitempty"`
@@ -75,6 +77,11 @@ func (r *Response) AddInvalid(index int, eventID, code, message string) {
 	r.addError(index, eventID, code, message, false, StatusInvalid)
 }
 
+func (r *Response) AddQuarantined(index int, eventID, code, message string) {
+	r.Quarantined++
+	r.addError(index, eventID, code, message, false, StatusQuarantined)
+}
+
 func (r *Response) AddRejected(index int, eventID, code, message string, retryable bool) {
 	r.Rejected++
 	r.addError(index, eventID, code, message, retryable, StatusRejected)
@@ -107,10 +114,12 @@ func (r *Response) addError(index int, eventID, code, message string, retryable 
 
 func (r *Response) Finalize() {
 	switch {
-	case r.Accepted > 0 && (r.Invalid > 0 || r.Rejected > 0):
+	case r.Accepted > 0 && (r.Invalid > 0 || r.Rejected > 0 || r.Quarantined > 0):
 		r.Status = StatusPartial
 	case r.Accepted > 0:
 		r.Status = StatusAccepted
+	case r.Quarantined > 0:
+		r.Status = StatusQuarantined
 	case r.Invalid > 0:
 		r.Status = StatusInvalid
 	default:

@@ -372,14 +372,17 @@ func (p *Pipeline) waitForDrain(ctx context.Context) error {
 	p.drainMu.Lock()
 	defer p.drainMu.Unlock()
 	for !p.isDrained() {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
+		// Register the cancellation callback BEFORE checking ctx.Err()
+		// to avoid a race where cancellation happens between the check and AfterFunc registration.
 		stopBroadcast := context.AfterFunc(ctx, func() {
 			p.drainMu.Lock()
 			p.drainCond.Broadcast()
 			p.drainMu.Unlock()
 		})
+		if err := ctx.Err(); err != nil {
+			stopBroadcast()
+			return err
+		}
 		p.drainCond.Wait()
 		stopBroadcast()
 	}

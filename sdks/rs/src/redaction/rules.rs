@@ -30,6 +30,9 @@ pub fn redact(mut value: Value, redactor: &RedactorConfig) -> Value {
         RedactorConfig::Compose(redactors) => redactors
             .iter()
             .fold(value, |current, redactor| redact(current, redactor)),
+        RedactorConfig::AllowKeys(_keys) => {
+            value
+        }
         RedactorConfig::None => value,
     }
 }

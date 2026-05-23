@@ -2,9 +2,9 @@
 
 All notable changes to the LOXA project are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/0.0.1/).
 
-## [1.0.0] - 2026-05-20
+## [0.0.1] - 2026-05-20
 
 ### Collector
 - HTTP ingest server with gzip, schema validation, deduplication

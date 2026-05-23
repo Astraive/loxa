@@ -2,15 +2,15 @@
 
 All notable changes to the contract repository are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/0.0.1/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2026-05-20
+## [0.0.1] - 2026-05-20
 
 ### Added
 
 - v1 Schema Structure with versioned schema directory
-- Core Event Schema (v1.0.0) with required fields
+- Core Event Schema (v0.0.1) with required fields
 - Optional fields: tenant, trace, user, host, data
 - Enriched fields: received_at, collector_version, collector_hostname, ingestion_latency_ms
 - Example events

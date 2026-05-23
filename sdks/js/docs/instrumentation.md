@@ -168,7 +168,7 @@ async function handleCheckout(req: CheckoutRequest): Promise<CheckoutResult> {
     { "name": "cart.validated", "at_ms": 12 },
     { "name": "order.fulfilling", "at_ms": 534 }
   ],
-  "process": [
+  "processes": [
     { "step": 1, "name": "payment.charge", "started_at_ms": 13, "ended_at_ms": 533, "duration_ms": 520 }
   ]
 }
@@ -403,7 +403,7 @@ try {
 **Emitted output:**
 
 ```json
-"process": [
+"processes": [
   { "step": 1, "name": "validate_input", "started_at_ms": 0, "ended_at_ms": 12, "duration_ms": 12 },
   { "step": 2, "name": "transform_data", "started_at_ms": 13, "ended_at_ms": 89, "duration_ms": 76 },
   { "step": 3, "name": "persist_to_db", "started_at_ms": 90, "ended_at_ms": 245, "duration_ms": 155 }
@@ -1491,4 +1491,4 @@ runWithEvent(ctx, () => {
 
 ---
 
-*Generated for loxa-js v1.0.0. See [public-api.md](./public-api.md) for the full API surface reference.*
+*Generated for loxa-js v0.0.1. See [public-api.md](./public-api.md) for the full API surface reference.*

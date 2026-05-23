@@ -8,6 +8,12 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable
 from urllib.error import HTTPError, URLError
 
+# TimeoutError was added in Python 3.11; define fallback for older versions
+try:
+    TimeoutError
+except NameError:
+    TimeoutError = OSError  # type: ignore[assignment,misc]
+
 from ...core.http_client import (
     _build_ingest_body,
     _collector_response_outcome,
@@ -30,7 +36,7 @@ class HTTPBatchSink:
     api_key: str = ""
     auth_header: str = "Authorization"
     sdk_name: str = "loxa-py"
-    sdk_version: str = "1.0.0"
+    sdk_version: str = "0.0.1"
     service: str = ""
     timeout: float = 2.0
     retries: int = 2

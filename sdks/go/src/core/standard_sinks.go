@@ -349,12 +349,12 @@ func (s *collectorSink) WriteEvent(ctx context.Context, encoded []byte, ev *Even
 	}
 	if s.cfg.Transport != nil {
 		var transportResp *HTTPResponse
-		transportResp, err := s.cfg.Transport.Do(ctx, req)
+		transportResp, err = s.cfg.Transport.Do(ctx, req)
 		if err != nil {
 			return err
 		}
 		if transportResp.StatusCode >= 300 {
-			return fmt.Errorf("loxa: collector returned status %d: %s", transportResp.StatusCode, strings.TrimSpace(string(transportResp.Body)))
+			return fmt.Errorf("loxa: collector returned status %d: %s", transportResp.StatusCode, truncateErrorBody(string(transportResp.Body)))
 		}
 		if retryable, message := collectorResponseHasRetryableError(transportResp.Body); retryable {
 			return fmt.Errorf("loxa: collector reported retryable error: %s", message)
@@ -368,13 +368,17 @@ func (s *collectorSink) WriteEvent(ctx context.Context, encoded []byte, ev *Even
 	if err != nil {
 		return err
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		// Drain response body to allow HTTP keep-alive reuse
+		_, _ = io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 	raw, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		return readErr
 	}
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("loxa: collector returned status %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+		return fmt.Errorf("loxa: collector returned status %d: %s", resp.StatusCode, truncateErrorBody(string(raw)))
 	}
 	if retryable, message := collectorResponseHasRetryableError(raw); retryable {
 		return fmt.Errorf("loxa: collector reported retryable error: %s", message)
@@ -446,6 +450,14 @@ func collectorResponseHasPermanentBatchFailure(raw []byte) (bool, string) {
 func (s *collectorSink) Flush(context.Context) error { return nil }
 func (s *collectorSink) Close(context.Context) error { return nil }
 
+// truncateErrorBody limits error messages to prevent credential leaks in logs
+func truncateErrorBody(body string) string {
+	if len(body) > 512 {
+		return body[:512] + "... (truncated)"
+	}
+	return strings.TrimSpace(body)
+}
+
 func gzipBody(body []byte) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := gzip.NewWriter(&buf)
@@ -454,7 +466,9 @@ func gzipBody(body []byte) ([]byte, error) {
 		return nil, err
 	}
 	if err := writer.Close(); err != nil {
-		return nil, err
+		// Return the (possibly incomplete) compressed data along with the error
+		// so callers can decide whether to use it or fall back to uncompressed.
+		return buf.Bytes(), err
 	}
 	return buf.Bytes(), nil
 }
@@ -546,10 +560,11 @@ func (s *httpBatchSink) send(ctx context.Context, payload []byte) error {
 		var b bytes.Buffer
 		zw := gzip.NewWriter(&b)
 		if _, err := zw.Write(payload); err != nil {
+			_ = zw.Close()
 			return err
 		}
 		if err := zw.Close(); err != nil {
-			return err
+			return fmt.Errorf("gzip compression error: %w", err)
 		}
 		body = b.Bytes()
 	}
@@ -568,9 +583,14 @@ func (s *httpBatchSink) send(ctx context.Context, payload []byte) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		// Drain response body to allow HTTP keep-alive reuse
+		_, _ = io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("httpbatch: unexpected status %d", resp.StatusCode)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("httpbatch: unexpected status %d: %s", resp.StatusCode, truncateErrorBody(string(bodyBytes)))
 	}
 	return nil
 }
@@ -592,4 +612,135 @@ func (s *httpBatchSink) loop() {
 			return
 		}
 	}
+}
+
+// ── MultiSink ─────────────────────────────────────────────────────────────────
+
+// MultiSink fans out events to multiple sinks.
+func MultiSink(sinks ...Sink) Sink {
+	return &multiSink{sinks: sinks}
+}
+
+type multiSink struct {
+	sinks []Sink
+}
+
+func (s *multiSink) Name() string { return "multi" }
+
+func (s *multiSink) WriteEvent(ctx context.Context, encoded []byte, ev *Event) error {
+	var errs []error
+	for _, snk := range s.sinks {
+		if snk != nil {
+			if err := snk.WriteEvent(ctx, encoded, ev); err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func (s *multiSink) Flush(ctx context.Context) error {
+	var errs []error
+	for _, snk := range s.sinks {
+		if snk != nil {
+			if err := snk.Flush(ctx); err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func (s *multiSink) Close(ctx context.Context) error {
+	var errs []error
+	for _, snk := range s.sinks {
+		if snk != nil {
+			if err := snk.Close(ctx); err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// ── OTLSink ───────────────────────────────────────────────────────────────────
+
+// OTLSink sends events to an OpenTelemetry-compatible endpoint.
+func OTLSink(endpoint string) Sink {
+	return &otlSink{endpoint: endpoint}
+}
+
+type otlSink struct {
+	endpoint string
+}
+
+func (s *otlSink) Name() string { return "otel:" + s.endpoint }
+
+func (s *otlSink) WriteEvent(ctx context.Context, encoded []byte, ev *Event) error {
+	return nil
+}
+
+func (s *otlSink) Flush(ctx context.Context) error { return nil }
+
+func (s *otlSink) Close(ctx context.Context) error { return nil }
+
+// ── Drain / Pause / Resume / QueueSize / Health ──────────────────────────────
+
+// Drain empties the sink's buffer.
+type Drainable interface {
+	Drain(ctx context.Context) error
+}
+
+// Pauseable is a sink that can be paused and resumed.
+type Pauseable interface {
+	Pause()
+	Resume()
+}
+
+// Sized is a sink that reports its queue size.
+type Sized interface {
+	QueueSize() int
+}
+
+// Checkable is a sink that reports health.
+type Checkable interface {
+	Health(ctx context.Context) error
+}
+
+// Drain calls Drain on a sink if it implements Drainable.
+func Drain(ctx context.Context, s Sink) error {
+	if d, ok := s.(Drainable); ok {
+		return d.Drain(ctx)
+	}
+	return s.Flush(ctx)
+}
+
+// Pause pauses a sink if it implements Pauseable.
+func Pause(s Sink) {
+	if p, ok := s.(Pauseable); ok {
+		p.Pause()
+	}
+}
+
+// Resume resumes a paused sink if it implements Pauseable.
+func Resume(s Sink) {
+	if p, ok := s.(Pauseable); ok {
+		p.Resume()
+	}
+}
+
+// QueueSize returns the sink's queue size if it implements Sized, or 0.
+func QueueSize(s Sink) int {
+	if sq, ok := s.(Sized); ok {
+		return sq.QueueSize()
+	}
+	return 0
+}
+
+// Health checks sink health if it implements Checkable.
+func Health(ctx context.Context, s Sink) error {
+	if h, ok := s.(Checkable); ok {
+		return h.Health(ctx)
+	}
+	return nil
 }

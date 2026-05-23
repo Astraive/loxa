@@ -11,6 +11,7 @@ import (
 
 	"github.com/astraive/loxa/loxa-cortex/internal/eventconv"
 	"github.com/astraive/loxa/loxa-cortex/internal/models"
+	"github.com/astraive/loxa/loxa-cortex/internal/redaction"
 	"github.com/astraive/loxa/loxa-cortex/internal/storage"
 )
 
@@ -18,7 +19,7 @@ type EventProcessor struct {
 	eventStore storage.EventStore
 	topology   storage.TopologyStore
 	graph      storage.GraphStore
-	redactor   *Redactor
+	redactor   *redaction.Redactor
 }
 
 func NewEventProcessor(eventStore storage.EventStore, topology storage.TopologyStore, graph storage.GraphStore) *EventProcessor {
@@ -30,8 +31,14 @@ func NewEventProcessor(eventStore storage.EventStore, topology storage.TopologyS
 }
 
 // WithRedactor adds PII redaction to the processor.
-func (p *EventProcessor) WithRedactor(r *Redactor) *EventProcessor {
+func (p *EventProcessor) WithRedactor(r *redaction.Redactor) *EventProcessor {
 	p.redactor = r
+	return p
+}
+
+// WithConfigurableRedaction creates a Redactor from config and attaches it.
+func (p *EventProcessor) WithConfigurableRedaction(cfg redaction.Config) *EventProcessor {
+	p.redactor = redaction.NewWithConfig(cfg)
 	return p
 }
 
@@ -42,7 +49,11 @@ func (p *EventProcessor) ProcessEvent(ctx context.Context, event *models.Event) 
 
 	normalized := p.normalizeEvent(event)
 
-	if err := p.eventStore.Save(ctx, normalized); err != nil {
+	// Extract lifecycle primitives before saving
+	lifecycle := p.extractLifecycle(normalized)
+
+	// Save event with lifecycle data
+	if err := p.eventStore.Save(ctx, normalized, lifecycle); err != nil {
 		return fmt.Errorf("failed to save event: %w", err)
 	}
 
@@ -55,14 +66,18 @@ func (p *EventProcessor) ProcessEvent(ctx context.Context, event *models.Event) 
 
 func (p *EventProcessor) ProcessBatch(ctx context.Context, events []*models.Event) error {
 	var validEvents []*models.Event
+	var lifecycles []*storage.LifecycleData
+
 	for _, e := range events {
 		if err := e.Validate(); err != nil {
 			return fmt.Errorf("event validation failed for %s: %w", e.ID, err)
 		}
-		validEvents = append(validEvents, p.normalizeEvent(e))
+		normalized := p.normalizeEvent(e)
+		validEvents = append(validEvents, normalized)
+		lifecycles = append(lifecycles, p.extractLifecycle(normalized))
 	}
 
-	if err := p.eventStore.SaveBatch(ctx, validEvents); err != nil {
+	if err := p.eventStore.SaveBatch(ctx, validEvents, lifecycles); err != nil {
 		return fmt.Errorf("failed to save batch: %w", err)
 	}
 
@@ -109,10 +124,7 @@ func (p *EventProcessor) ProcessJSONL(ctx context.Context, reader io.Reader) err
 	return nil
 }
 
-// Redactor applies PII redaction to event data.
-type Redactor struct {
-	Mode string // "enforce" or "log"
-}
+
 
 func (p *EventProcessor) normalizeEvent(event *models.Event) *models.Event {
 	normalized := *event
@@ -123,38 +135,36 @@ func (p *EventProcessor) normalizeEvent(event *models.Event) *models.Event {
 		normalized.Raw = make(map[string]interface{})
 	}
 	if p.redactor != nil {
-		normalized.Raw = p.redactPII(normalized.Raw)
+		normalized.Raw = p.redactor.RedactMap(normalized.Raw)
 	}
 	return &normalized
 }
 
-func (p *EventProcessor) redactPII(data map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{}, len(data))
-	for k, v := range data {
-		if s, ok := v.(string); ok {
-			result[k] = p.redactString(k, s)
-		} else if m, ok := v.(map[string]interface{}); ok {
-			result[k] = p.redactPII(m)
-		} else {
-			result[k] = v
-		}
+// extractLifecycle extracts lifecycle primitives from the event for indexing
+func (p *EventProcessor) extractLifecycle(event *models.Event) *storage.LifecycleData {
+	return &storage.LifecycleData{
+		EventID:         event.ID,
+		EventName:       event.Event,
+		Service:         event.Service,
+		Outcome:         event.Outcome,
+		DurationMs:      event.DurationMs,
+		TraceID:         event.TraceID,
+		SpanID:          event.SpanID,
+		Level:           event.Level,
+		Environment:     event.Environment,
+		Release:         event.Release,
+		CheckpointCount: len(event.Checkpoints),
+		ProcessCount:    len(event.Processes),
+		GroupCount:      len(event.Groups),
+		TimerCount:      len(event.Timers),
+		LinkCount:       len(event.Links),
+		Checkpoints:     event.Checkpoints,
+		Processes:       event.Processes,
+		Groups:          event.Groups,
+		Timers:          event.Timers,
+		Links:           event.Links,
+		Attrs:           event.Attrs,
 	}
-	return result
-}
-
-func (p *EventProcessor) redactString(key, value string) string {
-	sensitive := []string{"password", "secret", "token", "api_key", "authorization", "credit_card", "ssn", "email"}
-	lowerKey := key
-	for _, s := range sensitive {
-		if contains(lowerKey, s) {
-			return "[REDACTED]"
-		}
-	}
-	return value
-}
-
-func contains(s, sub string) bool {
-	return len(s) >= len(sub) && (s == sub || len(s) > 0 && (s[0] == sub[0] && contains(s[1:], sub[1:])))
 }
 
 func (p *EventProcessor) createGraphNodes(ctx context.Context, event *models.Event) error {
@@ -206,6 +216,21 @@ func (p *EventProcessor) createGraphNodes(ctx context.Context, event *models.Eve
 		}
 	}
 
+	// Create edges from event links if present
+	if event.Links != nil {
+		for _, link := range event.Links {
+			edge := &models.Edge{
+				ID:         fmt.Sprintf("%s->%s:%s", event.ID, link.Target, link.Type),
+				FromNodeID: event.ID,
+				ToNodeID:   link.Target,
+				Type:       models.EdgeType(link.Type),
+				Weight:     1.0,
+				CreatedAt:  time.Now(),
+			}
+			p.graph.SaveEdge(ctx, edge)
+		}
+	}
+
 	return nil
 }
 
@@ -231,6 +256,21 @@ func (p *EventProcessor) createGraphNodesBatch(ctx context.Context, events []*mo
 		}
 		if event.IncidentID != "" {
 			incidentGroups[event.IncidentID] = append(incidentGroups[event.IncidentID], event)
+		}
+
+		// Create edges from event links
+		if event.Links != nil {
+			for _, link := range event.Links {
+				edge := &models.Edge{
+					ID:         fmt.Sprintf("%s->%s:%s", event.ID, link.Target, link.Type),
+					FromNodeID: event.ID,
+					ToNodeID:   link.Target,
+					Type:       models.EdgeType(link.Type),
+					Weight:     1.0,
+					CreatedAt:  time.Now(),
+				}
+				p.graph.SaveEdge(ctx, edge)
+			}
 		}
 	}
 
@@ -346,8 +386,20 @@ func graphAttributesForEvent(event *models.Event) map[string]any {
 	if event.IncidentID != "" {
 		attrs["incident_id"] = event.IncidentID
 	}
+	if event.Event != "" {
+		attrs["event"] = event.Event
+	}
+	if event.Outcome != "" {
+		attrs["outcome"] = event.Outcome
+	}
+	if event.DurationMs > 0 {
+		attrs["duration_ms"] = event.DurationMs
+	}
+	if event.Level != "" {
+		attrs["level"] = event.Level
+	}
 
-	for _, key := range []string{"message", "error", "level", "severity", "metric_name", "metric", "anomaly", "is_anomaly", "value", "status_code", "outcome", "route", "method", "deployment_id", "version"} {
+	for _, key := range []string{"message", "error", "severity", "metric_name", "anomaly", "is_anomaly", "value", "status_code", "route", "method", "deployment_id", "version"} {
 		if value, ok := event.Raw[key]; ok {
 			attrs[key] = value
 		}
@@ -433,7 +485,6 @@ func NewAsyncProcessor(processor *EventProcessor, workers, channelSize, batchSiz
 		batchSize = 256
 	}
 
-
 	ap := &AsyncProcessor{
 		processor: processor,
 		ch:        make(chan *models.Event, channelSize),
@@ -494,7 +545,6 @@ func (ap *AsyncProcessor) worker() {
 				batch = batch[:0]
 			}
 		case syncCh := <-ap.flushCh:
-			// Drain channel
 			for {
 				select {
 				case event := <-ap.ch:

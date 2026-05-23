@@ -15,6 +15,11 @@ const (
 	EventStateFinished         EventState = "finished"
 	EventStateEmitting         EventState = "emitting"
 	EventStateEmitted          EventState = "emitted"
+	EventStateInvalid          EventState = "invalid"
+	EventStateDropped          EventState = "dropped"
+	EventStateEmitFailed       EventState = "emit_failed"
+	EventStateSpooled          EventState = "spooled"
+	EventStateDLQWritten       EventState = "dlq_written"
 	EventStateFailedValidation EventState = "failed_validation"
 	EventStateDeliveryFailed   EventState = "delivery_failed"
 )

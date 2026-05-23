@@ -2,6 +2,18 @@
 
 A 5-minute quickstart for the LOXA JS SDK (`loxa-js`). By the end you will have a working application that creates, enriches, finishes, and emits a wide-event using the `loxa` default instance.
 
+## Default Client
+
+Use `loxa.<method>()` for quick starts and single-client applications.
+
+## Custom Client / Alias
+
+Use `createLoxa(config)` for an independent client and `loxa.alias("name")` for a same-config child that emits `loxa.alias`.
+
+## Cross-Language Parity
+
+JS maps to the v0.0.2 parity family as `loxa`, `createLoxa`, optional `new Loxa`, and user-defined variables such as `logger.info(...)`.
+
 ## Install
 
 ```bash
@@ -159,7 +171,7 @@ Custom instances are independent -- they do not share config or state with the d
 
 ## Aliases
 
-Use `alias` to create a logger that shares the same config as `loxa` but uses a different service name. This is useful for emitting events from a subsystem under a distinct service identity:
+Use `alias` to create a logger that shares the same config as `loxa` and adds `loxa.alias` metadata. This is useful for emitting events from a logical subsystem without duplicating configuration:
 
 ```typescript
 import { loxa, configure, production, httpBatchSink, string } from 'loxa-js';
@@ -176,14 +188,14 @@ const ctx = loxa.startEvent({ event: 'checkout.request' });
 loxa.finish(ctx, 'success');
 await loxa.emit(ctx);
 
-// Audit event under a different service name
+// Audit event with loxa.alias metadata
 const auditCtx = audit.startEvent({ event: 'audit.action', kind: 'http' });
 audit.enrich(ctx, string('action', 'user.login'));
 audit.finish(auditCtx, 'success');
 await audit.emit(auditCtx);
 ```
 
-Aliases inherit the sink, sampler, redactor, and schema from the parent. Only the service name changes.
+Aliases inherit the service, sink, sampler, redactor, and schema from the parent. They do not mutate the parent logger.
 
 ## Event Lifecycle
 

@@ -10,304 +10,383 @@ CONTRACT = {
   "api_version": "v1",
   "event_version": "v1",
   "schemas": {
-    "event": "spec/schemas/json/event.schema.json",
-    "event_strict": "spec/schemas/json/event.strict.schema.json",
-    "event_loose": "spec/schemas/json/event.loose.schema.json",
-    "ingest_envelope": "spec/schemas/json/ingest-envelope.schema.json",
-    "collector_response": "spec/schemas/json/collector-response.schema.json"
-  },
+  "event": "spec/schemas/json/event.schema.json",
+  "event_strict": "spec/schemas/json/event.strict.schema.json",
+  "event_loose": "spec/schemas/json/event.loose.schema.json",
+  "ingest_envelope": "spec/schemas/json/ingest-envelope.schema.json",
+  "collector_response": "spec/schemas/json/collector-response.schema.json"
+},
   "required_fields": [
-    "schema_version",
-    "event_version",
-    "event_id",
-    "timestamp",
-    "service",
-    "event",
-    "kind"
-  ],
+  "schema_version",
+  "event_version",
+  "event_id",
+  "timestamp",
+  "service",
+  "event",
+  "kind"
+],
   "allowed_top_level_fields": [
-    "attrs",
-    "delivery_attempts",
-    "deployment",
-    "duration_ms",
-    "environment",
-    "error",
-    "event",
-    "event_id",
-    "event_state",
-    "event_version",
-    "http",
-    "kind",
-    "level",
-    "message",
-    "method",
-    "organization",
-    "outcome",
-    "partial",
-    "partial_reason",
-    "path",
-    "pii",
-    "request_id",
-    "resource",
-    "route",
-    "schema_version",
-    "service",
-    "source",
-    "span_id",
-    "status_code",
-    "tenant",
-    "timestamp",
-    "trace_id",
-    "user",
-    "version",
-    "workspace"
-  ],
+  "attrs",
+  "checkpoints",
+  "collector",
+  "delivery_attempts",
+  "deployment",
+  "duration_ms",
+  "environment",
+  "error",
+  "errors",
+  "event",
+  "event_id",
+  "event_state",
+  "event_version",
+  "groups",
+  "http",
+  "kind",
+  "level",
+  "links",
+  "message",
+  "method",
+  "organization",
+  "outcome",
+  "partial",
+  "partial_reason",
+  "path",
+  "pii",
+  "processes",
+  "redaction",
+  "release",
+  "request_id",
+  "resource",
+  "route",
+  "sampling",
+  "schema_version",
+  "sdk",
+  "service",
+  "source",
+  "span_id",
+  "status_code",
+  "tenant",
+  "timers",
+  "timestamp",
+  "trace_flags",
+  "trace_id",
+  "user",
+  "version",
+  "workspace"
+],
   "canonical_fields": [
-    "attrs",
-    "delivery_attempts",
-    "deployment",
-    "duration_ms",
-    "environment",
-    "error",
-    "event",
-    "event_id",
-    "event_state",
-    "event_version",
-    "http",
-    "kind",
-    "level",
-    "message",
-    "method",
-    "organization",
-    "outcome",
-    "partial",
-    "partial_reason",
-    "path",
-    "pii",
-    "request_id",
-    "resource",
-    "route",
-    "schema_version",
-    "service",
-    "source",
-    "span_id",
-    "status_code",
-    "tenant",
-    "timestamp",
-    "trace_id",
-    "user",
-    "version",
-    "workspace"
-  ],
+  "attrs",
+  "checkpoints",
+  "collector",
+  "delivery_attempts",
+  "deployment",
+  "duration_ms",
+  "environment",
+  "error",
+  "errors",
+  "event",
+  "event_id",
+  "event_state",
+  "event_version",
+  "groups",
+  "http",
+  "kind",
+  "level",
+  "links",
+  "message",
+  "method",
+  "organization",
+  "outcome",
+  "partial",
+  "partial_reason",
+  "path",
+  "pii",
+  "processes",
+  "redaction",
+  "release",
+  "request_id",
+  "resource",
+  "route",
+  "sampling",
+  "schema_version",
+  "sdk",
+  "service",
+  "source",
+  "span_id",
+  "status_code",
+  "tenant",
+  "timers",
+  "timestamp",
+  "trace_flags",
+  "trace_id",
+  "user",
+  "version",
+  "workspace"
+],
   "enums": {
-    "schema_versions": [
-      "v1"
-    ],
-    "event_versions": [
-      "v1"
-    ],
-    "kinds": [
-      "event",
-      "http",
-      "job",
-      "queue",
-      "cli",
-      "cron",
-      "log",
-      "checkpoint"
-    ],
-    "levels": [
-      "debug",
-      "info",
-      "warn",
-      "error",
-      "fatal"
-    ],
-    "outcomes": [
-      "success",
-      "error",
-      "timeout",
-      "cancelled",
-      "rejected",
-      "abandoned",
-      "partial",
-      "unknown"
-    ],
-    "partial_reasons": [
-      "not_finished",
-      "process_exit",
-      "timeout",
-      "panic",
-      "collector_unavailable"
-    ],
-    "event_states": [
-      "created",
-      "active",
-      "finished",
-      "emitting",
-      "emitted",
-      "failed_validation",
-      "delivery_failed"
-    ],
-    "source_sdks": [
-      "loxa-cli",
-      "loxa-go",
-      "loxa-py",
-      "loxa-rs"
-    ]
-  },
+  "schema_versions": [
+  "v1"
+],
+  "event_versions": [
+  "v1"
+],
+  "kinds": [
+  "event",
+  "http",
+  "job",
+  "queue",
+  "cli",
+  "cron",
+  "log",
+  "checkpoint",
+  "agent",
+  "ai"
+],
+  "levels": [
+  "debug",
+  "info",
+  "notice",
+  "warn",
+  "error",
+  "fatal"
+],
+  "outcomes": [
+  "success",
+  "error",
+  "partial",
+  "abandoned",
+  "retried",
+  "cancelled",
+  "timeout",
+  "skipped",
+  "rejected",
+  "quarantined",
+  "unknown"
+],
+  "partial_reasons": [
+  "not_finished",
+  "process_exit",
+  "timeout",
+  "panic",
+  "collector_unavailable"
+],
+  "event_states": [
+  "created",
+  "active",
+  "finished",
+  "emitting",
+  "emitted",
+  "invalid",
+  "dropped",
+  "emit_failed",
+  "spooled",
+  "dlq_written",
+  "failed_validation",
+  "delivery_failed"
+],
+  "source_sdks": [
+  "loxa-cli",
+  "loxa-go",
+  "loxa-py",
+  "loxa-rs"
+]
+},
   "collector_statuses": [
-    "accepted",
-    "partial",
-    "rejected",
-    "invalid"
-  ],
+  "accepted",
+  "partial",
+  "rejected",
+  "invalid",
+  "quarantined"
+],
   "collector_ack_statuses": [
-    "accepted",
-    "rejected",
-    "invalid"
-  ],
+  "accepted",
+  "rejected",
+  "invalid"
+],
   "aliases": {
-    "event_type": "event"
-  },
+  "event_type": "event"
+},
   "alias_policy": {
-    "strict_mode": "reject_before_normalization",
-    "loose_mode": "normalize_then_use"
-  },
+  "strict_mode": "reject_before_normalization",
+  "loose_mode": "normalize_then_use"
+},
   "strict_mode": {
-    "allow_unknown_top_level_fields": False,
-    "allow_aliases": False,
-    "enforce_required_fields": True,
-    "enforce_enums": True,
-    "enforce_status_codes": True,
-    "enforce_timestamps": True,
-    "normalize_aliases": False
-  },
+  "allow_unknown_top_level_fields": False,
+  "allow_aliases": False,
+  "enforce_required_fields": True,
+  "enforce_enums": True,
+  "enforce_status_codes": True,
+  "enforce_timestamps": True,
+  "normalize_aliases": False
+},
   "loose_mode": {
-    "allow_unknown_top_level_fields": True,
-    "allow_aliases": True,
-    "enforce_required_fields": True,
-    "enforce_enums": True,
-    "normalize_aliases": True
-  },
+  "allow_unknown_top_level_fields": True,
+  "allow_aliases": True,
+  "enforce_required_fields": True,
+  "enforce_enums": True,
+  "normalize_aliases": True
+},
   "validation_modes": {
-    "strict": {
-      "name": "strict",
-      "description": "Reject unknown fields, aliases, and enforce all constraints",
-      "allow_aliases": False,
-      "allow_unknown_top_level_fields": False
-    },
-    "loose": {
-      "name": "loose",
-      "description": "Accept aliases and some unknown fields, normalize before validation",
-      "allow_aliases": True,
-      "allow_unknown_top_level_fields": True
-    }
-  },
+  "off": {
+  "name": "off",
+  "description": "Accept everything, still normalize payload",
+  "accept_all": True,
+  "normalize": True,
+  "validate": False,
+  "reject_on_failure": False
+},
+  "warn": {
+  "name": "warn",
+  "description": "Accept and report schema issues as warnings",
+  "accept_all": True,
+  "normalize": True,
+  "validate": True,
+  "reject_on_failure": False
+},
+  "enforce": {
+  "name": "enforce",
+  "description": "Reject invalid events, accept valid ones only",
+  "accept_all": False,
+  "normalize": True,
+  "validate": True,
+  "reject_on_failure": True
+},
+  "quarantine": {
+  "name": "quarantine",
+  "description": "Store invalid events separately in quarantine, accept valid ones",
+  "accept_all": False,
+  "normalize": True,
+  "validate": True,
+  "reject_on_failure": False,
+  "quarantine_on_failure": True
+},
+  "strict": {
+  "name": "strict",
+  "description": "Reject unknown fields, aliases, and enforce all constraints",
+  "allow_aliases": False,
+  "allow_unknown_top_level_fields": False,
+  "reject_on_failure": True
+},
+  "loose": {
+  "name": "loose",
+  "description": "Accept aliases and some unknown fields, normalize before validation",
+  "allow_aliases": True,
+  "allow_unknown_top_level_fields": True
+}
+},
   "wire_formats": [
-    "json",
-    "jsonl",
-    "protobuf"
-  ],
+  "json",
+  "jsonl",
+  "protobuf"
+],
   "limits": {
-    "max_event_size_bytes": 65536,
-    "max_batch_events": 1000,
-    "max_batch_size_bytes": 1048576,
-    "max_attrs_depth": 8,
-    "max_attr_key_length": 128,
-    "max_attr_value_length": 4096,
-    "max_error_stack_length": 16384
-  },
+  "max_event_size_bytes": 65536,
+  "max_batch_events": 1000,
+  "max_batch_size_bytes": 1048576,
+  "max_attrs_depth": 8,
+  "max_attr_key_length": 128,
+  "max_attr_value_length": 4096,
+  "max_error_stack_length": 16384
+},
   "fixtures": {
-    "version": "v1",
-    "strict_schema": "../spec/schemas/json/event.strict.schema.json",
-    "loose_schema": "../spec/schemas/json/event.loose.schema.json",
-    "valid": [
-      "valid/http_success.json",
-      "valid/http_error.json",
-      "valid/job_success.json",
-      "valid/queue_retry.json",
-      "valid/cron_run.json",
-      "valid/partial_abandoned.json",
-      "valid/cli_run.json",
-      "valid/duplicate_fields.json",
-      "valid/minimal_event.json",
-      "valid/error_event.json",
-      "valid/trace_context_event.json"
-    ],
-    "loose_only_valid": [
-      "valid/loose_event_type_alias.json"
-    ],
-    "invalid": [
-      "invalid/missing_event_id.json",
-      "invalid/missing_versions.json",
-      "invalid/bad_timestamp.json",
-      "invalid/bad_duration.json",
-      "invalid/invalid_enum_values.json"
-    ],
-    "strict_only_invalid": [
-      "invalid/strict_event_type_alias.json"
-    ],
-    "invalid_ingest": [
-      "invalid/bad_ingest_events_array.json"
-    ],
-    "invalid_collector_response": [
-      "invalid/bad_collector_status.json"
-    ],
-    "invalid_limits": [
-      "invalid/oversized.json"
-    ],
-    "emitted_shape": [
-      "emitted-shape/structured_http_success.json"
-    ],
-    "collector_ack_behavior": [
-      "valid/collector_ack.json",
-      "collector-acks/accepted_clean.json",
-      "collector-acks/accepted_duplicate.json",
-      "collector-acks/partial_invalid.json",
-      "collector-acks/retryable_rate_limited.json"
-    ],
-    "ingest_envelopes": [
-      "ingest-envelopes/single_event_json.json",
-      "ingest-envelopes/wrapped_batch_json.json",
-      "ingest-envelopes/ndjson_ingest.json"
-    ],
-    "fixtures_by_coverage": {
-      "http_success.json": "Standard HTTP event with all canonical fields",
-      "http_error.json": "HTTP error response event",
-      "error_event.json": "Error/exception event with stack trace",
-      "job_success.json": "Background job success event",
-      "queue_retry.json": "Queue/retry event",
-      "cron_run.json": "Cron/scheduled task event",
-      "partial_abandoned.json": "Partial/abandoned outcome event",
-      "cli_run.json": "CLI/process event",
-      "collector_ack.json": "Collector acknowledgment response payload",
-      "duplicate_fields.json": "Canonical duplicate field handling test",
-      "minimal_event.json": "Minimal valid event (required fields only)",
-      "loose_event_type_alias.json": "Legacy event_type alias accepted only in loose mode",
-      "strict_event_type_alias.json": "Legacy event_type alias rejected in strict mode",
-      "missing_versions.json": "Missing schema/event versions should fail event validation",
-      "bad_ingest_events_array.json": "Ingest envelope with non-array events should fail ingest schema",
-      "bad_collector_status.json": "Collector response with unsupported status should fail collector schema",
-      "trace_context_event.json": "Distributed trace context propagation",
-      "structured_http_success.json": "Cross-SDK emitted payload layout with structured groups and finished event_state",
-      "accepted_clean.json": "Collector sink should treat clean accepted acknowledgements as success",
-      "accepted_duplicate.json": "Collector sink should treat duplicate accepted acknowledgements as success",
-      "partial_invalid.json": "Collector sink should fail on partial invalid acknowledgements",
-      "retryable_rate_limited.json": "Collector sink should fail on retryable/rate-limited responses",
-      "single_event_json.json": "Collector accepts a single-event JSON ingest payload",
-      "wrapped_batch_json.json": "Canonical wrapped batch envelope generated by SDK sinks",
-      "ndjson_ingest.json": "Collector accepts NDJSON ingest payloads"
-    }
-  },
+  "version": "v1",
+  "strict_schema": "../schema/event.strict.schema.json",
+  "loose_schema": "../schema/event.loose.schema.json",
+  "valid": [
+  "valid/http_success.json",
+  "valid/http_error.json",
+  "valid/job_success.json",
+  "valid/queue_retry.json",
+  "valid/cron_run.json",
+  "valid/partial_abandoned.json",
+  "valid/cli_run.json",
+  "valid/duplicate_fields.json",
+  "valid/minimal_event.json",
+  "valid/error_event.json",
+  "valid/trace_context_event.json",
+  "valid/agent_run.json",
+  "valid/rag_query.json",
+  "valid/release_field.json",
+  "valid/notice_level.json"
+],
+  "loose_only_valid": [
+  "valid/loose_event_type_alias.json"
+],
+  "invalid": [
+  "invalid/missing_event_id.json",
+  "invalid/missing_versions.json",
+  "invalid/bad_timestamp.json",
+  "invalid/bad_duration.json",
+  "invalid/invalid_enum_values.json"
+],
+  "strict_only_invalid": [
+  "invalid/strict_event_type_alias.json"
+],
+  "invalid_ingest": [
+  "invalid/bad_ingest_events_array.json"
+],
+  "invalid_collector_response": [
+  "invalid/bad_collector_status.json"
+],
+  "invalid_limits": [
+  "invalid/oversized.json"
+],
+  "emitted_shape": [
+  "emitted-shape/structured_http_success.json"
+],
+  "collector_ack_behavior": [
+  "valid/collector_ack.json",
+  "collector-acks/accepted_clean.json",
+  "collector-acks/accepted_duplicate.json",
+  "collector-acks/partial_invalid.json",
+  "collector-acks/retryable_rate_limited.json",
+  "collector-acks/partial_quarantined.json"
+],
+  "ingest_envelopes": [
+  "ingest-envelopes/single_event_json.json",
+  "ingest-envelopes/wrapped_batch_json.json",
+  "ingest-envelopes/ndjson_ingest.json"
+],
+  "fixtures_by_coverage": {
+  "http_success.json": "Standard HTTP event with all canonical fields",
+  "http_error.json": "HTTP error response event",
+  "error_event.json": "Error/exception event with stack trace",
+  "job_success.json": "Background job success event",
+  "queue_retry.json": "Queue/retry event",
+  "cron_run.json": "Cron/scheduled task event",
+  "partial_abandoned.json": "Partial/abandoned outcome event",
+  "cli_run.json": "CLI/process event",
+  "collector_ack.json": "Collector acknowledgment response payload",
+  "duplicate_fields.json": "Canonical duplicate field handling test",
+  "minimal_event.json": "Minimal valid event (required fields only)",
+  "loose_event_type_alias.json": "Legacy event_type alias accepted only in loose mode",
+  "strict_event_type_alias.json": "Legacy event_type alias rejected in strict mode",
+  "missing_versions.json": "Missing schema/event versions should fail event validation",
+  "bad_ingest_events_array.json": "Ingest envelope with non-array events should fail ingest schema",
+  "bad_collector_status.json": "Collector response with unsupported status should fail collector schema",
+  "trace_context_event.json": "Distributed trace context propagation",
+  "agent_run.json": "AI agent run event with agent kind and processes",
+  "rag_query.json": "RAG pipeline query event with ai kind",
+  "release_field.json": "Event with release and trace_flags fields",
+  "notice_level.json": "Event with notice level",
+  "structured_http_success.json": "Cross-SDK emitted payload layout with structured groups and finished event_state",
+  "accepted_clean.json": "Collector sink should treat clean accepted acknowledgements as success",
+  "accepted_duplicate.json": "Collector sink should treat duplicate accepted acknowledgements as success",
+  "partial_invalid.json": "Collector sink should fail on partial invalid acknowledgements",
+  "retryable_rate_limited.json": "Collector sink should fail on retryable/rate-limited responses",
+  "single_event_json.json": "Collector accepts a single-event JSON ingest payload",
+  "wrapped_batch_json.json": "Canonical wrapped batch envelope generated by SDK sinks",
+  "ndjson_ingest.json": "Collector accepts NDJSON ingest payloads"
+}
+},
   "paths": {
-    "event_schema": "schema/event.schema.json",
-    "strict_schema": "schema/event.strict.schema.json",
-    "loose_schema": "schema/event.loose.schema.json",
-    "ingest_schema": "schema/ingest.schema.json",
-    "collector_response_schema": "schema/collector-response.schema.json",
-    "manifest": "conformance/manifest.json"
-  }
+  "event_schema": "schema/event.schema.json",
+  "strict_schema": "schema/event.strict.schema.json",
+  "loose_schema": "schema/event.loose.schema.json",
+  "ingest_schema": "schema/ingest.schema.json",
+  "collector_response_schema": "schema/collector-response.schema.json",
+  "manifest": "conformance/manifest.json"
+}
 }
 LOXA_SPEC_VERSION = CONTRACT['spec_version']
 LOXA_INGEST_API_VERSION = CONTRACT['api_version']
@@ -424,7 +503,7 @@ def normalize_event_aliases_in_place(payload: dict[str, Any]) -> bool:
     return changed
 
 def build_ingest_envelope(events: Iterable[dict[str, Any]], sdk_name: str, sdk_version: str, service: str) -> dict[str, Any]:
-    events_list = list(events)
+    events_list = [normalize_event_aliases(e)[0] for e in events]
     return {'api_version': LOXA_INGEST_API_VERSION, 'source': {'sdk': sdk_name, 'version': sdk_version, 'service': service.strip() or _infer_service(events_list)}, 'events': events_list}
 
 def validate_event_payload(payload: dict[str, Any], strict: bool) -> None:

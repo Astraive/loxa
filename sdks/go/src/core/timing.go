@@ -1,11 +1,12 @@
 package core
 
 import (
+	"context"
 	"time"
 )
 
 // EventProcess represents a named step in a multi-step process.
-// Processes are recorded in the "process" array in the emitted JSON.
+// Processes are recorded in the "processes" array in the emitted JSON.
 type EventProcess struct {
 	Step        int
 	Name        string
@@ -183,6 +184,72 @@ func Stopwatch() *StopwatchHandle {
 // Elapsed returns the duration since the stopwatch was created.
 func (h *StopwatchHandle) Elapsed() time.Duration {
 	return time.Since(h.startedAt)
+}
+
+// FinishGroupError completes the group with an error status code and error info.
+func FinishGroupError(handle *GroupHandle, err error, attrs ...Attr) error {
+	if err != nil {
+		attrs = append(attrs, Attr{Key: "error_message", Kind: KindString, Value: err.Error()})
+	}
+	return handle.Finish(attrs...)
+}
+
+// Measure runs fn, measures its duration, and returns it as an Attr.
+func Measure(name string, fn func()) Attr {
+	start := time.Now()
+	fn()
+	return Duration(name, time.Since(start))
+}
+
+// Step runs fn as a named process step on the event in ctx.
+func Step(ctx context.Context, name string, fn func() error) error {
+	ev := loadEvent(ctx)
+	if ev == nil {
+		return fn()
+	}
+	h, err := ev.StartProcess(name)
+	if err != nil {
+		return err
+	}
+	if err := fn(); err != nil {
+		_ = h.FinishError(err, 1)
+		return err
+	}
+	return h.Finish()
+}
+
+// Phase runs fn as a named group phase on the event in ctx.
+func Phase(ctx context.Context, name string, fn func() error) error {
+	ev := loadEvent(ctx)
+	if ev == nil {
+		return fn()
+	}
+	h, err := ev.StartGroup(name)
+	if err != nil {
+		return err
+	}
+	if err := fn(); err != nil {
+		_ = FinishGroupError(h, err)
+		return err
+	}
+	return h.Finish()
+}
+
+// Span runs fn as a named timer span on the event in ctx.
+func Span(ctx context.Context, name string, fn func() error) error {
+	ev := loadEvent(ctx)
+	if ev == nil {
+		return fn()
+	}
+	h, err := ev.StartTimer(name)
+	if err != nil {
+		return err
+	}
+	if err := fn(); err != nil {
+		_ = h.Stop(Err(err))
+		return err
+	}
+	return h.Stop()
 }
 
 // extractStatusCode finds and returns the status_code value from attrs, or 0 if not found.

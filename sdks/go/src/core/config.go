@@ -129,6 +129,7 @@ type DeliveryFailureHandler interface {
 type Config struct {
 	// ── Service identity ──────────────────────────────────────────────────────
 	Service      string
+	Alias        string
 	Version      string
 	Environment  string
 	DeploymentID string
@@ -211,6 +212,12 @@ type Config struct {
 // WithService returns a copy of cfg with Service set.
 func (c Config) WithService(service string) Config {
 	c.Service = service
+	return c
+}
+
+// WithAlias returns a copy of cfg with the logical loxa.alias metadata set.
+func (c Config) WithAlias(alias string) Config {
+	c.Alias = alias
 	return c
 }
 

@@ -15,6 +15,13 @@ var (
 	phoneRegex  = regexp.MustCompile(`\b\+?1?[\- ]?\(?\d{3}\)?[\- ]?\d{3}[\- ]?\d{4}\b`)
 )
 
+// Config defines PII redaction settings.
+type Config struct {
+	Mode       Mode     `yaml:"mode"`
+	Blocklist  []string `yaml:"blocklist"`
+	Allowlist  []string `yaml:"allowlist"`
+}
+
 // Mode controls redaction behavior.
 type Mode string
 
@@ -25,8 +32,10 @@ const (
 
 // Redactor detects and optionally redacts PII from event data.
 type Redactor struct {
-	mode    Mode
-	patterns []*regexp.Regexp
+	mode      Mode
+	patterns  []*regexp.Regexp
+	blocklist []string
+	allowlist map[string]bool
 }
 
 // New creates a PII redactor with the given mode.
@@ -37,7 +46,6 @@ func New(mode Mode) *Redactor {
 			emailRegex,
 			ccRegex,
 			ssnRegex,
-			// IP and phone are less sensitive, include only in enforce mode
 		},
 	}
 }
@@ -53,6 +61,24 @@ func NewStrict(mode Mode) *Redactor {
 			ssnRegex,
 			phoneRegex,
 		},
+	}
+}
+
+// NewWithConfig creates a PII redactor from a Config, supporting blocklist and allowlist.
+func NewWithConfig(cfg Config) *Redactor {
+	allowlist := make(map[string]bool, len(cfg.Allowlist))
+	for _, k := range cfg.Allowlist {
+		allowlist[strings.ToLower(k)] = true
+	}
+	patterns := []*regexp.Regexp{emailRegex, ccRegex, ssnRegex}
+	if cfg.Mode == ModeEnforce {
+		patterns = append(patterns, ipRegex, phoneRegex)
+	}
+	return &Redactor{
+		mode:      cfg.Mode,
+		patterns:  patterns,
+		blocklist: cfg.Blocklist,
+		allowlist: allowlist,
 	}
 }
 
@@ -99,9 +125,16 @@ func (r *Redactor) walkSlice(data []interface{}) []interface{} {
 }
 
 func (r *Redactor) redactString(key, value string) string {
-	// Check well-known sensitive keys first
+	// Check allowlist first — skip redaction for explicitly allowed keys
 	lowerKey := strings.ToLower(key)
+	if _, allowed := r.allowlist[lowerKey]; allowed {
+		return value
+	}
+
+	// Merge well-known sensitive keys with configurable blocklist
 	sensitiveKeys := []string{"password", "secret", "token", "api_key", "apikey", "authorization", "credit_card", "ssn", "email"}
+	sensitiveKeys = append(sensitiveKeys, r.blocklist...)
+
 	for _, sk := range sensitiveKeys {
 		if strings.Contains(lowerKey, sk) {
 			if r.mode == ModeEnforce {

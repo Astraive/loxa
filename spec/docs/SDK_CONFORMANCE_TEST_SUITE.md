@@ -1,4 +1,4 @@
-# SDK Conformance Test Suite (v1.0.0)
+# SDK Conformance Test Suite (v0.0.1)
 
 **Status**: Stable v1  
 **Last Updated**: May 15, 2026  
@@ -8,7 +8,7 @@
 
 ## Overview
 
-This document specifies the conformance test suite ALL SDKs MUST implement to pass v1.0.0 release. Tests are grouped by functional area with mandatory and recommended coverage.
+This document specifies the conformance test suite ALL SDKs MUST implement to pass v0.0.1 release. Tests are grouped by functional area with mandatory and recommended coverage.
 
 ---
 
@@ -568,7 +568,7 @@ loxa maturity
 
 ---
 
-## Test Coverage Report (v1.0.0)
+## Test Coverage Report (v0.0.1)
 
 | Category | Tests | Go | Python | Rust |
 |----------|-------|----|----|------|

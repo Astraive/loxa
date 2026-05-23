@@ -1,6 +1,6 @@
 # LOXA-RS
 
-**Status**: STABLE (v1.0.0) - Production-ready, full feature conformance
+**Status**: STABLE (v0.0.1) - Production-ready, full feature conformance
 
 `loxa-rs` is a collector-first Rust SDK for wide events. It builds one structured event per operation (request, job, queue message, CLI run, cron run), then emits to your log/analytics backend.
 
@@ -191,7 +191,7 @@ loxa::info("server started");
 let logger = loxa::create_loxa(loxa::Config::dev("checkout-api").with_collector_endpoint("http://127.0.0.1:9090"));
 logger.info("custom instance ready");
 
-// Alias -- same config, different service name
+// Alias -- same config, loxa.alias metadata
 let audit = loxa::alias("audit-service");
 audit.info("audit trail started");
 
@@ -221,7 +221,7 @@ use loxa::{
 };
 
 let cfg = Config::production("checkout")
-    .with_version("1.0.0")
+    .with_version("0.0.1")
     .with_environment("prod")
     .with_sink(loxa::StdoutSink)
     .with_sampler(loxa::SampleErrors)

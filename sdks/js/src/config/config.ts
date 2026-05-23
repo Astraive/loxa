@@ -1,10 +1,12 @@
+import type { Logger } from '../core/logger.ts';
 import type { Sink } from '../sinks/sink.ts';
 import type { Redactor } from '../redaction/redactor.ts';
 import { defaultRedactor } from '../redaction/redactor.ts';
 import type { Sampler } from '../sampling/sampler.ts';
-import { sampleAll } from '../sampling/sampler.ts';
+import { sampleAll, sampleNone } from '../sampling/sampler.ts';
 import type { Schema } from '../core/schema.ts';
 import { DefaultSchema } from '../core/schema.ts';
+import type { Level } from '../core/level.ts';
 
 /** Async delivery configuration. */
 export interface AsyncConfig {
@@ -28,6 +30,7 @@ export interface SecurityConfig {
 /** Top-level SDK configuration. */
 export interface Config {
   service: string;
+  alias: string;
   version: string;
   environment: string;
   collectorUrl: string;
@@ -53,9 +56,29 @@ export interface Config {
 }
 
 /** Default configuration. */
+/** Create a disabled config (no-op). */
+export function disabled(): Config {
+  return { ...defaultConfig(), sink: null, sampler: sampleNone() };
+}
+
+/** Load config from environment variables. */
+export function fromEnv(): Config {
+  const cfg = defaultConfig();
+  if (typeof process !== 'undefined') {
+    cfg.service = process.env.LOXA_SERVICE || process.env.SERVICE || cfg.service;
+    cfg.version = process.env.LOXA_VERSION || process.env.VERSION || cfg.version;
+    cfg.environment = process.env.LOXA_ENVIRONMENT || process.env.ENVIRONMENT || cfg.environment;
+    cfg.collectorUrl = process.env.LOXA_COLLECTOR_URL || process.env.COLLECTOR_URL || cfg.collectorUrl;
+    cfg.apiKey = process.env.LOXA_API_KEY || process.env.API_KEY || cfg.apiKey;
+    cfg.level = process.env.LOXA_LEVEL || process.env.LOG_LEVEL || cfg.level;
+  }
+  return cfg;
+}
+
 export function defaultConfig(): Config {
   return {
     service: '',
+    alias: '',
     version: '',
     environment: 'development',
     collectorUrl: '',
@@ -95,6 +118,11 @@ export function defaultConfig(): Config {
 }
 
 /** Development preset. */
+export function development(service: string): ConfigBuilder {
+  return new ConfigBuilder({ ...defaultConfig(), service, environment: 'development' });
+}
+
+/** Alias for development(). */
 export function dev(service: string): ConfigBuilder {
   return new ConfigBuilder({ ...defaultConfig(), service, environment: 'development' });
 }
@@ -118,6 +146,7 @@ export function test(service: string = 'test'): ConfigBuilder {
 /** Config builder options. */
 export interface ConfigOptions {
   service?: string;
+  alias?: string;
   version?: string;
   environment?: string;
   collectorUrl?: string;
@@ -144,6 +173,7 @@ export interface ConfigOptions {
 /** Fluent config builder. Implements Config so it can be passed directly to Logger/configure(). */
 export class ConfigBuilder implements Config {
   service: string;
+  alias: string;
   version: string;
   environment: string;
   collectorUrl: string;
@@ -169,6 +199,7 @@ export class ConfigBuilder implements Config {
 
   constructor(base: Config) {
     this.service = base.service;
+    this.alias = base.alias;
     this.version = base.version;
     this.environment = base.environment;
     this.collectorUrl = base.collectorUrl;
@@ -194,6 +225,7 @@ export class ConfigBuilder implements Config {
   }
 
   withService(service: string): this { this.service = service; return this; }
+  withAlias(alias: string): this { this.alias = alias; return this; }
   withVersion(version: string): this { this.version = version; return this; }
   withEnvironment(environment: string): this { this.environment = environment; return this; }
   withCollectorUrl(url: string): this { this.collectorUrl = url; return this; }
@@ -215,6 +247,14 @@ export class ConfigBuilder implements Config {
   withBatchSize(n: number): this { this.batchSize = n; return this; }
   withFlushInterval(ms: number): this { this.flushIntervalMs = ms; return this; }
   withEnableCompression(enabled: boolean): this { this.enableCompression = enabled; return this; }
+  withRelease(release: string): this { return this; } // noop for now
+  withNamespace(ns: string): this { return this; } // noop for now
+  withOtelBridge(enabled: boolean): this { return this; } // noop for now
+  withRetry(retries: number): this { this.maxRetries = retries; return this; }
+  withTimeout(ms: number): this { this.timeoutMs = ms; return this; }
+  withQueueSize(size: number): this { this.async.queueSize = size; return this; }
+  withLogger(logger: Logger): this { return this; } // noop for now
+  disabled(): Config { return { ...this, sink: null, sampler: sampleNone() }; }
   build(): Config { return { ...this }; }
 }
 
@@ -222,6 +262,7 @@ export class ConfigBuilder implements Config {
 export function withOptions(base: Config, opts: ConfigOptions): Config {
   const cfg = { ...base };
   if (opts.service !== undefined) cfg.service = opts.service;
+  if (opts.alias !== undefined) cfg.alias = opts.alias;
   if (opts.version !== undefined) cfg.version = opts.version;
   if (opts.environment !== undefined) cfg.environment = opts.environment;
   if (opts.collectorUrl !== undefined) cfg.collectorUrl = opts.collectorUrl;
@@ -245,6 +286,7 @@ export function withOptions(base: Config, opts: ConfigOptions): Config {
 export type ConfigOption = (cfg: Config) => Config;
 
 export function WithService(service: string): ConfigOption { return cfg => withOptions(cfg, { service }); }
+export function WithAlias(alias: string): ConfigOption { return cfg => withOptions(cfg, { alias }); }
 export function WithVersion(version: string): ConfigOption { return cfg => withOptions(cfg, { version }); }
 export function WithEnvironment(environment: string): ConfigOption { return cfg => withOptions(cfg, { environment }); }
 export function WithSink(sink: Sink): ConfigOption { return cfg => withOptions(cfg, { sink }); }
@@ -259,3 +301,11 @@ export function WithStatsHandler(statsHandler: unknown): ConfigOption { return c
 export function WithDeploymentID(deploymentId: string): ConfigOption { return cfg => withOptions(cfg, { deploymentId }); }
 export function WithIncludeHost(includeHost: boolean): ConfigOption { return cfg => withOptions(cfg, { includeHost }); }
 export function WithPanicRecovery(panicRecovery: boolean): ConfigOption { return cfg => withOptions(cfg, { panicRecovery }); }
+export function WithApiKey(apiKey: string): ConfigOption { return cfg => { cfg.apiKey = apiKey.trim(); return cfg; }; }
+export function WithRelease(_release: string): ConfigOption { return cfg => cfg; }
+export function WithNamespace(_ns: string): ConfigOption { return cfg => cfg; }
+export function WithOtelBridge(_enabled: boolean): ConfigOption { return cfg => cfg; }
+export function WithRetry(retries: number): ConfigOption { return cfg => { cfg.maxRetries = retries; return cfg; }; }
+export function WithTimeout(ms: number): ConfigOption { return cfg => { cfg.timeoutMs = ms; return cfg; }; }
+export function WithQueueSize(size: number): ConfigOption { return cfg => { cfg.async.queueSize = size; return cfg; }; }
+export function WithLogger(_logger: Logger): ConfigOption { return cfg => cfg; }

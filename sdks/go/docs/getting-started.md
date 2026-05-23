@@ -2,6 +2,18 @@
 
 A 5-minute quickstart for the LOXA Go SDK. By the end you will have a working application that creates, enriches, finishes, and emits a wide-event.
 
+## Default Client
+
+Use package-level `loxa.<Method>(ctx, ...)` calls for quick starts and single-client applications.
+
+## Custom Client / Alias
+
+Use `loxa.CreateLoxa(config)` for an independent client, `loxa.New(config)` as the idiomatic Go alias, and `loxa.Alias("name")` for a same-config child that emits `loxa.alias`.
+
+## Cross-Language Parity
+
+Go maps to the v0.0.2 parity family as package-level `loxa`, `CreateLoxa`, `New`, and user-defined variables such as `logger.Info(ctx, ...)`.
+
 ## Install
 
 ```bash
@@ -140,7 +152,7 @@ logger, err := loxa.New(loxa.Config{Service: "api"})
 
 ## Aliases
 
-Use `loxa.Alias` to create a second logger that inherits the default logger's config but uses a different service name. This is useful for emitting events on behalf of a subsystem without duplicating configuration.
+Use `loxa.Alias` to create a second logger that inherits the default logger's config and emits `loxa.alias` metadata. This is useful for emitting events on behalf of a logical subsystem without duplicating configuration.
 
 ```go
 // Create an alias from the global default.
@@ -165,7 +177,7 @@ The key difference between `CreateLoxa` and `Alias`:
 | Factory | Config Source | Use Case |
 |---------|-------------|----------|
 | `loxa.CreateLoxa(cfg)` | Fully independent config | Different sinks, samplers, or endpoints |
-| `loxa.Alias("name")` | Inherits default logger config | Same infrastructure, different service name |
+| `loxa.Alias("name")` | Inherits default logger config plus `loxa.alias` | Same infrastructure, logical alias metadata |
 
 ## Immediate Logging
 

@@ -107,7 +107,7 @@ func TestCollectorE2ERawPreservation(t *testing.T) {
 		t.Fatalf("unexpected projected row: event_id=%q event_type=%q service=%q status=%d", eventID, eventType, service, statusCode)
 	}
 
-	wantRaw := `{"event_id":"evt-1","event":"checkout.request","service":"checkout","http":{"status":200},"duration_ms":12.5,"timestamp":"2026-05-11T00:00:00Z"}`
+	wantRaw := `{"schema_version":"v1","event_version":"v1","event_id":"evt-1","event":"checkout.request","service":"checkout","http":{"status":200},"duration_ms":12.5,"timestamp":"2026-05-11T00:00:00Z"}`
 	if !equivalentJSON(raw, wantRaw) {
 		t.Fatalf("raw mismatch:\nwant: %s\ngot:  %s", wantRaw, raw)
 	}

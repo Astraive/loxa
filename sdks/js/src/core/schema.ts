@@ -109,7 +109,7 @@ export class DefaultSchema implements Schema {
       out.checkpoints = [...view.checkpoints];
     }
     if (view.processes && view.processes.length > 0) {
-      out.process = view.processes.map(p => ({ ...p }));
+      out.processes = view.processes.map(p => ({ ...p }));
     }
     if (view.groups && view.groups.length > 0) {
       out.groups = view.groups.map(g => ({ ...g }));

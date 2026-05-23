@@ -120,7 +120,7 @@ class CollectorClient:
         timeout: float = 2.0,
         retries: int = 2,
         sdk_name: str = "loxa-py",
-        sdk_version: str = "1.0.0",
+        sdk_version: str = "0.0.1",
         service: str = "",
     ) -> None:
         self.endpoint = endpoint
@@ -260,3 +260,53 @@ def WrapHTTPClient(client=None):
 
 def NewRoundTripper(base=None):
     return base or InstrumentedHTTPClient()
+
+
+# ── CollectorClient API extensions ──────────────────────────────────────────
+
+def _collector_request(
+    client: CollectorClient, method: str, path: str, body: Any = None,
+    params: dict[str, str] | None = None,
+) -> dict:
+    from urllib.parse import urlencode
+
+    url = client._base_url().rstrip("/") + "/" + path.lstrip("/")
+    if params:
+        url += "?" + urlencode(params)
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    headers = {"content-type": "application/json"} if body else {}
+    if client.api_key:
+        if client.auth_header.lower() == "authorization":
+            headers[client.auth_header] = f"Bearer {client.api_key}"
+        else:
+            headers[client.auth_header] = client.api_key
+    req = Request(url, data=data, headers=headers, method=method)
+    with urlopen(req, timeout=client.timeout) as resp:
+        raw = resp.read()
+        return json.loads(raw.decode("utf-8")) if raw else {}
+
+
+def _collector_validate(self, payload): return _collector_request(self, "POST", "/v1/validate", payload)
+def _collector_ingest(self, encoded_events): return self.send_batch(encoded_events)
+def _collector_query(self, **params): return _collector_request(self, "GET", "/v1/query", params=params)
+def _collector_tail(self, **params): return _collector_request(self, "GET", "/v1/tail", params=params)
+def _collector_delete(self, **params): return _collector_request(self, "DELETE", "/v1/events", params=params)
+def _collector_replay(self, **params): return _collector_request(self, "POST", "/v1/replay", params=params)
+def _collector_dlq_list(self, **params): return _collector_request(self, "GET", "/v1/dlq", params=params)
+def _collector_dlq_read(self, dlq_id): return _collector_request(self, "GET", f"/v1/dlq/{dlq_id}")
+def _collector_dlq_replay(self, dlq_id): return _collector_request(self, "POST", f"/v1/dlq/{dlq_id}/replay")
+def _collector_keys_create(self, **params): return _collector_request(self, "POST", "/v1/keys", params=params)
+def _collector_keys_revoke(self, key_id): return _collector_request(self, "DELETE", f"/v1/keys/{key_id}")
+def _collector_sinks_list(self): return _collector_request(self, "GET", "/v1/sinks")
+CollectorClient.validate = _collector_validate
+CollectorClient.ingest = _collector_ingest
+CollectorClient.query = _collector_query
+CollectorClient.tail = _collector_tail
+CollectorClient.delete = _collector_delete
+CollectorClient.replay = _collector_replay
+CollectorClient.dlq_list = _collector_dlq_list
+CollectorClient.dlq_read = _collector_dlq_read
+CollectorClient.dlq_replay = _collector_dlq_replay
+CollectorClient.keys_create = _collector_keys_create
+CollectorClient.keys_revoke = _collector_keys_revoke
+CollectorClient.sinks_list = _collector_sinks_list

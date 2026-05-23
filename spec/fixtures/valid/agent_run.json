@@ -1,0 +1,46 @@
+{
+  "schema_version": "v1",
+  "event_version": "v1",
+  "event_id": "evt_018f7f3a-bb00-7b00-8000-000000000001",
+  "timestamp": "2026-05-22T06:10:42.120Z",
+  "service": "ai-agent",
+  "event": "agent.run",
+  "kind": "agent",
+  "level": "info",
+  "outcome": "success",
+  "duration_ms": 3200,
+  "release": "1.2.3",
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "span_id": "00f067aa0ba902b7",
+  "user": { "id": "user_456" },
+  "tenant": { "id": "tenant_123" },
+  "attrs": {
+    "agent.name": "checkout-support-agent",
+    "agent.provider": "openai",
+    "agent.model": "gpt-5.5",
+    "agent.run_type": "customer_support",
+    "agent.steps": 5,
+    "agent.tool_calls": 3,
+    "agent.tokens.input": 1200,
+    "agent.tokens.output": 450,
+    "agent.cost_cents": 25
+  },
+  "checkpoints": [
+    { "name": "prompt_built", "at_ms": 0 },
+    { "name": "reasoning_complete", "at_ms": 1800 }
+  ],
+  "processes": [
+    { "step": 1, "name": "agent.setup", "started_at_ms": 0, "ended_at_ms": 200, "duration_ms": 200, "outcome": "success" },
+    { "step": 2, "name": "agent.tool.check_order", "started_at_ms": 200, "ended_at_ms": 1000, "duration_ms": 800, "outcome": "success" },
+    { "step": 3, "name": "agent.tool.check_payment", "started_at_ms": 1000, "ended_at_ms": 1800, "duration_ms": 800, "outcome": "success" },
+    { "step": 4, "name": "agent.generate_response", "started_at_ms": 1800, "ended_at_ms": 3200, "duration_ms": 1400, "outcome": "success" }
+  ],
+  "groups": [
+    { "name": "agent_reasoning_phase", "started_at_ms": 200, "ended_at_ms": 1800, "duration_ms": 1600, "outcome": "success" }
+  ],
+  "timers": [
+    { "name": "model.inference", "duration_ms": 1400 }
+  ],
+  "sdk": { "name": "loxa-js", "version": "0.1.0", "language": "javascript" },
+  "collector": { "received_at": "2026-05-22T06:10:45.511Z" }
+}

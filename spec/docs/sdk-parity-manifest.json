@@ -1,9 +1,9 @@
 {
-  "version": "1.0.0",
+  "version": "0.0.2",
   "package": "loxa",
   "scope": "lightweight-sdk",
-  "stability": "stable-v1",
-  "policy": "full-superset",
+  "stability": "product-parity-v0.0.2",
+  "policy": "full-product-method-family",
   "sdks": ["go", "python", "rust", "javascript"],
   "lifecycle": [
     "StartEvent",
@@ -123,6 +123,85 @@
     "HTTPBatchSink",
     "CollectorSink"
   ],
+  "method_catalog": {
+    "client_creation_and_configuration": [
+      "configure", "createLoxa", "create_loxa", "CreateLoxa", "Loxa", "New",
+      "production", "development", "test", "disabled", "fromEnv",
+      "withService", "withEnvironment", "withRelease", "withNamespace",
+      "withEndpoint", "withApiKey", "withSink", "withSampler",
+      "withRedaction", "withOtelBridge", "withFlushInterval",
+      "withBatchSize", "withQueueSize", "withRetry", "withTimeout",
+      "withLogger", "reset"
+    ],
+    "basic_logging_and_events": [
+      "debug", "info", "notice", "warn", "error", "fatal", "event",
+      "track", "audit", "security", "metric", "count", "gauge",
+      "histogram", "breadcrumb"
+    ],
+    "lifecycle": [
+      "startEvent", "append", "enrich", "checkpoint", "finish",
+      "finishError", "emit", "drop", "cancel", "abandon", "retry",
+      "partial", "cloneEvent", "linkEvent", "currentEvent",
+      "fromRequest", "bindEvent", "runEvent", "run", "wrap"
+    ],
+    "process_group_timer_stopwatch": [
+      "process", "startProcess", "finishProcess", "finishProcessError",
+      "withProcess", "group", "startGroup", "finishGroup",
+      "finishGroupError", "withGroup", "timer", "startTimer",
+      "stopTimer", "withTimer", "stopwatch", "duration", "measure",
+      "step", "phase", "span"
+    ],
+    "typed_attributes": [
+      "attr", "string", "int", "float", "bool", "json", "list", "map",
+      "enum", "id", "hash", "redacted", "masked", "url",
+      "emailHash", "ipHash", "money", "percent", "bytes",
+      "statusCode", "httpStatus", "errorCode", "featureFlag",
+      "bucket", "tags"
+    ],
+    "identity_and_domain_helpers": [
+      "userId", "tenantId", "orgId", "accountId", "sessionId",
+      "requestId", "correlationId", "traceId", "spanId", "orderId",
+      "cartId", "paymentId", "subscriptionId", "invoiceId", "jobId",
+      "messageId", "deploymentId", "commitSha", "release", "region"
+    ],
+    "http_and_framework_helpers": [
+      "httpRequest", "httpResponse", "httpRoute", "httpMethod",
+      "httpPath", "httpUserAgent", "httpReferer", "expressMiddleware",
+      "fastifyPlugin", "nextMiddleware", "honoMiddleware",
+      "koaMiddleware", "djangoMiddleware", "flaskMiddleware",
+      "goHTTPMiddleware", "axumLayer", "towerLayer"
+    ],
+    "sink_queue_flush_shutdown": [
+      "httpSink", "httpBatchSink", "stdoutSink", "fileSink",
+      "memorySink", "noopSink", "multiSink", "otlpSink", "kafkaSink",
+      "flush", "shutdown", "drain", "pause", "resume", "queueSize",
+      "health"
+    ],
+    "sampling_and_policy": [
+      "sampleRate", "alwaysSample", "neverSample", "sampleByEvent",
+      "sampleByOutcome", "sampleErrors", "shouldSample", "redact",
+      "allowFields", "blockFields", "maxAttrLength", "maxEventBytes",
+      "maxAttrs", "cardinalityPolicy", "validateEvent",
+      "normalizeEvent", "sanitizeEvent"
+    ],
+    "testing_and_conformance": [
+      "testkit", "capture", "lastEvent", "events", "clearEvents",
+      "expectEvent", "expectAttr", "snapshotEvent", "goldenTest",
+      "conformanceSuite", "mockSink", "fakeClock", "setClock",
+      "setIdGenerator", "resetForTest"
+    ],
+    "collector_api_and_cli": [
+      "collector.run", "collector.validate", "collector.ingest",
+      "collector.query", "collector.tail", "collector.delete",
+      "collector.replay", "collector.dlq.list", "collector.dlq.read",
+      "collector.dlq.replay", "collector.keys.create",
+      "collector.keys.revoke", "collector.keys.rotate",
+      "collector.sinks.test", "collector.sinks.list",
+      "collector.policy.validate", "collector.schema.check",
+      "collector.schema.publish", "collector.retention.apply",
+      "collector.health"
+    ]
+  },
   "sampling": [
     "SampleAll",
     "SampleNone",

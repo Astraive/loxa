@@ -170,14 +170,14 @@ func (c *cortexBridgeClient) run() {
 }
 
 func (c *cortexBridgeClient) sendBatch(ctx context.Context, raws [][]byte) error {
-	req := &loxav1.IngestBatchRequest{Events: make([]*loxav1.IngestEventRequest, 0, len(raws))}
+	req := &loxav1.IngestBatchRequest{Events: make([]*loxav1.Event, 0, len(raws))}
 	for _, raw := range raws {
 		event, err := rawToCortexEvent(raw)
 		if err != nil {
 			logJSON("warn", "collector_cortex_bridge_decode_failed", map[string]any{"error": err.Error()})
 			continue
 		}
-		req.Events = append(req.Events, event)
+		req.Events = append(req.Events, event.Event)
 	}
 	if len(req.Events) == 0 {
 		return nil
@@ -208,29 +208,46 @@ func rawToCortexEvent(raw []byte) (*loxav1.IngestEventRequest, error) {
 			payload["event"] = eventType
 		}
 	}
-	rawStruct, err := structpb.NewStruct(payload)
-	if err != nil {
-		return nil, err
+
+	pe := &loxav1.Event{
+		EventId: stringValue(payload["event_id"]),
+		Service: stringValue(payload["service"]),
+		Release: stringValue(payload["release"]),
+		TraceId: stringValue(payload["trace_id"]),
+		SpanId:  stringValue(payload["span_id"]),
 	}
 
-	req := &loxav1.IngestEventRequest{
-		Id:         stringValue(payload["event_id"]),
-		Kind:       stringValue(payload["kind"]),
-		Service:    stringValue(payload["service"]),
-		TraceId:    stringValue(payload["trace_id"]),
-		IncidentId: stringValue(payload["incident_id"]),
-		Provenance: "collector",
-		Raw:        rawStruct,
+	kind := strings.ToLower(stringValue(payload["kind"]))
+	switch kind {
+	case "log":
+		pe.Kind = loxav1.EventKind_EVENT_KIND_LOG
+	case "ingest", "metric", "span", "trace":
+		pe.Kind = loxav1.EventKind_EVENT_KIND_EVENT
+	default:
+		pe.Kind = loxav1.EventKind_EVENT_KIND_EVENT
 	}
-	if req.Kind == "" {
-		req.Kind = "event"
+
+	if evt, ok := payload["event"]; ok {
+		if s, ok := evt.(string); ok {
+			pe.Event = s
+		}
 	}
+
 	if ts := parseTimestampValue(payload["timestamp"]); ts != nil {
-		req.Timestamp = ts
+		pe.Timestamp = ts
 	} else {
-		req.Timestamp = timestamppb.Now()
+		pe.Timestamp = timestamppb.Now()
 	}
-	return req, nil
+
+	// Store remaining raw payload as attrs
+	rawStruct, err := structpb.NewStruct(payload)
+	if err == nil {
+		pe.Attrs = rawStruct
+	}
+
+	return &loxav1.IngestEventRequest{
+		Event: pe,
+	}, nil
 }
 
 func parseTimestampValue(v any) *timestamppb.Timestamp {

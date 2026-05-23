@@ -29,11 +29,14 @@ pub const ALLOWED_LEVELS: &[&str] = &["debug", "info", "warn", "error", "fatal"]
 pub const ALLOWED_OUTCOMES: &[&str] = &[
     "success",
     "error",
-    "timeout",
-    "cancelled",
-    "rejected",
-    "abandoned",
     "partial",
+    "abandoned",
+    "retried",
+    "cancelled",
+    "timeout",
+    "skipped",
+    "rejected",
+    "quarantined",
     "unknown",
 ];
 pub const ALLOWED_PARTIAL_REASONS: &[&str] = &[
@@ -49,6 +52,11 @@ pub const ALLOWED_EVENT_STATES: &[&str] = &[
     "finished",
     "emitting",
     "emitted",
+    "invalid",
+    "dropped",
+    "emit_failed",
+    "spooled",
+    "dlq_written",
     "failed_validation",
     "delivery_failed",
 ];
@@ -57,18 +65,22 @@ pub const ALLOWED_COLLECTOR_STATUSES: &[&str] = &["accepted", "partial", "reject
 pub const ALLOWED_TOP_LEVEL_FIELDS: &[&str] = &[
     "attrs",
     "checkpoints",
+    "collector",
     "delivery_attempts",
     "deployment",
     "duration_ms",
     "environment",
     "error",
+    "errors",
     "event",
     "event_id",
     "event_state",
     "event_version",
+    "groups",
     "http",
     "kind",
     "level",
+    "links",
     "message",
     "method",
     "organization",
@@ -77,17 +89,23 @@ pub const ALLOWED_TOP_LEVEL_FIELDS: &[&str] = &[
     "partial_reason",
     "path",
     "pii",
+    "processes",
+    "redaction",
     "request_id",
     "resource",
     "region",
     "route",
+    "sampling",
     "schema_version",
+    "sdk",
     "service",
     "source",
     "span_id",
     "status_code",
     "tenant",
     "timestamp",
+    "timers",
+    "trace_flags",
     "trace_id",
     "user",
     "version",
@@ -122,6 +140,10 @@ pub const CANONICAL_FIELDS: &[&str] = &[
     "status_code",
     "error",
     "checkpoints",
+    "processes",
+    "groups",
+    "timers",
+    "links",
     "partial",
     "partial_reason",
     "event_state",
@@ -134,6 +156,10 @@ pub const CANONICAL_FIELDS: &[&str] = &[
     "pii",
     "resource",
     "attrs",
+    "sdk",
+    "collector",
+    "sampling",
+    "redaction",
     "deployment",
     "source",
 ];
@@ -302,14 +328,25 @@ pub fn build_ingest_envelope(
     sdk_version: &str,
     service: &str,
 ) -> Value {
+    let normalized_events: Vec<Value> = events
+        .iter()
+        .map(|event| {
+            if let Some(obj) = event.as_object() {
+                let (normalized, _) = normalize_event_aliases_copy(obj);
+                Value::Object(normalized)
+            } else {
+                event.clone()
+            }
+        })
+        .collect();
     json!({
         "api_version": LOXA_INGEST_API_VERSION,
         "source": {
             "sdk": sdk_name,
             "version": sdk_version,
-            "service": if service.trim().is_empty() { infer_service(events) } else { service.trim().to_string() },
+            "service": if service.trim().is_empty() { infer_service(&normalized_events) } else { service.trim().to_string() },
         },
-        "events": events,
+        "events": normalized_events,
     })
 }
 

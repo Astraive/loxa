@@ -1,5 +1,6 @@
 import {
   Event, EventStateEmitting, EventStateEmitted,
+  Float64, Int64, String,
 } from './event.ts';
 import type { Attr, Params } from './event.ts';
 import { defaultConfig, withOptions, dev, production, test } from '../config/config.ts';
@@ -8,7 +9,7 @@ import type { Sink } from '../sinks/sink.ts';
 import { HTTPBatchSink } from '../sinks/standard-sinks.ts';
 import { encodeJSON } from '../jsonenc/encoder.ts';
 import { storeEvent, getEvent, runWithEvent } from './context.ts';
-import { LevelDebug, LevelInfo, LevelWarn, LevelError, LevelFatal, parseLevel } from './level.ts';
+import { LevelDebug, LevelInfo, LevelNotice, LevelWarn, LevelError, LevelFatal, parseLevel } from './level.ts';
 import type { Level } from './level.ts';
 import { sanitizeEvent } from './sanitize.ts';
 import { EventView } from './event-view.ts';
@@ -48,9 +49,9 @@ export class Logger {
     return new Logger(withOptions(this.cfg, opts));
   }
 
-  /** Create a new Logger with the same config but a different service name. */
-  alias(service: string): Logger {
-    return this.child({ service });
+  /** Create an immutable child logger that preserves config and emits loxa.alias. */
+  alias(name: string): Logger {
+    return this.child({ alias: name });
   }
 
   /** Get the current config. */
@@ -64,6 +65,7 @@ export class Logger {
     if (!ev.service && this.cfg.service) ev.service = this.cfg.service;
     if (!ev.version && this.cfg.version) ev.version = this.cfg.version;
     if (!ev.environment && this.cfg.environment) ev.environment = this.cfg.environment;
+    if (this.cfg.alias) ev.set('loxa.alias', this.cfg.alias);
 
     // Apply custom attrs
     if (params.custom) {
@@ -160,8 +162,9 @@ export class Logger {
     if (sink) {
       try {
         await sink.write(encoded);
-      } catch {
+      } catch (err) {
         ctx.markDeliveryFailed();
+        console.error('[loxa] sink write failed:', err);
         return null;
       }
     }
@@ -220,9 +223,80 @@ export class Logger {
 
   debug(message: string, ...attrs: Attr[]): Promise<void> { return this.immediate(LevelDebug, message, attrs); }
   info(message: string, ...attrs: Attr[]): Promise<void> { return this.immediate(LevelInfo, message, attrs); }
+  notice(message: string, ...attrs: Attr[]): Promise<void> { return this.immediate(LevelNotice, message, attrs); }
   warn(message: string, ...attrs: Attr[]): Promise<void> { return this.immediate(LevelWarn, message, attrs); }
   error(message: string, ...attrs: Attr[]): Promise<void> { return this.immediate(LevelError, message, attrs); }
   fatal(message: string, ...attrs: Attr[]): Promise<void> { return this.immediate(LevelFatal, message, attrs); }
+
+  // Logging helpers
+  async event(name: string, ...attrs: Attr[]): Promise<void> { return this.immediate(LevelInfo, name, attrs); }
+  async track(name: string, ...attrs: Attr[]): Promise<void> { return this.event(name, ...attrs); }
+  async audit(name: string, ...attrs: Attr[]): Promise<void> { return this.immediate(LevelInfo, name, [`audit.${name}`, ...attrs] as any); }
+  async security(name: string, ...attrs: Attr[]): Promise<void> { return this.immediate(LevelWarn, name, [`security.${name}`, ...attrs] as any); }
+  async metric(name: string, value: number, ...attrs: Attr[]): Promise<void> {
+    const all: Attr[] = [Float64('value', value), ...attrs];
+    return this.immediate(LevelInfo, `metric.${name}`, all);
+  }
+  async count(name: string, value: number, ...attrs: Attr[]): Promise<void> {
+    const all: Attr[] = [Int64('count', value), ...attrs];
+    return this.immediate(LevelInfo, `metric.${name}`, all);
+  }
+  async gauge(name: string, value: number, ...attrs: Attr[]): Promise<void> {
+    const all: Attr[] = [Float64('gauge', value), ...attrs];
+    return this.immediate(LevelInfo, `metric.${name}`, all);
+  }
+  async histogram(name: string, value: number, ...attrs: Attr[]): Promise<void> {
+    const all: Attr[] = [Float64('observation', value), ...attrs];
+    return this.immediate(LevelInfo, `metric.${name}`, all);
+  }
+  async breadcrumb(name: string, ...attrs: Attr[]): Promise<void> { return this.immediate(LevelDebug, name, attrs); }
+
+  // Lifecycle outcome helpers
+  async drop(ctx: Event, reason: string, ...attrs: Attr[]): Promise<string | null> {
+    ctx.finish('dropped', String('drop_reason', reason), ...attrs);
+    return this.emit(ctx);
+  }
+  async cancel(ctx: Event, reason: string, ...attrs: Attr[]): Promise<string | null> {
+    ctx.finish('cancelled', String('cancel_reason', reason), ...attrs);
+    return this.emit(ctx);
+  }
+  async abandon(ctx: Event, reason: string, ...attrs: Attr[]): Promise<string | null> {
+    ctx.finish('abandoned', String('abandon_reason', reason), ...attrs);
+    return this.emit(ctx);
+  }
+  async retry(ctx: Event, ...attrs: Attr[]): Promise<string | null> {
+    ctx.finish('retried', ...attrs);
+    return this.emit(ctx);
+  }
+  async partial(ctx: Event, ...attrs: Attr[]): Promise<string | null> {
+    ctx.finish('partial', ...attrs);
+    return this.emit(ctx);
+  }
+
+  // Clone / Link / Current / Bind / Wrap
+  cloneEvent(ctx: Event): Event {
+    return ctx.clone();
+  }
+  linkEvent(ctx: Event, target: string, ...attrs: Attr[]): Event {
+    const ev = new Event({
+      event: target,
+      kind: ctx.kind,
+      traceId: ctx.traceId,
+      spanId: ctx.spanId,
+      service: ctx.service,
+    }, ctx.service, ctx.environment);
+    if (attrs.length > 0) ev.enrich(...attrs);
+    return ev;
+  }
+  currentEvent(): Event | undefined {
+    return getEvent();
+  }
+  static bindEvent(params: Params, fn: (ctx: Event) => void | Promise<void>, finishAttrs: Attr[] = []): Promise<string | null> {
+    return getDefault().runEvent(params, fn, finishAttrs);
+  }
+  static wrap(name: string, fn: () => void | Promise<void>): Promise<string | null> {
+    return getDefault().runEvent({ event: name }, fn);
+  }
 
   /** Flush the sink. */
   flush(): Promise<void> {
@@ -252,6 +326,14 @@ export class Logger {
 
 export function New(cfg?: Partial<Config>): Logger {
   return new Logger(cfg);
+}
+
+export function bindEvent(params: Params, fn: (ctx: Event) => void | Promise<void>, finishAttrs: Attr[] = []): Promise<string | null> {
+  return Logger.bindEvent(params, fn, finishAttrs);
+}
+
+export function wrap(name: string, fn: () => void | Promise<void>): Promise<string | null> {
+  return Logger.wrap(name, fn);
 }
 
 export function TryNew(cfg?: Partial<Config>): Logger {

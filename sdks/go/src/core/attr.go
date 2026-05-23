@@ -258,3 +258,177 @@ func SensitiveString(key, value string) Attr {
 func HashString(key, value string) Attr {
 	return String("hash."+key, value)
 }
+
+// ── Additional domain helpers ────────────────────────────────────────────────
+
+// PaymentID sets payment.id.
+func PaymentID(id string) Attr { return String("payment.id", id) }
+
+// SubscriptionID sets subscription.id.
+func SubscriptionID(id string) Attr { return String("subscription.id", id) }
+
+// InvoiceID sets invoice.id.
+func InvoiceID(id string) Attr { return String("invoice.id", id) }
+
+// JobID sets job.id.
+func JobID(id string) Attr { return String("job.id", id) }
+
+// CorrelationID sets correlation.id.
+func CorrelationID(id string) Attr { return String("correlation.id", id) }
+
+// CommitSha sets commit.sha.
+func CommitSha(sha string) Attr { return String("commit.sha", sha) }
+
+// Release sets release (alias for version).
+func Release(version string) Attr { return Version(version) }
+
+// Money creates a money attribute with amount in cents and currency.
+func Money(key string, amountCents int64, currency string) Attr {
+	return Group(key, Int64("amount_cents", amountCents), String("currency", currency))
+}
+
+// Percent creates a percentage attribute.
+func Percent(key string, val float64) Attr { return Float64(key, val) }
+
+// Bytes creates a bytes attribute (int64 byte count).
+func Bytes(key string, val int64) Attr { return Int64(key, val) }
+
+// HTTPStatus sets http.status (alias for StatusCode).
+func HTTPStatus(code int) Attr { return StatusCode(code) }
+
+// Bucket creates a bucket/tag grouping attribute.
+func Bucket(key string, vals ...string) Attr {
+	items := make([]Attr, len(vals))
+	for i, v := range vals {
+		items[i] = String(key, v)
+	}
+	return Group("bucket", items...)
+}
+
+// Tags creates a comma-separated tags attribute.
+func Tags(key string, vals ...string) Attr {
+	if len(vals) == 0 {
+		return String(key, "")
+	}
+	return String(key, joinStrings(vals, ","))
+}
+
+// Masked creates a masked value attribute.
+func Masked(key, value string) Attr { return String(key, value) }
+
+// URL creates a URL attribute.
+func URL(key, value string) Attr { return String(key, value) }
+
+// EmailHash creates a hashed email attribute.
+func EmailHash(key, value string) Attr { return String(key, value) }
+
+// IPHash creates a hashed IP attribute.
+func IPHash(key, value string) Attr { return String(key, value) }
+
+// ── Checkout domain helpers ──────────────────────────────────────────────────
+
+// CheckoutCartItemCount sets checkout.cart_item_count.
+func CheckoutCartItemCount(count int) Attr { return Int("checkout.cart_item_count", count) }
+
+// CheckoutCartTotal sets checkout.cart_total.
+func CheckoutCartTotal(total int64) Attr { return Int64("checkout.cart_total", total) }
+
+// CheckoutPaymentMethod sets checkout.payment_method.
+func CheckoutPaymentMethod(method string) Attr { return String("checkout.payment_method", method) }
+
+// CheckoutStatus sets checkout.status.
+func CheckoutStatus(status string) Attr { return String("checkout.status", status) }
+
+// ── Payment domain helpers ───────────────────────────────────────────────────
+
+// PaymentMethod sets payment.method.
+func PaymentMethod(method string) Attr { return String("payment.method", method) }
+
+// PaymentIntentID sets payment.intent_id.
+func PaymentIntentID(id string) Attr { return String("payment.intent_id", id) }
+
+// PaymentFailureCode sets payment.failure_code.
+func PaymentFailureCode(code string) Attr { return String("payment.failure_code", code) }
+
+// PaymentRetryAttempt sets payment.retry_attempt.
+func PaymentRetryAttempt(attempt int) Attr { return Int("payment.retry_attempt", attempt) }
+
+// ── Billing domain helpers ───────────────────────────────────────────────────
+
+// BillingPlan sets billing.plan.
+func BillingPlan(plan string) Attr { return String("billing.plan", plan) }
+
+// BillingSubscriptionID sets billing.subscription_id.
+func BillingSubscriptionID(id string) Attr { return String("billing.subscription_id", id) }
+
+// BillingInvoiceID sets billing.invoice_id.
+func BillingInvoiceID(id string) Attr { return String("billing.invoice_id", id) }
+
+// BillingAmount sets billing.amount.
+func BillingAmount(amount int64) Attr { return Int64("billing.amount", amount) }
+
+// BillingInterval sets billing.interval.
+func BillingInterval(interval string) Attr { return String("billing.interval", interval) }
+
+// ── Agent/AI domain helpers ──────────────────────────────────────────────────
+
+// AgentName sets agent.name.
+func AgentName(name string) Attr { return String("agent.name", name) }
+
+// AgentProvider sets agent.provider.
+func AgentProvider(provider string) Attr { return String("agent.provider", provider) }
+
+// AgentModel sets agent.model.
+func AgentModel(model string) Attr { return String("agent.model", model) }
+
+// AgentRunType sets agent.run_type.
+func AgentRunType(runType string) Attr { return String("agent.run_type", runType) }
+
+// AgentToolName sets agent.tool_name.
+func AgentToolName(name string) Attr { return String("agent.tool_name", name) }
+
+// AgentToolOutcome sets agent.tool_outcome.
+func AgentToolOutcome(outcome string) Attr { return String("agent.tool_outcome", outcome) }
+
+// AgentInputTokens sets agent.input_tokens.
+func AgentInputTokens(tokens int) Attr { return Int("agent.input_tokens", tokens) }
+
+// AgentOutputTokens sets agent.output_tokens.
+func AgentOutputTokens(tokens int) Attr { return Int("agent.output_tokens", tokens) }
+
+// AgentCost sets agent.cost.
+func AgentCost(cost float64) Attr { return Float64("agent.cost", cost) }
+
+// ── RAG domain helpers ───────────────────────────────────────────────────────
+
+// RAGIndex sets rag.index.
+func RAGIndex(index string) Attr { return String("rag.index", index) }
+
+// RAGEmbeddingModel sets rag.embedding_model.
+func RAGEmbeddingModel(model string) Attr { return String("rag.embedding_model", model) }
+
+// RAGChunksRetrieved sets rag.chunks_retrieved.
+func RAGChunksRetrieved(count int) Attr { return Int("rag.chunks_retrieved", count) }
+
+// RAGTopScore sets rag.top_score.
+func RAGTopScore(score float64) Attr { return Float64("rag.top_score", score) }
+
+// RAGQueryHash sets rag.query_hash.
+func RAGQueryHash(hash string) Attr { return String("rag.query_hash", hash) }
+
+// RAGCitationCount sets rag.citation_count.
+func RAGCitationCount(count int) Attr { return Int("rag.citation_count", count) }
+
+// RAGRetrievalLatency sets rag.retrieval_latency_ms.
+func RAGRetrievalLatency(ms int64) Attr { return Int64("rag.retrieval_latency_ms", ms) }
+
+func joinStrings(vals []string, sep string) string {
+	if len(vals) == 0 {
+		return ""
+	}
+	out := vals[0]
+	for _, v := range vals[1:] {
+		out += sep + v
+	}
+	return out
+}

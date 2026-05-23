@@ -8,6 +8,7 @@ type Level uint8
 const (
 	LevelDebug Level = iota
 	LevelInfo
+	LevelNotice
 	LevelWarn
 	LevelError
 	LevelFatal
@@ -20,6 +21,8 @@ func (l Level) String() string {
 		return "debug"
 	case LevelInfo:
 		return "info"
+	case LevelNotice:
+		return "notice"
 	case LevelWarn:
 		return "warn"
 	case LevelError:
@@ -38,6 +41,8 @@ func ParseLevel(s string) Level {
 		return LevelDebug
 	case "info":
 		return LevelInfo
+	case "notice":
+		return LevelNotice
 	case "warn", "warning":
 		return LevelWarn
 	case "error":

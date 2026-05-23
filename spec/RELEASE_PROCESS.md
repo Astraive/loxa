@@ -38,8 +38,8 @@ Before creating a release, ensure:
 Edit `codegen/model.py`:
 
 ```python
-SPEC_VERSION = "1.0.0"       # Updated
-EVENT_VERSION = "1.0.0"      # Updated
+SPEC_VERSION = "0.0.1"       # Updated
+EVENT_VERSION = "0.0.1"      # Updated
 API_VERSION = "v1"           # Usually unchanged unless major version
 ```
 
@@ -50,7 +50,7 @@ Add new section at the top:
 ```markdown
 # Changelog
 
-## [1.0.0] - 2024-01-20
+## [0.0.1] - 2024-01-20
 
 ### Added
 - New field `trace_context` in event schema
@@ -66,7 +66,7 @@ Add new section at the top:
 ### Changed
 - Increased `max_event_size_bytes` from 1000 to 65536
 
-[1.0.0] - 2024-01-01
+[0.0.1] - 2024-01-01
 ```
 
 ### Step 3: Generate Release Artifacts
@@ -89,24 +89,24 @@ python scripts/check_releases.py
 Create release directory with immutable snapshot:
 
 ```bash
-# For version 1.0.0
-mkdir -p releases/v1.0.0
+# For version 0.0.1
+mkdir -p releases/v0.0.1
 
 # Copy canonical specs
-cp -r spec releases/v1.0.0/
-cp -r spec/cortex releases/v1.0.0/
+cp -r spec releases/v0.0.1/
+cp -r spec/cortex releases/v0.0.1/
 
 # Copy generated contracts
-cp generated/contract/loxa-contract.json releases/v1.0.0/
-cp generated/contract/cortex-contract.json releases/v1.0.0/
+cp generated/contract/loxa-contract.json releases/v0.0.1/
+cp generated/contract/cortex-contract.json releases/v0.0.1/
 
 # Create release manifest
-cat > releases/v1.0.0/README.md << 'EOF'
-# LOXA Specification v1.0.0
+cat > releases/v0.0.1/README.md << 'EOF'
+# LOXA Specification v0.0.1
 
 Generated: [ISO timestamp]
-Spec Version: 1.0.0
-Event Version: 1.0.0
+Spec Version: 0.0.1
+Event Version: 0.0.1
 API Version: v1
 
 ## Contents
@@ -140,7 +140,7 @@ EOF
 ### Step 5: Generate Checksums
 
 ```bash
-cd releases/v1.0.0
+cd releases/v0.0.1
 
 # Generate checksums for verification
 sha256sum loxa-contract.json cortex-contract.json > manifest.sha256
@@ -163,8 +163,8 @@ cat manifest.sha256 >> README.md
 
 ```bash
 # Commit changes
-git add codegen/model.py CHANGELOG.md releases/v1.0.0/
-git commit -m "release: loxa-spec v1.0.0
+git add codegen/model.py CHANGELOG.md releases/v0.0.1/
+git commit -m "release: loxa-spec v0.0.1
 
 Features:
 - New trace_context field in event schema
@@ -177,34 +177,34 @@ Fixes:
 Changes:
 - Increased max_event_size_bytes to 65536 bytes
 
-See releases/v1.0.0/ for immutable snapshot.
+See releases/v0.0.1/ for immutable snapshot.
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 
 # Create annotated tag
-git tag -a v1.0.0 -m "LOXA Spec v1.0.0
+git tag -a v0.0.1 -m "LOXA Spec v0.0.1
 
-Spec Version: 1.0.0
-Event Version: 1.0.0
+Spec Version: 0.0.1
+Event Version: 0.0.1
 
-See CHANGELOG.md and releases/v1.0.0/ for details."
+See CHANGELOG.md and releases/v0.0.1/ for details."
 
 # Push
-git push origin main v1.0.0
+git push origin main v0.0.1
 ```
 
 ### Step 7: Release on GitHub
 
 Go to GitHub → Releases → Create Release:
 
-1. Tag: `v1.0.0`
-2. Title: `LOXA Spec v1.0.0`
+1. Tag: `v0.0.1`
+2. Title: `LOXA Spec v0.0.1`
 3. Description:
 
 ```markdown
-## LOXA Specification v1.0.0
+## LOXA Specification v0.0.1
 
-See [CHANGELOG.md](CHANGELOG.md) and [releases/v1.0.0/](releases/v1.0.0/) for full details.
+See [CHANGELOG.md](CHANGELOG.md) and [releases/v0.0.1/](releases/v0.0.1/) for full details.
 
 ### Key Changes
 
@@ -220,7 +220,7 @@ See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for path updates if using legacy lo
 
 - `loxa-contract.json` - Authoritative contract
 - `cortex-contract.json` - Cortex contract
-- Full snapshot in `releases/v1.0.0/`
+- Full snapshot in `releases/v0.0.1/`
 ```
 
 4. Mark as "Latest release" if applicable
@@ -232,17 +232,17 @@ After release, verify:
 
 ```bash
 # Verify tag exists
-git tag -v v1.0.0
+git tag -v v0.0.1
 
 # Verify snapshot immutability
-ls -la releases/v1.0.0/
+ls -la releases/v0.0.1/
 
 # Verify contracts are valid JSON
-python -c "import json; json.load(open('releases/v1.0.0/loxa-contract.json'))"
-python -c "import json; json.load(open('releases/v1.0.0/cortex-contract.json'))"
+python -c "import json; json.load(open('releases/v0.0.1/loxa-contract.json'))"
+python -c "import json; json.load(open('releases/v0.0.1/cortex-contract.json'))"
 
 # Verify checksums
-cd releases/v1.0.0/ && sha256sum -c manifest.sha256
+cd releases/v0.0.1/ && sha256sum -c manifest.sha256
 ```
 
 ## After Release
@@ -253,10 +253,10 @@ Update each SDK to consume new release:
 
 ```bash
 # For Go SDK
-go get github.com/astraive/loxa/sdks/go@v1.0.0
+go get github.com/astraive/loxa/sdks/go@v0.0.1
 
 # For Python SDK
-pip install loxa-spec==1.0.0
+pip install loxa-spec==0.0.1
 
 # For Rust SDK
 cargo update loxa-spec
@@ -271,29 +271,29 @@ cargo update loxa-spec
 ### Monitor for Issues
 
 - Watch GitHub issues for compatibility problems
-- Be ready to patch with v1.0.0 if needed
+- Be ready to patch with v0.0.1 if needed
 - Document any errata in CHANGELOG.md
 
-## Minor Release (e.g., 1.0.0)
+## Minor Release (e.g., 0.0.1)
 
 For patch releases with critical fixes only:
 
 1. Make minimal changes to `spec/`
 2. Update `codegen/model.py` with patch version
 3. Update CHANGELOG.md with "Fixed" section only
-4. Create `releases/v1.0.0/` snapshot
+4. Create `releases/v0.0.1/` snapshot
 5. Tag, release, notify SDKs
 
 **Note**: Patch releases should not add new fields or break compatibility.
 
-## Major Release (e.g., 1.0.0)
+## Major Release (e.g., 0.0.1)
 
 Major releases allow breaking changes:
 
 1. Update `codegen/model.py` with major version bump
 2. Document breaking changes in CHANGELOG.md
 3. Add migration section in MIGRATION_GUIDE.md
-4. Create `releases/v1.0.0/` snapshot
+4. Create `releases/v0.0.1/` snapshot
 5. Remove deprecated paths and features
 6. Tag, release, notify SDKs with migration timeline
 
@@ -305,14 +305,14 @@ If a release has critical issues:
 
 ```bash
 # Mark current release as deprecated in releases/
-echo "⚠️ DEPRECATED: Use v1.0.0 or later" > releases/v1.0.0/DEPRECATED
+echo "⚠️ DEPRECATED: Use v0.0.1 or later" > releases/v0.0.1/DEPRECATED
 
 # Fix the issue
 # ... make changes ...
 
 # Release patch version immediately
-git tag v1.0.0
-git push origin v1.0.0
+git tag v0.0.1
+git push origin v0.0.1
 
 # Document rollback in CHANGELOG.md
 ```

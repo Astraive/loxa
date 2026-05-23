@@ -187,9 +187,9 @@ func (e *JSONEventEncoder) EncodeEvent(dst []byte, ev *Event) ([]byte, error) {
 		w.EndArray()
 	}
 
-	// 17. process
+	// 17. processes
 	if len(ev.Processes) > 0 {
-		w.AppendKey("process")
+		w.AppendKey("processes")
 		w.BeginArray()
 		for i := range ev.Processes {
 			p := &ev.Processes[i]

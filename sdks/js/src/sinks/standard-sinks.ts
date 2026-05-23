@@ -122,7 +122,7 @@ export class HTTPBatchSink implements Sink {
     this.apiKey = opts.apiKey || '';
     this.authHeader = opts.authHeader || 'Authorization';
     this.sdkName = opts.sdkName || 'loxa-js';
-    this.sdkVersion = opts.sdkVersion || '1.0.0';
+    this.sdkVersion = opts.sdkVersion || '0.0.1';
     this.service = opts.service || '';
     this.timeout = opts.timeout || 2000;
     this.retries = opts.retries ?? 3;
@@ -140,10 +140,10 @@ export class HTTPBatchSink implements Sink {
   /** Get the last parsed collector response. */
   get lastCollectorResponse(): CollectorResponse | null { return this._lastResponse; }
 
-  write(encoded: string): void {
+  async write(encoded: string): Promise<void> {
     this.buffer.push(encoded);
     if (this.buffer.length >= this.batchSize) {
-      this.flush();
+      await this.flush();
     } else if (!this.flushTimer) {
       this.flushTimer = setTimeout(() => this.flush(), this.flushIntervalMs);
     }
@@ -157,7 +157,7 @@ export class HTTPBatchSink implements Sink {
     if (this.buffer.length === 0) return;
 
     const events = [...this.buffer];
-    this.buffer = [];
+    // Buffer is not cleared here — only removed on successful send so events are not lost on failure
 
     const envelope = this.ndjson
       ? events.join('\n')
@@ -179,7 +179,10 @@ export class HTTPBatchSink implements Sink {
         this.notifyCollectorAck(result.response);
 
         const outcome = this.classifyOutcome(result.statusCode, result.response);
-        if (outcome === 'success') return;
+        if (outcome === 'success') {
+          this.buffer.splice(0, events.length);
+          return;
+        }
 
         const retryAfterMs = result.response.retry_after_ms
           ?? this.parseRetryAfter(result.retryAfterHeader);
@@ -207,6 +210,24 @@ export class HTTPBatchSink implements Sink {
       }
     }
     if (lastError) throw new Error(`collector send failed: ${lastError.message}`);
+  }
+
+  async drain(): Promise<void> {
+    await this.flush();
+  }
+  pause(): void {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
+  }
+  resume(): void {
+    if (this.buffer.length > 0 && !this.flushTimer) {
+      this.flushTimer = setTimeout(() => this.flush(), this.flushIntervalMs);
+    }
+  }
+  queueSize(): number {
+    return this.buffer.length;
   }
 
   close(): void {
@@ -349,6 +370,34 @@ export interface HTTPBatchSinkOptions {
   statsHandler?: StatsHandler;
 }
 
+// --- MultiSink — fans out to multiple sinks ---
+
+export class MultiSink implements Sink {
+  private sinks: Sink[];
+  constructor(sinks: Sink[]) { this.sinks = sinks; }
+  name() { return 'multi'; }
+  async write(encoded: string): Promise<void> {
+    await Promise.all(this.sinks.map(s => Promise.resolve(s.write(encoded))));
+  }
+  async flush(): Promise<void> {
+    await Promise.all(this.sinks.map(s => Promise.resolve(s.flush())));
+  }
+  async close(): Promise<void> {
+    await Promise.all(this.sinks.map(s => Promise.resolve(s.close())));
+  }
+}
+
+// --- OTLP Sink (passthrough stub for now) ---
+
+export class OtlpSink implements Sink {
+  private endpoint: string;
+  constructor(endpoint?: string) { this.endpoint = endpoint || ''; }
+  name() { return 'otlp'; }
+  async write(encoded: string): Promise<void> { /* OTLP not yet implemented */ }
+  flush() {}
+  close() {}
+}
+
 // --- Lowercase factory functions ---
 
 export function stdoutSink(): StdoutSink { return new StdoutSink(); }
@@ -359,3 +408,5 @@ export function fileSink(path: string): FileSink { return new FileSink(path); }
 export function rotatingFileSink(path: string): RotatingFileSink { return new RotatingFileSink(path); }
 export function collectorSink(opts: HTTPBatchSinkOptions): CollectorSink { return new CollectorSink(opts); }
 export function httpBatchSink(opts: HTTPBatchSinkOptions): HTTPBatchSink { return new HTTPBatchSink(opts); }
+export function multiSink(...sinks: Sink[]): MultiSink { return new MultiSink(sinks); }
+export function otlpSink(endpoint?: string): OtlpSink { return new OtlpSink(endpoint); }

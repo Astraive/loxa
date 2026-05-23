@@ -1,6 +1,6 @@
 # Cortex
 
-**Status: v1.0.0 STABLE**
+**Status: v0.0.1 STABLE**
 
 Cortex is the control plane for the LOXA observability platform. It provides the Persistent Context Engine (PCE), incident intelligence, causal chain reconstruction, similar incident matching, and remediation learning. Cortex consumes events from the collector, builds service topology graphs, and surfaces actionable incident context to operators.
 

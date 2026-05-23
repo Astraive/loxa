@@ -9,7 +9,6 @@ package loxav1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	structpb "google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -103,16 +102,10 @@ func (x *HealthzResponse) GetStatus() string {
 	return ""
 }
 
+// Use the full Event proto from event.proto for lifecycle-aware ingestion
 type IngestEventRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Kind          string                 `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
-	Service       string                 `protobuf:"bytes,4,opt,name=service,proto3" json:"service,omitempty"`
-	TraceId       string                 `protobuf:"bytes,5,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
-	IncidentId    string                 `protobuf:"bytes,6,opt,name=incident_id,json=incidentId,proto3" json:"incident_id,omitempty"`
-	Provenance    string                 `protobuf:"bytes,7,opt,name=provenance,proto3" json:"provenance,omitempty"`
-	Raw           *structpb.Struct       `protobuf:"bytes,8,opt,name=raw,proto3" json:"raw,omitempty"`
+	Event         *Event                 `protobuf:"bytes,1,opt,name=event,proto3" json:"event,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -147,58 +140,9 @@ func (*IngestEventRequest) Descriptor() ([]byte, []int) {
 	return file_loxa_v1_cortex_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *IngestEventRequest) GetId() string {
+func (x *IngestEventRequest) GetEvent() *Event {
 	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *IngestEventRequest) GetTimestamp() *timestamppb.Timestamp {
-	if x != nil {
-		return x.Timestamp
-	}
-	return nil
-}
-
-func (x *IngestEventRequest) GetKind() string {
-	if x != nil {
-		return x.Kind
-	}
-	return ""
-}
-
-func (x *IngestEventRequest) GetService() string {
-	if x != nil {
-		return x.Service
-	}
-	return ""
-}
-
-func (x *IngestEventRequest) GetTraceId() string {
-	if x != nil {
-		return x.TraceId
-	}
-	return ""
-}
-
-func (x *IngestEventRequest) GetIncidentId() string {
-	if x != nil {
-		return x.IncidentId
-	}
-	return ""
-}
-
-func (x *IngestEventRequest) GetProvenance() string {
-	if x != nil {
-		return x.Provenance
-	}
-	return ""
-}
-
-func (x *IngestEventRequest) GetRaw() *structpb.Struct {
-	if x != nil {
-		return x.Raw
+		return x.Event
 	}
 	return nil
 }
@@ -206,6 +150,8 @@ func (x *IngestEventRequest) GetRaw() *structpb.Struct {
 type IngestEventResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	EventId       string                 `protobuf:"bytes,2,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
+	Warnings      []string               `protobuf:"bytes,3,rep,name=warnings,proto3" json:"warnings,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -247,9 +193,23 @@ func (x *IngestEventResponse) GetStatus() string {
 	return ""
 }
 
+func (x *IngestEventResponse) GetEventId() string {
+	if x != nil {
+		return x.EventId
+	}
+	return ""
+}
+
+func (x *IngestEventResponse) GetWarnings() []string {
+	if x != nil {
+		return x.Warnings
+	}
+	return nil
+}
+
 type IngestBatchRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Events        []*IngestEventRequest  `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
+	Events        []*Event               `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -284,7 +244,7 @@ func (*IngestBatchRequest) Descriptor() ([]byte, []int) {
 	return file_loxa_v1_cortex_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *IngestBatchRequest) GetEvents() []*IngestEventRequest {
+func (x *IngestBatchRequest) GetEvents() []*Event {
 	if x != nil {
 		return x.Events
 	}
@@ -295,6 +255,7 @@ type IngestBatchResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	Count         int32                  `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	Warnings      []string               `protobuf:"bytes,3,rep,name=warnings,proto3" json:"warnings,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -341,6 +302,13 @@ func (x *IngestBatchResponse) GetCount() int32 {
 		return x.Count
 	}
 	return 0
+}
+
+func (x *IngestBatchResponse) GetWarnings() []string {
+	if x != nil {
+		return x.Warnings
+	}
+	return nil
 }
 
 type ReconstructRequest struct {
@@ -834,6 +802,9 @@ func (x *RecordFeedbackResponse) GetStatus() string {
 type StreamEventsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	IncidentId    string                 `protobuf:"bytes,1,opt,name=incident_id,json=incidentId,proto3" json:"incident_id,omitempty"`
+	ServiceFilter string                 `protobuf:"bytes,2,opt,name=service_filter,json=serviceFilter,proto3" json:"service_filter,omitempty"`
+	EventFilter   string                 `protobuf:"bytes,3,opt,name=event_filter,json=eventFilter,proto3" json:"event_filter,omitempty"`
+	OutcomeFilter string                 `protobuf:"bytes,4,opt,name=outcome_filter,json=outcomeFilter,proto3" json:"outcome_filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -875,33 +846,316 @@ func (x *StreamEventsRequest) GetIncidentId() string {
 	return ""
 }
 
+func (x *StreamEventsRequest) GetServiceFilter() string {
+	if x != nil {
+		return x.ServiceFilter
+	}
+	return ""
+}
+
+func (x *StreamEventsRequest) GetEventFilter() string {
+	if x != nil {
+		return x.EventFilter
+	}
+	return ""
+}
+
+func (x *StreamEventsRequest) GetOutcomeFilter() string {
+	if x != nil {
+		return x.OutcomeFilter
+	}
+	return ""
+}
+
+// Lifecycle-aware query support
+type QueryLifecycleRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	EventId       string                 `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
+	TraceId       string                 `protobuf:"bytes,2,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	Service       string                 `protobuf:"bytes,3,opt,name=service,proto3" json:"service,omitempty"`
+	Limit         int32                  `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset        int32                  `protobuf:"varint,5,opt,name=offset,proto3" json:"offset,omitempty"`
+	From          *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=from,proto3" json:"from,omitempty"`
+	To            *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=to,proto3" json:"to,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryLifecycleRequest) Reset() {
+	*x = QueryLifecycleRequest{}
+	mi := &file_loxa_v1_cortex_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryLifecycleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryLifecycleRequest) ProtoMessage() {}
+
+func (x *QueryLifecycleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_loxa_v1_cortex_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryLifecycleRequest.ProtoReflect.Descriptor instead.
+func (*QueryLifecycleRequest) Descriptor() ([]byte, []int) {
+	return file_loxa_v1_cortex_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *QueryLifecycleRequest) GetEventId() string {
+	if x != nil {
+		return x.EventId
+	}
+	return ""
+}
+
+func (x *QueryLifecycleRequest) GetTraceId() string {
+	if x != nil {
+		return x.TraceId
+	}
+	return ""
+}
+
+func (x *QueryLifecycleRequest) GetService() string {
+	if x != nil {
+		return x.Service
+	}
+	return ""
+}
+
+func (x *QueryLifecycleRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *QueryLifecycleRequest) GetOffset() int32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *QueryLifecycleRequest) GetFrom() *timestamppb.Timestamp {
+	if x != nil {
+		return x.From
+	}
+	return nil
+}
+
+func (x *QueryLifecycleRequest) GetTo() *timestamppb.Timestamp {
+	if x != nil {
+		return x.To
+	}
+	return nil
+}
+
+type LifecycleSummary struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	EventId         string                 `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
+	Event           string                 `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
+	Service         string                 `protobuf:"bytes,3,opt,name=service,proto3" json:"service,omitempty"`
+	Outcome         string                 `protobuf:"bytes,4,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	DurationMs      float64                `protobuf:"fixed64,5,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	CheckpointCount int32                  `protobuf:"varint,6,opt,name=checkpoint_count,json=checkpointCount,proto3" json:"checkpoint_count,omitempty"`
+	ProcessCount    int32                  `protobuf:"varint,7,opt,name=process_count,json=processCount,proto3" json:"process_count,omitempty"`
+	GroupCount      int32                  `protobuf:"varint,8,opt,name=group_count,json=groupCount,proto3" json:"group_count,omitempty"`
+	TimerCount      int32                  `protobuf:"varint,9,opt,name=timer_count,json=timerCount,proto3" json:"timer_count,omitempty"`
+	LinkCount       int32                  `protobuf:"varint,10,opt,name=link_count,json=linkCount,proto3" json:"link_count,omitempty"`
+	TraceId         string                 `protobuf:"bytes,11,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *LifecycleSummary) Reset() {
+	*x = LifecycleSummary{}
+	mi := &file_loxa_v1_cortex_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LifecycleSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LifecycleSummary) ProtoMessage() {}
+
+func (x *LifecycleSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_loxa_v1_cortex_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LifecycleSummary.ProtoReflect.Descriptor instead.
+func (*LifecycleSummary) Descriptor() ([]byte, []int) {
+	return file_loxa_v1_cortex_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *LifecycleSummary) GetEventId() string {
+	if x != nil {
+		return x.EventId
+	}
+	return ""
+}
+
+func (x *LifecycleSummary) GetEvent() string {
+	if x != nil {
+		return x.Event
+	}
+	return ""
+}
+
+func (x *LifecycleSummary) GetService() string {
+	if x != nil {
+		return x.Service
+	}
+	return ""
+}
+
+func (x *LifecycleSummary) GetOutcome() string {
+	if x != nil {
+		return x.Outcome
+	}
+	return ""
+}
+
+func (x *LifecycleSummary) GetDurationMs() float64 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
+func (x *LifecycleSummary) GetCheckpointCount() int32 {
+	if x != nil {
+		return x.CheckpointCount
+	}
+	return 0
+}
+
+func (x *LifecycleSummary) GetProcessCount() int32 {
+	if x != nil {
+		return x.ProcessCount
+	}
+	return 0
+}
+
+func (x *LifecycleSummary) GetGroupCount() int32 {
+	if x != nil {
+		return x.GroupCount
+	}
+	return 0
+}
+
+func (x *LifecycleSummary) GetTimerCount() int32 {
+	if x != nil {
+		return x.TimerCount
+	}
+	return 0
+}
+
+func (x *LifecycleSummary) GetLinkCount() int32 {
+	if x != nil {
+		return x.LinkCount
+	}
+	return 0
+}
+
+func (x *LifecycleSummary) GetTraceId() string {
+	if x != nil {
+		return x.TraceId
+	}
+	return ""
+}
+
+type QueryLifecycleResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Summaries     []*LifecycleSummary    `protobuf:"bytes,1,rep,name=summaries,proto3" json:"summaries,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryLifecycleResponse) Reset() {
+	*x = QueryLifecycleResponse{}
+	mi := &file_loxa_v1_cortex_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryLifecycleResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryLifecycleResponse) ProtoMessage() {}
+
+func (x *QueryLifecycleResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_loxa_v1_cortex_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryLifecycleResponse.ProtoReflect.Descriptor instead.
+func (*QueryLifecycleResponse) Descriptor() ([]byte, []int) {
+	return file_loxa_v1_cortex_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *QueryLifecycleResponse) GetSummaries() []*LifecycleSummary {
+	if x != nil {
+		return x.Summaries
+	}
+	return nil
+}
+
+func (x *QueryLifecycleResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
 var File_loxa_v1_cortex_proto protoreflect.FileDescriptor
 
 const file_loxa_v1_cortex_proto_rawDesc = "" +
 	"\n" +
-	"\x14loxa/v1/cortex.proto\x12\aloxa.v1\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x10\n" +
+	"\x14loxa/v1/cortex.proto\x12\aloxa.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13loxa/v1/event.proto\"\x10\n" +
 	"\x0eHealthzRequest\")\n" +
 	"\x0fHealthzResponse\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\tR\x06status\"\x93\x02\n" +
-	"\x12IngestEventRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x128\n" +
-	"\ttimestamp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x12\n" +
-	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x18\n" +
-	"\aservice\x18\x04 \x01(\tR\aservice\x12\x19\n" +
-	"\btrace_id\x18\x05 \x01(\tR\atraceId\x12\x1f\n" +
-	"\vincident_id\x18\x06 \x01(\tR\n" +
-	"incidentId\x12\x1e\n" +
-	"\n" +
-	"provenance\x18\a \x01(\tR\n" +
-	"provenance\x12)\n" +
-	"\x03raw\x18\b \x01(\v2\x17.google.protobuf.StructR\x03raw\"-\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\":\n" +
+	"\x12IngestEventRequest\x12$\n" +
+	"\x05event\x18\x01 \x01(\v2\x0e.loxa.v1.EventR\x05event\"d\n" +
 	"\x13IngestEventResponse\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\tR\x06status\"I\n" +
-	"\x12IngestBatchRequest\x123\n" +
-	"\x06events\x18\x01 \x03(\v2\x1b.loxa.v1.IngestEventRequestR\x06events\"C\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\x12\x19\n" +
+	"\bevent_id\x18\x02 \x01(\tR\aeventId\x12\x1a\n" +
+	"\bwarnings\x18\x03 \x03(\tR\bwarnings\"<\n" +
+	"\x12IngestBatchRequest\x12&\n" +
+	"\x06events\x18\x01 \x03(\v2\x0e.loxa.v1.EventR\x06events\"_\n" +
 	"\x13IngestBatchResponse\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x14\n" +
-	"\x05count\x18\x02 \x01(\x05R\x05count\"I\n" +
+	"\x05count\x18\x02 \x01(\x05R\x05count\x12\x1a\n" +
+	"\bwarnings\x18\x03 \x03(\tR\bwarnings\"I\n" +
 	"\x12ReconstructRequest\x12\x1f\n" +
 	"\vincident_id\x18\x01 \x01(\tR\n" +
 	"incidentId\x12\x12\n" +
@@ -938,18 +1192,50 @@ const file_loxa_v1_cortex_proto_rawDesc = "" +
 	"\asuccess\x18\x03 \x01(\bR\asuccess\x12\x14\n" +
 	"\x05notes\x18\x04 \x01(\tR\x05notes\"0\n" +
 	"\x16RecordFeedbackResponse\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\tR\x06status\"6\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\"\xa7\x01\n" +
 	"\x13StreamEventsRequest\x12\x1f\n" +
 	"\vincident_id\x18\x01 \x01(\tR\n" +
-	"incidentId2\x8c\x04\n" +
+	"incidentId\x12%\n" +
+	"\x0eservice_filter\x18\x02 \x01(\tR\rserviceFilter\x12!\n" +
+	"\fevent_filter\x18\x03 \x01(\tR\veventFilter\x12%\n" +
+	"\x0eoutcome_filter\x18\x04 \x01(\tR\routcomeFilter\"\xf1\x01\n" +
+	"\x15QueryLifecycleRequest\x12\x19\n" +
+	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12\x19\n" +
+	"\btrace_id\x18\x02 \x01(\tR\atraceId\x12\x18\n" +
+	"\aservice\x18\x03 \x01(\tR\aservice\x12\x14\n" +
+	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06offset\x18\x05 \x01(\x05R\x06offset\x12.\n" +
+	"\x04from\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x04from\x12*\n" +
+	"\x02to\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x02to\"\xe4\x02\n" +
+	"\x10LifecycleSummary\x12\x19\n" +
+	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12\x14\n" +
+	"\x05event\x18\x02 \x01(\tR\x05event\x12\x18\n" +
+	"\aservice\x18\x03 \x01(\tR\aservice\x12\x18\n" +
+	"\aoutcome\x18\x04 \x01(\tR\aoutcome\x12\x1f\n" +
+	"\vduration_ms\x18\x05 \x01(\x01R\n" +
+	"durationMs\x12)\n" +
+	"\x10checkpoint_count\x18\x06 \x01(\x05R\x0fcheckpointCount\x12#\n" +
+	"\rprocess_count\x18\a \x01(\x05R\fprocessCount\x12\x1f\n" +
+	"\vgroup_count\x18\b \x01(\x05R\n" +
+	"groupCount\x12\x1f\n" +
+	"\vtimer_count\x18\t \x01(\x05R\n" +
+	"timerCount\x12\x1d\n" +
+	"\n" +
+	"link_count\x18\n" +
+	" \x01(\x05R\tlinkCount\x12\x19\n" +
+	"\btrace_id\x18\v \x01(\tR\atraceId\"g\n" +
+	"\x16QueryLifecycleResponse\x127\n" +
+	"\tsummaries\x18\x01 \x03(\v2\x19.loxa.v1.LifecycleSummaryR\tsummaries\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total2\xd2\x04\n" +
 	"\rCortexService\x12<\n" +
 	"\aHealthz\x12\x17.loxa.v1.HealthzRequest\x1a\x18.loxa.v1.HealthzResponse\x12H\n" +
 	"\vIngestEvent\x12\x1b.loxa.v1.IngestEventRequest\x1a\x1c.loxa.v1.IngestEventResponse\x12H\n" +
 	"\vIngestBatch\x12\x1b.loxa.v1.IngestBatchRequest\x1a\x1c.loxa.v1.IngestBatchResponse\x12H\n" +
 	"\vReconstruct\x12\x1b.loxa.v1.ReconstructRequest\x1a\x1c.loxa.v1.ReconstructResponse\x12?\n" +
 	"\bGetGraph\x12\x18.loxa.v1.GetGraphRequest\x1a\x19.loxa.v1.GetGraphResponse\x12Q\n" +
-	"\x0eRecordFeedback\x12\x1e.loxa.v1.RecordFeedbackRequest\x1a\x1f.loxa.v1.RecordFeedbackResponse\x12K\n" +
-	"\fStreamEvents\x12\x1c.loxa.v1.StreamEventsRequest\x1a\x1b.loxa.v1.IngestEventRequest0\x01B4Z2github.com/astraive/loxa/spec/proto/loxa/v1;loxav1b\x06proto3"
+	"\x0eRecordFeedback\x12\x1e.loxa.v1.RecordFeedbackRequest\x1a\x1f.loxa.v1.RecordFeedbackResponse\x12>\n" +
+	"\fStreamEvents\x12\x1c.loxa.v1.StreamEventsRequest\x1a\x0e.loxa.v1.Event0\x01\x12Q\n" +
+	"\x0eQueryLifecycle\x12\x1e.loxa.v1.QueryLifecycleRequest\x1a\x1f.loxa.v1.QueryLifecycleResponseB4Z2github.com/astraive/loxa/spec/proto/loxa/v1;loxav1b\x06proto3"
 
 var (
 	file_loxa_v1_cortex_proto_rawDescOnce sync.Once
@@ -963,7 +1249,7 @@ func file_loxa_v1_cortex_proto_rawDescGZIP() []byte {
 	return file_loxa_v1_cortex_proto_rawDescData
 }
 
-var file_loxa_v1_cortex_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_loxa_v1_cortex_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_loxa_v1_cortex_proto_goTypes = []any{
 	(*HealthzRequest)(nil),         // 0: loxa.v1.HealthzRequest
 	(*HealthzResponse)(nil),        // 1: loxa.v1.HealthzResponse
@@ -980,36 +1266,43 @@ var file_loxa_v1_cortex_proto_goTypes = []any{
 	(*RecordFeedbackRequest)(nil),  // 12: loxa.v1.RecordFeedbackRequest
 	(*RecordFeedbackResponse)(nil), // 13: loxa.v1.RecordFeedbackResponse
 	(*StreamEventsRequest)(nil),    // 14: loxa.v1.StreamEventsRequest
-	(*timestamppb.Timestamp)(nil),  // 15: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),        // 16: google.protobuf.Struct
+	(*QueryLifecycleRequest)(nil),  // 15: loxa.v1.QueryLifecycleRequest
+	(*LifecycleSummary)(nil),       // 16: loxa.v1.LifecycleSummary
+	(*QueryLifecycleResponse)(nil), // 17: loxa.v1.QueryLifecycleResponse
+	(*Event)(nil),                  // 18: loxa.v1.Event
+	(*timestamppb.Timestamp)(nil),  // 19: google.protobuf.Timestamp
 }
 var file_loxa_v1_cortex_proto_depIdxs = []int32{
-	15, // 0: loxa.v1.IngestEventRequest.timestamp:type_name -> google.protobuf.Timestamp
-	16, // 1: loxa.v1.IngestEventRequest.raw:type_name -> google.protobuf.Struct
-	2,  // 2: loxa.v1.IngestBatchRequest.events:type_name -> loxa.v1.IngestEventRequest
-	7,  // 3: loxa.v1.ReconstructResponse.nodes:type_name -> loxa.v1.GraphNode
-	8,  // 4: loxa.v1.ReconstructResponse.edges:type_name -> loxa.v1.GraphEdge
-	7,  // 5: loxa.v1.GetGraphResponse.nodes:type_name -> loxa.v1.GraphNode
-	8,  // 6: loxa.v1.GetGraphResponse.edges:type_name -> loxa.v1.GraphEdge
-	0,  // 7: loxa.v1.CortexService.Healthz:input_type -> loxa.v1.HealthzRequest
-	2,  // 8: loxa.v1.CortexService.IngestEvent:input_type -> loxa.v1.IngestEventRequest
-	4,  // 9: loxa.v1.CortexService.IngestBatch:input_type -> loxa.v1.IngestBatchRequest
-	6,  // 10: loxa.v1.CortexService.Reconstruct:input_type -> loxa.v1.ReconstructRequest
-	10, // 11: loxa.v1.CortexService.GetGraph:input_type -> loxa.v1.GetGraphRequest
-	12, // 12: loxa.v1.CortexService.RecordFeedback:input_type -> loxa.v1.RecordFeedbackRequest
-	14, // 13: loxa.v1.CortexService.StreamEvents:input_type -> loxa.v1.StreamEventsRequest
-	1,  // 14: loxa.v1.CortexService.Healthz:output_type -> loxa.v1.HealthzResponse
-	3,  // 15: loxa.v1.CortexService.IngestEvent:output_type -> loxa.v1.IngestEventResponse
-	5,  // 16: loxa.v1.CortexService.IngestBatch:output_type -> loxa.v1.IngestBatchResponse
-	9,  // 17: loxa.v1.CortexService.Reconstruct:output_type -> loxa.v1.ReconstructResponse
-	11, // 18: loxa.v1.CortexService.GetGraph:output_type -> loxa.v1.GetGraphResponse
-	13, // 19: loxa.v1.CortexService.RecordFeedback:output_type -> loxa.v1.RecordFeedbackResponse
-	2,  // 20: loxa.v1.CortexService.StreamEvents:output_type -> loxa.v1.IngestEventRequest
-	14, // [14:21] is the sub-list for method output_type
-	7,  // [7:14] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	18, // 0: loxa.v1.IngestEventRequest.event:type_name -> loxa.v1.Event
+	18, // 1: loxa.v1.IngestBatchRequest.events:type_name -> loxa.v1.Event
+	7,  // 2: loxa.v1.ReconstructResponse.nodes:type_name -> loxa.v1.GraphNode
+	8,  // 3: loxa.v1.ReconstructResponse.edges:type_name -> loxa.v1.GraphEdge
+	7,  // 4: loxa.v1.GetGraphResponse.nodes:type_name -> loxa.v1.GraphNode
+	8,  // 5: loxa.v1.GetGraphResponse.edges:type_name -> loxa.v1.GraphEdge
+	19, // 6: loxa.v1.QueryLifecycleRequest.from:type_name -> google.protobuf.Timestamp
+	19, // 7: loxa.v1.QueryLifecycleRequest.to:type_name -> google.protobuf.Timestamp
+	16, // 8: loxa.v1.QueryLifecycleResponse.summaries:type_name -> loxa.v1.LifecycleSummary
+	0,  // 9: loxa.v1.CortexService.Healthz:input_type -> loxa.v1.HealthzRequest
+	2,  // 10: loxa.v1.CortexService.IngestEvent:input_type -> loxa.v1.IngestEventRequest
+	4,  // 11: loxa.v1.CortexService.IngestBatch:input_type -> loxa.v1.IngestBatchRequest
+	6,  // 12: loxa.v1.CortexService.Reconstruct:input_type -> loxa.v1.ReconstructRequest
+	10, // 13: loxa.v1.CortexService.GetGraph:input_type -> loxa.v1.GetGraphRequest
+	12, // 14: loxa.v1.CortexService.RecordFeedback:input_type -> loxa.v1.RecordFeedbackRequest
+	14, // 15: loxa.v1.CortexService.StreamEvents:input_type -> loxa.v1.StreamEventsRequest
+	15, // 16: loxa.v1.CortexService.QueryLifecycle:input_type -> loxa.v1.QueryLifecycleRequest
+	1,  // 17: loxa.v1.CortexService.Healthz:output_type -> loxa.v1.HealthzResponse
+	3,  // 18: loxa.v1.CortexService.IngestEvent:output_type -> loxa.v1.IngestEventResponse
+	5,  // 19: loxa.v1.CortexService.IngestBatch:output_type -> loxa.v1.IngestBatchResponse
+	9,  // 20: loxa.v1.CortexService.Reconstruct:output_type -> loxa.v1.ReconstructResponse
+	11, // 21: loxa.v1.CortexService.GetGraph:output_type -> loxa.v1.GetGraphResponse
+	13, // 22: loxa.v1.CortexService.RecordFeedback:output_type -> loxa.v1.RecordFeedbackResponse
+	18, // 23: loxa.v1.CortexService.StreamEvents:output_type -> loxa.v1.Event
+	17, // 24: loxa.v1.CortexService.QueryLifecycle:output_type -> loxa.v1.QueryLifecycleResponse
+	17, // [17:25] is the sub-list for method output_type
+	9,  // [9:17] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_loxa_v1_cortex_proto_init() }
@@ -1017,13 +1310,14 @@ func file_loxa_v1_cortex_proto_init() {
 	if File_loxa_v1_cortex_proto != nil {
 		return
 	}
+	file_loxa_v1_event_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_loxa_v1_cortex_proto_rawDesc), len(file_loxa_v1_cortex_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

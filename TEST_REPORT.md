@@ -1,4 +1,4 @@
-# LOXA v1.0.0 — End-to-End Test Report
+# LOXA v0.0.1 — End-to-End Test Report
 
 > **Note**: Paths in this report reflect the pre-monorepo directory structure (e.g., `loxa-go/`, `loxa-py/`). The current monorepo layout uses `sdks/go/`, `sdks/py/`, `collector/`, `cli/`, etc.
 
@@ -407,4 +407,4 @@ cd loxa-cli && go run ./cmd/loxa maturity
 
 ## Conclusion
 
-LOXA v1.0.0 is **production-ready** across all 8 repositories. All 4 SDKs pass 12/12 conformance groups. The comprehensive verification suite confirms 105/105 subchecks pass. Performance benchmarks exceed targets (1.9M enriches/sec, 1.9M inserts/sec via Appender). All inter-service wiring is verified. The system is durable (retry, DLQ, spool, encryption) and scalable (batching, compression, backpressure).
+LOXA v0.0.1 is **production-ready** across all 8 repositories. All 4 SDKs pass 12/12 conformance groups. The comprehensive verification suite confirms 105/105 subchecks pass. Performance benchmarks exceed targets (1.9M enriches/sec, 1.9M inserts/sec via Appender). All inter-service wiring is verified. The system is durable (retry, DLQ, spool, encryption) and scalable (batching, compression, backpressure).

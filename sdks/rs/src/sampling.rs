@@ -57,6 +57,7 @@ pub fn should_sample(event: &EventContext, sampler: &SamplerConfig) -> bool {
             let rate_per_ms = *rate / window_ms;
             fastrand::f64() < rate_per_ms
         }
+        SamplerConfig::Custom(f) => f(event),
         SamplerConfig::SampleByHeader(header, value) => {
             let normalized = header.to_lowercase().replace('_', "-");
             let keys = [

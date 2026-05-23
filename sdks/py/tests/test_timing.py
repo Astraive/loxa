@@ -87,9 +87,9 @@ def test_timing_in_to_dict():
     timer.stop(status_code=200)
 
     d = ev.to_dict()
-    assert "process" in d
+    assert "processes" in d
     assert "groups" in d
     assert "timers" in d
-    assert len(d["process"]) == 1
+    assert len(d["processes"]) == 1
     assert len(d["groups"]) == 1
     assert len(d["timers"]) == 1

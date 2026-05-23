@@ -1,8 +1,8 @@
-# LOXA v1.0.0 Specification & Release Index
+# LOXA v0.0.1 Specification & Release Index
 
 **Status**: ✅ **PRODUCTION READY**  
 **Release Date**: May 15, 2026  
-**Version**: 1.0.0
+**Version**: 0.0.1
 
 ---
 
@@ -35,7 +35,7 @@
 All 7 P0 items from the release roadmap have been implemented:
 
 ### 1. Go OnEmit Delivery Metrics ✅
-- **Status**: Already implemented in v1.0.0
+- **Status**: Already implemented in v0.0.1
 - **Location**: `sdks/go/internal/core/metrics.go`
 - **Metrics**: `events_emitted_total{status="success|failure"}`
 - **Callback**: `OnEventEmitted(success bool)` + `OnDeliveryFailed(event, error)`
@@ -73,7 +73,7 @@ All 7 P0 items from the release roadmap have been implemented:
 ### 5. Python/Rust Stable Labels ✅
 - **Status**: All 4 SDKs marked as STABLE in README files
 - **Location**: `sdks/py/README.md`, `sdks/rs/README.md`, `sdks/go/README.md`, `sdks/js/README.md`
-- **Message**: "STABLE (v1.0.0) - Production-ready, full feature conformance"
+- **Message**: "STABLE (v0.0.1) - Production-ready, full feature conformance"
 - **Impact**: All SDKs production-ready
 
 ### 6. CLI Command Maturity Labels ✅
@@ -128,9 +128,9 @@ loxa/
 │   │   └── internal/core/
 │   │       └── metrics.go (already has OnEmit delivery metrics)
 │   ├── py/
-│   │   └── README.md                      ✅ STABLE (v1.0.0)
+│   │   └── README.md                      ✅ STABLE (v0.0.1)
 │   ├── rs/
-│   │   └── README.md                      ✅ STABLE (v1.0.0)
+│   │   └── README.md                      ✅ STABLE (v0.0.1)
 │   └── js/
 │       └── README.md
 └── cli/
@@ -214,7 +214,7 @@ loxa/
 
 ## What's Next? (P1 Roadmap)
 
-After v1.0.0 P0 release, P1 focuses on **production-credible collector**:
+After v0.0.1 P0 release, P1 focuses on **production-credible collector**:
 
 1. Durable spool crash recovery tests
 2. Retry + DLQ end-to-end tests
@@ -261,7 +261,7 @@ See [MVP_CUT.md](spec/docs/MVP_CUT.md) for full v1.0 contract.
 
 ---
 
-**Version**: 1.0.0  
+**Version**: 0.0.1  
 **Released**: May 15, 2026  
 **Status**: ✅ Production Ready  
 **P0 Roadmap**: ✅ Complete

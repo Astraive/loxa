@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"time"
 
 	"github.com/astraive/loxa/loxa-cortex/internal/collectorbridge"
 	"github.com/astraive/loxa/loxa-cortex/internal/config"
@@ -16,11 +17,13 @@ func newCollectorBackedEventStore(cfg config.CollectorConfig) EventStore {
 	return &collectorBackedEventStore{client: collectorbridge.NewClient(cfg)}
 }
 
-func (s *collectorBackedEventStore) Save(context.Context, *models.Event) error {
+func (s *collectorBackedEventStore) Save(ctx context.Context, event *models.Event, lifecycle *LifecycleData) error {
+	// Collector-backed: events are stored in collector, not in cortex
 	return nil
 }
 
-func (s *collectorBackedEventStore) SaveBatch(context.Context, []*models.Event) error {
+func (s *collectorBackedEventStore) SaveBatch(ctx context.Context, events []*models.Event, lifecycles []*LifecycleData) error {
+	// Collector-backed: events are stored in collector, not in cortex
 	return nil
 }
 
@@ -42,6 +45,59 @@ func (s *collectorBackedEventStore) FindByIncidentID(ctx context.Context, incide
 
 func (s *collectorBackedEventStore) FindByService(ctx context.Context, service string, from, to string) ([]*models.Event, error) {
 	return s.client.FindByService(ctx, service, from, to, 1000)
+}
+
+// Lifecycle-aware query methods (delegate to collector bridge)
+func (s *collectorBackedEventStore) FindByEventName(ctx context.Context, eventName string, limit, offset int) ([]*models.Event, error) {
+	return s.client.FindByEventName(ctx, eventName, limit)
+}
+
+func (s *collectorBackedEventStore) FindByOutcome(ctx context.Context, outcome string, limit, offset int) ([]*models.Event, error) {
+	return s.client.FindByOutcome(ctx, outcome, limit)
+}
+
+func (s *collectorBackedEventStore) FindByLevel(ctx context.Context, level string, limit, offset int) ([]*models.Event, error) {
+	return nil, nil
+}
+
+func (s *collectorBackedEventStore) FindByDurationRange(ctx context.Context, minMs, maxMs float64, limit, offset int) ([]*models.Event, error) {
+	return nil, nil
+}
+
+func (s *collectorBackedEventStore) FindByEnvironment(ctx context.Context, env string, limit, offset int) ([]*models.Event, error) {
+	return nil, nil
+}
+
+func (s *collectorBackedEventStore) FindByRelease(ctx context.Context, release string, limit, offset int) ([]*models.Event, error) {
+	return nil, nil
+}
+
+func (s *collectorBackedEventStore) CountByOutcome(ctx context.Context, service string, from, to time.Time) (map[string]int64, error) {
+	return nil, nil
+}
+
+func (s *collectorBackedEventStore) CountByEventName(ctx context.Context, service string, from, to time.Time) (map[string]int64, error) {
+	return nil, nil
+}
+
+func (s *collectorBackedEventStore) AverageDuration(ctx context.Context, eventName string, from, to time.Time) (float64, error) {
+	return 0, nil
+}
+
+func (s *collectorBackedEventStore) PercentileDuration(ctx context.Context, eventName string, percentile float64, from, to time.Time) (float64, error) {
+	return 0, nil
+}
+
+func (s *collectorBackedEventStore) DistinctServices(ctx context.Context) ([]string, error) {
+	return s.client.DistinctServices(ctx)
+}
+
+func (s *collectorBackedEventStore) DistinctEventNames(ctx context.Context) ([]string, error) {
+	return nil, nil
+}
+
+func (s *collectorBackedEventStore) ListLifecycleSummaries(ctx context.Context, filter *LifecycleFilter) ([]*models.LifecycleSummary, int, error) {
+	return nil, 0, nil
 }
 
 type storageWithExternalEvents struct {

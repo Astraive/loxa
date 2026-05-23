@@ -1,10 +1,10 @@
-# LOXA v1.0.0 Release Notes
+# LOXA v0.0.1 Release Notes
 
 **Release Date:** 2026-05-14
 
 ## Overview
 
-LOXA v1.0.0 is the first stable release of the canonical event observability system. This release includes production-ready SDKs (Go, Python, Rust), a scalable collector with multiple deployment modes, a comprehensive CLI, and extensive documentation.
+LOXA v0.0.1 is the first stable release of the canonical event observability system. This release includes production-ready SDKs (Go, Python, Rust), a scalable collector with multiple deployment modes, a comprehensive CLI, and extensive documentation.
 
 ## What's New
 
@@ -104,7 +104,7 @@ This is the first stable release. Future releases will maintain backward compati
 
 ## Deprecations
 
-None in v1.0.0 (initial release).
+None in v0.0.1 (initial release).
 
 ## Known Limitations
 
@@ -119,7 +119,7 @@ None in v1.0.0 (initial release).
 
 If you were using pre-release versions:
 
-1. **Configuration**: The config format is stable in v1.0.0. Review new retention options if upgrading.
+1. **Configuration**: The config format is stable in v0.0.1. Review new retention options if upgrading.
 2. **Schema**: Event schema v1 is stable. Custom schema registries are supported.
 3. **Data**: Existing DuckDB files are compatible. Run `loxa doctor` to verify.
 
@@ -142,27 +142,27 @@ loxa query --sql "SELECT * FROM events LIMIT 10"
 
 ### From Binary
 ```bash
-go install github.com/astraive/loxa/collector/cmd/loxa-collector@v1.0.0
-go install github.com/astraive/loxa/cli/cmd/loxa@v1.0.0
+go install github.com/astraive/loxa/collector/cmd/loxa-collector@v0.0.1
+go install github.com/astraive/loxa/cli/cmd/loxa@v0.0.1
 ```
 
 ### From Docker
 ```bash
-docker pull astraive/loxa:1.0.0
-docker pull astraive/loxa-cli:1.0.0
+docker pull astraive/loxa:0.0.1
+docker pull astraive/loxa-cli:0.0.1
 ```
 
 ### From Helm (Kubernetes)
 ```bash
 helm repo add loxa https://charts.loxa.dev
-helm install loxa loxa/loxa --version 1.0.0
+helm install loxa loxa/loxa --version 0.0.1
 ```
 
 ## SDK Versions
 
-- **Go**: `github.com/astraive/loxa/sdks/go v1.0.0`
-- **Python**: `loxa==1.0.0` (PyPI)
-- **Rust**: `loxa = "1.0.0"` (Crates.io)
+- **Go**: `github.com/astraive/loxa/sdks/go v0.0.1`
+- **Python**: `loxa==0.0.1` (PyPI)
+- **Rust**: `loxa = "0.0.1"` (Crates.io)
 
 ## Changelog
 
@@ -199,7 +199,7 @@ None (initial release)
 
 ## Acknowledgments
 
-LOXA v1.0.0 represents the culmination of comprehensive system design, rigorous testing, and production-readiness validation. We thank all contributors and testers who helped bring this release to maturity.
+LOXA v0.0.1 represents the culmination of comprehensive system design, rigorous testing, and production-readiness validation. We thank all contributors and testers who helped bring this release to maturity.
 
 ## License
 
@@ -207,6 +207,6 @@ LOXA is distributed under the MIT License. See [LICENSE](../LICENSE) for details
 
 ---
 
-**Version**: 1.0.0  
+**Version**: 0.0.1  
 **Release Date**: 2026-05-14  
 **Status**: Stable (Production Ready)

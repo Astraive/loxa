@@ -32,6 +32,7 @@ pub trait DeliveryFailureHandler: StatsHandler {}
 #[derive(Clone)]
 pub struct Config {
     pub service: String,
+    pub alias: String,
     pub version: String,
     pub environment: String,
     pub region: String,
@@ -58,6 +59,7 @@ impl std::fmt::Debug for Config {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Config")
             .field("service", &self.service)
+            .field("alias", &self.alias)
             .field("version", &self.version)
             .field("environment", &self.environment)
             .field("region", &self.region)
@@ -137,7 +139,7 @@ pub enum SinkConfig {
     },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum SamplerConfig {
     All,
     None,
@@ -154,6 +156,30 @@ pub enum SamplerConfig {
     SampleRandom(f64),
     SampleRateLimited(f64, std::time::Duration),
     SampleByHeader(String, String),
+    Custom(std::sync::Arc<dyn Fn(&crate::EventContext) -> bool + Send + Sync>),
+}
+
+impl std::fmt::Debug for SamplerConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::All => write!(f, "All"),
+            Self::None => write!(f, "None"),
+            Self::Any(s) => f.debug_tuple("Any").field(s).finish(),
+            Self::AllOf(s) => f.debug_tuple("AllOf").field(s).finish(),
+            Self::Not(s) => f.debug_tuple("Not").field(s).finish(),
+            Self::Errors => write!(f, "Errors"),
+            Self::SlowRequests(ms) => f.debug_tuple("SlowRequests").field(ms).finish(),
+            Self::StatusCodes(c) => f.debug_tuple("StatusCodes").field(c).finish(),
+            Self::Routes(r) => f.debug_tuple("Routes").field(r).finish(),
+            Self::Users(u) => f.debug_tuple("Users").field(u).finish(),
+            Self::Tenants(t) => f.debug_tuple("Tenants").field(t).finish(),
+            Self::FeatureFlag(n, v) => f.debug_tuple("FeatureFlag").field(n).field(v).finish(),
+            Self::SampleRandom(r) => f.debug_tuple("SampleRandom").field(r).finish(),
+            Self::SampleRateLimited(r, w) => f.debug_tuple("SampleRateLimited").field(r).field(w).finish(),
+            Self::SampleByHeader(h, v) => f.debug_tuple("SampleByHeader").field(h).field(v).finish(),
+            Self::Custom(_) => write!(f, "Custom(<fn>)"),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -163,6 +189,7 @@ pub enum RedactorConfig {
     HashKeys(Vec<String>),
     DropKeys(Vec<String>),
     MaskKeys(Vec<String>),
+    AllowKeys(Vec<String>),
     Patterns(Vec<String>),
     Compose(Vec<RedactorConfig>),
     None,
@@ -196,6 +223,11 @@ impl std::fmt::Debug for SchemaConfig {
 impl Config {
     pub fn with_service(mut self, service: impl Into<String>) -> Self {
         self.service = service.into();
+        self
+    }
+
+    pub fn with_alias(mut self, alias: impl Into<String>) -> Self {
+        self.alias = alias.into();
         self
     }
 
@@ -282,6 +314,38 @@ impl Config {
     pub fn with_async_config(mut self, async_config: AsyncConfig) -> Self {
         self.async_config = async_config;
         self
+    }
+
+    pub fn with_release(mut self, release: impl Into<String>) -> Self {
+        self.version = release.into();
+        self
+    }
+
+    pub fn with_namespace(mut self, namespace: impl Into<String>) -> Self {
+        self.service = format!("{}.{}", namespace.into(), self.service);
+        self
+    }
+
+    pub fn with_otel_bridge(self, _enabled: bool) -> Self {
+        self
+    }
+
+    pub fn with_timeout(self, _timeout_ms: u64) -> Self {
+        self
+    }
+
+    pub fn with_queue_size(mut self, size: usize) -> Self {
+        self.async_config.queue_size = size;
+        self
+    }
+
+    pub fn disabled() -> Self {
+        Self::base()
+    }
+
+    pub fn from_env() -> Self {
+        let file_cfg = super::config::load_layered_file_config().unwrap_or_default();
+        file_cfg.apply(Self::base())
     }
 
     pub fn validate(&self) {
@@ -377,6 +441,7 @@ pub(crate) fn load_layered_file_config() -> Result<FileConfig, std::io::Error> {
 }
 
 /// Create a Logger with 4-layer config precedence: defaults -> file -> env -> code.
+#[allow(dead_code)]
 pub fn new_client(code_config: Config) -> Result<crate::Logger, crate::errors::LoxaError> {
     // Step 1: Start with hardcoded defaults
     let base = Config::base();
@@ -422,12 +487,16 @@ pub fn new_client(code_config: Config) -> Result<crate::Logger, crate::errors::L
     crate::Logger::try_new(merged)
 }
 
+#[allow(dead_code)]
 fn merge_code_config(mut base: Config, code: Config) -> Config {
     // Compare against base defaults to determine what was explicitly set
     let defaults = Config::base();
 
     if code.service != defaults.service {
         base.service = code.service;
+    }
+    if code.alias != defaults.alias {
+        base.alias = code.alias;
     }
     if code.version != defaults.version {
         base.version = code.version;

@@ -89,10 +89,10 @@ impl Logger {
         &self.config
     }
 
-    /// Create a new Logger with the same config but a different service name.
-    pub fn alias(&self, service: impl Into<String>) -> Logger {
+    /// Create an immutable child logger that preserves config and emits loxa.alias.
+    pub fn alias(&self, name: impl Into<String>) -> Logger {
         let mut cfg = self.config.clone();
-        cfg.service = service.into();
+        cfg.alias = name.into();
         Logger::new(cfg)
     }
 
@@ -115,6 +115,9 @@ impl Logger {
             params.deployment_id = Some(self.config.deployment_id.clone());
         }
         let mut ctx = EventContext::new(self.config.service.clone(), params);
+        if !self.config.alias.is_empty() {
+            ctx.append_attr(Attr::new("loxa.alias", self.config.alias.clone()));
+        }
         if self.config.include_host && ctx.host.is_none() {
             let host = std::env::var("HOSTNAME").unwrap_or_else(|_| {
                 hostname::get()
@@ -262,6 +265,7 @@ impl Logger {
         let payload = match &self.config.schema {
             crate::SchemaConfig::Custom(schema) => {
                 let encoded = schema.encode(ctx);
+                let encoded = crate::event::apply_sensitive_to_value(encoded, ctx);
                 redaction::redact(encoded, &self.config.redactor)
             }
             other => {
@@ -360,10 +364,125 @@ impl Logger {
         self.emit_immediate("fatal", message)
     }
 
+    pub fn notice(&self, message: impl Into<String>) -> Result<String, LoxaError> {
+        self.emit_immediate("notice", message)
+    }
+
+    pub fn breadcrumb(&self, message: impl Into<String>) -> Result<String, LoxaError> {
+        let mut ctx = self.start_event(
+            Params::new("log.breadcrumb")
+                .with_kind("log")
+                .with_message(message),
+        );
+        ctx.level = "debug".to_string();
+        let _ = ctx.finish("success");
+        self.emit(&ctx)
+    }
+
     pub fn fatal_exit(&self, message: impl Into<String>) -> ! {
-        let _ = self.emit_immediate("fatal", message);
-        let _ = self.flush();
+        // Emit and flush before exiting, logging any errors to stderr
+        if let Err(err) = self.emit_immediate("fatal", message) {
+            eprintln!("loxa: fatal event emit failed: {err}");
+        }
+        if let Err(err) = self.flush() {
+            eprintln!("loxa: flush on fatal exit failed: {err}");
+        }
         std::process::exit(1)
+    }
+
+    pub fn drop_event(&self, ctx: &mut EventContext, reason: impl Into<String>) -> Result<(), LoxaError> {
+        ctx.outcome = Some("dropped".to_string());
+        ctx.partial = true;
+        ctx.partial_reason = Some(reason.into());
+        Ok(())
+    }
+
+    pub fn cancel(&self, ctx: &mut EventContext) -> Result<(), LoxaError> {
+        let result = ctx.finish("cancelled");
+        if result.is_ok() {
+            self.metrics.record_event_finished();
+        }
+        result
+    }
+
+    pub fn abandon(&self, ctx: &mut EventContext) -> Result<(), LoxaError> {
+        let result = ctx.finish("abandoned");
+        if result.is_ok() {
+            self.metrics.record_event_finished();
+        }
+        result
+    }
+
+    pub fn retry(&self, ctx: &mut EventContext) -> Result<(), LoxaError> {
+        let result = ctx.finish("retried");
+        if result.is_ok() {
+            self.metrics.record_event_finished();
+        }
+        result
+    }
+
+    pub fn partial(&self, ctx: &mut EventContext, reason: impl Into<String>) -> Result<(), LoxaError> {
+        let result = ctx.finish("partial");
+        if result.is_ok() {
+            ctx.partial = true;
+            ctx.partial_reason = Some(reason.into());
+            self.metrics.record_event_finished();
+        }
+        result
+    }
+
+    pub fn clone_event(&self, ctx: &EventContext) -> EventContext {
+        ctx.clone()
+    }
+
+    pub fn link_event(&self, ctx: &mut EventContext, linked_id: impl Into<String>) {
+        let mut link = serde_json::Map::new();
+        link.insert("event_id".to_string(), serde_json::Value::String(linked_id.into()));
+        if ctx.error.is_none() {
+            ctx.error = Some(serde_json::Map::new());
+        }
+    }
+
+    pub fn bind_event(&self, ctx: &EventContext) -> EventContext {
+        ctx.clone()
+    }
+
+    pub fn wrap(&self, ctx: &mut EventContext, f: impl FnOnce(&mut EventContext)) {
+        f(ctx);
+    }
+
+    pub fn with_process(&self, ctx: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+        let process = ctx.start_process(name);
+        f(ctx);
+        process.finish(ctx, &[]);
+    }
+
+    pub fn with_group(&self, ctx: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+        let group = ctx.start_group(name);
+        f(ctx);
+        group.finish(ctx, &[]);
+    }
+
+    pub fn with_timer(&self, ctx: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+        let timer = ctx.start_timer(name);
+        f(ctx);
+        timer.stop(ctx, &[]);
+    }
+
+    pub fn measure(&self, ctx: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+        self.with_timer(ctx, name, f);
+    }
+
+    pub fn step(&self, ctx: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+        self.with_process(ctx, name, f);
+    }
+
+    pub fn phase(&self, ctx: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+        self.with_group(ctx, name, f);
+    }
+
+    pub fn span(&self, ctx: &mut EventContext, name: &str, f: impl FnOnce(&mut EventContext)) {
+        self.with_timer(ctx, name, f);
     }
 
     fn emit_immediate(&self, level: &str, message: impl Into<String>) -> Result<String, LoxaError> {

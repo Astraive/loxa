@@ -49,6 +49,7 @@ class Params:
     tenant_id: str = ""
     workspace_id: str = ""
     custom: list[Attr] = field(default_factory=list)
+    links: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -225,7 +226,7 @@ class EventContext:
         if self.checkpoints:
             payload["checkpoints"] = list(self.checkpoints)
         if self.processes:
-            payload["process"] = list(self.processes)
+            payload["processes"] = list(self.processes)
         if self.groups:
             payload["groups"] = list(self.groups)
         if self.timers:
@@ -240,6 +241,8 @@ class EventContext:
                 payload["event_state"] = self.event_state
         if self.delivery_attempts:
             payload["delivery_attempts"] = self.delivery_attempts
+        if self.params.links:
+            payload["links"] = list(self.params.links)
         return payload
 
     def id(self) -> str:

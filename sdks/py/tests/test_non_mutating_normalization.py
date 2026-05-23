@@ -34,7 +34,7 @@ def test_build_ingest_envelope_normalizes_copy_without_mutating_input_event() ->
     payload = _event_with_alias_only()
     original = deepcopy(payload)
 
-    envelope = build_ingest_envelope([payload], "loxa-py", "1.0.0", "checkout")
+    envelope = build_ingest_envelope([payload], "loxa-py", "0.0.1", "checkout")
     envelope_event = envelope["events"][0]
 
     assert payload == original

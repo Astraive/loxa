@@ -57,6 +57,12 @@
     "version": {
       "type": "string"
     },
+    "release": {
+      "type": "string"
+    },
+    "trace_flags": {
+      "type": "string"
+    },
     "environment": {
       "type": "string",
       "x-loxa-deprecated": "use deployment.environment",
@@ -110,18 +116,18 @@
     },
     "kind": {
       "type": "string",
-      "enum": ["event", "http", "job", "queue", "cli", "cron", "log", "checkpoint"]
+      "enum": ["event", "http", "job", "queue", "cli", "cron", "log", "checkpoint", "agent", "ai"]
     },
     "message": {
       "type": "string"
     },
     "level": {
       "type": "string",
-      "enum": ["debug", "info", "warn", "error", "fatal"]
+      "enum": ["debug", "info", "notice", "warn", "error", "fatal"]
     },
     "outcome": {
       "type": "string",
-      "enum": ["success", "error", "timeout", "cancelled", "rejected", "abandoned", "partial", "unknown"]
+      "enum": ["success", "error", "partial", "abandoned", "retried", "cancelled", "timeout", "skipped", "rejected", "quarantined", "unknown"]
     },
     "duration_ms": {
       "type": "integer",
@@ -142,6 +148,11 @@
         "finished",
         "emitting",
         "emitted",
+        "invalid",
+        "dropped",
+        "emit_failed",
+        "spooled",
+        "dlq_written",
         "failed_validation",
         "delivery_failed"
       ],
@@ -230,6 +241,21 @@
       },
       "additionalProperties": true
     },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string" },
+          "message": { "type": "string" },
+          "code": { "type": "string" },
+          "retriable": { "type": "boolean" },
+          "cause": { "type": "string" },
+          "stack": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
     "user": {
       "type": "object",
       "properties": {
@@ -296,6 +322,103 @@
       "additionalProperties": true
     },
     "attrs": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "at_ms"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "at_ms": { "type": "integer", "minimum": 0 },
+          "attrs": { "type": "object", "additionalProperties": true }
+        },
+        "additionalProperties": true
+      }
+    },
+    "processes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step", "name", "started_at_ms", "ended_at_ms", "duration_ms"],
+        "properties": {
+          "step": { "type": "integer", "minimum": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "started_at_ms": { "type": "integer", "minimum": 0 },
+          "ended_at_ms": { "type": "integer", "minimum": 0 },
+          "duration_ms": { "type": "integer", "minimum": 0 },
+          "status_code": { "type": "integer" },
+          "outcome": { "type": "string" },
+          "attrs": { "type": "object", "additionalProperties": true },
+          "error": { "type": "object", "additionalProperties": true }
+        },
+        "additionalProperties": true
+      }
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "started_at_ms", "ended_at_ms", "duration_ms"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "started_at_ms": { "type": "integer", "minimum": 0 },
+          "ended_at_ms": { "type": "integer", "minimum": 0 },
+          "duration_ms": { "type": "integer", "minimum": 0 },
+          "status_code": { "type": "integer" },
+          "outcome": { "type": "string" },
+          "attrs": { "type": "object", "additionalProperties": true },
+          "error": { "type": "object", "additionalProperties": true }
+        },
+        "additionalProperties": true
+      }
+    },
+    "timers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "duration_ms"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "duration_ms": { "type": "integer", "minimum": 0 },
+          "status_code": { "type": "integer" },
+          "attrs": { "type": "object", "additionalProperties": true }
+        },
+        "additionalProperties": true
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string" },
+          "target": { "type": "string" },
+          "attrs": { "type": "object", "additionalProperties": true }
+        },
+        "additionalProperties": true
+      }
+    },
+    "sdk": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "language": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "collector": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "sampling": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "redaction": {
       "type": "object",
       "additionalProperties": true
     }

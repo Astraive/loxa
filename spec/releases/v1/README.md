@@ -4,7 +4,7 @@ This folder contains the **immutable snapshot of Loxa v1**.
 
 ## Do Not Edit This Folder
 The v1 release is frozen. Any changes require:
-1. Explicit version bump (e.g., to v1.0.0)
+1. Explicit version bump (e.g., to v0.0.1)
 2. CHANGELOG entry documenting changes
 3. Full conformance test suite passing
 4. Explicit approval in the commit message

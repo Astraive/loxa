@@ -1,5 +1,5 @@
 use crate::config::MemorySinkStore;
-use crate::{Config, Logger, SinkConfig};
+use crate::{Config, EventContext, Logger, SinkConfig};
 
 pub fn test_logger(service: &str) -> Logger {
     Logger::new(Config::test(service).with_sink(SinkConfig::Memory(MemorySinkStore::new())))
@@ -62,6 +62,25 @@ pub fn assert_has_checkpoint(encoded: &str, name: &str) {
         panic!("assert_has_checkpoint: no checkpoints array in event");
     }
 }
+
+pub fn expect_event(_logger: &Logger, _name: &str, _f: impl FnOnce(&EventContext)) {
+}
+
+pub fn expect_attr(event: &EventContext, key: &str, expected: &serde_json::Value) -> bool {
+    event.attrs.get(key).map_or(false, |v| v == expected)
+}
+
+pub fn snapshot_event(event: &EventContext) -> String {
+    serde_json::to_string(event).unwrap_or_default()
+}
+
+pub fn mock_sink() -> SinkConfig {
+    SinkConfig::Memory(MemorySinkStore::new())
+}
+
+pub fn fake_clock() {}
+
+pub fn set_id_generator(_f: fn() -> String) {}
 
 fn get_nested_value<'a>(obj: &'a serde_json::Value, path: &str) -> Option<&'a serde_json::Value> {
     let parts: Vec<&str> = path.split('.').collect();

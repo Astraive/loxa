@@ -2,7 +2,7 @@
 
 LOXA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loxa-collector.
 
-**Status**: STABLE (v1.0.0) - Production-ready, full feature conformance
+**Status**: STABLE (v0.0.1) - Production-ready, full feature conformance
 
 ## Installation
 
@@ -244,7 +244,7 @@ loxa.info('server started');
 const logger = createLoxa({ service: 'checkout-api', collectorUrl: 'http://127.0.0.1:9090' });
 logger.info('custom instance ready');
 
-// Alias — same config, different service name
+// Alias -- same config, loxa.alias metadata
 const audit = loxa.alias('audit-service');
 audit.info('audit trail started');
 
@@ -277,7 +277,7 @@ import {
 } from 'loxa-js';
 
 const cfg = production('checkout')
-  .withVersion('1.0.0')
+  .withVersion('0.0.1')
   .withEnvironment('prod')
   .withSink(stdoutSink())
   .withSampler(sampleErrors())

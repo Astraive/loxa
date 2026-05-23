@@ -125,11 +125,12 @@ func (o DeliveryOutcome) FirstError() error {
 }
 
 type Result struct {
-	Accepted bool
-	Invalid  bool
-	Deduped  bool
-	Outcome  DeliveryOutcome
-	Err      error
+	Accepted   bool
+	Invalid    bool
+	Quarantined bool
+	Deduped    bool
+	Outcome    DeliveryOutcome
+	Err        error
 }
 
 type Processor struct {
@@ -258,7 +259,7 @@ func (p *Processor) Process(ctx context.Context, raw []byte) Result {
 			return Result{Invalid: true, Err: err}
 		case "quarantine":
 			p.writeQuarantine(raw, err)
-			return Result{Accepted: true, Invalid: true, Err: err} // Accepted by collector but quarantined
+			return Result{Accepted: true, Quarantined: true, Err: err}
 		}
 	}
 	if validated != nil {
@@ -306,7 +307,7 @@ func (p *Processor) Process(ctx context.Context, raw []byte) Result {
 
 func (p *Processor) validateSchema(raw []byte) ([]byte, error) {
 	mode := strings.ToLower(p.cfg.Schema.Mode)
-	if mode == "" || mode == "off" {
+	if mode == "" {
 		return raw, nil
 	}
 
@@ -319,6 +320,7 @@ func (p *Processor) validateSchema(raw []byte) ([]byte, error) {
 	sv, _ := data["schema_version"].(string)
 	ev, _ := data["event_version"].(string)
 
+	// Normalize: fill in missing version fields from config
 	if sv == "" && p.cfg.Schema.SchemaVersion != "" {
 		sv = p.cfg.Schema.SchemaVersion
 		data["schema_version"] = sv
@@ -344,11 +346,34 @@ func (p *Processor) validateSchema(raw []byte) ([]byte, error) {
 		if found {
 			for _, field := range entry.RequiredFields {
 				if _, ok := data[field]; !ok {
-					return raw, fmt.Errorf("schema validation: missing required field %q", field)
+					err := fmt.Errorf("schema validation: missing required field %q", field)
+					if mode == "off" || mode == "warn" {
+						if p.cfg.OnSchemaWarn != nil {
+							p.cfg.OnSchemaWarn(err)
+						} else {
+							fmt.Fprintf(os.Stderr, "[WARN] schema validation warning: %v\n", err)
+						}
+					}
+					if mode == "reject" || mode == "enforce" {
+						return raw, err
+					}
+					if mode == "quarantine" {
+						return raw, err
+					}
 				}
 			}
-		} else if mode == "reject" || mode == "enforce" || mode == "quarantine" {
-			return raw, fmt.Errorf("schema validation: unknown schema/event version combination (%s/%s)", sv, ev)
+		} else {
+			err := fmt.Errorf("schema validation: unknown schema/event version combination (%s/%s)", sv, ev)
+			if mode == "reject" || mode == "enforce" || mode == "quarantine" {
+				return raw, err
+			}
+			if mode == "warn" {
+				if p.cfg.OnSchemaWarn != nil {
+					p.cfg.OnSchemaWarn(err)
+				} else {
+					fmt.Fprintf(os.Stderr, "[WARN] schema validation warning: %v\n", err)
+				}
+			}
 		}
 	}
 

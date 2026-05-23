@@ -8,7 +8,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 VERSION="${1:-}"
 if [ -z "$VERSION" ]; then
     echo "Usage: $0 <version>"
-    echo "Example: $0 v1.0.0"
+    echo "Example: $0 v0.0.1"
     exit 1
 fi
 

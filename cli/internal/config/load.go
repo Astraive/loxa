@@ -17,6 +17,7 @@ type Config struct {
 	SpoolDir          string        `yaml:"spool_dir"`
 	SpoolFile         string        `yaml:"spool_file"`
 	DLQPath           string        `yaml:"dlq_path"`
+	ValidationMode    string        `yaml:"validation_mode"`
 	Cortex            *CortexConfig `yaml:"cortex,omitempty"`
 }
 
