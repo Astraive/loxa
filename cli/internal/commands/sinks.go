@@ -25,6 +25,11 @@ func SinksCommand(ctx context.Context, cfg config.Config, args []string) error {
 			return fmt.Errorf("usage: loxa sinks show <name>")
 		}
 		return sinksShow(ctx, cfg, args[0])
+	case "test":
+		if len(args) == 0 {
+			return fmt.Errorf("usage: loxa sinks test <name>")
+		}
+		return sinksTest(ctx, cfg, args[0])
 	default:
 		return fmt.Errorf("unknown sinks subcommand: %s", sub)
 	}
@@ -80,6 +85,32 @@ func sinksShow(ctx context.Context, cfg config.Config, name string) error {
 	output.PrintSection("Sink: " + name)
 	pairs := map[string]string{}
 	for k, v := range sink {
+		pairs[k] = fmt.Sprintf("%v", v)
+	}
+	output.PrintKeyValue(pairs)
+	return nil
+}
+
+func sinksTest(ctx context.Context, cfg config.Config, name string) error {
+	body, err := client.TestSink(ctx, cfg.CollectorURL, name)
+	if err != nil {
+		return fmt.Errorf("test sink %s: %w", name, err)
+	}
+
+	if output.ShouldOutputJSON(ctx) {
+		fmt.Println(string(body))
+		return nil
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(body, &result); err != nil {
+		fmt.Println(string(body))
+		return nil
+	}
+
+	output.PrintSection("Sink test: " + name)
+	pairs := map[string]string{}
+	for k, v := range result {
 		pairs[k] = fmt.Sprintf("%v", v)
 	}
 	output.PrintKeyValue(pairs)

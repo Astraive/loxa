@@ -25,7 +25,7 @@ func sampleEvent() map[string]any {
 		"duration_ms":  142,
 		"http": map[string]any{
 			"method": "POST",
-			"path":   "/api/v1/payments",
+			"path":   "/api/payments",
 			"status": 200,
 		},
 		"user": map[string]any{
@@ -153,7 +153,7 @@ func BenchmarkIngestParseSingleSmall(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		var evt map[string]any
-		json.Unmarshal(data, &evt)
+		_ = json.Unmarshal(data, &evt)
 	}
 }
 
@@ -170,6 +170,6 @@ func BenchmarkIngestParseLarge(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		var parsed map[string]any
-		json.Unmarshal(data, &parsed)
+		_ = json.Unmarshal(data, &parsed)
 	}
 }

@@ -10,8 +10,8 @@ lint:
 
 PROTO_DIR := proto
 PROTO_FILES := \
-	$(PROTO_DIR)/loxa/v1/event.proto \
-	$(PROTO_DIR)/loxa/v1/ingest.proto
+	$(PROTO_DIR)/loxa/core/event.proto \
+	$(PROTO_DIR)/loxa/core/ingest.proto
 
 generate:
 	@command -v protoc >/dev/null 2>&1 || (echo "protoc is required"; exit 1)

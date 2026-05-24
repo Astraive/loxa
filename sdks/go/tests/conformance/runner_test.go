@@ -47,8 +47,8 @@ func TestConformanceFixtures(t *testing.T) {
 			for k, v := range fx.Attrs {
 				attrs = append(attrs, loxa.String(k, v))
 			}
-			loxa.Enrich(ctx, attrs...)
-			loxa.Finish(ctx, fx.Outcome)
+			_ = loxa.Enrich(ctx, attrs...)
+			_ = loxa.Finish(ctx, fx.Outcome)
 			if err := loxa.Emit(ctx); err != nil {
 				t.Fatalf("emit: %v", err)
 			}

@@ -2,11 +2,11 @@
 
 ## Version Strategy
 
-All components share version 0.0.1. Individual component releases use tags:
-- `v0.0.1` -- full monorepo release
-- `collector-v0.0.1` -- collector-only release
-- `py-v0.0.1` -- Python SDK release (triggers PyPI publish)
-- `rs-v0.0.1` -- Rust SDK release (triggers crates.io publish)
+All components share version 0.0.2. Individual component releases use tags:
+- `v0.0.2` -- full monorepo release
+- `collector-v0.0.2` -- collector-only release
+- `py-v0.0.2` -- Python SDK release (triggers PyPI publish)
+- `rs-v0.0.2` -- Rust SDK release (triggers crates.io publish)
 
 ## Release Checklist
 

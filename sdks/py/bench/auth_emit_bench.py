@@ -100,7 +100,7 @@ def bench_emit_auth_attrs(iterations: int = 10000) -> BenchmarkResult:
         ctx = logger.start_event(loxa.Params(event="bench.auth.attrs"))
         logger.enrich(ctx,
             loxa.String("http.method", "POST"),
-            loxa.String("http.path", "/api/v1/payments"),
+            loxa.String("http.path", "/api/payments"),
             loxa.Int("http.status", 200),
             loxa.Float64("payment.amount", 99.99),
             loxa.Bool("payment.success", True),

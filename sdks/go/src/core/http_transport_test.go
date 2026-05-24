@@ -57,7 +57,7 @@ func TestNewHTTPTransport_CustomConfig(t *testing.T) {
 func TestHTTPTransport_SuccessfulRequest(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"success"}`))
+		_, _ = w.Write([]byte(`{"status":"success"}`))
 	}))
 	defer server.Close()
 
@@ -87,11 +87,11 @@ func TestHTTPTransport_RetryOn429(t *testing.T) {
 		if count < 3 {
 			w.Header().Set("Retry-After", "1")
 			w.WriteHeader(http.StatusTooManyRequests)
-			w.Write([]byte(`{"error":"rate limited"}`))
+			_, _ = w.Write([]byte(`{"error":"rate limited"}`))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"success"}`))
+		_, _ = w.Write([]byte(`{"status":"success"}`))
 	}))
 	defer server.Close()
 
@@ -129,11 +129,11 @@ func TestHTTPTransport_RetryOn503(t *testing.T) {
 		count := attempts.Add(1)
 		if count < 2 {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte(`{"error":"service unavailable"}`))
+			_, _ = w.Write([]byte(`{"error":"service unavailable"}`))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"success"}`))
+		_, _ = w.Write([]byte(`{"status":"success"}`))
 	}))
 	defer server.Close()
 
@@ -163,7 +163,7 @@ func TestHTTPTransport_ExhaustedRetries(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attempts.Add(1)
 		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte(`{"error":"rate limited"}`))
+		_, _ = w.Write([]byte(`{"error":"rate limited"}`))
 	}))
 	defer server.Close()
 
@@ -200,7 +200,7 @@ func TestHTTPTransport_NoRetryOn400(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attempts.Add(1)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	}))
 	defer server.Close()
 

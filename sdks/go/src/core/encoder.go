@@ -181,6 +181,9 @@ func (e *JSONEventEncoder) EncodeEvent(dst []byte, ev *Event) ([]byte, error) {
 		w.BeginArray()
 		for i := range ev.Checkpoints {
 			cp := &ev.Checkpoints[i]
+			if i > 0 {
+				w.AppendRaw([]byte{','})
+			}
 			w.BeginObject()
 			w.AppendStringField("name", cp.Name)
 			w.AppendInt64Field("at_ms", cp.AtMS)
@@ -196,6 +199,9 @@ func (e *JSONEventEncoder) EncodeEvent(dst []byte, ev *Event) ([]byte, error) {
 		w.BeginArray()
 		for i := range ev.Processes {
 			p := &ev.Processes[i]
+			if i > 0 {
+				w.AppendRaw([]byte{','})
+			}
 			w.BeginObject()
 			w.AppendInt64Field("step", int64(p.Step))
 			w.AppendStringField("name", p.Name)
@@ -217,6 +223,9 @@ func (e *JSONEventEncoder) EncodeEvent(dst []byte, ev *Event) ([]byte, error) {
 		w.BeginArray()
 		for i := range ev.Groups {
 			g := &ev.Groups[i]
+			if i > 0 {
+				w.AppendRaw([]byte{','})
+			}
 			w.BeginObject()
 			w.AppendStringField("name", g.Name)
 			if g.StatusCode != 0 {
@@ -237,6 +246,9 @@ func (e *JSONEventEncoder) EncodeEvent(dst []byte, ev *Event) ([]byte, error) {
 		w.BeginArray()
 		for i := range ev.Timers {
 			t := &ev.Timers[i]
+			if i > 0 {
+				w.AppendRaw([]byte{','})
+			}
 			w.BeginObject()
 			w.AppendStringField("name", t.Name)
 			w.AppendInt64Field("duration_ms", t.DurationMS)

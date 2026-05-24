@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	loxav1 "github.com/astraive/loxa/gen/go/loxa/v1"
+	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
 	"github.com/astraive/loxa/loxa-cortex/internal/config"
 	"github.com/astraive/loxa/loxa-cortex/internal/models"
 	"github.com/astraive/loxa/loxa-cortex/internal/redaction"

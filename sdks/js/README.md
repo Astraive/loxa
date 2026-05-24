@@ -277,7 +277,7 @@ import {
 } from 'loxa-js';
 
 const cfg = production('checkout')
-  .withVersion('0.0.1')
+  .withVersion('0.0.2')
   .withEnvironment('prod')
   .withSink(stdoutSink())
   .withSampler(sampleErrors())
@@ -303,7 +303,7 @@ import {
 const cfg = production('checkout').withSink(stdoutSink());
 const cfg2 = production('checkout').withSink(fileSink('/var/log/app.log'));
 const cfg3 = production('checkout').withSink(httpBatchSink({
-  endpoint: 'http://collector:9090/v1/events',
+  endpoint: 'http://collector:9090/events',
 }));
 
 // For testing

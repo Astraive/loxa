@@ -1,6 +1,6 @@
 use loxa::{
-    AnySampler, CollectorSink, Config, ContextCarrier, EventContext, HashString, Logger,
-    MarkSensitive, NotSampler, Params, SampleErrors, SampleRandom, SensitiveString, SinkConfig,
+    AnySampler, CollectorSink, Config, ContextCarrier, EventContext, HashString,
+    MarkSensitive, New, NotSampler, Params, SampleErrors, SampleRandom, SensitiveString, SinkConfig,
     StartEvent, TryNew,
 };
 
@@ -8,7 +8,7 @@ use loxa::{
 fn collector_sink_matches_local_collector_default() {
     match CollectorSink() {
         SinkConfig::HttpBatch { endpoint, .. } => {
-            assert_eq!(endpoint, "http://127.0.0.1:9090/v1/events");
+            assert_eq!(endpoint, "http://127.0.0.1:9090/events");
         }
         other => panic!("expected HTTP batch sink, got {other:?}"),
     }
@@ -64,12 +64,12 @@ fn sensitive_helpers_mark_attributes() {
 
 #[test]
 fn sampler_combinators_are_real() {
-    let allow_logger = Logger::new(
+    let allow_logger = New(
         Config::test("checkout").with_sampler(AnySampler(&[loxa::SampleNone(), SampleErrors()])),
     );
     let deny_logger =
-        Logger::new(Config::test("checkout").with_sampler(NotSampler(SampleErrors())));
-    let random_deny = Logger::new(
+        New(Config::test("checkout").with_sampler(NotSampler(SampleErrors())));
+    let random_deny = New(
         Config::test("checkout").with_sampler(AnySampler(&[loxa::SampleNone(), SampleRandom(0.0)])),
     );
 
@@ -95,7 +95,7 @@ fn try_new_rejects_invalid_config() {
 
 #[test]
 fn oversized_events_return_validation_error() {
-    let logger = Logger::try_new(Config::test("checkout")).expect("valid config");
+    let logger = TryNew(Config::test("checkout")).expect("valid config");
     let mut ctx = logger.start_event(Params::new("oversized"));
     logger.set(&mut ctx, "payload", "x".repeat(300_000));
     logger

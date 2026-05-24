@@ -12,8 +12,10 @@ export {
   ALLOWED_TOP_LEVEL_FIELDS,
   buildIngestEnvelope,
   normalizeEventAliases,
-  parseCollectorResponse,
+  normalizeEvent,
+  validateEvent,
   isCanonical,
+  parseCollectorResponse,
 } from './generated/spec-contract.ts';
 
 export type { CollectorAck, CollectorError, CollectorResponse } from './generated/spec-contract.ts';
@@ -43,6 +45,11 @@ export {
   OrderID, CartID, ProductID, CustomerID,
   Plan, Currency, Amount, Country, Device, Platform, AppVersion,
   ErrorType, ErrorCode, ErrorMessage, ErrorStack, Retryable,
+  // PascalCase generic attrs
+  List, MapAttr, Enum, ID, Hash, Redacted,
+  // PascalCase identity
+  AccountID, DeploymentID,
+  HttpRoute, HttpMethod, HttpPath, HttpUserAgent, HttpReferer, HttpRequest, HttpResponse,
   // PascalCase new domain helpers
   PaymentID, SubscriptionID, InvoiceID, JobID, MessageID, CorrelationID,
   CommitSha, Release,
@@ -58,7 +65,7 @@ export {
   RagIndex, RagEmbeddingModel, RagChunksRetrieved, RagTopScore, RagQueryHash,
   RagCitationCount, RagRetrievalLatency,
   // camelCase aliases (primary v1 API)
-  string, int, int64, uint64, float64, float, bool, null_ as nullAttr, any, group, time, duration,
+  string, int, int64, uint64, float64, float, bool, null_ as nullAttr, any, json, group, time, duration,
   sensitiveString, hashString, markSensitive,
   userId, tenantId, workspaceId, organizationId, sessionId,
   requestId, traceId, spanId, incidentId,
@@ -66,12 +73,17 @@ export {
   orderId, cartId, productId, customerId,
   plan, currency, amount, country, device, platform, appVersion,
   errorType, errorCode, errorMessage, errorStack, retryable,
+  // camelCase generic attrs
+  list, mapAttr, map, enum_, enum_ as enum, id, hash, redacted,
+  // camelCase identity
+  accountId, deploymentId,
+  httpRoute, httpMethod, httpPath, httpUserAgent, httpReferer, httpRequest, httpResponse,
   // camelCase new domain helpers
   paymentId, subscriptionId, invoiceId, jobId, messageId, correlationId,
   commitSha, release,
-  money, percent, bytes, httpStatus, statusCodeFn, errorCodeExt,
+  money, percent, bytes, httpStatus, statusCode, statusCodeFn, errorCodeExt,
   bucket, tags, masked, url, emailHash, ipHash,
-  regionEx,
+  regionEx, region,
   // camelCase domain packs
   checkoutCartItemCount, checkoutCartTotal, checkoutPaymentMethod, checkoutStatus,
   paymentProvider, paymentMethod, paymentIntentId, paymentFailureCode, paymentRetryAttempt,
@@ -96,15 +108,12 @@ export type { ProcessEntry, GroupEntry, TimerEntry } from './core/timing.ts';
 
 // --- EventView ---
 export { EventView } from './core/event-view.ts';
+export { sanitizeEvent } from './core/sanitize.ts';
 
 // --- Level ---
 export { LevelDebug, LevelInfo, LevelNotice, LevelWarn, LevelError, LevelFatal, parseLevel, levelName } from './core/level.ts';
 export type { Level } from './core/level.ts';
 
-// --- Logger ---
-export { Logger, New, TryNew, Default, Configure, getDefault, reset } from './core/logger.ts';
-export type { Logger as LoggerType } from './core/logger.ts';
-export { bindEvent, wrap } from './core/logger.ts';
 
 // --- Config + Builder ---
 export {
@@ -131,16 +140,20 @@ export {
   StdoutSink, StderrSink, FileSink, RotatingFileSink, NoopSink, MemorySink, HTTPBatchSink, CollectorSink,
   MultiSink, OtlpSink,
   stdoutSink, stderrSink, fileSink, rotatingFileSink, noopSink, memorySink, httpBatchSink, collectorSink,
-  multiSink, otlpSink,
+  multiSink, otlpSink, httpSink, kafkaSink,
+  drain as sinkDrain, pause as sinkPause, resume as sinkResume,
+  queueSize as sinkQueueSize,
+  health as sinkHealth,
 } from './sinks/standard-sinks.ts';
 export type { StatsHandler, DeliveryFailureHandler, HTTPBatchSinkOptions } from './sinks/standard-sinks.ts';
 
 // --- Redactor ---
 export {
-  defaultRedactor, redactKeys, dropKeys, maskKeys, composeRedactors, redactPatterns,
+  defaultRedactor, redactKeys, redact, dropKeys, maskKeys, composeRedactors, redactPatterns,
   hashKeys,
   defaultRedactor as DefaultRedactor,
   redactKeys as RedactKeys,
+  redact as Redact,
   hashKeys as HashKeys,
   dropKeys as DropKeys,
   maskKeys as MaskKeys,
@@ -151,33 +164,27 @@ export type { Redactor } from './redaction/redactor.ts';
 
 // --- Sampler ---
 export {
-  sampleAll, sampleNone, sampleRandom, sampleErrors,
+  sampleAll, sampleNone, sampleRandom, sampleRate, sampleErrors,
   sampleSlowRequests, sampleStatusCodes, sampleRoutes,
-  sampleUsers, sampleTenants, sampleFeatureFlag,
-  anySampler, allSampler, notSampler,
-  sampleRateLimited, sampleByHeader,
-  sampleByEvent, sampleByOutcome,
-  allowFields, blockFields,
-  sampleAll as SampleAll,
-  sampleNone as SampleNone,
-  sampleRandom as SampleRandom,
-  sampleErrors as SampleErrors,
-  sampleSlowRequests as SampleSlowRequests,
-  sampleStatusCodes as SampleStatusCodes,
-  sampleRoutes as SampleRoutes,
-  sampleUsers as SampleUsers,
-  sampleTenants as SampleTenants,
-  sampleFeatureFlag as SampleFeatureFlag,
-  sampleByHeader as SampleByHeader,
-  sampleByEvent as SampleByEvent,
-  sampleByOutcome as SampleByOutcome,
-  allowFields as AllowFields,
-  blockFields as BlockFields,
-  anySampler as AnySampler,
-  allSampler as AllSampler,
-  notSampler as NotSampler,
+  sampleUsers, sampleTenants, sampleFeatureFlag, sampleByHeader,
+  anySampler, allSampler, notSampler, sampleRateLimited,
+  sampleByEvent, sampleByOutcome, shouldSample, allowFields, blockFields,
+  maxAttrLength, maxEventBytes, maxAttrs, cardinalityPolicy,
+  sampleAll as SampleAll, sampleNone as SampleNone, sampleRandom as SampleRandom,
+  sampleRate as SampleRate,
+  sampleErrors as SampleErrors, sampleSlowRequests as SampleSlowRequests,
+  sampleStatusCodes as SampleStatusCodes, sampleRoutes as SampleRoutes,
+  sampleUsers as SampleUsers, sampleTenants as SampleTenants,
+  sampleFeatureFlag as SampleFeatureFlag, sampleByHeader as SampleByHeader,
+  anySampler as AnySampler, allSampler as AllSampler, notSampler as NotSampler,
+  sampleRateLimited as SampleRateLimited,
+  sampleByEvent as SampleByEvent, sampleByOutcome as SampleByOutcome,
+  shouldSample as ShouldSample,
+  allowFields as AllowFields, blockFields as BlockFields,
+  maxAttrLength as MaxAttrLength, maxEventBytes as MaxEventBytes,
+  maxAttrs as MaxAttrs, cardinalityPolicy as CardinalityPolicy,
 } from './sampling/sampler.ts';
-export type { Sampler, ShouldSample } from './sampling/sampler.ts';
+export type { Sampler } from './sampling/sampler.ts';
 
 // --- Schema ---
 export { DefaultSchema, FlatSchema, NestedSchema, OTelLogSchema, OTelSchema, ECSchema, DatadogSchema, CustomSchema } from './core/schema.ts';
@@ -205,21 +212,28 @@ export { SecurityLimiter } from './config/security.ts';
 export type { SecurityConfig as SecurityLimiterConfig } from './config/security.ts';
 
 // --- Testkit ---
-export { testLogger, capture, assertEvent, assertAttr, expectEvent, expectAttr, assertRedacted, assertHasCheckpoint, snapshotEvent, MockSink, FakeClock, setIdGenerator } from './testkit/helpers.ts';
+export {
+  testkit, testLogger, capture, events, lastEvent, clearEvents,
+  assertEvent, assertAttr, expectEvent, expectAttr, assertRedacted,
+  assertHasCheckpoint, snapshotEvent, goldenTest, conformanceSuite,
+  MockSink, FakeClock, setClock, setIdGenerator, resetForTest,
+} from './testkit/helpers.ts';
 export type { TestLoggerResult } from './testkit/helpers.ts';
 
 // --- Default facade (loxa.*) ---
 export {
   loxa,
-  Loxa,
   defaultLogger,
   configure,
   createLoxa,
   alias,
   startEvent, startHttpEvent, startJobEvent, startQueueEvent, startCliEvent, startCronEvent,
   append, enrich, set, merge, del, get, getGroup,
-  checkpoint, process, startTimer, startGroup, finish, finishError, emit, runEvent,
-  flush, shutdown,
+  checkpoint, process, startProcess, finishProcess, finishProcessError,
+  startGroup, finishGroup, finishGroupError,
+  timer, startTimer, stopTimer,
+  finish, finishError, emit, runEvent, run, fromRequest,
+  flush, shutdown, drain, pause, resume, queueSize, health,
   debug, info, warn, error, fatal,
   notice,
   event, track, audit, security, metric, count, gauge, histogram, breadcrumb,
@@ -240,14 +254,28 @@ export {
   getGroup as GetGroup,
   checkpoint as Checkpoint,
   process as Process,
+  startProcess as StartProcess,
+  finishProcess as FinishProcess,
+  finishProcessError as FinishProcessError,
   startTimer as StartTimer,
+  timer as Timer,
+  stopTimer as StopTimer,
   startGroup as StartGroup,
+  finishGroup as FinishGroup,
+  finishGroupError as FinishGroupError,
   finish as Finish,
   finishError as FinishError,
   emit as Emit,
   emit as EmitEvent,
   flush as Flush,
   shutdown as Shutdown,
+  drain as Drain,
+  pause as Pause,
+  resume as Resume,
+  queueSize as QueueSize,
+  health as Health,
+  fromRequest as FromRequest,
+  run as Run,
   debug as Debug,
   info as Info,
   notice as Notice,
@@ -271,6 +299,11 @@ export {
   cloneEvent as CloneEvent,
   linkEvent as LinkEvent,
   currentEvent as CurrentEvent,
+  configure as Configure,
   createLoxa as CreateLoxa,
   alias as Alias,
 } from './loxa.ts';
+
+// Factory functions — these don't expose the Logger type name directly.
+export { reset } from './loxa.ts';
+export { New, TryNew, Default } from './core/logger.ts';

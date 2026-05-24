@@ -229,6 +229,20 @@ func (l *Logger) StartEvent(ctx context.Context, params Params) context.Context 
 	return storeEvent(ctx, ev)
 }
 
+// Event emits a simple success event with optional attrs.
+func (l *Logger) Event(ctx context.Context, name string, attrs ...Attr) error {
+	evCtx := l.StartEvent(ctx, Params{Event: name})
+	if len(attrs) > 0 {
+		if err := l.Enrich(evCtx, attrs...); err != nil {
+			return err
+		}
+	}
+	if err := l.Finish(evCtx, "success"); err != nil {
+		return err
+	}
+	return l.Emit(evCtx)
+}
+
 // Enrich appends attrs to the canonical event in ctx.
 func (l *Logger) Enrich(ctx context.Context, attrs ...Attr) error {
 	ev := loadEvent(ctx)
@@ -402,6 +416,27 @@ func (l *Logger) Process(ctx context.Context, name string, attrs ...Attr) (*Proc
 	return ev.StartProcess(name, attrs...)
 }
 
+// StartProcess is an alias for Process.
+func (l *Logger) StartProcess(ctx context.Context, name string, attrs ...Attr) (*ProcessHandle, error) {
+	return l.Process(ctx, name, attrs...)
+}
+
+// FinishProcess completes a process handle.
+func (l *Logger) FinishProcess(h *ProcessHandle, attrs ...Attr) error {
+	if h == nil {
+		return nil
+	}
+	return h.Finish(attrs...)
+}
+
+// FinishProcessError completes a process handle with error metadata.
+func (l *Logger) FinishProcessError(h *ProcessHandle, err error, statusCode int, attrs ...Attr) error {
+	if h == nil {
+		return nil
+	}
+	return h.FinishError(err, statusCode, attrs...)
+}
+
 // StartTimer starts a named timer and returns a handle to stop it.
 func (l *Logger) StartTimer(ctx context.Context, name string, attrs ...Attr) (*TimerHandle, error) {
 	ev := loadEvent(ctx)
@@ -411,6 +446,19 @@ func (l *Logger) StartTimer(ctx context.Context, name string, attrs ...Attr) (*T
 	return ev.StartTimer(name, attrs...)
 }
 
+// Timer is an alias for StartTimer.
+func (l *Logger) Timer(ctx context.Context, name string, attrs ...Attr) (*TimerHandle, error) {
+	return l.StartTimer(ctx, name, attrs...)
+}
+
+// StopTimer completes a timer handle.
+func (l *Logger) StopTimer(h *TimerHandle, attrs ...Attr) error {
+	if h == nil {
+		return nil
+	}
+	return h.Stop(attrs...)
+}
+
 // StartGroup starts a named group phase and returns a handle to finish it.
 func (l *Logger) StartGroup(ctx context.Context, name string, attrs ...Attr) (*GroupHandle, error) {
 	ev := loadEvent(ctx)
@@ -418,6 +466,22 @@ func (l *Logger) StartGroup(ctx context.Context, name string, attrs ...Attr) (*G
 		return nil, nil
 	}
 	return ev.StartGroup(name, attrs...)
+}
+
+// FinishGroup completes a group handle.
+func (l *Logger) FinishGroup(h *GroupHandle, attrs ...Attr) error {
+	if h == nil {
+		return nil
+	}
+	return h.Finish(attrs...)
+}
+
+// FinishGroupError completes a group handle with error metadata.
+func (l *Logger) FinishGroupError(h *GroupHandle, err error, attrs ...Attr) error {
+	if h == nil {
+		return nil
+	}
+	return FinishGroupError(h, err, attrs...)
 }
 
 // Emit encodes and delivers the canonical event in ctx to all sinks.
@@ -775,7 +839,9 @@ func (l *Logger) logImmediate(ctx context.Context, level Level, msg, eventName s
 		ev.SetError(cfg.ErrorExtractor(err))
 		ev.SetOutcome("error")
 	}
-	ev.AddAttrs(attrs)
+	if addErr := ev.AddAttrs(attrs); addErr != nil {
+		fmt.Fprintf(os.Stderr, "[loxa] add attrs error: %v\n", addErr)
+	}
 	if emitErr := l.EmitEventWithContext(ctx, ev); emitErr != nil {
 		fmt.Fprintf(os.Stderr, "[loxa] emit error: %v\n", emitErr)
 	}

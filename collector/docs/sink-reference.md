@@ -184,7 +184,7 @@ Log aggregation system for log search and dashboard integration.
 sinks:
   - name: logs
     type: loki
-    url: "http://localhost:3100/loki/api/v1/push"
+    url: "http://localhost:3100/loki/api/core/push"
     tenant_id: loxa
     labels:
       source: loxa-collector
@@ -193,7 +193,7 @@ sinks:
 **Behavior Notes**
 
 - Events are converted to Loki log entries with labels extracted from event fields.
-- Pushes use the `/loki/api/v1/push` endpoint.
+- Pushes use the `/loki/api/core/push` endpoint.
 - Retries are handled at the batch level.
 
 ---

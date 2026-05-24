@@ -19,7 +19,7 @@ func TestEmitEnforcesMaxAttrCountWithTruncatedMarker(t *testing.T) {
 	}
 
 	ctx := l.StartEvent(context.Background(), Params{Event: "security.max_attr_count"})
-	l.Finish(ctx, "success",
+	_ = l.Finish(ctx, "success",
 		String("first", "one"),
 		String("second", "two"),
 		String("third", "three"),
@@ -57,7 +57,7 @@ func TestEmitTruncatesStringFieldsAtMaxFieldBytes(t *testing.T) {
 	}
 
 	ctx := l.StartEvent(context.Background(), Params{Event: "security.max_field_bytes"})
-	l.Finish(ctx, "success",
+	_ = l.Finish(ctx, "success",
 		String("top", "abcdefgh"),
 		Group("meta", String("note", "wxyz1234"), Int("count", 7)),
 	)
@@ -101,7 +101,7 @@ func TestEmitDropsOversizedEventWhenConfigured(t *testing.T) {
 	}
 
 	ctx := l.StartEvent(context.Background(), Params{Event: "security.oversized_event"})
-	l.Finish(ctx, "success", String("payload", "this guarantees the encoded event is oversized"))
+	_ = l.Finish(ctx, "success", String("payload", "this guarantees the encoded event is oversized"))
 	if err := l.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}

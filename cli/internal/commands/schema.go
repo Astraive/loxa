@@ -49,9 +49,9 @@ func SchemaCommand(cfg config.Config, args []string) error {
 		fmt.Println(string(body))
 		return nil
 	case "diff":
-		return runSchemaMutation(context.Background(), cfg, "/v1/schema/diff", args[1:])
+		return runSchemaMutation(context.Background(), cfg, "/schema/diff", args[1:])
 	case "publish":
-		return runSchemaMutation(context.Background(), cfg, "/v1/schema/publish", args[1:])
+		return runSchemaMutation(context.Background(), cfg, "/schema/publish", args[1:])
 	case "blueprint":
 		return runBlueprintCommand(context.Background(), cfg, args[1:])
 	default:
@@ -157,9 +157,9 @@ func runSchemaMutation(ctx context.Context, cfg config.Config, path string, args
 
 	var body []byte
 	switch path {
-	case "/v1/schema/diff":
+	case "/schema/diff":
 		body, err = client.DiffSchema(ctx, cfg.CollectorURL, payload)
-	case "/v1/schema/publish":
+	case "/schema/publish":
 		body, err = client.PublishSchema(ctx, cfg.CollectorURL, payload)
 	default:
 		return fmt.Errorf("unsupported schema operation")

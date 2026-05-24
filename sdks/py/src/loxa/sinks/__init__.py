@@ -78,8 +78,23 @@ def health(sink: Any) -> bool:
     return True
 
 
-def otlp_sink(endpoint: str = "", **kwargs: Any) -> NoopSink:
-    return NoopSink()
+def otlp_sink(endpoint: str = "", **kwargs: Any) -> HTTPBatchSink:
+    return HTTPBatchSink(
+        endpoint=endpoint or "http://127.0.0.1:9090/events",
+        **kwargs,
+    )
+
+
+def kafka_sink(endpoint: str = "", topic: str = "", **kwargs: Any) -> HTTPBatchSink:
+    """Send events to the collector with Kafka routing metadata.
+
+    The collector must have a Kafka sink configured to handle these events.
+    """
+    return HTTPBatchSink(
+        endpoint=endpoint or "http://127.0.0.1:9090/events",
+        service=topic or kwargs.pop("service", ""),
+        **kwargs,
+    )
 
 
 # PascalCase aliases
@@ -90,6 +105,7 @@ Resume = resume
 QueueSize = queue_size
 Health = health
 OTLPSink = otlp_sink
+KafkaSink = kafka_sink
 
 __all__ = [
     "FileSink", "HTTPBatchSink", "MemorySink", "NoopSink", "StdoutSink",
@@ -97,4 +113,5 @@ __all__ = [
     "drain", "Drain", "pause", "Pause", "resume", "Resume",
     "queue_size", "QueueSize", "health", "Health",
     "otlp_sink", "OTLPSink",
+    "kafka_sink", "KafkaSink",
 ]

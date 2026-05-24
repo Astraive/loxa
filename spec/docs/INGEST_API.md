@@ -2,15 +2,15 @@
 
 Collector endpoints:
 
-- `POST /v1/events`
-- `POST /v1/events/batch`
-- `POST /v1/events/ndjson`
+- `POST /events`
+- `POST /events/batch`
+- `POST /events/ndjson`
 - `POST /ingest`
 - `POST /query`
-- `POST /v1/query`
-- `GET /v1/status`
-- `GET /v1/sinks`
-- `GET /v1/dlq`
+- `POST /query`
+- `GET /status`
+- `GET /sinks`
+- `GET /dlq`
 - `GET /healthz`
 - `GET /health`
 - `GET /readyz`

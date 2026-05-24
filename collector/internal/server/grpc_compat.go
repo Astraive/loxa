@@ -1,6 +1,6 @@
 package server
 
-import loxav1 "github.com/astraive/loxa/gen/go/loxa/v1"
+import loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
 
 type CollectorStatusRequest = loxav1.CollectorStatusRequest
 type CollectorStatusResponse = loxav1.CollectorStatusResponse

@@ -1,6 +1,6 @@
 use loxa::{
     ComposeRedactors, Config, ContextCarrier, ContextSource, HTTPClient, HTTPRequest,
-    InjectHTTPHeadersFromCarrier, Logger, Params, RedactKeys, SampleErrors, SampleNone,
+    InjectHTTPHeadersFromCarrier, New, Params, RedactKeys, SampleErrors, SampleNone,
     SchemaConfig, String as LoxaString,
 };
 use serde_json::Value;
@@ -15,7 +15,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 #[test]
 fn flat_schema_and_redaction_are_real() {
-    let logger = Logger::new(
+    let logger = New(
         Config::test("checkout")
             .with_schema(SchemaConfig::Flat)
             .with_redactor(RedactKeys(&["password"])),
@@ -33,7 +33,7 @@ fn flat_schema_and_redaction_are_real() {
 
 #[test]
 fn sampler_can_drop_event() {
-    let logger = Logger::new(Config::test("checkout").with_sampler(SampleNone()));
+    let logger = New(Config::test("checkout").with_sampler(SampleNone()));
     let mut ctx = logger.start_event(Params::new("dropped"));
     let _ = logger.finish(&mut ctx, "success");
 
@@ -42,7 +42,7 @@ fn sampler_can_drop_event() {
 
 #[test]
 fn error_sampler_keeps_failed_events() {
-    let logger = Logger::new(Config::test("checkout").with_sampler(SampleErrors()));
+    let logger = New(Config::test("checkout").with_sampler(SampleErrors()));
     let mut ctx = logger.start_event(Params::new("failed"));
     let _ = logger.finish_error(&mut ctx, "boom");
 
@@ -54,7 +54,7 @@ fn error_sampler_keeps_failed_events() {
 
 #[test]
 fn checkpoints_are_encoded() {
-    let logger = Logger::new(Config::test("checkout"));
+    let logger = New(Config::test("checkout"));
     let mut ctx = logger.start_event(Params::new("checkpointed"));
     loxa::CheckpointWithAttrs(&mut ctx, "db_started", &[loxa::String("phase", "db")]);
     let _ = logger.finish(&mut ctx, "success");
@@ -68,7 +68,7 @@ fn checkpoints_are_encoded() {
 #[test]
 fn composite_redactors_are_real() {
     let redactor = ComposeRedactors(&[RedactKeys(&["token"]), RedactKeys(&["password"])]);
-    let logger = Logger::new(Config::test("checkout").with_redactor(redactor));
+    let logger = New(Config::test("checkout").with_redactor(redactor));
     let mut ctx = logger.start_event(Params::new("redaction.compose"));
     logger.append(&mut ctx, LoxaString("message", "hello world"));
     logger.append(&mut ctx, LoxaString("token", "abc123"));
@@ -84,7 +84,7 @@ fn composite_redactors_are_real() {
 
 #[test]
 fn duplicate_policy_keep_both_preserves_values() {
-    let logger = Logger::new(Config::test("checkout").with_duplicate_policy(loxa::KeepBoth));
+    let logger = New(Config::test("checkout").with_duplicate_policy(loxa::KeepBoth));
     let mut ctx = logger.start_event(Params::new("duplicate.keep_both"));
     logger.append(&mut ctx, LoxaString("tag", "first"));
     logger.append(&mut ctx, LoxaString("tag", "second"));
@@ -99,7 +99,7 @@ fn duplicate_policy_keep_both_preserves_values() {
 #[test]
 fn duplicate_policy_error_on_duplicate_fails_emit() {
     let logger =
-        Logger::new(Config::test("checkout").with_duplicate_policy(loxa::ErrorOnDuplicate));
+        New(Config::test("checkout").with_duplicate_policy(loxa::ErrorOnDuplicate));
     let mut ctx = logger.start_event(Params::new("duplicate.error"));
     logger.append(&mut ctx, LoxaString("tag", "first"));
     logger.append(&mut ctx, LoxaString("tag", "second"));
@@ -111,18 +111,18 @@ fn duplicate_policy_error_on_duplicate_fails_emit() {
 
 #[test]
 fn collector_endpoint_installs_default_http_sink() {
-    let logger = Logger::new(
-        Config::test("checkout").with_collector_endpoint("http://127.0.0.1:9090/v1/events"),
+    let logger = New(
+        Config::test("checkout").with_collector_endpoint("http://127.0.0.1:9090/events"),
     );
     let debug = format!("{logger:?}");
 
     assert!(debug.contains("HttpBatch"));
-    assert!(debug.contains("http://127.0.0.1:9090/v1/events"));
+    assert!(debug.contains("http://127.0.0.1:9090/events"));
 }
 
 #[test]
 fn config_defaults_flow_into_payload() {
-    let logger = Logger::new(
+    let logger = New(
         Config::test("checkout")
             .with_version("1.2.3")
             .with_environment("staging")
@@ -142,7 +142,7 @@ fn config_defaults_flow_into_payload() {
 #[test]
 fn async_logger_flushes_buffered_events() {
     let path = temp_file("loxa-rs-async.ndjson");
-    let logger = Logger::new(
+    let logger = New(
         Config::test("checkout")
             .with_async(true)
             .with_sink(loxa::FileSink(path.to_str().expect("temp path"))),
@@ -205,7 +205,7 @@ fn http_client_injects_headers_and_records_checkpoints() {
             .expect("write response");
     });
 
-    let logger = Logger::new(Config::test("checkout"));
+    let logger = New(Config::test("checkout"));
     let carrier = ContextCarrier::new()
         .with_request_id("req_123")
         .with_trace_id("0af7651916cd43dd8448eb211c80319c")

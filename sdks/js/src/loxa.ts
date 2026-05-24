@@ -14,7 +14,7 @@
  *   logger.info("started");
  */
 
-import { reset, Logger } from './core/logger.ts';
+import { reset, Logger, fromRequest } from './core/logger.ts';
 import type { Config } from './config/config.ts';
 import type { Event, Params, Attr } from './core/event.ts';
 import type { ProcessHandle, TimerHandle, GroupHandle } from './core/timing.ts';
@@ -59,8 +59,16 @@ export function getGroup(ctx: Event, prefix: string): Record<string, any> { retu
 
 export function checkpoint(ctx: Event, name: string, attrs?: Record<string, any>): void { loxa.checkpoint(ctx, name, attrs); }
 export function process(ctx: Event, name: string, ...attrs: Attr[]): ProcessHandle { return ctx.startProcess(name, ...attrs); }
+export function startProcess(ctx: Event, name: string, ...attrs: Attr[]): ProcessHandle { return process(ctx, name, ...attrs); }
+export function finishProcess(handle: ProcessHandle, ...attrs: Attr[]): void { handle.finish(...attrs); }
+export function finishProcessError(handle: ProcessHandle, err: unknown, ...attrs: Attr[]): void { handle.finishError(err, ...attrs); }
+export function group(ctx: Event, name: string, ...attrs: Attr[]): GroupHandle { return ctx.startGroup(name, ...attrs); }
 export function startTimer(ctx: Event, name: string, ...attrs: Attr[]): TimerHandle { return ctx.startTimer(name, ...attrs); }
+export function timer(ctx: Event, name: string, ...attrs: Attr[]): TimerHandle { return startTimer(ctx, name, ...attrs); }
+export function stopTimer(handle: TimerHandle, ...attrs: Attr[]): void { handle.stop(...attrs); }
 export function startGroup(ctx: Event, name: string, ...attrs: Attr[]): GroupHandle { return ctx.startGroup(name, ...attrs); }
+export function finishGroup(handle: GroupHandle, ...attrs: Attr[]): void { handle.finish(...attrs); }
+export function finishGroupError(handle: GroupHandle, err: unknown, ...attrs: Attr[]): void { handle.finishError(err, ...attrs); }
 export { stopwatch, ProcessHandle, TimerHandle, GroupHandle, StopwatchHandle } from './core/timing.ts';
 export function finish(ctx: Event, outcome: string, ...attrs: Attr[]): void { loxa.finish(ctx, outcome, ...attrs); }
 export function finishError(ctx: Event, err: unknown, ...attrs: Attr[]): void { loxa.finishError(ctx, err, ...attrs); }
@@ -68,11 +76,20 @@ export async function emit(ctx: Event): Promise<string | null> { return loxa.emi
 export async function runEvent(params: Params, fn: (ctx: Event) => void | Promise<void>, finishAttrs?: Attr[]): Promise<string | null> {
   return loxa.runEvent(params, fn, finishAttrs);
 }
+export async function run(ctx: Event, fn: (ctx: Event) => void | Promise<void>, finishAttrs?: Attr[]): Promise<string | null> {
+  return loxa.run(ctx, fn, finishAttrs);
+}
+export { fromRequest } from './core/logger.ts';
 
 // --- Lifecycle management ---
 
 export async function flush(): Promise<void> { return loxa.flush(); }
 export async function shutdown(): Promise<void> { return loxa.shutdown(); }
+export async function drain(): Promise<void> { return loxa.drain(); }
+export function pause(): void { loxa.pause(); }
+export function resume(): void { loxa.resume(); }
+export function queueSize(): number { return loxa.queueSize(); }
+export function health(): boolean | Promise<boolean> { return loxa.health(); }
 
 // --- Immediate log helpers ---
 
@@ -109,18 +126,20 @@ export function cloneEvent(ctx: Event): Event { return loxa.cloneEvent(ctx); }
 export function linkEvent(ctx: Event, target: string, ...attrs: Attr[]): Event { return loxa.linkEvent(ctx, target, ...attrs); }
 export function currentEvent(): Event | undefined { return loxa.currentEvent(); }
 
+// --- Sanitize ---
+export { sanitizeEvent } from './core/sanitize.ts';
+
 // --- Testkit ---
-export { testLogger, capture, assertEvent, assertAttr, assertRedacted, assertHasCheckpoint, expectEvent, expectAttr, snapshotEvent, MockSink, FakeClock, setIdGenerator } from './testkit/helpers.ts';
+export {
+  testkit, testLogger, capture, events, lastEvent, clearEvents,
+  assertEvent, assertAttr, assertRedacted, assertHasCheckpoint, expectEvent,
+  expectAttr, snapshotEvent, goldenTest, conformanceSuite, MockSink,
+  FakeClock, setClock, setIdGenerator, resetForTest,
+} from './testkit/helpers.ts';
 export type { TestLoggerResult } from './testkit/helpers.ts';
 
 // --- SecurityLimiter ---
 export { SecurityLimiter } from './config/security.ts';
 export type { SecurityConfig as SecurityLimiterConfig } from './config/security.ts';
 
-// --- Loxa class for named export parity ---
-
-export class Loxa extends Logger {
-  constructor(cfg?: Partial<import('./config/config.ts').Config>) {
-    super(cfg);
-  }
-}
+// Loxa class is intentionally not exported. Use createLoxa() or alias() instead.

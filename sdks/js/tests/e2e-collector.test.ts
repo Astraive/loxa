@@ -1,8 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { Logger, HTTPBatchSink, MemorySink, CollectorClient, String as AttrString, Int as AttrInt } from '../src/index.ts';
+import { createLoxa, HTTPBatchSink, MemorySink, CollectorClient, String as AttrString, Int as AttrInt } from '../src/index.ts';
 
-const COLLECTOR_URL = 'http://127.0.0.1:9090';
+const COLLECTOR_URL = process.env.LOXA_TEST_COLLECTOR_URL ?? 'http://127.0.0.1:9090';
 
 describe('E2E: loxa-js → loxa-collector', () => {
   it('collector health check', async () => {
@@ -49,7 +49,7 @@ describe('E2E: loxa-js → loxa-collector', () => {
   it('HTTPBatchSink delivers events end-to-end', async () => {
     const acks: any[] = [];
     const sink = new HTTPBatchSink({
-      endpoint: `${COLLECTOR_URL}/v1/events`,
+      endpoint: `${COLLECTOR_URL}/events`,
       batchSize: 1,        // flush immediately
       flushIntervalMs: 100,
       retries: 2,
@@ -60,7 +60,7 @@ describe('E2E: loxa-js → loxa-collector', () => {
       },
     });
 
-    const loxa = new Logger({
+    const loxa = createLoxa({
       service: 'loxa-js-e2e',
       sink,
     });
@@ -97,13 +97,13 @@ describe('E2E: loxa-js → loxa-collector', () => {
 
   it('HTTPBatchSink handles gzip compression', async () => {
     const sink = new HTTPBatchSink({
-      endpoint: `${COLLECTOR_URL}/v1/events`,
+      endpoint: `${COLLECTOR_URL}/events`,
       enableCompression: true,
       batchSize: 1,
       flushIntervalMs: 100,
     });
 
-    const loxa = new Logger({ service: 'loxa-js-e2e-gzip', sink });
+    const loxa = createLoxa({ service: 'loxa-js-e2e-gzip', sink });
     const ctx = loxa.startEvent({ event: 'e2e.gzip' });
     loxa.finish(ctx, 'success');
     await loxa.emit(ctx);
@@ -118,13 +118,13 @@ describe('E2E: loxa-js → loxa-collector', () => {
 
   it('HTTPBatchSink handles NDJSON mode', async () => {
     const sink = new HTTPBatchSink({
-      endpoint: `${COLLECTOR_URL}/v1/events`,
+      endpoint: `${COLLECTOR_URL}/events`,
       ndjson: true,
       batchSize: 1,
       flushIntervalMs: 100,
     });
 
-    const loxa = new Logger({ service: 'loxa-js-e2e-ndjson', sink });
+    const loxa = createLoxa({ service: 'loxa-js-e2e-ndjson', sink });
     const ctx = loxa.startEvent({ event: 'e2e.ndjson' });
     loxa.finish(ctx, 'success');
     await loxa.emit(ctx);
@@ -140,7 +140,7 @@ describe('E2E: loxa-js → loxa-collector', () => {
   it('multiple events in single batch', async () => {
     const acks: any[] = [];
     const sink = new HTTPBatchSink({
-      endpoint: `${COLLECTOR_URL}/v1/events`,
+      endpoint: `${COLLECTOR_URL}/events`,
       batchSize: 10,       // batch up to 10
       flushIntervalMs: 500,
       statsHandler: {
@@ -148,7 +148,7 @@ describe('E2E: loxa-js → loxa-collector', () => {
       },
     });
 
-    const loxa = new Logger({ service: 'loxa-js-e2e-batch', sink });
+    const loxa = createLoxa({ service: 'loxa-js-e2e-batch', sink });
 
     // Emit 5 events quickly
     for (let i = 0; i < 5; i++) {
@@ -160,9 +160,14 @@ describe('E2E: loxa-js → loxa-collector', () => {
 
     // Wait for flush
     await new Promise(resolve => setTimeout(resolve, 1000));
+    await sink.flush();
 
     // All 5 should be in one batch
-    const lastResp = sink.lastCollectorResponse;
+    let lastResp = sink.lastCollectorResponse;
+    if (!lastResp) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      lastResp = sink.lastCollectorResponse;
+    }
     assert.ok(lastResp, 'should have response');
     assert.ok(lastResp!.accepted >= 5, `expected >=5 accepted, got ${lastResp!.accepted}`);
     console.log('  batch response:', JSON.stringify(lastResp));

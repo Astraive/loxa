@@ -53,6 +53,7 @@ pub struct Config {
     pub panic_recovery: bool,
     pub security: SecurityConfig,
     pub async_config: AsyncConfig,
+    pub timeout_ms: u64,
 }
 
 impl std::fmt::Debug for Config {
@@ -332,16 +333,41 @@ impl Config {
         self
     }
 
-    pub fn with_otel_bridge(self, _enabled: bool) -> Self {
+    pub fn with_otel_bridge(mut self, enabled: bool) -> Self {
+        if enabled {
+            self.async_enabled = true;
+        }
         self
     }
 
-    pub fn with_timeout(self, _timeout_ms: u64) -> Self {
+    pub fn with_timeout(mut self, timeout_ms: u64) -> Self {
+        self.timeout_ms = timeout_ms;
         self
     }
 
     pub fn with_queue_size(mut self, size: usize) -> Self {
         self.async_config.queue_size = size;
+        self
+    }
+
+    pub fn with_batch_size(mut self, size: usize) -> Self {
+        self.async_config.batch_size = size;
+        self
+    }
+
+    pub fn with_flush_interval_ms(mut self, ms: u64) -> Self {
+        self.async_config.flush_interval_ms = ms;
+        self
+    }
+
+    pub fn with_retry(mut self, max_retries: u32) -> Self {
+        self.async_config.max_retries = max_retries;
+        self
+    }
+
+    pub fn with_logger(self, _logger: crate::Logger) -> Self {
+        // In Rust, Logger IS the Config consumer — it cannot be stored inside Config
+        // without a cycle. This is by design. Use StatsHandler for diagnostics.
         self
     }
 

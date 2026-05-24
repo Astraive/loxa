@@ -60,7 +60,7 @@ func PostIngest(baseURL, contentType string, payload []byte) error {
 	defer cancel()
 	var lastErr error
 	for attempt := 0; attempt < 3; attempt++ {
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(baseURL, "/")+"/v1/events", bytes.NewReader(payload))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(baseURL, "/")+"/events", bytes.NewReader(payload))
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func PostIngest(baseURL, contentType string, payload []byte) error {
 func FetchStatus(baseURL string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(baseURL, "/")+"/v1/status", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(baseURL, "/")+"/status", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func Query(baseURL, engine, sqlQuery string) ([]byte, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(baseURL, "/")+"/v1/query", bytes.NewReader(raw))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(baseURL, "/")+"/query", bytes.NewReader(raw))
 	if err != nil {
 		return nil, fmt.Errorf("query request failed: %w", err)
 	}
@@ -180,7 +180,7 @@ func Query(baseURL, engine, sqlQuery string) ([]byte, error) {
 
 // TailStream opens an HTTP stream to the collector for tailing events.
 func TailStream(ctx context.Context, baseURL string) (io.ReadCloser, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(baseURL, "/")+"/v1/tail", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(baseURL, "/")+"/tail", nil)
 	if err != nil {
 		return nil, fmt.Errorf("tail request failed: %w", err)
 	}
@@ -202,95 +202,115 @@ func ReplayEvents(baseURL string, payload []byte) error {
 }
 
 func FetchDLQ(baseURL string) ([]byte, error) {
-	return getJSON(baseURL, "/v1/dlq")
+	return getJSON(baseURL, "/dlq")
 }
 
 func FetchDLQItem(baseURL, id string) ([]byte, error) {
-	return getJSON(baseURL, "/v1/dlq/"+id)
+	return getJSON(baseURL, "/dlq/"+id)
 }
 
 func ReplayDLQ(ctx context.Context, baseURL string) ([]byte, error) {
-	return postJSON(ctx, baseURL, "/v1/dlq/replay", nil)
+	return postJSON(ctx, baseURL, "/dlq/replay", nil)
 }
 
 func ReplayDLQItem(ctx context.Context, baseURL, id string) ([]byte, error) {
-	return postJSON(ctx, baseURL, "/v1/dlq/"+id+"/replay", nil)
+	return postJSON(ctx, baseURL, "/dlq/"+id+"/replay", nil)
 }
 
 func FetchSchema(baseURL string) ([]byte, error) {
-	return getJSON(baseURL, "/v1/schema")
+	return getJSON(baseURL, "/schema")
 }
 
 func DiffSchema(ctx context.Context, baseURL string, payload []byte) ([]byte, error) {
-	return postJSON(ctx, baseURL, "/v1/schema/diff", payload)
+	return postJSON(ctx, baseURL, "/schema/diff", payload)
 }
 
 func PublishSchema(ctx context.Context, baseURL string, payload []byte) ([]byte, error) {
-	return postJSON(ctx, baseURL, "/v1/schema/publish", payload)
+	return postJSON(ctx, baseURL, "/schema/publish", payload)
+}
+
+func ValidateCollectorPayload(ctx context.Context, baseURL string, payload []byte) ([]byte, error) {
+	return postJSON(ctx, baseURL, "/validate", payload)
+}
+
+func CheckSchema(ctx context.Context, baseURL string, payload []byte) ([]byte, error) {
+	return postJSON(ctx, baseURL, "/schema/check", payload)
+}
+
+func ValidatePolicy(ctx context.Context, baseURL string, payload []byte) ([]byte, error) {
+	return postJSON(ctx, baseURL, "/policy/validate", payload)
+}
+
+func ApplyRetention(ctx context.Context, baseURL string, payload []byte) ([]byte, error) {
+	return postJSON(ctx, baseURL, "/retention/apply", payload)
 }
 
 func AuditPII(ctx context.Context, baseURL string, payload []byte) ([]byte, error) {
-	return postJSON(ctx, baseURL, "/v1/audit/pii", payload)
+	return postJSON(ctx, baseURL, "/audit/pii", payload)
 }
 
 func DeleteEventsByTenant(ctx context.Context, baseURL, tenantID, reason string) ([]byte, error) {
-	return deleteJSON(ctx, baseURL, "/v1/events/by-tenant/"+tenantID, reason)
+	return deleteJSON(ctx, baseURL, "/events/by-tenant/"+tenantID, reason)
 }
 
 func DeleteEventsByUser(ctx context.Context, baseURL, userID, reason string) ([]byte, error) {
-	return deleteJSON(ctx, baseURL, "/v1/events/by-user/"+userID, reason)
+	return deleteJSON(ctx, baseURL, "/events/by-user/"+userID, reason)
 }
 
 func DeleteEventByID(ctx context.Context, baseURL, eventID, reason string) ([]byte, error) {
-	return deleteJSON(ctx, baseURL, "/v1/events/"+eventID, reason)
+	return deleteJSON(ctx, baseURL, "/events/"+eventID, reason)
 }
 
 func FetchSinks(baseURL string) ([]byte, error) {
-	return getJSON(baseURL, "/v1/sinks")
+	return getJSON(baseURL, "/sinks")
 }
 
 func FetchSinkHealth(baseURL, name string) ([]byte, error) {
-	return getJSON(baseURL, "/v1/sinks/"+name)
+	return getJSON(baseURL, "/sinks/"+name)
+}
+
+func TestSink(ctx context.Context, baseURL, name string) ([]byte, error) {
+	return postJSON(ctx, baseURL, "/sinks/"+name+"/test", nil)
 }
 
 func DeleteDLQItem(ctx context.Context, baseURL, id string) ([]byte, error) {
-	return deleteJSON(ctx, baseURL, "/v1/dlq/"+id, "")
+	return deleteJSON(ctx, baseURL, "/dlq/"+id, "")
 }
 
 func PublishBlueprint(ctx context.Context, baseURL string, payload []byte) ([]byte, error) {
-	return postJSON(ctx, baseURL, "/v1/schema/blueprint", payload)
+	return postJSON(ctx, baseURL, "/schema/blueprint", payload)
 }
 
 func ListBlueprints(ctx context.Context, baseURL string) ([]byte, error) {
-	return getJSON(baseURL, "/v1/schema/blueprint")
+	return getJSON(baseURL, "/schema/blueprint")
 }
 
 func FetchQuarantine(baseURL string) ([]byte, error) {
-	return getJSON(baseURL, "/v1/quarantine")
+	return getJSON(baseURL, "/quarantine")
 }
 
 func ReplayQuarantineItem(ctx context.Context, baseURL, id string) ([]byte, error) {
-	return postJSON(ctx, baseURL, "/v1/quarantine/"+id+"/replay", nil)
+	return postJSON(ctx, baseURL, "/quarantine/"+id+"/replay", nil)
 }
 
 func DeleteQuarantineItem(ctx context.Context, baseURL, id string) ([]byte, error) {
-	return deleteJSON(ctx, baseURL, "/v1/quarantine/"+id, "")
+	return deleteJSON(ctx, baseURL, "/quarantine/"+id, "")
 }
 
 func CreateAPIKey(ctx context.Context, baseURL string, payload []byte) ([]byte, error) {
-	return postJSON(ctx, baseURL, "/v1/keys", payload)
+	return postJSON(ctx, baseURL, "/keys", payload)
 }
 
 func RevokeAPIKey(ctx context.Context, baseURL, id string) ([]byte, error) {
-	return postJSON(ctx, baseURL, "/v1/keys/"+id+"/revoke", nil)
+	return postJSON(ctx, baseURL, "/keys/"+id+"/revoke", nil)
 }
 
 func RotateAPIKey(ctx context.Context, baseURL, id string) ([]byte, error) {
-	return postJSON(ctx, baseURL, "/v1/keys/"+id+"/rotate", nil)
+	return postJSON(ctx, baseURL, "/keys/"+id+"/rotate", nil)
 }
 
 func WatchStream(ctx context.Context, baseURL string, filters map[string]string) (io.ReadCloser, error) {
-	base := strings.TrimRight(baseURL, "/") + "/v1/tail"
+	base := strings.TrimRight(baseURL, "/") + "/tail"
 	if len(filters) > 0 {
 		params := []string{}
 		for k, v := range filters {

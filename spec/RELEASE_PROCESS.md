@@ -38,8 +38,8 @@ Before creating a release, ensure:
 Edit `codegen/model.py`:
 
 ```python
-SPEC_VERSION = "0.0.1"       # Updated
-EVENT_VERSION = "0.0.1"      # Updated
+SPEC_VERSION = "0.0.2"       # Updated
+EVENT_VERSION = "0.0.2"      # Updated
 API_VERSION = "v1"           # Usually unchanged unless major version
 ```
 
@@ -50,7 +50,7 @@ Add new section at the top:
 ```markdown
 # Changelog
 
-## [0.0.1] - 2024-01-20
+## [0.0.2] - 2024-01-20
 
 ### Added
 - New field `trace_context` in event schema
@@ -66,7 +66,7 @@ Add new section at the top:
 ### Changed
 - Increased `max_event_size_bytes` from 1000 to 65536
 
-[0.0.1] - 2024-01-01
+[0.0.2] - 2024-01-01
 ```
 
 ### Step 3: Generate Release Artifacts
@@ -89,7 +89,7 @@ python scripts/check_releases.py
 Create release directory with immutable snapshot:
 
 ```bash
-# For version 0.0.1
+# For version 0.0.2
 mkdir -p releases/v0.0.1
 
 # Copy canonical specs
@@ -105,8 +105,8 @@ cat > releases/v0.0.1/README.md << 'EOF'
 # LOXA Specification v0.0.1
 
 Generated: [ISO timestamp]
-Spec Version: 0.0.1
-Event Version: 0.0.1
+Spec Version: 0.0.2
+Event Version: 0.0.2
 API Version: v1
 
 ## Contents
@@ -184,8 +184,8 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 # Create annotated tag
 git tag -a v0.0.1 -m "LOXA Spec v0.0.1
 
-Spec Version: 0.0.1
-Event Version: 0.0.1
+Spec Version: 0.0.2
+Event Version: 0.0.2
 
 See CHANGELOG.md and releases/v0.0.1/ for details."
 
@@ -256,7 +256,7 @@ Update each SDK to consume new release:
 go get github.com/astraive/loxa/sdks/go@v0.0.1
 
 # For Python SDK
-pip install loxa-spec==0.0.1
+pip install loxa-spec==0.0.2
 
 # For Rust SDK
 cargo update loxa-spec
@@ -274,7 +274,7 @@ cargo update loxa-spec
 - Be ready to patch with v0.0.1 if needed
 - Document any errata in CHANGELOG.md
 
-## Minor Release (e.g., 0.0.1)
+## Minor Release (e.g., 0.0.2)
 
 For patch releases with critical fixes only:
 
@@ -286,7 +286,7 @@ For patch releases with critical fixes only:
 
 **Note**: Patch releases should not add new fields or break compatibility.
 
-## Major Release (e.g., 0.0.1)
+## Major Release (e.g., 0.0.2)
 
 Major releases allow breaking changes:
 

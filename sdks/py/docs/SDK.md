@@ -42,7 +42,7 @@ The collector owns:
 ## Recommended Production Shape
 
 1. Build a `Logger` with `Config.production(service_name)`.
-2. Attach `HTTPBatchSink("http://collector/v1/events")`.
+2. Attach `HTTPBatchSink("http://collector/events")`.
 3. Create one event per operation via `start_event`.
 4. Let the collector handle storage, retries, fan-out, and heavy sink integration.
 
@@ -51,7 +51,7 @@ import loxa
 
 cfg = (
     loxa.production("checkout-service")
-    .with_sink(loxa.HTTPBatchSink("http://collector:9090/v1/events"))
+    .with_sink(loxa.HTTPBatchSink("http://collector:9090/events"))
     .with_sampler(loxa.SampleErrors())
 )
 loxa.configure(cfg)

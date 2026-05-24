@@ -97,7 +97,7 @@ func TestStartHTTPEventFromRequest(t *testing.T) {
 		t.Fatalf("configure: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "http://example.com/v1/checkout", nil)
+	req := httptest.NewRequest(http.MethodPost, "http://example.com/checkout", nil)
 	req.Header.Set("X-Request-ID", "req-123")
 
 	ctx := loxa.StartHTTPEventFromRequest(req, loxa.Params{
@@ -120,8 +120,8 @@ func TestStartHTTPEventFromRequest(t *testing.T) {
 	if got := payload["method"]; got != "POST" {
 		t.Fatalf("expected method POST, got %#v", got)
 	}
-	if got := payload["path"]; got != "/v1/checkout" {
-		t.Fatalf("expected path /v1/checkout, got %#v", got)
+	if got := payload["path"]; got != "/checkout" {
+		t.Fatalf("expected path /checkout, got %#v", got)
 	}
 	if got := payload["request_id"]; got != "req-123" {
 		t.Fatalf("expected request_id req-123, got %#v", got)

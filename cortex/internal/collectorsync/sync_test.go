@@ -72,7 +72,7 @@ func TestRunSourceOfTruthSyncProcessesPollThenTail(t *testing.T) {
 	var queryCalls atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/v1/query":
+		case "/query":
 			call := queryCalls.Add(1)
 			w.Header().Set("Content-Type", "application/json")
 			if call == 1 {
@@ -82,7 +82,7 @@ func TestRunSourceOfTruthSyncProcessesPollThenTail(t *testing.T) {
 				return
 			}
 			_ = json.NewEncoder(w).Encode(map[string]any{"rows": []map[string]any{}})
-		case "/v1/tail":
+		case "/tail":
 			w.Header().Set("Content-Type", "application/x-ndjson")
 			flusher, _ := w.(http.Flusher)
 			_ = json.NewEncoder(w).Encode(tailEvent)
@@ -161,7 +161,7 @@ func TestRunPollCatchupDoesNotAdvanceCursorOnFailure(t *testing.T) {
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/query" {
+		if r.URL.Path != "/query" {
 			http.NotFound(w, r)
 			return
 		}

@@ -20,12 +20,12 @@ func TestDuplicatePolicyCanonicalWinsDropsConflicts(t *testing.T) {
 		Event:   "duplicate.canonical_wins",
 		Service: "svc-original",
 	})
-	loxa.Enrich(ctx,
+	_ = loxa.Enrich(ctx,
 		loxa.String("service", "svc-attr"),
 		loxa.Int("status_code", 299),
 		loxa.String("tenant.id", "t-1"),
 	)
-	loxa.Finish(ctx, "success")
+	_ = loxa.Finish(ctx, "success")
 	if err := loxa.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
@@ -56,11 +56,11 @@ func TestDuplicatePolicyAttrWinsOverwritesCanonical(t *testing.T) {
 		Event:   "duplicate.attr_wins",
 		Service: "svc-original",
 	})
-	loxa.Enrich(ctx,
+	_ = loxa.Enrich(ctx,
 		loxa.String("service", "svc-attr"),
 		loxa.Int("status_code", 201),
 	)
-	loxa.Finish(ctx, "success")
+	_ = loxa.Finish(ctx, "success")
 	if err := loxa.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
@@ -91,8 +91,8 @@ func TestDuplicatePolicyKeepBothMovesUnderAttrs(t *testing.T) {
 		Event:   "duplicate.keep_both",
 		Service: "svc-original",
 	})
-	loxa.Enrich(ctx, loxa.String("service", "svc-attr"))
-	loxa.Finish(ctx, "success")
+	_ = loxa.Enrich(ctx, loxa.String("service", "svc-attr"))
+	_ = loxa.Finish(ctx, "success")
 	if err := loxa.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
@@ -127,8 +127,8 @@ func TestDuplicatePolicyErrorOnDuplicate(t *testing.T) {
 		Event:   "duplicate.error",
 		Service: "svc-original",
 	})
-	loxa.Enrich(ctx, loxa.String("service", "svc-attr"))
-	loxa.Finish(ctx, "success")
+	_ = loxa.Enrich(ctx, loxa.String("service", "svc-attr"))
+	_ = loxa.Finish(ctx, "success")
 	err := loxa.Emit(ctx)
 	if err == nil {
 		t.Fatalf("expected duplicate policy error")

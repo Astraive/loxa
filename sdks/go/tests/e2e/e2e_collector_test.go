@@ -141,7 +141,7 @@ func TestE2E_HTTPBatchSink_MultipleFlushes(t *testing.T) {
 
 func getCollectorStatus(t *testing.T) []byte {
 	t.Helper()
-	resp, err := http.Get(collectorURL + "/v1/status")
+	resp, err := http.Get(collectorURL + "/status")
 	if err != nil {
 		t.Fatalf("status: %v", err)
 	}

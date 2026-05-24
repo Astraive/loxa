@@ -98,19 +98,19 @@ func buildEvent(params Params, cfg *Config) *Event {
 		_ = ev.AddAttrs([]Attr{WorkspaceID(params.WorkspaceID)})
 	}
 	if params.OrganizationID != "" {
-		ev.AddAttrs([]Attr{OrganizationID(params.OrganizationID)})
+		_ = ev.AddAttrs([]Attr{OrganizationID(params.OrganizationID)})
 	}
 	if params.SessionID != "" {
-		ev.AddAttrs([]Attr{SessionID(params.SessionID)})
+		_ = ev.AddAttrs([]Attr{SessionID(params.SessionID)})
 	}
 	if cfg.Alias != "" {
-		ev.AddAttrs([]Attr{String("loxa.alias", cfg.Alias)})
+		_ = ev.AddAttrs([]Attr{String("loxa.alias", cfg.Alias)})
 	}
 	// Copy custom params into Attrs
 	if len(params.Custom) > 0 {
 		attrs := make([]Attr, len(params.Custom))
 		copy(attrs, params.Custom)
-		ev.AddAttrs(attrs)
+		_ = ev.AddAttrs(attrs)
 	}
 
 	return ev

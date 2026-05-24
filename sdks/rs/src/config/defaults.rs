@@ -70,6 +70,7 @@ impl Config {
             panic_recovery: false,
             security: SecurityConfig::default(),
             async_config: AsyncConfig::default(),
+            timeout_ms: 2_000,
         }
     }
 }

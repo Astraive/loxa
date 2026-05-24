@@ -1,4 +1,4 @@
-use loxa::{Config, Logger, Params, SinkConfig};
+use loxa::{Config, New, Params, SinkConfig};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -38,7 +38,7 @@ struct FixtureExpected {
 #[test]
 fn shared_emitted_shape_fixture() {
     let fixture = load_fixture();
-    let logger = Logger::new(Config::test(&fixture.params.service).with_sink(SinkConfig::Noop));
+    let logger = New(Config::test(&fixture.params.service).with_sink(SinkConfig::Noop));
     let mut ctx = logger.start_event(
         Params::new(&fixture.params.event)
             .with_kind(&fixture.params.kind)

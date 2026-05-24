@@ -68,7 +68,7 @@ func TestIngestEnvelopeFixturesAreAcceptedByCollectorParser(t *testing.T) {
 				}(), []byte("\n")))
 			}
 
-			req := httptest.NewRequest("POST", "/v1/events", bytes.NewReader(body))
+			req := httptest.NewRequest("POST", "/events", bytes.NewReader(body))
 			req.Header.Set("Content-Type", fixture.ContentType)
 			events, err := ingest.ParseEvents(req, 1<<20)
 			if err != nil {

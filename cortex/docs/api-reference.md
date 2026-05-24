@@ -4,7 +4,7 @@ Cortex exposes HTTP REST, gRPC, WebSocket, and GraphQL APIs. This document cover
 
 ## Authentication
 
-All endpoints under `/v1/` require authentication when `authentication.enabled` is true in the config. Authenticate by passing an API key in the `Authorization` header:
+All API endpoints require authentication when `authentication.enabled` is true in the config. Authenticate by passing an API key in the `Authorization` header:
 
 ```
 Authorization: Bearer <api-key>
@@ -23,17 +23,17 @@ When `rate_limit.enabled` is true, requests are throttled per API key and per IP
 | `/healthz` | GET | Liveness probe |
 | `/readyz` | GET | Readiness probe |
 | `/metrics` | GET | Prometheus metrics |
-| `/v1/events` | POST | Ingest a single event |
-| `/v1/events/batch` | POST | Ingest a batch of events |
-| `/v1/events/jsonl` | POST | Ingest NDJSON stream |
-| `/v1/reconstruct` | POST | Reconstruct incident context |
-| `/v1/incidents/{incident_id}/reconstruct` | POST | Reconstruct by incident ID |
-| `/v1/graph/service/{service}` | GET | Get service graph neighborhood |
-| `/v1/graph/incident/{incident_id}` | GET | Get incident graph |
-| `/v1/feedback/remediation` | POST | Record remediation feedback |
-| `/v1/feedback/incident` | POST | Record incident feedback |
+| `/events` | POST | Ingest a single event |
+| `/events/batch` | POST | Ingest a batch of events |
+| `/events/jsonl` | POST | Ingest NDJSON stream |
+| `/reconstruct` | POST | Reconstruct incident context |
+| `/incidents/{incident_id}/reconstruct` | POST | Reconstruct by incident ID |
+| `/graph/service/{service}` | GET | Get service graph neighborhood |
+| `/graph/incident/{incident_id}` | GET | Get incident graph |
+| `/feedback/remediation` | POST | Record remediation feedback |
+| `/feedback/incident` | POST | Record incident feedback |
 | `/graphql` | POST | GraphQL query endpoint |
-| `/v1/ws` | GET | WebSocket live event stream |
+| `/ws` | GET | WebSocket live event stream |
 
 ---
 
@@ -81,7 +81,7 @@ Content-Type: text/plain; version=0.0.4; charset=utf-8
 
 ---
 
-### POST /v1/events
+### POST /events
 
 Ingest a single event.
 
@@ -119,7 +119,7 @@ Ingest a single event.
 
 ---
 
-### POST /v1/events/batch
+### POST /events/batch
 
 Ingest a batch of events.
 
@@ -161,7 +161,7 @@ Ingest a batch of events.
 
 ---
 
-### POST /v1/events/jsonl
+### POST /events/jsonl
 
 Ingest events in NDJSON format (one JSON object per line).
 
@@ -183,7 +183,7 @@ Ingest events in NDJSON format (one JSON object per line).
 
 ---
 
-### POST /v1/reconstruct
+### POST /reconstruct
 
 Reconstruct an incident context from stored events.
 
@@ -242,7 +242,7 @@ Reconstruct an incident context from stored events.
 
 ---
 
-### POST /v1/incidents/{incident_id}/reconstruct
+### POST /incidents/{incident_id}/reconstruct
 
 Reconstruct an incident by path parameter.
 
@@ -258,11 +258,11 @@ Reconstruct an incident by path parameter.
 |---|---|---|---|
 | mode | string | fast | Reconstruction mode: `fast` or `deep` |
 
-**Response** -- same as `POST /v1/reconstruct`.
+**Response** -- same as `POST /reconstruct`.
 
 ---
 
-### GET /v1/graph/service/{service}
+### GET /graph/service/{service}
 
 Get the service graph neighborhood for a given service.
 
@@ -295,7 +295,7 @@ Get the service graph neighborhood for a given service.
 
 ---
 
-### GET /v1/graph/incident/{incident_id}
+### GET /graph/incident/{incident_id}
 
 Get the incident graph showing events and their relationships.
 
@@ -322,7 +322,7 @@ Get the incident graph showing events and their relationships.
 
 ---
 
-### POST /v1/feedback/remediation
+### POST /feedback/remediation
 
 Record operator feedback on a remediation suggestion.
 
@@ -354,7 +354,7 @@ Record operator feedback on a remediation suggestion.
 
 ---
 
-### POST /v1/feedback/incident
+### POST /feedback/incident
 
 Record feedback on an incident reconstruction.
 
@@ -403,14 +403,14 @@ query {
 
 ---
 
-### GET /v1/ws
+### GET /ws
 
 WebSocket endpoint for live event streaming. Connect and send a subscription message to receive events in real time.
 
 **Connection**
 
 ```
-ws://localhost:9091/v1/ws
+ws://localhost:9091/ws
 ```
 
 **Subscribe Message**

@@ -99,7 +99,7 @@ impl CortexClient {
             "incident_id": incident_id,
             "mode": mode,
         });
-        let resp = self.post("/v1/reconstruct", &body)?;
+        let resp = self.post("/reconstruct", &body)?;
         let ctx: IncidentContext = serde_json::from_value(resp).map_err(io_err)?;
         Ok(ctx)
     }
@@ -110,7 +110,7 @@ impl CortexClient {
         incident_id: &str,
         mode: &str,
     ) -> io::Result<IncidentContext> {
-        let path = format!("/v1/incidents/{}/reconstruct", incident_id);
+        let path = format!("/incidents/{}/reconstruct", incident_id);
         let body = serde_json::json!({"mode": mode});
         let resp = self.post(&path, &body)?;
         let ctx: IncidentContext = serde_json::from_value(resp).map_err(io_err)?;
@@ -119,7 +119,7 @@ impl CortexClient {
 
     /// Fetch the dependency graph for a service.
     pub fn service_graph(&self, service: &str, depth: u32) -> io::Result<GraphView> {
-        let path = format!("/v1/graph/service/{}?depth={}", service, depth);
+        let path = format!("/graph/service/{}?depth={}", service, depth);
         let resp = self.get(&path)?;
         let graph: GraphView = serde_json::from_value(resp).map_err(io_err)?;
         Ok(graph)
@@ -127,7 +127,7 @@ impl CortexClient {
 
     /// Fetch the graph for a specific incident.
     pub fn incident_graph(&self, incident_id: &str, depth: u32) -> io::Result<GraphView> {
-        let path = format!("/v1/graph/incident/{}?depth={}", incident_id, depth);
+        let path = format!("/graph/incident/{}?depth={}", incident_id, depth);
         let resp = self.get(&path)?;
         let graph: GraphView = serde_json::from_value(resp).map_err(io_err)?;
         Ok(graph)
@@ -141,7 +141,7 @@ impl CortexClient {
             "operator": remediation.operator,
             "attributes": remediation.attributes,
         });
-        self.post("/v1/feedback/remediation", &body)?;
+        self.post("/feedback/remediation", &body)?;
         Ok(())
     }
 
@@ -154,7 +154,7 @@ impl CortexClient {
             "time_to_resolve_seconds": feedback.time_to_resolve_seconds,
             "notes": feedback.notes,
         });
-        self.post("/v1/feedback/incident", &body)?;
+        self.post("/feedback/incident", &body)?;
         Ok(())
     }
 
@@ -164,7 +164,7 @@ impl CortexClient {
             "incident_id": incident_id,
             "mode": "fast",
         });
-        let resp = self.post("/v1/reconstruct", &body)?;
+        let resp = self.post("/reconstruct", &body)?;
         let similar = resp
             .get("similar_incidents")
             .and_then(|v| v.as_array())
@@ -176,7 +176,7 @@ impl CortexClient {
     /// Ingest a batch of events directly into cortex.
     pub fn ingest_batch(&self, events: &[serde_json::Value]) -> io::Result<()> {
         let body = serde_json::json!({"events": events});
-        self.post("/v1/events/batch", &body)?;
+        self.post("/events/batch", &body)?;
         Ok(())
     }
 }

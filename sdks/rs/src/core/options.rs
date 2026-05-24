@@ -79,6 +79,23 @@ pub fn with_queue_size(size: usize) -> ConfigOption {
     Box::new(move |cfg| cfg.with_queue_size(size))
 }
 
+pub fn with_batch_size(size: usize) -> ConfigOption {
+    Box::new(move |cfg| cfg.with_batch_size(size))
+}
+
+pub fn with_flush_interval(ms: u64) -> ConfigOption {
+    Box::new(move |cfg| cfg.with_flush_interval_ms(ms))
+}
+
+pub fn with_retry(max_retries: u32) -> ConfigOption {
+    Box::new(move |cfg| cfg.with_retry(max_retries))
+}
+
+pub fn with_api_key(api_key: impl Into<String>) -> ConfigOption {
+    let api_key = api_key.into();
+    Box::new(move |cfg| cfg.with_api_key(api_key))
+}
+
 pub fn apply(mut cfg: Config, options: impl IntoIterator<Item = ConfigOption>) -> Config {
     for option in options {
         cfg = option(cfg);

@@ -23,7 +23,7 @@ func TestNewRejectsUnsupportedProtocol(t *testing.T) {
 
 func TestResolveConfigRejectsEndpointQuery(t *testing.T) {
 	_, err := resolveConfig(Config{
-		Endpoint: "https://otel.example:4317/v1/logs?bad=1",
+		Endpoint: "https://otel.example:4317/core/logs?bad=1",
 	})
 	if err == nil {
 		t.Fatalf("expected endpoint validation error")

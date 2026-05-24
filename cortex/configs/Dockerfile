@@ -1,33 +1,48 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25 AS builder
 
 WORKDIR /build
 
 # Install protoc and Go protobuf plugins for proto generation
-RUN apk add --no-cache protobuf-dev && \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        make \
+        protobuf-compiler \
+        libprotobuf-dev \
+        g++ \
+        ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36 && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5
 
-# Copy module files and download dependencies
+# Copy module files and local replacement module manifests, then download deps.
 COPY cortex/go.mod cortex/go.sum ./cortex/
+COPY gen/go/go.mod ./gen/go/go.mod
+COPY spec/go.mod ./spec/go.mod
 RUN cd cortex && go mod download
 
 # Copy the entire repo (proto/ and gen/ are needed for proto generation)
 COPY . .
 
-# Generate protobuf code from proto/loxa/v1/ into gen/go/loxa/v1/
-RUN make proto
+# Generate protobuf code from proto/loxa/core/ into gen/go/loxa/core/
+RUN protoc -I proto -I /usr/include \
+    --go_out=gen/go --go_opt=paths=source_relative \
+    --go-grpc_out=gen/go --go-grpc_opt=paths=source_relative \
+    proto/loxa/core/event.proto \
+    proto/loxa/core/ingest.proto \
+    proto/loxa/core/collector.proto \
+    proto/loxa/core/cortex.proto
 
 # Build the cortex binary
-RUN cd cortex && CGO_ENABLED=1 go build -o /build/cortex ./cmd/server
+RUN cd cortex && CGO_ENABLED=1 go build -o /build/loxa-cortex ./cmd/server
 
-FROM alpine:3.20
+FROM debian:trixie-slim
 
-RUN apk --no-cache add ca-certificates libc6-compat
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY --from=builder /build/cortex .
-COPY --from=builder /build/cortex/configs/*.yaml ./configs/ 2>/dev/null || true
+COPY --from=builder /build/loxa-cortex ./cortex
+COPY --from=builder /build/cortex/configs ./configs
 
 EXPOSE 8080 9090
 

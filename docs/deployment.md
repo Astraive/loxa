@@ -42,7 +42,7 @@ Current HTTP endpoints:
 - `GET /healthz`
 - `GET /readyz`
 - `GET /metrics`
-- `GET /v1/status`
+- `GET /core/status`
 
 ## Authentication
 

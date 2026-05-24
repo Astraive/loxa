@@ -52,7 +52,7 @@ services:
       - |
         sleep 4
         NOW=$(date +%s%N)
-        curl -sS -X POST http://loki:3100/loki/api/v1/push \
+        curl -sS -X POST http://loki:3100/loki/api/core/push \
           -H "Content-Type: application/json" \
           --data "{\"streams\":[{\"stream\":{\"source\":\"loxa-demo\",\"service\":\"sample-app\"},\"values\":[[\"$NOW\",\"{\\\"event\\\":\\\"checkout.request\\\",\\\"outcome\\\":\\\"success\\\"}\"]]}]}"
 

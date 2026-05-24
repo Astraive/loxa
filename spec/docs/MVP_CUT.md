@@ -11,7 +11,7 @@ Milestone A: Contract Lock
 
 Milestone B: Collector Core
 
-- HTTP `/v1/events`
+- HTTP `/events`
 - validation `enforce`, `warn`, `quarantine`
 - DuckDB primary
 - local durable spool
@@ -45,4 +45,3 @@ Milestone D: CLI UX
 
 ClickHouse, Kafka, Loki, OTLP, S3, GCS, and Postgres become fully required after
 this MVP slice is green.
-

@@ -293,7 +293,7 @@ import loxa
 
 cfg = loxa.production("checkout").with_sink(loxa.StdoutSink())
 cfg = loxa.production("checkout").with_sink(loxa.FileSink("/var/log/app.log"))
-cfg = loxa.production("checkout").with_sink(loxa.HTTPBatchSink("http://collector:9090/v1/events"))
+cfg = loxa.production("checkout").with_sink(loxa.HTTPBatchSink("http://collector:9090/events"))
 
 # For testing
 sink, store = loxa.MemorySink()

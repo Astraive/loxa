@@ -221,7 +221,7 @@ use loxa::{
 };
 
 let cfg = Config::production("checkout")
-    .with_version("0.0.1")
+    .with_version("0.0.2")
     .with_environment("prod")
     .with_sink(loxa::StdoutSink)
     .with_sampler(loxa::SampleErrors)
@@ -242,7 +242,7 @@ use loxa::{StdoutSink, StderrSink, FileSink, MemorySink, NoopSink, HttpBatchSink
 
 let cfg = Config::production("checkout").with_sink(StdoutSink);
 let cfg = Config::production("checkout").with_sink(FileSink("/var/log/app.log"));
-let cfg = Config::production("checkout").with_sink(HttpBatchSink("http://collector:9090/v1/events"));
+let cfg = Config::production("checkout").with_sink(HttpBatchSink("http://collector:9090/events"));
 ```
 
 ## Sampling

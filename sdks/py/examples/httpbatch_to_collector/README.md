@@ -23,5 +23,5 @@ python main.py
 Use this example to validate that:
 
 - `loxa-py` (Python SDK) emits collector-compatible JSON
-- the collector accepts `/v1/events`
+- the collector accepts `/events`
 - collector-side durability and sink fanout stay outside the SDK

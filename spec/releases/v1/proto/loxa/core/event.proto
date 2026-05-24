@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+package loxa.core;
+
+option go_package = "github.com/astraive/loxa/gen/go/loxa/core;loxacore";
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// LOXA v1 shared event contract constants:
+// LOXA_SPEC_VERSION = v1
+// LOXA_EVENT_VERSION = v1
+
+enum EventKind {
+  EVENT_KIND_UNSPECIFIED = 0;
+  EVENT_KIND_EVENT = 1;
+  EVENT_KIND_HTTP = 2;
+  EVENT_KIND_JOB = 3;
+  EVENT_KIND_QUEUE = 4;
+  EVENT_KIND_CLI = 5;
+  EVENT_KIND_CRON = 6;
+  EVENT_KIND_LOG = 7;
+  EVENT_KIND_CHECKPOINT = 8;
+  EVENT_KIND_AGENT = 9;
+  EVENT_KIND_AI = 10;
+}
+
+enum EventLevel {
+  EVENT_LEVEL_UNSPECIFIED = 0;
+  EVENT_LEVEL_DEBUG = 1;
+  EVENT_LEVEL_INFO = 2;
+  EVENT_LEVEL_WARN = 3;
+  EVENT_LEVEL_ERROR = 4;
+  EVENT_LEVEL_NOTICE = 5;
+  EVENT_LEVEL_FATAL = 6;
+}
+
+enum EventOutcome {
+  EVENT_OUTCOME_UNSPECIFIED = 0;
+  EVENT_OUTCOME_SUCCESS = 1;
+  EVENT_OUTCOME_ERROR = 2;
+  EVENT_OUTCOME_PARTIAL = 3;
+  EVENT_OUTCOME_ABANDONED = 4;
+  EVENT_OUTCOME_RETRIED = 5;
+  EVENT_OUTCOME_CANCELLED = 6;
+  EVENT_OUTCOME_TIMEOUT = 7;
+  EVENT_OUTCOME_SKIPPED = 8;
+  EVENT_OUTCOME_REJECTED = 9;
+  EVENT_OUTCOME_QUARANTINED = 10;
+  EVENT_OUTCOME_UNKNOWN = 11;
+}
+
+message HttpContext {
+  string method = 1;
+  string path = 2;
+  string route = 3;
+  int32 status_code = 4;
+  string client_ip = 5;
+  string user_agent = 6;
+  string url = 7;
+  string host = 8;
+}
+
+message ErrorContext {
+  string type = 1;
+  string message = 2;
+  string code = 3;
+  bool retriable = 4;
+  string cause = 5;
+  string stack = 6;
+}
+
+message EventCheckpoint {
+  string name = 1;
+  int64 at_ms = 2;
+  google.protobuf.Struct attrs = 3;
+}
+
+message EventProcess {
+  int32 step = 1;
+  string name = 2;
+  int32 status_code = 3;
+  int64 started_at_ms = 4;
+  int64 ended_at_ms = 5;
+  int64 duration_ms = 6;
+  google.protobuf.Struct attrs = 7;
+  string outcome = 8;
+  ErrorContext error = 9;
+}
+
+message EventGroup {
+  string name = 1;
+  int32 status_code = 2;
+  int64 started_at_ms = 3;
+  int64 ended_at_ms = 4;
+  int64 duration_ms = 5;
+  google.protobuf.Struct attrs = 6;
+  string outcome = 7;
+  ErrorContext error = 8;
+}
+
+message EventTimer {
+  string name = 1;
+  int64 duration_ms = 2;
+  int32 status_code = 3;
+  google.protobuf.Struct attrs = 4;
+}
+
+message EventLink {
+  string type = 1;
+  string target = 2;
+  google.protobuf.Struct attrs = 3;
+}
+
+message Event {
+  string event_id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string service = 3;
+  string schema_version = 4;
+  string event_version = 5;
+  string version = 6;
+  string environment = 7;
+  string event = 8;
+  EventLevel level = 9;
+  EventOutcome outcome = 10;
+  double duration_ms = 11;
+  string request_id = 12;
+  string trace_id = 13;
+  string span_id = 14;
+  HttpContext http = 15;
+  ErrorContext error = 16;
+  EventKind kind = 17;
+  string release = 18;
+  string trace_flags = 19;
+  google.protobuf.Struct user = 20;
+  google.protobuf.Struct tenant = 21;
+  google.protobuf.Struct resource = 22;
+  google.protobuf.Struct attrs = 23;
+  repeated EventProcess process = 24;
+  repeated EventGroup groups = 25;
+  repeated EventTimer timers = 26;
+  repeated EventCheckpoint checkpoints = 27;
+  repeated ErrorContext errors = 28;
+  repeated EventLink links = 29;
+  string incident_id = 30;
+}

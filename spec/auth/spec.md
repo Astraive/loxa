@@ -40,7 +40,7 @@ lx_local_dev_mydevtoken                      # Local development only
 ### HTTP
 
 ```
-POST /v1/events
+POST /events
 Authorization: Bearer lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
 X-Loxa-Service: checkout-api
 X-Loxa-Env: prod
@@ -243,16 +243,16 @@ Each route has its own permission requirement:
 
 | Route | Permission |
 |-------|------------|
-| `POST /v1/events` | events:write |
-| `GET /v1/events` | events:read |
-| `POST /v1/logs` | logs:write |
-| `POST /v1/traces` | traces:write |
-| `GET /v1/tail` | events:read |
-| `POST /v1/schema/publish` | schema:write |
-| `DELETE /v1/events` | events:delete |
-| `POST /v1/audit/pii` | pii_audit:read |
-| `GET /v1/dlq` | events:read |
-| `POST /v1/dlq/replay` | events:write |
+| `POST /events` | events:write |
+| `GET /events` | events:read |
+| `POST /logs` | logs:write |
+| `POST /traces` | traces:write |
+| `GET /tail` | events:read |
+| `POST /schema/publish` | schema:write |
+| `DELETE /events` | events:delete |
+| `POST /audit/pii` | pii_audit:read |
+| `GET /dlq` | events:read |
+| `POST /dlq/replay` | events:write |
 | `GET /healthz` | (public) |
 | `GET /readyz` | (public) |
 | `GET /metrics` | events:read |
@@ -269,7 +269,7 @@ Each route has its own permission requirement:
 | `key.origin_denied` | Origin not allowed |
 | `key.payload_too_large` | Payload exceeds limit |
 
-## Future: HMAC Signed Requests (post-v0.0.1)
+## Future: HMAC Signed Requests (post-v0.0.2)
 
 For enterprise high-security mode:
 

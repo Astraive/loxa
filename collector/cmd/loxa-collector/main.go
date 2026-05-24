@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var version = "1.0.0"
+var version = "0.0.2"
 
 func main() {
 	if err := executeCollectorCLI(os.Args[1:], runCollector, configCommand); err != nil {

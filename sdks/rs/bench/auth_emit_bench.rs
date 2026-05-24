@@ -37,7 +37,7 @@ pub fn run_auth_emit_enriched_iterations(iterations: usize) -> (usize, u128, usi
     for _ in 0..iterations {
         let ctx = loxa::start_event(Params::new("bench.auth.attrs"));
         loxa::set_string(&ctx, "http.method", "POST");
-        loxa::set_string(&ctx, "http.path", "/api/v1/payments");
+        loxa::set_string(&ctx, "http.path", "/api/payments");
         loxa::set_int(&ctx, "http.status", 200);
         loxa::set_float64(&ctx, "payment.amount", 99.99);
         loxa::set_bool(&ctx, "payment.success", true);

@@ -21,8 +21,8 @@ type DeletionResponse struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-// handleDeleteEvents deletes events based on query parameters
-// Supports: by-tenant/{tenant_id}, by-user/{user_id}, by-event/{event_id}
+// handleDeleteEvents deletes events based on query parameters.
+// Supports: /events/by-tenant/{tenant_id}, /events/by-user/{user_id}, /events/{event_id}.
 func (s *collectorState) handleDeleteEvents(w http.ResponseWriter, r *http.Request) {
 	if !s.isAuthorized(r) {
 		logJSON("warn", "collector_auth_failed", map[string]any{
@@ -54,8 +54,9 @@ func (s *collectorState) handleDeleteEvents(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Get path parameters
-	pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/v1/events"), "/")
+	// Get path parameters relative to the canonical /events prefix.
+	path := strings.TrimPrefix(r.URL.Path, "/events")
+	pathParts := strings.Split(path, "/")
 
 	var deletedCount int64
 	var err error
@@ -63,7 +64,7 @@ func (s *collectorState) handleDeleteEvents(w http.ResponseWriter, r *http.Reque
 
 	switch {
 	case strings.Contains(r.URL.Path, "/by-tenant/"):
-		// DELETE /v1/events/by-tenant/{tenant_id}
+		// DELETE /events/by-tenant/{tenant_id}
 		tenantID := getTenantIDFromPath(r.URL.Path)
 		if tenantID == "" {
 			writeJSON(w, http.StatusBadRequest, map[string]any{
@@ -75,7 +76,7 @@ func (s *collectorState) handleDeleteEvents(w http.ResponseWriter, r *http.Reque
 		deletionType = "by_tenant"
 
 	case strings.Contains(r.URL.Path, "/by-user/"):
-		// DELETE /v1/events/by-user/{user_id}
+		// DELETE /events/by-user/{user_id}
 		userID := getUserIDFromPath(r.URL.Path)
 		if userID == "" {
 			writeJSON(w, http.StatusBadRequest, map[string]any{
@@ -87,7 +88,7 @@ func (s *collectorState) handleDeleteEvents(w http.ResponseWriter, r *http.Reque
 		deletionType = "by_user"
 
 	default:
-		// DELETE /v1/events/{event_id}
+		// DELETE /events/{event_id}
 		if len(pathParts) > 1 && pathParts[len(pathParts)-1] != "" {
 			eventID := pathParts[len(pathParts)-1]
 			deletedCount, err = s.deleteEvent(r.Context(), eventID)

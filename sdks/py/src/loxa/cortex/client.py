@@ -96,7 +96,7 @@ class CortexClient:
             incident_id: The incident to reconstruct.
             mode: Reconstruction mode - "fast" (pattern match) or "deep" (full causal analysis).
         """
-        resp = self._post("/v1/reconstruct", {"incident_id": incident_id, "mode": mode})
+        resp = self._post("/reconstruct", {"incident_id": incident_id, "mode": mode})
         return IncidentContext(
             incident_id=resp.get("incident_id", incident_id),
             timestamp=resp.get("timestamp", ""),
@@ -116,7 +116,7 @@ class CortexClient:
         mode: str = "fast",
     ) -> IncidentContext:
         """Reconstruct an incident using the URL-param variant."""
-        resp = self._post(f"/v1/incidents/{incident_id}/reconstruct", {"mode": mode})
+        resp = self._post(f"/incidents/{incident_id}/reconstruct", {"mode": mode})
         return IncidentContext(
             incident_id=resp.get("incident_id", incident_id),
             timestamp=resp.get("timestamp", ""),
@@ -136,7 +136,7 @@ class CortexClient:
         depth: int = 3,
     ) -> GraphView:
         """Fetch the dependency graph for a service."""
-        resp = self._get(f"/v1/graph/service/{service}?depth={depth}")
+        resp = self._get(f"/graph/service/{service}?depth={depth}")
         return GraphView(
             nodes=resp.get("nodes", []),
             edges=resp.get("edges", []),
@@ -148,7 +148,7 @@ class CortexClient:
         depth: int = 3,
     ) -> GraphView:
         """Fetch the graph for a specific incident."""
-        resp = self._get(f"/v1/graph/incident/{incident_id}?depth={depth}")
+        resp = self._get(f"/graph/incident/{incident_id}?depth={depth}")
         return GraphView(
             nodes=resp.get("nodes", []),
             edges=resp.get("edges", []),
@@ -156,7 +156,7 @@ class CortexClient:
 
     def record_remediation(self, remediation: Remediation) -> None:
         """Record a remediation action taken for an incident."""
-        self._post("/v1/feedback/remediation", {
+        self._post("/feedback/remediation", {
             "incident_id": remediation.incident_id,
             "action": remediation.action,
             "operator": remediation.operator,
@@ -165,7 +165,7 @@ class CortexClient:
 
     def record_feedback(self, feedback: RemediationFeedback) -> None:
         """Record feedback on whether a remediation was successful."""
-        self._post("/v1/feedback/incident", {
+        self._post("/feedback/incident", {
             "remediation_id": feedback.remediation_id,
             "incident_id": feedback.incident_id,
             "outcome": feedback.outcome,
@@ -175,7 +175,7 @@ class CortexClient:
 
     def similar_incidents(self, incident_id: str, limit: int = 10) -> list[dict]:
         """Find incidents similar to the given one."""
-        resp = self._post("/v1/reconstruct", {
+        resp = self._post("/reconstruct", {
             "incident_id": incident_id,
             "mode": "fast",
             "limit": limit,
@@ -185,15 +185,15 @@ class CortexClient:
 
     def ingest_batch(self, events: list[dict]) -> None:
         """Ingest a batch of events directly into cortex."""
-        self._post("/v1/events/batch", {"events": events})
+        self._post("/events/batch", {"events": events})
 
     def ingest_event(self, event: dict) -> None:
         """Ingest a single event directly into cortex."""
-        self._post("/v1/events", event)
+        self._post("/events", event)
 
     def ingest_jsonl(self, events: list[dict]) -> None:
         """Ingest events as a JSONL stream into cortex."""
-        url = f"{self.endpoint}/v1/events/jsonl"
+        url = f"{self.endpoint}/events/jsonl"
         data = "\n".join(json.dumps(e, separators=(",", ":")) for e in events).encode("utf-8")
         req = urllib.request.Request(
             url,

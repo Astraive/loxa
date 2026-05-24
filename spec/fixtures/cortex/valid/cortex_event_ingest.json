@@ -7,7 +7,7 @@
   "level": "info",
   "outcome": "success",
   "method": "POST",
-  "path": "/api/v1/users",
+  "path": "/api/users",
   "status_code": 201,
   "provenance": "collector"
 }

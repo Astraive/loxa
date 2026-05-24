@@ -40,14 +40,14 @@ func TestSDKOutputEquivalence(t *testing.T) {
 		Kind:    "event",
 		Level:   loxa.LevelInfo,
 	})
-	loxa.Enrich(ctx,
+	_ = loxa.Enrich(ctx,
 		loxa.Float64("amount", 99.99),
 		loxa.String("currency", "USD"),
 		loxa.String("user.id", "u_123"),
 	)
-	loxa.Finish(ctx, "success")
-	loxa.Emit(ctx)
-	loxa.Flush(context.Background())
+	_ = loxa.Finish(ctx, "success")
+	_ = loxa.Emit(ctx)
+	_ = loxa.Flush(context.Background())
 
 	if store.Len() == 0 {
 		t.Fatal("no events emitted")

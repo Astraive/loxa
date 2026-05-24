@@ -10,7 +10,8 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time")
+	"time"
+)
 
 type RunnerConfig struct {
 	URL       string
@@ -75,8 +76,8 @@ func Run(ctx context.Context, cfg RunnerConfig) (Report, error) {
 }
 
 func postBatch(ctx context.Context, client *http.Client, url string, batch [][]byte) error {
-	if !strings.HasSuffix(url, "/v1/events") {
-		url = strings.TrimRight(url, "/") + "/v1/events"
+	if !strings.HasSuffix(url, "/events") {
+		url = strings.TrimRight(url, "/") + "/events"
 	}
 	events := make([]json.RawMessage, len(batch))
 	for i, b := range batch {

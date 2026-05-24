@@ -7,7 +7,7 @@
 | `/healthz` | GET | Liveness probe. Returns 200 if the process is running. | `{"status":"ok"}` |
 | `/readyz` | GET | Readiness probe. Returns 200 only when all sinks are connected and the collector can accept traffic. | `{"status":"ready"}` or `{"status":"not_ready","reason":"..."}` |
 | `/metrics` | GET | Prometheus-compatible metrics endpoint. | Text exposition format |
-| `/v1/status` | GET | Detailed operational status including queue depth, sink health, and uptime. | JSON object |
+| `/core/status` | GET | Detailed operational status including queue depth, sink health, and uptime. | JSON object |
 
 ### Kubernetes Probes
 

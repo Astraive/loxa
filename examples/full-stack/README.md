@@ -23,7 +23,7 @@ docker compose up -d
 curl http://localhost:9090/healthz
 
 # Prometheus targets
-curl http://localhost:9091/api/v1/targets
+curl http://localhost:9091/api/core/targets
 
 # Grafana dashboards
 open http://localhost:3000

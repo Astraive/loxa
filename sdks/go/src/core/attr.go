@@ -231,8 +231,8 @@ func Attempt(n int) Attr { return Int("retry.attempt", n) }
 // ErrorType sets error.type.
 func ErrorType(name string) Attr { return String("error.type", name) }
 
-// ErrorCode sets error.code.
-func ErrorCode(code string) Attr { return String("error.code", code) }
+// ErrorCode sets error_code.
+func ErrorCode(code string) Attr { return String("error_code", code) }
 
 // ErrorMessage sets error.message.
 func ErrorMessage(msg string) Attr { return String("error.message", msg) }
@@ -282,8 +282,8 @@ func CorrelationID(id string) Attr { return String("correlation.id", id) }
 // CommitSha sets commit.sha.
 func CommitSha(sha string) Attr { return String("commit.sha", sha) }
 
-// Release sets release (alias for version).
-func Release(version string) Attr { return Version(version) }
+// Release sets release.
+func Release(version string) Attr { return String("release", version) }
 
 // Money creates a money attribute with amount in cents and currency.
 func Money(key string, amountCents int64, currency string) Attr {
@@ -327,6 +327,27 @@ func EmailHash(key, value string) Attr { return String(key, value) }
 
 // IPHash creates a hashed IP attribute.
 func IPHash(key, value string) Attr { return String(key, value) }
+
+// List creates a list/array attribute.
+func List(key string, values ...any) Attr { return Any(key, values) }
+
+// Map creates a map/object attribute.
+func Map(key string, value map[string]any) Attr { return Any(key, value) }
+
+// Enum creates an enum attribute with optional allowed values.
+func Enum(key, value string, allowed ...string) Attr { return String(key, value) }
+
+// ID creates a high-cardinality ID attribute.
+func ID(key, value string) Attr { return String(key, value) }
+
+// Hash creates a hashed attribute.
+func Hash(key, value string) Attr { return HashString(key, value) }
+
+// Redacted creates an explicit redacted marker attribute.
+func Redacted(key string) Attr { return String(key, "[REDACTED]") }
+
+// AccountID creates a canonical account.id attribute.
+func AccountID(id string) Attr { return String("account.id", id) }
 
 // ── Checkout domain helpers ──────────────────────────────────────────────────
 

@@ -16,7 +16,7 @@ RUN cd collector && go mod download
 # Copy the entire repo (proto/ and gen/ are needed for proto generation)
 COPY . .
 
-# Generate protobuf code from proto/loxa/v1/ into gen/go/loxa/v1/
+# Generate protobuf code from proto/loxa/core/ into gen/go/loxa/core/
 RUN make proto
 
 # Build the worker binary

@@ -54,7 +54,7 @@ fn collector_http_client_matches_wrapped_batch_envelope_fixture() {
         .map(|value| serde_json::to_string(value).expect("encode input event"))
         .collect();
 
-    let mut client = CollectorHttpClient::new("http://collector.example/v1/events");
+    let mut client = CollectorHttpClient::new("http://collector.example/events");
     client.service = Some("checkout".to_string());
     let envelope = client.envelope(&encoded);
     client
@@ -80,10 +80,10 @@ fn collector_http_client_matches_wrapped_batch_envelope_fixture() {
 
 #[test]
 fn collector_http_client_rejects_invalid_envelope() {
-    let client = CollectorHttpClient::new("http://collector.example/v1/events");
+    let client = CollectorHttpClient::new("http://collector.example/events");
     let invalid = serde_json::json!({
         "api_version": "v1",
-        "source": { "sdk": "loxa-rs", "version": "0.0.1", "service": "checkout" },
+        "source": { "sdk": "loxa-rs", "version": "0.0.2", "service": "checkout" },
         "events": []
     });
     assert!(client.validate_envelope(&invalid).is_err());

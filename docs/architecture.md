@@ -218,7 +218,7 @@ loxa dlq replay --all      # Replay all DLQ entries
 - `POST /query` - Execute SQL query against events
 - `GET /tail` - Stream events in real-time (WebSocket)
 - `GET /dlq` - List DLQ entries
-- `POST /v1/dlq/{id}/replay` - Replay specific DLQ entry
+- `POST /core/dlq/{id}/replay` - Replay specific DLQ entry
 - `GET /metrics` - Prometheus metrics (if enabled)
 
 ### 8. Data Storage

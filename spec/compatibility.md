@@ -4,7 +4,7 @@ This document provides an overview of schema compatibility policies across all v
 
 ## Current Version
 
-- **Active Schema Version**: v0.0.1
+- **Active Schema Version**: v0.0.2
 - **Status**: Stable
 - **Location**: `v1/`
 
@@ -157,7 +157,7 @@ Example:
 
 | Version | Status | Released | Support Ends | Notes |
 |---------|--------|----------|--------------|-------|
-| v0.0.1  | Active | 2024-01-15 | N/A | Current stable |
+| v0.0.2  | Active | 2026-05-21 | N/A | Current stable |
 
 ## Resources
 

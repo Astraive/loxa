@@ -28,12 +28,12 @@
   "data": {
     "http": {
       "method": "POST",
-      "path": "/api/v1/orders",
-      "route": "/api/v1/orders",
+      "path": "/api/orders",
+      "route": "/api/orders",
       "status_code": 201,
       "client_ip": "203.0.113.42",
       "user_agent": "curl/7.68.0",
-      "url": "https://api.example.com/api/v1/orders",
+      "url": "https://api.example.com/api/orders",
       "host": "api.example.com"
     },
     "request_id": "req-abc123xyz789",

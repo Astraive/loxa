@@ -39,7 +39,7 @@ sequenceDiagram
     Collector->>Collector: Validate, deduplicate, redact PII
     Collector->>Sink: Fanout to configured sinks
     Collector-->>SDK: 202 Accepted
-    CLI->>Collector: GET /v1/query?event_name=order.created
+    CLI->>Collector: GET /core/query?event_name=order.created
     Collector-->>CLI: Matching events
     CLI-->>App: Display results
 ```

@@ -16,7 +16,7 @@ def _fixture(name: str) -> dict:
 
 def test_collector_client_matches_wrapped_batch_envelope_fixture() -> None:
     fixture = _fixture("wrapped_batch_json.json")
-    client = CollectorClient("http://collector.example/v1/events", service="checkout")
+    client = CollectorClient("http://collector.example/events", service="checkout")
     encoded = [json.dumps(event, separators=(",", ":")) for event in fixture["input_events"]]
     body = client.envelope(encoded)
     payload = json.loads(body.decode("utf-8"))
@@ -34,7 +34,7 @@ def test_validate_ingest_envelope_rejects_missing_events() -> None:
         _validate_ingest_envelope(
             {
                 "api_version": "v1",
-                "source": {"sdk": "loxa-py", "version": "0.0.1", "service": "checkout"},
+                "source": {"sdk": "loxa-py", "version": "0.0.2", "service": "checkout"},
                 "events": [],
             }
         )

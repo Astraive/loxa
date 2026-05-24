@@ -9,7 +9,7 @@ import (
 )
 
 func TestParseTailFilters(t *testing.T) {
-	req := httptest.NewRequest("GET", "/v1/tail?since=2026-01-01T00:00:00Z&after_event_id=evt-1&service=checkout&kind=log&trace_id=tr-1&incident_id=inc-1&limit=25", nil)
+	req := httptest.NewRequest("GET", "/tail?since=2026-01-01T00:00:00Z&after_event_id=evt-1&service=checkout&kind=log&trace_id=tr-1&incident_id=inc-1&limit=25", nil)
 	filters, err := serverruntime.ParseTailFilters(req)
 	if err != nil {
 		t.Fatalf("parse filters: %v", err)

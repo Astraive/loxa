@@ -2,7 +2,7 @@
 
 All notable changes to the LOXA Go SDK are documented in this file.
 
-## [0.0.1] - 2026-05-20
+## [0.0.2] - 2026-05-20
 
 ### Horizon 1 -- Foundation Gate
 

@@ -1,6 +1,6 @@
 #[test]
 fn alias_creates_logger_with_alias_metadata() {
-    let logger = loxa::Logger::new(loxa::Config::dev("api"));
+    let logger = loxa::New(loxa::Config::dev("api"));
     let aliased = logger.alias("audit");
     assert_eq!(aliased.config().service, "api");
     assert_eq!(aliased.config().alias, "audit");

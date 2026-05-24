@@ -141,8 +141,8 @@ The specification generates authoritative contracts for both Loxa and Cortex:
 ### Loxa Contract
 ```json
 {
-  "spec_version": "0.0.1",
-  "event_version": "0.0.1",
+  "spec_version": "0.0.2",
+  "event_version": "0.0.2",
   "api_version": "v1",
   "kinds": ["event"],
   "levels": ["debug", "info", "warn", "error"],
@@ -167,7 +167,7 @@ Generated at: `generated/contract/loxa-contract.json`
 ### Cortex Contract
 ```json
 {
-  "spec_version": "0.0.1",
+  "spec_version": "0.0.2",
   "api_version": "v1",
   "kinds": ["event", "metric", "log", ...],
   "provenance_types": ["loxa", "collector", "otlp", "jsonl", "manual", "replay"],

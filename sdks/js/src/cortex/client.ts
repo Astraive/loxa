@@ -159,18 +159,18 @@ export class CortexClient {
 
   /** Ingest events into cortex. */
   async ingestBatch(events: Record<string, any>[]): Promise<void> {
-    await this.post('/v1/events/batch', { events });
+    await this.post('/events/batch', { events });
   }
 
   /** Ingest events as NDJSON. */
   async ingestJsonl(events: Record<string, any>[]): Promise<void> {
     const body = events.map(e => JSON.stringify(e)).join('\n');
-    await this.request('POST', '/v1/events/jsonl', body, 'application/x-ndjson');
+    await this.request('POST', '/events/jsonl', body, 'application/x-ndjson');
   }
 
   /** Reconstruct incident context. */
   async reconstruct(incidentId: string, mode: string = 'fast'): Promise<ReconstructionResult> {
-    const res = await this.post('/v1/reconstruct', { incident_id: incidentId, mode });
+    const res = await this.post('/reconstruct', { incident_id: incidentId, mode });
     const result = JSON.parse(res.body);
     normalizeIncidentContext(result);
     validateIncidentContext(result);
@@ -179,14 +179,14 @@ export class CortexClient {
 
   /** Find incidents similar to the given one. */
   async similarIncidents(incidentId: string, limit: number = 10): Promise<any[]> {
-    const res = await this.post('/v1/reconstruct', { incident_id: incidentId, mode: 'fast' });
+    const res = await this.post('/reconstruct', { incident_id: incidentId, mode: 'fast' });
     const data = JSON.parse(res.body);
     return (data.similar_incidents || data.similar_past_incidents || []).slice(0, limit);
   }
 
   /** Get service dependency graph. */
   async serviceGraph(service: string): Promise<GraphResult> {
-    const res = await this.get(`/v1/graph/service/${encodeURIComponent(service)}`);
+    const res = await this.get(`/graph/service/${encodeURIComponent(service)}`);
     const result = JSON.parse(res.body);
     normalizeGraphView(result);
     validateGraphView(result);
@@ -195,7 +195,7 @@ export class CortexClient {
 
   /** Get incident graph. */
   async incidentGraph(incidentId: string): Promise<GraphResult> {
-    const res = await this.get(`/v1/graph/incident/${encodeURIComponent(incidentId)}`);
+    const res = await this.get(`/graph/incident/${encodeURIComponent(incidentId)}`);
     const result = JSON.parse(res.body);
     normalizeGraphView(result);
     validateGraphView(result);
@@ -206,13 +206,13 @@ export class CortexClient {
   async recordRemediation(data: Remediation): Promise<void> {
     normalizeRemediation(data);
     validateRemediation(data);
-    await this.post('/v1/feedback/remediation', data);
+    await this.post('/feedback/remediation', data);
   }
 
   /** Record incident feedback. */
   async recordFeedback(data: Feedback): Promise<void> {
     validateFeedback(data);
-    await this.post('/v1/feedback/incident', data);
+    await this.post('/feedback/incident', data);
   }
 
   private get(path: string): Promise<{ statusCode: number; body: string }> {

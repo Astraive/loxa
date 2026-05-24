@@ -117,7 +117,7 @@ func TestStrictAllowsServiceFromConfig(t *testing.T) {
 		t.Fatalf("new logger: %v", err)
 	}
 	ctx := l.StartEvent(context.Background(), Params{Event: "checkout.request"})
-	l.Enrich(ctx, String("ok", "x"))
+	_ = l.Enrich(ctx, String("ok", "x"))
 	if err := l.Emit(ctx); err != nil {
 		t.Fatalf("unexpected strict error: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestStrictRejectsInvalidAttrKey(t *testing.T) {
 		t.Fatalf("new logger: %v", err)
 	}
 	ctx := l.StartEvent(context.Background(), Params{Event: "checkout.request"})
-	l.Enrich(ctx, String("bad-key", "x"))
+	_ = l.Enrich(ctx, String("bad-key", "x"))
 	if err := l.Emit(ctx); err == nil || !strings.Contains(err.Error(), "invalid attr key") {
 		t.Fatalf("expected invalid key error, got %v", err)
 	}
@@ -145,7 +145,7 @@ func TestStrictRejectsCanonicalCollision(t *testing.T) {
 		t.Fatalf("new logger: %v", err)
 	}
 	ctx := l.StartEvent(context.Background(), Params{Event: "checkout.request"})
-	l.Enrich(ctx, String("service", "x"))
+	_ = l.Enrich(ctx, String("service", "x"))
 	if err := l.Emit(ctx); err == nil || !strings.Contains(err.Error(), "collides with canonical key") {
 		t.Fatalf("expected canonical collision error, got %v", err)
 	}
@@ -159,7 +159,7 @@ func TestStrictRejectsUnserializableAny(t *testing.T) {
 		t.Fatalf("new logger: %v", err)
 	}
 	ctx := l.StartEvent(context.Background(), Params{Event: "checkout.request"})
-	l.Enrich(ctx, Any("x", func() {}))
+	_ = l.Enrich(ctx, Any("x", func() {}))
 	if err := l.Emit(ctx); err == nil || !strings.Contains(err.Error(), "non-serializable any value") {
 		t.Fatalf("expected strict any error, got %v", err)
 	}
@@ -173,7 +173,7 @@ func TestStrictAllowsValidEvent(t *testing.T) {
 		t.Fatalf("new logger: %v", err)
 	}
 	ctx := l.StartEvent(context.Background(), Params{Event: "checkout.request"})
-	l.Enrich(ctx, String("user.id", "u-1"), Int("status_code_user", 200))
+	_ = l.Enrich(ctx, String("user.id", "u-1"), Int("status_code_user", 200))
 	if err := l.Emit(ctx); err != nil {
 		t.Fatalf("unexpected strict emit error: %v", err)
 	}
@@ -195,7 +195,7 @@ func TestStrictWithValidateEncodedFalse_SkipsSpecContract(t *testing.T) {
 		t.Fatalf("new logger: %v", err)
 	}
 	ctx := l.StartEvent(context.Background(), Params{Event: "checkout.request"})
-	l.Enrich(ctx, String("user.id", "u-1"))
+	_ = l.Enrich(ctx, String("user.id", "u-1"))
 	if err := l.Emit(ctx); err != nil {
 		t.Fatalf("unexpected error with ValidateEncoded=false: %v", err)
 	}

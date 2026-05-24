@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -20,20 +22,34 @@ class Check:
     description: str
 
 
+@dataclass(frozen=True)
+class CheckResult:
+    sdk: str
+    group: str
+    description: str
+    command: tuple[str, ...]
+    cwd: str
+    passed: bool
+    returncode: int
+    duration_s: float
+    stdout: str
+    stderr: str
+
+
 SDK_GROUPS: dict[str, list[Check]] = {
     "javascript": [
-        Check("javascript", "state_machine", ("node", "--test", "--experimental-strip-types", "tests/event.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "core lifecycle state machine"),
-        Check("javascript", "canonical_fields", ("node", "--test", "--experimental-strip-types", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "canonical field ownership"),
-        Check("javascript", "duplicate_policy", ("node", "--test", "--experimental-strip-types", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "duplicate policy and behavior"),
-        Check("javascript", "sampling", ("node", "--test", "--experimental-strip-types", "tests/sampler.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "sampling behavior"),
-        Check("javascript", "delivery_semantics", ("node", "--test", "--experimental-strip-types", "tests/sink.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "delivery and sink semantics"),
-        Check("javascript", "panic_error_safety", ("node", "--test", "--experimental-strip-types", "tests/event.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "panic-safe error paths"),
-        Check("javascript", "config_precedence", ("node", "--test", "--experimental-strip-types", "tests/facade.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "config and facade behavior"),
-        Check("javascript", "metrics", ("node", "--test", "--experimental-strip-types", "tests/sink.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "metrics-adjacent checks"),
-        Check("javascript", "golden_fixtures", ("node", "--test", "--experimental-strip-types", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "shared fixture conformance"),
-        Check("javascript", "collector_integration", ("node", "--test", "--experimental-strip-types", "tests/e2e-collector.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "collector integration"),
-        Check("javascript", "cortex_emitted_shape", ("node", "--test", "--experimental-strip-types", "tests/emitted-shape.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "Cortex-consumable emitted event shape"),
-        Check("javascript", "parity", ("node", "--test", "--experimental-strip-types", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "API parity"),
+        Check("javascript", "state_machine", ("node", "--test", "--test-concurrency=1", "--experimental-strip-types", "tests/event.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "core lifecycle state machine"),
+        Check("javascript", "canonical_fields", ("node", "--test", "--test-concurrency=1", "--experimental-strip-types", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "canonical field ownership"),
+        Check("javascript", "duplicate_policy", ("node", "--test", "--test-concurrency=1", "--experimental-strip-types", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "duplicate policy and behavior"),
+        Check("javascript", "sampling", ("node", "--test", "--test-concurrency=1", "--experimental-strip-types", "tests/sampler.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "sampling behavior"),
+        Check("javascript", "delivery_semantics", ("node", "--test", "--test-concurrency=1", "--experimental-strip-types", "tests/sink.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "delivery and sink semantics"),
+        Check("javascript", "panic_error_safety", ("node", "--test", "--test-concurrency=1", "--experimental-strip-types", "tests/event.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "panic-safe error paths"),
+        Check("javascript", "config_precedence", ("node", "--test", "--test-concurrency=1", "--experimental-strip-types", "tests/facade.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "config and facade behavior"),
+        Check("javascript", "metrics", ("node", "--test", "--test-concurrency=1", "--experimental-strip-types", "tests/sink.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "metrics-adjacent checks"),
+        Check("javascript", "golden_fixtures", ("node", "--test", "--test-concurrency=1", "--experimental-strip-types", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "shared fixture conformance"),
+        Check("javascript", "collector_integration", ("node", "--test", "--test-concurrency=1", "--experimental-strip-types", "tests/e2e-collector.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "collector integration"),
+        Check("javascript", "cortex_emitted_shape", ("node", "--test", "--test-concurrency=1", "--experimental-strip-types", "tests/emitted-shape.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "Cortex-consumable emitted event shape"),
+        Check("javascript", "parity", ("node", "--test", "--test-concurrency=1", "--experimental-strip-types", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "API parity"),
     ],
     "go": [
         Check("go", "state_machine", ("go", "test", "./src/core"), WORKSPACE_ROOT / "sdks" / "go", "core lifecycle and state transitions"),
@@ -85,24 +101,48 @@ def _all_groups() -> list[str]:
     return sorted(groups)
 
 
-def _run_check(check: Check, verbose: bool) -> bool:
+def _run_check(check: Check, verbose: bool) -> CheckResult:
     print(f"[{check.sdk}:{check.group}] {' '.join(check.command)}")
     print(f"  {check.description}")
+    started = time.perf_counter()
     result = subprocess.run(
         list(check.command),
         cwd=check.cwd,
         capture_output=not verbose,
         text=True,
     )
+    duration_s = time.perf_counter() - started
     if result.returncode == 0:
         print("  PASS")
-        return True
+        return CheckResult(
+            sdk=check.sdk,
+            group=check.group,
+            description=check.description,
+            command=check.command,
+            cwd=str(check.cwd),
+            passed=True,
+            returncode=0,
+            duration_s=duration_s,
+            stdout=result.stdout or "",
+            stderr=result.stderr or "",
+        )
     print("  FAIL")
     if not verbose:
         output = (result.stdout or "") + (result.stderr or "")
         if output.strip():
             print(output.strip()[:5000])
-    return False
+    return CheckResult(
+        sdk=check.sdk,
+        group=check.group,
+        description=check.description,
+        command=check.command,
+        cwd=str(check.cwd),
+        passed=False,
+        returncode=result.returncode,
+        duration_s=duration_s,
+        stdout=result.stdout or "",
+        stderr=result.stderr or "",
+    )
 
 
 def _selected_checks(sdk: str, group: str) -> list[Check]:
@@ -129,12 +169,39 @@ def _print_matrix() -> None:
         print(row)
 
 
+def _print_json(results: list[CheckResult]) -> None:
+    payload = {
+        "checks": [
+            {
+                "sdk": result.sdk,
+                "group": result.group,
+                "description": result.description,
+                "command": list(result.command),
+                "cwd": result.cwd,
+                "passed": result.passed,
+                "returncode": result.returncode,
+                "duration_s": result.duration_s,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+            }
+            for result in results
+        ]
+    }
+    payload["summary"] = {
+        "total": len(results),
+        "passed": sum(1 for result in results if result.passed),
+        "failed": sum(1 for result in results if not result.passed),
+    }
+    print(json.dumps(payload, indent=2))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run grouped LOXA SDK conformance checks.")
     parser.add_argument("--sdk", choices=("all", "go", "python", "rust", "javascript"), default="all")
     parser.add_argument("--group", choices=("all", *_all_groups()), default="all")
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--matrix", action="store_true", help="Print grouped conformance matrix and exit.")
+    parser.add_argument("--json", action="store_true", help="Print structured per-check results as JSON.")
     args = parser.parse_args()
 
     if args.matrix:
@@ -142,9 +209,12 @@ def main() -> int:
         return 0
 
     checks = _selected_checks(args.sdk, args.group)
-    passed = True
+    results: list[CheckResult] = []
     for check in checks:
-        passed = _run_check(check, args.verbose) and passed
+        results.append(_run_check(check, args.verbose))
+    if args.json:
+        _print_json(results)
+    passed = all(result.passed for result in results)
     return 0 if passed else 1
 
 

@@ -38,12 +38,12 @@ describe('Spec Conformance', () => {
   });
 
   it('buildIngestEnvelope creates valid envelope', () => {
-    const envelope = buildIngestEnvelope('loxa-js', '0.0.1', 'checkout', [
+    const envelope = buildIngestEnvelope('loxa-js', '0.0.2', 'checkout', [
       { event_id: 'evt_1', event: 'test' },
     ]);
     assert.equal(envelope.api_version, 'v1');
     assert.equal(envelope.source.sdk, 'loxa-js');
-    assert.equal(envelope.source.version, '0.0.1');
+    assert.equal(envelope.source.version, '0.0.2');
     assert.equal(envelope.source.service, 'checkout');
     assert.equal(envelope.events.length, 1);
   });

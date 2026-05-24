@@ -63,7 +63,7 @@ import { loxaMiddleware } from 'loxa-js/middleware/express';
 import { production, httpBatchSink, sampleErrors } from 'loxa-js';
 
 const config = production('my-service')
-  .withSink(httpBatchSink({ endpoint: 'http://collector:9090/v1/events' }))
+  .withSink(httpBatchSink({ endpoint: 'http://collector:9090/events' }))
   .withSampler(sampleErrors())
   .withRedactor(defaultRedactor())
   .withAsync(true);

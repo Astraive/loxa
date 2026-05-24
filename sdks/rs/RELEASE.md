@@ -23,7 +23,7 @@ Edit `Cargo.toml` to set the new version:
 ```toml
 [package]
 name = "loxa"
-version = "0.0.1"
+version = "0.0.2"
 ```
 
 ### 3. Verify the Build
@@ -47,14 +47,14 @@ cargo publish             # publish to crates.io
 Create a Git tag following the `rs/vX.Y.Z` convention:
 
 ```bash
-git tag -a rs/v0.0.1 -m "loxa-rs v0.0.1"
-git push origin rs/v0.0.1
+git tag -a rs/v0.0.2 -m "loxa-rs v0.0.2"
+git push origin rs/v0.0.2
 ```
 
 ### 6. Create a GitHub Release
 
 ```bash
-gh release create rs/v0.0.1 --title "loxa-rs v0.0.1" --notes-file release-notes.md
+gh release create rs/v0.0.2 --title "loxa-rs v0.0.2" --notes-file release-notes.md
 ```
 
 ## Version Policy

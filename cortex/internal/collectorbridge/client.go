@@ -81,7 +81,7 @@ func (c *Client) StreamTail(ctx context.Context, handle func(*models.Event) erro
 }
 
 func (c *Client) streamTailHTTP(ctx context.Context, handle func(*models.Event) error) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.tailURL("/v1/tail", false), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.tailURL("/tail", false), nil)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (c *Client) streamTailWebSocket(ctx context.Context, handle func(*models.Ev
 		header.Set(c.cfg.APIKeyHeader, c.cfg.APIKey)
 	}
 
-	conn, _, err := websocket.DefaultDialer.DialContext(ctx, c.tailURL("/v1/ws/tail", true), header)
+	conn, _, err := websocket.DefaultDialer.DialContext(ctx, c.tailURL("/ws/tail", true), header)
 	if err != nil {
 		return err
 	}
@@ -370,7 +370,7 @@ func (c *Client) queryRows(ctx context.Context, query string, limit int) ([]map[
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(c.cfg.URL, "/")+"/v1/query", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(c.cfg.URL, "/")+"/query", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -432,6 +432,216 @@ func (c *Client) DistinctServices(ctx context.Context) ([]string, error) {
 		}
 	}
 	return services, nil
+}
+
+func (c *Client) FindByLevel(ctx context.Context, level string, limit int) ([]*models.Event, error) {
+	query, err := c.buildJSONFieldQuery("level", level, limit)
+	if err != nil {
+		return nil, err
+	}
+	return c.queryEvents(ctx, query, limit)
+}
+
+func (c *Client) FindByEnvironment(ctx context.Context, env string, limit int) ([]*models.Event, error) {
+	query, err := c.buildJSONFieldQuery("environment", env, limit)
+	if err != nil {
+		return nil, err
+	}
+	return c.queryEvents(ctx, query, limit)
+}
+
+func (c *Client) FindByRelease(ctx context.Context, release string, limit int) ([]*models.Event, error) {
+	query, err := c.buildJSONFieldQuery("release", release, limit)
+	if err != nil {
+		return nil, err
+	}
+	return c.queryEvents(ctx, query, limit)
+}
+
+func (c *Client) FindByDurationRange(ctx context.Context, minMs, maxMs float64, limit int) ([]*models.Event, error) {
+	if limit <= 0 {
+		limit = 1000
+	}
+	table, rawCol, tsCol, err := c.sqlParts()
+	if err != nil {
+		return nil, err
+	}
+	query := fmt.Sprintf(
+		"SELECT %s FROM %s WHERE CAST(json_extract_string(%s, '$.duration_ms') AS DOUBLE) BETWEEN %f AND %f ORDER BY %s ASC LIMIT %d",
+		rawCol, table, rawCol, minMs, maxMs, tsCol, limit,
+	)
+	return c.queryEvents(ctx, query, limit)
+}
+
+func (c *Client) CountByOutcome(ctx context.Context, service string, from, to time.Time) (map[string]int64, error) {
+	table, rawCol, tsCol, err := c.sqlParts()
+	if err != nil {
+		return nil, err
+	}
+	conds := []string{fmt.Sprintf("json_extract_string(%s, '$.service') = %s", rawCol, quoteSQLString(service))}
+	if !from.IsZero() {
+		conds = append(conds, fmt.Sprintf("%s >= TIMESTAMP %s", tsCol, quoteSQLString(from.UTC().Format(time.RFC3339))))
+	}
+	if !to.IsZero() {
+		conds = append(conds, fmt.Sprintf("%s <= TIMESTAMP %s", tsCol, quoteSQLString(to.UTC().Format(time.RFC3339))))
+	}
+	query := fmt.Sprintf(
+		"SELECT coalesce(json_extract_string(%s, '$.outcome'), '') AS outcome, COUNT(*) AS cnt FROM %s WHERE %s GROUP BY outcome",
+		rawCol, table, strings.Join(conds, " AND "),
+	)
+	rows, err := c.queryRows(ctx, query, 10000)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]int64, len(rows))
+	for _, row := range rows {
+		outcome, _ := row["outcome"].(string)
+		cnt, _ := row["cnt"].(float64)
+		result[outcome] = int64(cnt)
+	}
+	return result, nil
+}
+
+func (c *Client) CountByEventName(ctx context.Context, service string, from, to time.Time) (map[string]int64, error) {
+	table, rawCol, tsCol, err := c.sqlParts()
+	if err != nil {
+		return nil, err
+	}
+	conds := []string{fmt.Sprintf("json_extract_string(%s, '$.service') = %s", rawCol, quoteSQLString(service))}
+	if !from.IsZero() {
+		conds = append(conds, fmt.Sprintf("%s >= TIMESTAMP %s", tsCol, quoteSQLString(from.UTC().Format(time.RFC3339))))
+	}
+	if !to.IsZero() {
+		conds = append(conds, fmt.Sprintf("%s <= TIMESTAMP %s", tsCol, quoteSQLString(to.UTC().Format(time.RFC3339))))
+	}
+	query := fmt.Sprintf(
+		"SELECT json_extract_string(%s, '$.event') AS evname, COUNT(*) AS cnt FROM %s WHERE %s GROUP BY evname",
+		rawCol, table, strings.Join(conds, " AND "),
+	)
+	rows, err := c.queryRows(ctx, query, 10000)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]int64, len(rows))
+	for _, row := range rows {
+		name, _ := row["evname"].(string)
+		cnt, _ := row["cnt"].(float64)
+		result[name] = int64(cnt)
+	}
+	return result, nil
+}
+
+func (c *Client) AverageDuration(ctx context.Context, eventName string, from, to time.Time) (float64, error) {
+	table, rawCol, tsCol, err := c.sqlParts()
+	if err != nil {
+		return 0, err
+	}
+	conds := []string{fmt.Sprintf("json_extract_string(%s, '$.event') = %s", rawCol, quoteSQLString(eventName))}
+	if !from.IsZero() {
+		conds = append(conds, fmt.Sprintf("%s >= TIMESTAMP %s", tsCol, quoteSQLString(from.UTC().Format(time.RFC3339))))
+	}
+	if !to.IsZero() {
+		conds = append(conds, fmt.Sprintf("%s <= TIMESTAMP %s", tsCol, quoteSQLString(to.UTC().Format(time.RFC3339))))
+	}
+	query := fmt.Sprintf(
+		"SELECT AVG(CAST(json_extract_string(%s, '$.duration_ms') AS DOUBLE)) AS avg_dur FROM %s WHERE %s",
+		rawCol, table, strings.Join(conds, " AND "),
+	)
+	rows, err := c.queryRows(ctx, query, 1)
+	if err != nil {
+		return 0, err
+	}
+	if len(rows) == 0 {
+		return 0, nil
+	}
+	avg, _ := rows[0]["avg_dur"].(float64)
+	return avg, nil
+}
+
+func (c *Client) PercentileDuration(ctx context.Context, eventName string, percentile float64, from, to time.Time) (float64, error) {
+	table, rawCol, tsCol, err := c.sqlParts()
+	if err != nil {
+		return 0, err
+	}
+	conds := []string{fmt.Sprintf("json_extract_string(%s, '$.event') = %s", rawCol, quoteSQLString(eventName))}
+	if !from.IsZero() {
+		conds = append(conds, fmt.Sprintf("%s >= TIMESTAMP %s", tsCol, quoteSQLString(from.UTC().Format(time.RFC3339))))
+	}
+	if !to.IsZero() {
+		conds = append(conds, fmt.Sprintf("%s <= TIMESTAMP %s", tsCol, quoteSQLString(to.UTC().Format(time.RFC3339))))
+	}
+	query := fmt.Sprintf(
+		"SELECT quantile(CAST(json_extract_string(%s, '$.duration_ms') AS DOUBLE), %f) AS p_dur FROM %s WHERE %s",
+		rawCol, percentile/100.0, table, strings.Join(conds, " AND "),
+	)
+	rows, err := c.queryRows(ctx, query, 1)
+	if err != nil {
+		return 0, err
+	}
+	if len(rows) == 0 {
+		return 0, nil
+	}
+	p, _ := rows[0]["p_dur"].(float64)
+	return p, nil
+}
+
+func (c *Client) DistinctEventNames(ctx context.Context) ([]string, error) {
+	table, rawCol, _, err := c.sqlParts()
+	if err != nil {
+		return nil, err
+	}
+	query := fmt.Sprintf("SELECT DISTINCT json_extract_string(%s, '$.event') AS evname FROM %s ORDER BY evname", rawCol, table)
+	rows, err := c.queryRows(ctx, query, 10000)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if name, ok := row["evname"].(string); ok && strings.TrimSpace(name) != "" {
+			names = append(names, name)
+		}
+	}
+	return names, nil
+}
+
+func (c *Client) ListLifecycleSummaries(ctx context.Context, filter map[string]any, limit, offset int) ([]map[string]any, int, error) {
+	table, rawCol, tsCol, err := c.sqlParts()
+	if err != nil {
+		return nil, 0, err
+	}
+	conds := []string{"1=1"}
+	if svc, ok := filter["service"].(string); ok && strings.TrimSpace(svc) != "" {
+		conds = append(conds, fmt.Sprintf("json_extract_string(%s, '$.service') = %s", rawCol, quoteSQLString(svc)))
+	}
+	if evName, ok := filter["event_name"].(string); ok && strings.TrimSpace(evName) != "" {
+		conds = append(conds, fmt.Sprintf("json_extract_string(%s, '$.event') = %s", rawCol, quoteSQLString(evName)))
+	}
+	if outcome, ok := filter["outcome"].(string); ok && strings.TrimSpace(outcome) != "" {
+		conds = append(conds, fmt.Sprintf("json_extract_string(%s, '$.outcome') = %s", rawCol, quoteSQLString(outcome)))
+	}
+
+	countQuery := fmt.Sprintf("SELECT COUNT(*) AS total FROM %s WHERE %s", table, strings.Join(conds, " AND "))
+	countRows, err := c.queryRows(ctx, countQuery, 1)
+	if err != nil {
+		return nil, 0, err
+	}
+	total := 0
+	if len(countRows) > 0 {
+		total = int(countRows[0]["total"].(float64))
+	}
+
+	if limit <= 0 {
+		limit = 100
+	}
+	dataQuery := fmt.Sprintf(
+		"SELECT %s FROM %s WHERE %s ORDER BY %s DESC LIMIT %d OFFSET %d",
+		rawCol, table, strings.Join(conds, " AND "), tsCol, limit, offset,
+	)
+	dataRows, err := c.queryRows(ctx, dataQuery, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	return dataRows, total, nil
 }
 
 func (c *Client) tailURL(path string, websocketScheme bool) string {

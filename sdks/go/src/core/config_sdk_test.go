@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -296,7 +297,7 @@ func TestFlushAndShutdown(t *testing.T) {
 	logger.Info("test message")
 
 	// Flush should work
-	if err := logger.Flush(nil); err != nil {
+	if err := logger.Flush(context.TODO()); err != nil {
 		t.Errorf("Flush() error = %v", err)
 	}
 
@@ -306,7 +307,7 @@ func TestFlushAndShutdown(t *testing.T) {
 	}
 
 	// Shutdown should work
-	if err := logger.Shutdown(nil); err != nil {
+	if err := logger.Shutdown(context.TODO()); err != nil {
 		t.Errorf("Shutdown() error = %v", err)
 	}
 }

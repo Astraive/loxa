@@ -53,6 +53,8 @@ class AsyncConfig:
     queue_size: int = 8192
     workers: int = 1
     max_batch_bytes: int = 256 * 1024
+    flush_interval_ms: int = 5000
+    batch_size: int = 100
 
 
 @dataclass(slots=True)
@@ -190,6 +192,8 @@ class Config:
 
     def with_otel_bridge(self, value: bool) -> "Config":
         self.otel_bridge = value
+        if value:
+            self.async_config.enabled = True
         return self
 
     def with_retry(self, value: bool) -> "Config":
@@ -390,6 +394,7 @@ def _find_defaults_path() -> Path:
     here = Path(__file__).resolve()
     candidates = [
         here.parents[2] / "loxa-py.defaults.yaml",
+        here.parents[3] / "loxa-py.defaults.yaml",
         Path.cwd() / "loxa-py.defaults.yaml",
     ]
     for candidate in candidates:

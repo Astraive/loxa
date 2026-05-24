@@ -11,7 +11,7 @@ echo "Repo: $REPO_ROOT"
 echo ""
 
 # Step 1: Verify all proto source files exist
-PROTO_SRC="$REPO_ROOT/proto/loxa/v1"
+PROTO_SRC="$REPO_ROOT/proto/loxa/core"
 EXPECTED_PROTOS=("event.proto" "ingest.proto" "collector.proto" "cortex.proto")
 
 for proto in "${EXPECTED_PROTOS[@]}"; do
@@ -19,11 +19,11 @@ for proto in "${EXPECTED_PROTOS[@]}"; do
         echo "✗ Missing proto source: $PROTO_SRC/$proto"
         exit 1
     fi
-    echo "✓ Found: proto/loxa/v1/$proto"
+    echo "✓ Found: proto/loxa/core/$proto"
 done
 
 # Step 2: Check that generated Go files exist
-GEN_DIR="$REPO_ROOT/gen/go/loxa/v1"
+GEN_DIR="$REPO_ROOT/gen/go/loxa/core"
 EXPECTED_GEN=(
     "event.pb.go" "ingest.pb.go" "collector.pb.go" "cortex.pb.go"
     "ingest_grpc.pb.go" "collector_grpc.pb.go" "cortex_grpc.pb.go"
@@ -31,10 +31,10 @@ EXPECTED_GEN=(
 
 for gen in "${EXPECTED_GEN[@]}"; do
     if [ ! -f "$GEN_DIR/$gen" ]; then
-        echo "✗ Missing generated file: gen/go/loxa/v1/$gen (run 'make proto')"
+        echo "✗ Missing generated file: gen/go/loxa/core/$gen (run 'make proto')"
         exit 1
     fi
-    echo "✓ Found: gen/go/loxa/v1/$gen"
+    echo "✓ Found: gen/go/loxa/core/$gen"
 done
 
 # Step 3: Regenerate and compare (primary check, avoids timestamp false-positives)
@@ -57,10 +57,10 @@ FAILED=0
 for f in "$BACKUP_DIR"/*.pb.go; do
     basename=$(basename "$f")
     if [ ! -f "$GEN_DIR/$basename" ]; then
-        echo "✗ Missing generated file: gen/go/loxa/v1/$basename"
+        echo "✗ Missing generated file: gen/go/loxa/core/$basename"
         FAILED=1
     elif ! cmp -s "$f" "$GEN_DIR/$basename"; then
-        echo "✗ Out of date: gen/go/loxa/v1/$basename (regeneration produces different output)"
+        echo "✗ Out of date: gen/go/loxa/core/$basename (regeneration produces different output)"
         FAILED=1
     fi
 done

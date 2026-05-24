@@ -71,15 +71,15 @@ func TestClientReconstruct(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/v1/reconstruct" {
+		if r.URL.Path != "/reconstruct" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		var body map[string]string
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["incident_id"] != "inc-123" {
 			t.Errorf("expected incident_id=inc-123, got %s", body["incident_id"])
 		}
-		json.NewEncoder(w).Encode(IncidentContext{
+		_ = json.NewEncoder(w).Encode(IncidentContext{
 			IncidentID:      "inc-123",
 			Timestamp:       "2026-05-20T00:00:00Z",
 			CausalChain:     []map[string]any{{"cause": "deploy", "effect": "error"}},
@@ -110,13 +110,13 @@ func TestClientServiceGraph(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/v1/graph/service/svc-a" {
+		if r.URL.Path != "/graph/service/svc-a" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		if r.URL.Query().Get("depth") != "2" {
 			t.Errorf("expected depth=2, got %s", r.URL.Query().Get("depth"))
 		}
-		json.NewEncoder(w).Encode(GraphView{
+		_ = json.NewEncoder(w).Encode(GraphView{
 			Nodes: []map[string]any{{"id": "svc-a", "type": "service"}, {"id": "svc-b", "type": "service"}},
 			Edges: []map[string]any{{"source": "svc-a", "target": "svc-b", "type": "depends_on"}},
 		})
@@ -142,10 +142,10 @@ func TestClientRecordRemediation(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/v1/feedback/remediation" {
+		if r.URL.Path != "/feedback/remediation" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		json.NewDecoder(r.Body).Decode(&received)
+		_ = json.NewDecoder(r.Body).Decode(&received)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
@@ -166,10 +166,10 @@ func TestClientRecordRemediation(t *testing.T) {
 func TestClientRecordFeedback(t *testing.T) {
 	var received RemediationFeedback
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/feedback/incident" {
+		if r.URL.Path != "/feedback/incident" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		json.NewDecoder(r.Body).Decode(&received)
+		_ = json.NewDecoder(r.Body).Decode(&received)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
@@ -191,10 +191,10 @@ func TestClientRecordFeedback(t *testing.T) {
 func TestClientIngestBatch(t *testing.T) {
 	var received map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/events/batch" {
+		if r.URL.Path != "/events/batch" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		json.NewDecoder(r.Body).Decode(&received)
+		_ = json.NewDecoder(r.Body).Decode(&received)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
@@ -216,7 +216,7 @@ func TestClientIngestBatch(t *testing.T) {
 func TestClientError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("internal error"))
+		_, _ = w.Write([]byte("internal error"))
 	}))
 	defer srv.Close()
 
@@ -255,7 +255,7 @@ func TestClientMetrics(t *testing.T) {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("# HELP cortex_events_total Total events\n# TYPE cortex_events_total counter\ncortex_events_total 42\n"))
+		_, _ = w.Write([]byte("# HELP cortex_events_total Total events\n# TYPE cortex_events_total counter\ncortex_events_total 42\n"))
 	}))
 	defer srv.Close()
 
@@ -272,7 +272,7 @@ func TestClientMetrics(t *testing.T) {
 func TestClientHealthWithJSONBody(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"ok"}`))
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	}))
 	defer srv.Close()
 
@@ -285,7 +285,7 @@ func TestClientHealthWithJSONBody(t *testing.T) {
 func TestClientReadyWithJSONBody(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"ready":true}`))
+		_, _ = w.Write([]byte(`{"ready":true}`))
 	}))
 	defer srv.Close()
 
@@ -298,7 +298,7 @@ func TestClientReadyWithJSONBody(t *testing.T) {
 func TestClientReadyDegraded(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"degraded"}`))
+		_, _ = w.Write([]byte(`{"status":"degraded"}`))
 	}))
 	defer srv.Close()
 

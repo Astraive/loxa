@@ -138,9 +138,9 @@ func (s *HTTPServer) handleReady(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if s.state.IsReady() {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ready"}`))
+		_, _ = w.Write([]byte(`{"status":"ready"}`))
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(`{"status":"not_ready"}`))
+		_, _ = w.Write([]byte(`{"status":"not_ready"}`))
 	}
 }

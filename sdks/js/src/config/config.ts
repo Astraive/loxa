@@ -33,6 +33,8 @@ export interface Config {
   alias: string;
   version: string;
   environment: string;
+  release: string;
+  namespace: string;
   collectorUrl: string;
   apiKey: string;
   sink: Sink | null;
@@ -53,6 +55,7 @@ export interface Config {
   includeHost: boolean;
   includeRuntime: boolean;
   duplicatePolicy: string;
+  logger: Logger | null;
 }
 
 /** Default configuration. */
@@ -68,6 +71,8 @@ export function fromEnv(): Config {
     cfg.service = process.env.LOXA_SERVICE || process.env.SERVICE || cfg.service;
     cfg.version = process.env.LOXA_VERSION || process.env.VERSION || cfg.version;
     cfg.environment = process.env.LOXA_ENVIRONMENT || process.env.ENVIRONMENT || cfg.environment;
+    cfg.release = process.env.LOXA_RELEASE || process.env.RELEASE || cfg.release;
+    cfg.namespace = process.env.LOXA_NAMESPACE || process.env.NAMESPACE || cfg.namespace;
     cfg.collectorUrl = process.env.LOXA_COLLECTOR_URL || process.env.COLLECTOR_URL || cfg.collectorUrl;
     cfg.apiKey = process.env.LOXA_API_KEY || process.env.API_KEY || cfg.apiKey;
     cfg.level = process.env.LOXA_LEVEL || process.env.LOG_LEVEL || cfg.level;
@@ -81,6 +86,8 @@ export function defaultConfig(): Config {
     alias: '',
     version: '',
     environment: 'development',
+    release: '',
+    namespace: '',
     collectorUrl: '',
     apiKey: (typeof process !== 'undefined' && process.env?.LOXA_API_KEY) || '',
     sink: null,
@@ -114,6 +121,7 @@ export function defaultConfig(): Config {
     includeHost: true,
     includeRuntime: true,
     duplicatePolicy: 'canonical_wins',
+    logger: null,
   };
 }
 
@@ -149,6 +157,8 @@ export interface ConfigOptions {
   alias?: string;
   version?: string;
   environment?: string;
+  release?: string;
+  namespace?: string;
   collectorUrl?: string;
   apiKey?: string;
   sink?: Sink;
@@ -176,6 +186,8 @@ export class ConfigBuilder implements Config {
   alias: string;
   version: string;
   environment: string;
+  release: string;
+  namespace: string;
   collectorUrl: string;
   apiKey: string;
   sink: Sink | null;
@@ -196,12 +208,15 @@ export class ConfigBuilder implements Config {
   includeHost: boolean;
   includeRuntime: boolean;
   duplicatePolicy: string;
+  logger: Logger | null;
 
   constructor(base: Config) {
     this.service = base.service;
     this.alias = base.alias;
     this.version = base.version;
     this.environment = base.environment;
+    this.release = base.release;
+    this.namespace = base.namespace;
     this.collectorUrl = base.collectorUrl;
     this.apiKey = base.apiKey;
     this.sink = base.sink;
@@ -222,6 +237,7 @@ export class ConfigBuilder implements Config {
     this.includeHost = base.includeHost;
     this.includeRuntime = base.includeRuntime;
     this.duplicatePolicy = base.duplicatePolicy;
+    this.logger = base.logger;
   }
 
   withService(service: string): this { this.service = service; return this; }
@@ -247,13 +263,16 @@ export class ConfigBuilder implements Config {
   withBatchSize(n: number): this { this.batchSize = n; return this; }
   withFlushInterval(ms: number): this { this.flushIntervalMs = ms; return this; }
   withEnableCompression(enabled: boolean): this { this.enableCompression = enabled; return this; }
-  withRelease(release: string): this { return this; } // noop for now
-  withNamespace(ns: string): this { return this; } // noop for now
-  withOtelBridge(enabled: boolean): this { return this; } // noop for now
+  withRelease(release: string): this { this.release = release; return this; }
+  withNamespace(ns: string): this { this.namespace = ns; return this; }
+  withOtelBridge(enabled: boolean): this {
+    if (enabled) this.async.enabled = true;
+    return this;
+  }
   withRetry(retries: number): this { this.maxRetries = retries; return this; }
   withTimeout(ms: number): this { this.timeoutMs = ms; return this; }
   withQueueSize(size: number): this { this.async.queueSize = size; return this; }
-  withLogger(logger: Logger): this { return this; } // noop for now
+  withLogger(logger: Logger): this { this.logger = logger; return this; }
   disabled(): Config { return { ...this, sink: null, sampler: sampleNone() }; }
   build(): Config { return { ...this }; }
 }
@@ -304,7 +323,9 @@ export function WithPanicRecovery(panicRecovery: boolean): ConfigOption { return
 export function WithApiKey(apiKey: string): ConfigOption { return cfg => { cfg.apiKey = apiKey.trim(); return cfg; }; }
 export function WithRelease(_release: string): ConfigOption { return cfg => cfg; }
 export function WithNamespace(_ns: string): ConfigOption { return cfg => cfg; }
-export function WithOtelBridge(_enabled: boolean): ConfigOption { return cfg => cfg; }
+export function WithOtelBridge(enabled: boolean): ConfigOption {
+  return cfg => enabled ? { ...cfg, async: { ...cfg.async, enabled: true } } : cfg;
+}
 export function WithRetry(retries: number): ConfigOption { return cfg => { cfg.maxRetries = retries; return cfg; }; }
 export function WithTimeout(ms: number): ConfigOption { return cfg => { cfg.timeoutMs = ms; return cfg; }; }
 export function WithQueueSize(size: number): ConfigOption { return cfg => { cfg.async.queueSize = size; return cfg; }; }

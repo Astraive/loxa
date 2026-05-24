@@ -5,6 +5,7 @@ use crate::internal::retry::RetryPolicy;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use serde_json::Value;
+use std::collections::HashSet;
 use std::env;
 use std::fs::OpenOptions;
 use std::io::{self, Write};
@@ -17,7 +18,53 @@ use time::OffsetDateTime;
 /// Callback for collector ack/nack responses.
 pub type CollectorAckHandler = Box<dyn Fn(&Value) + Send + Sync>;
 
+/// Global paused sink registry.
+fn paused_sinks() -> &'static Mutex<HashSet<String>> {
+    static PAUSED: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+    PAUSED.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+fn sink_key(sink: &SinkConfig) -> String {
+    format!("{:?}", sink)
+}
+
+pub fn pause_sink(sink: &SinkConfig) {
+    paused_sinks().lock().unwrap().insert(sink_key(sink));
+}
+
+pub fn resume_sink(sink: &SinkConfig) {
+    paused_sinks().lock().unwrap().remove(&sink_key(sink));
+}
+
+pub fn is_sink_paused(sink: &SinkConfig) -> bool {
+    paused_sinks().lock().unwrap().contains(&sink_key(sink))
+}
+
+pub fn sink_queue_size(sink: &SinkConfig) -> usize {
+    match sink {
+        SinkConfig::Memory(store) => store.len(),
+        _ => 0,
+    }
+}
+
+pub fn sink_health(sink: &SinkConfig) -> bool {
+    match sink {
+        SinkConfig::HttpBatch { endpoint, timeout_ms, .. } => {
+            let url = format!("{}/healthz", endpoint.trim_end_matches('/'));
+            let request = crate::core::client::HTTPRequest::new("GET", &url);
+            crate::core::client::HTTPClient::with_timeout_ms(*timeout_ms)
+                .send(&request)
+                .map(|r| r.status_code < 500)
+                .unwrap_or(false)
+        }
+        _ => true,
+    }
+}
+
 pub fn write_sink(sink: &SinkConfig, encoded: &str) -> io::Result<()> {
+    if is_sink_paused(sink) {
+        return Err(io::Error::other("sink is paused"));
+    }
     write_sink_with_ack(sink, encoded, None)
 }
 
@@ -63,6 +110,9 @@ pub fn write_sink_with_ack(
 }
 
 pub fn write_batch_sink(sink: &SinkConfig, encoded_events: &[String]) -> io::Result<()> {
+    if is_sink_paused(sink) {
+        return Err(io::Error::other("sink is paused"));
+    }
     write_batch_sink_with_ack(sink, encoded_events, None)
 }
 

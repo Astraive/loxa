@@ -61,7 +61,7 @@ func TestDeleteEventsByTenant(t *testing.T) {
 	}
 
 	// Test deletion by tenant
-	req := httptest.NewRequest("DELETE", "/v1/events/by-tenant/tenant1", nil)
+	req := httptest.NewRequest("DELETE", "/events/by-tenant/tenant1", nil)
 	w := httptest.NewRecorder()
 
 	state.handleDeleteEvents(w, req)
@@ -148,7 +148,7 @@ func TestDeleteEventsByUser(t *testing.T) {
 	}
 
 	// Test deletion by user
-	req := httptest.NewRequest("DELETE", "/v1/events/by-user/user1", nil)
+	req := httptest.NewRequest("DELETE", "/events/by-user/user1", nil)
 	w := httptest.NewRecorder()
 
 	state.handleDeleteEvents(w, req)
@@ -223,7 +223,7 @@ func TestDeleteEventByID(t *testing.T) {
 	}
 
 	// Test deletion by event ID
-	req := httptest.NewRequest("DELETE", "/v1/events/evt3", nil)
+	req := httptest.NewRequest("DELETE", "/events/evt3", nil)
 	w := httptest.NewRecorder()
 
 	state.handleDeleteEvents(w, req)
@@ -290,7 +290,7 @@ func TestDeleteWithoutAuth(t *testing.T) {
 	}
 
 	// Test deletion without API key
-	req := httptest.NewRequest("DELETE", "/v1/events/evt1", nil)
+	req := httptest.NewRequest("DELETE", "/events/evt1", nil)
 	w := httptest.NewRecorder()
 
 	state.handleDeleteEvents(w, req)
@@ -337,7 +337,7 @@ func TestDeleteWithAuth(t *testing.T) {
 	}
 
 	// Test deletion with API key
-	req := httptest.NewRequest("DELETE", "/v1/events/evt1", nil)
+	req := httptest.NewRequest("DELETE", "/events/evt1", nil)
 	req.Header.Set("X-API-Key", "test-key")
 	w := httptest.NewRecorder()
 
@@ -384,7 +384,7 @@ func TestDeleteWithAuditLogging(t *testing.T) {
 
 	// Test deletion with reason in body
 	body := bytes.NewReader([]byte(`{"reason": "GDPR request - user deletion"}`))
-	req := httptest.NewRequest("DELETE", "/v1/events/by-tenant/tenant1", body)
+	req := httptest.NewRequest("DELETE", "/events/by-tenant/tenant1", body)
 	w := httptest.NewRecorder()
 
 	state.handleDeleteEvents(w, req)
@@ -420,7 +420,7 @@ func TestDeleteWithMissingID(t *testing.T) {
 	}
 
 	// Test deletion without tenant ID
-	req := httptest.NewRequest("DELETE", "/v1/events/by-tenant/", nil)
+	req := httptest.NewRequest("DELETE", "/events/by-tenant/", nil)
 	w := httptest.NewRecorder()
 
 	state.handleDeleteEvents(w, req)
@@ -456,7 +456,7 @@ func TestDeletionResponseFormat(t *testing.T) {
 		queryDB: db,
 	}
 
-	req := httptest.NewRequest("DELETE", "/v1/events/by-tenant/tenant1", nil)
+	req := httptest.NewRequest("DELETE", "/events/by-tenant/tenant1", nil)
 	w := httptest.NewRecorder()
 
 	state.handleDeleteEvents(w, req)

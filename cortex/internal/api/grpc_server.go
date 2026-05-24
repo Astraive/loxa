@@ -7,7 +7,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	loxav1 "github.com/astraive/loxa/gen/go/loxa/v1"
+	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
 	"github.com/astraive/loxa/loxa-cortex/internal/config"
 	"github.com/astraive/loxa/loxa-cortex/internal/eventbus"
 	"github.com/astraive/loxa/loxa-cortex/internal/eventconv"

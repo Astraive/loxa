@@ -63,9 +63,9 @@ func TestSharedEmittedShapeFixture(t *testing.T) {
 		StatusCode: fixture.Params.StatusCode,
 	})
 	for key, value := range fixture.Attrs {
-		l.Enrich(ctx, Any(key, value))
+		_ = l.Enrich(ctx, Any(key, value))
 	}
-	l.Finish(ctx, fixture.Finish.Outcome)
+	_ = l.Finish(ctx, fixture.Finish.Outcome)
 	if err := l.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}

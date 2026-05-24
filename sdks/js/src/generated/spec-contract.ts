@@ -102,3 +102,33 @@ export function parseCollectorResponse(raw: string): CollectorResponse {
 export function isCanonical(key: string): boolean {
   return CANONICAL_FIELDS.has(key);
 }
+
+/**
+ * Validate an event payload against the spec contract.
+ * Returns true if valid, throws Error if invalid.
+ */
+export function validateEvent(payload: Record<string, any>, strict = true): boolean {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Event payload must be a non-null object');
+  }
+  if (strict) {
+    if (!payload.event || typeof payload.event !== 'string' || !payload.event.trim()) {
+      throw new Error('Event must have a non-empty "event" field');
+    }
+    if (!ALLOWED_KINDS.has(payload.kind ?? 'event')) {
+      throw new Error(`Invalid kind: ${payload.kind}`);
+    }
+    if (payload.level && !ALLOWED_LEVELS.has(payload.level)) {
+      throw new Error(`Invalid level: ${payload.level}`);
+    }
+  } else {
+    if (payload.event_type && !payload.event) {
+      payload.event = payload.event_type;
+      delete payload.event_type;
+    }
+  }
+  return true;
+}
+
+/** NormalizeEvent aliases normalizeEventAliases — cross-SDK naming parity. */
+export const normalizeEvent = normalizeEventAliases;

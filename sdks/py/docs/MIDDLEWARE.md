@@ -87,6 +87,6 @@ The middleware uses the global default logger. Configure it before adding middle
 ```python
 import loxa
 loxa.configure(loxa.production("my-service").with_sink(
-    loxa.HTTPBatchSink("http://collector:9090/v1/events")
+    loxa.HTTPBatchSink("http://collector:9090/events")
 ))
 ```

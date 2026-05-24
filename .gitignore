@@ -47,6 +47,13 @@ Thumbs.db
 
 # Generated protobuf Go code
 gen/go/
+*.pb.go
 
 # Benchmark results
 bench/results/
+# local/dev generated files
+.kiro/
+*.log
+*.err.log
+collector/*.log
+collector/*.err.log

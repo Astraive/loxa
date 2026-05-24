@@ -91,7 +91,7 @@ func TestMiddleware_ValidSecretKey(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	req := httptest.NewRequest("POST", "/v1/events", nil)
+	req := httptest.NewRequest("POST", "/events", nil)
 	req.Header.Set("Authorization", "Bearer lx_sec_live_ksec1_testsecret")
 	req.Header.Set("X-Loxa-Env", "prod")
 	req.Header.Set("X-Loxa-Service", "checkout-api")
@@ -131,7 +131,7 @@ func TestMiddleware_ValidPublicKey(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	req := httptest.NewRequest("POST", "/v1/events", nil)
+	req := httptest.NewRequest("POST", "/events", nil)
 	req.Header.Set("Authorization", "Bearer lx_pub_live_kpub1_pubsecret")
 	req.Header.Set("X-Loxa-Env", "prod")
 	rec := httptest.NewRecorder()
@@ -154,7 +154,7 @@ func TestMiddleware_MissingHeader(t *testing.T) {
 		t.Fatal("handler should not be called")
 	}))
 
-	req := httptest.NewRequest("POST", "/v1/events", nil)
+	req := httptest.NewRequest("POST", "/events", nil)
 	rec := httptest.NewRecorder()
 
 	handler.ServeHTTP(rec, req)
@@ -178,7 +178,7 @@ func TestMiddleware_InvalidKey(t *testing.T) {
 		t.Fatal("handler should not be called")
 	}))
 
-	req := httptest.NewRequest("POST", "/v1/events", nil)
+	req := httptest.NewRequest("POST", "/events", nil)
 	req.Header.Set("Authorization", "Bearer lx_sec_live_k_nonexistent_secret")
 	rec := httptest.NewRecorder()
 
@@ -200,7 +200,7 @@ func TestMiddleware_RevokedKey(t *testing.T) {
 		t.Fatal("handler should not be called")
 	}))
 
-	req := httptest.NewRequest("POST", "/v1/events", nil)
+	req := httptest.NewRequest("POST", "/events", nil)
 	req.Header.Set("Authorization", "Bearer lx_sec_live_krevoked_testsecret")
 	rec := httptest.NewRecorder()
 
@@ -225,7 +225,7 @@ func TestMiddleware_ExpiredKey(t *testing.T) {
 		t.Fatal("handler should not be called")
 	}))
 
-	req := httptest.NewRequest("POST", "/v1/events", nil)
+	req := httptest.NewRequest("POST", "/events", nil)
 	req.Header.Set("Authorization", "Bearer lx_sec_live_kexpired_testsecret")
 	rec := httptest.NewRecorder()
 
@@ -250,7 +250,7 @@ func TestMiddleware_WrongEnv(t *testing.T) {
 		t.Fatal("handler should not be called")
 	}))
 
-	req := httptest.NewRequest("POST", "/v1/events", nil)
+	req := httptest.NewRequest("POST", "/events", nil)
 	req.Header.Set("Authorization", "Bearer lx_sec_live_ksec1_testsecret")
 	req.Header.Set("X-Loxa-Env", "dev") // not in allowed_envs
 	rec := httptest.NewRecorder()
@@ -276,7 +276,7 @@ func TestMiddleware_WrongService(t *testing.T) {
 		t.Fatal("handler should not be called")
 	}))
 
-	req := httptest.NewRequest("POST", "/v1/events", nil)
+	req := httptest.NewRequest("POST", "/events", nil)
 	req.Header.Set("Authorization", "Bearer lx_sec_live_ksec1_testsecret")
 	req.Header.Set("X-Loxa-Env", "prod")
 	req.Header.Set("X-Loxa-Service", "wrong-service") // not in allowed_services
@@ -297,7 +297,7 @@ func TestRequirePermission_Allowed(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}), PermEventsWrite)
 
-	req := httptest.NewRequest("POST", "/v1/events", nil)
+	req := httptest.NewRequest("POST", "/events", nil)
 	ac := &AuthContext{
 		Permissions: map[Permission]bool{PermEventsWrite: true},
 	}
@@ -316,7 +316,7 @@ func TestRequirePermission_Denied(t *testing.T) {
 		t.Fatal("handler should not be called")
 	}), PermEventsWrite)
 
-	req := httptest.NewRequest("POST", "/v1/events", nil)
+	req := httptest.NewRequest("POST", "/events", nil)
 	ac := &AuthContext{
 		Permissions: map[Permission]bool{PermLogsWrite: true}, // no events:write
 	}
@@ -335,7 +335,7 @@ func TestRequirePermission_NoAuthContext(t *testing.T) {
 		t.Fatal("handler should not be called")
 	}), PermEventsWrite)
 
-	req := httptest.NewRequest("POST", "/v1/events", nil)
+	req := httptest.NewRequest("POST", "/events", nil)
 	rec := httptest.NewRecorder()
 
 	handler.ServeHTTP(rec, req)

@@ -149,7 +149,7 @@ func postCollectorEvent(t *testing.T, baseURL string, event map[string]any) {
 	if err != nil {
 		t.Fatalf("marshal event: %v", err)
 	}
-	resp, err := http.Post(baseURL+"/v1/events", "application/json", bytes.NewReader(body))
+	resp, err := http.Post(baseURL+"/events", "application/json", bytes.NewReader(body))
 	if err != nil {
 		t.Fatalf("post collector event: %v", err)
 	}

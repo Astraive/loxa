@@ -12,7 +12,7 @@ func TestRunEmitsEvent(t *testing.T) {
 	}
 
 	err := Run(context.Background(), Params{Event: "core.run"}, func(ctx context.Context) error {
-		Default().Enrich(ctx, String("module", "core"))
+		_ = Default().Enrich(ctx, String("module", "core"))
 		return nil
 	})
 	if err != nil {

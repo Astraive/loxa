@@ -7,9 +7,9 @@ Service:
 Endpoints:
   Health:    http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/healthz
   Ready:     http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/readyz
-  Ingest:    http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/v1/events/batch
-  Reconstruct: http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/v1/reconstruct
-  Graph:     http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/v1/graph/service/{name}
+  Ingest:    http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/events/batch
+  Reconstruct: http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/reconstruct
+  Graph:     http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/graph/service/{name}
   Metrics:   http://{{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/metrics
 
 {{- if .Values.ingress.enabled }}

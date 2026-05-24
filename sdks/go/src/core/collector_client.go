@@ -126,9 +126,33 @@ func (c *CollectorClient) KeysRevoke(ctx context.Context, keyID string) ([]byte,
 	return c.do(ctx, http.MethodDelete, "/keys/"+keyID, nil)
 }
 
+func (c *CollectorClient) KeysRotate(ctx context.Context, keyID string) ([]byte, error) {
+	return c.do(ctx, http.MethodPost, "/keys/"+keyID+"/rotate", nil)
+}
+
 // SinksList lists configured sinks from the collector.
 func (c *CollectorClient) SinksList(ctx context.Context) ([]byte, error) {
 	return c.do(ctx, http.MethodGet, "/sinks", nil)
+}
+
+func (c *CollectorClient) SinksTest(ctx context.Context, name string) ([]byte, error) {
+	return c.do(ctx, http.MethodPost, "/sinks/"+name+"/test", nil)
+}
+
+func (c *CollectorClient) PolicyValidate(ctx context.Context, policy json.RawMessage) ([]byte, error) {
+	return c.do(ctx, http.MethodPost, "/policy/validate", policy)
+}
+
+func (c *CollectorClient) SchemaCheck(ctx context.Context, event json.RawMessage) ([]byte, error) {
+	return c.do(ctx, http.MethodPost, "/schema/check", event)
+}
+
+func (c *CollectorClient) SchemaPublish(ctx context.Context, schema json.RawMessage) ([]byte, error) {
+	return c.do(ctx, http.MethodPost, "/schema/publish", schema)
+}
+
+func (c *CollectorClient) RetentionApply(ctx context.Context, policy json.RawMessage) ([]byte, error) {
+	return c.do(ctx, http.MethodPost, "/retention/apply", policy)
 }
 
 // Health checks the collector health endpoint.

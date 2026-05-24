@@ -211,10 +211,11 @@ impl Logger {
     }
 
     pub fn emit(&self, ctx: &EventContext) -> Result<String, LoxaError> {
-        if self.config.panic_recovery {
+        crate::set_current_event(Some(ctx.clone()));
+        let result = if self.config.panic_recovery {
             let result =
                 std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| self.emit_inner(ctx)));
-            return match result {
+            match result {
                 Ok(inner) => inner,
                 Err(panic) => {
                     let msg = panic
@@ -225,9 +226,12 @@ impl Logger {
                     self.metrics.record_event_dropped("panic");
                     Err(LoxaError::Transport(msg))
                 }
-            };
-        }
-        self.emit_inner(ctx)
+            }
+        } else {
+            self.emit_inner(ctx)
+        };
+        crate::set_current_event(None);
+        result
     }
 
     fn emit_inner(&self, ctx: &EventContext) -> Result<String, LoxaError> {

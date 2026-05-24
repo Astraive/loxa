@@ -90,6 +90,24 @@ describe('Logger', () => {
     assert.equal(parsed.outcome, 'success');
   });
 
+  it('supports process/group/timer compatibility methods', () => {
+    const loxa = new Logger({ service: 'checkout' });
+    const ctx = loxa.startEvent({ event: 'test' });
+    const process = loxa.startProcess(ctx, 'step');
+    loxa.finishProcess(process, AttrString('k', 'v'));
+    const failedProcess = loxa.process(ctx, 'step.error');
+    loxa.finishProcessError(failedProcess, new Error('boom'));
+    const group = loxa.group(ctx, 'phase');
+    loxa.finishGroup(group, AttrString('g', 'ok'));
+    const failedGroup = loxa.startGroup(ctx, 'phase.error');
+    loxa.finishGroupError(failedGroup, new Error('group-fail'));
+    const timer = loxa.timer(ctx, 'lookup');
+    loxa.stopTimer(timer, AttrString('cache', 'hit'));
+    assert.equal(ctx.processes.length, 2);
+    assert.equal(ctx.groups.length, 2);
+    assert.equal(ctx.timers.length, 1);
+  });
+
   it('sampler drops events', async () => {
     const sink = new MemorySink();
     const loxa = new Logger({
@@ -138,10 +156,10 @@ describe('Logger', () => {
   it('auto-creates HTTPBatchSink when collectorUrl is set', () => {
     const loxa = new Logger({
       service: 'checkout',
-      collectorUrl: 'http://localhost:9090/v1/events',
+      collectorUrl: 'http://localhost:9090/events',
     });
     const cfg = loxa.getConfig();
-    assert.equal(cfg.collectorUrl, 'http://localhost:9090/v1/events');
+    assert.equal(cfg.collectorUrl, 'http://localhost:9090/events');
   });
 
   it('explicit sink takes precedence over collectorUrl', async () => {
@@ -149,7 +167,7 @@ describe('Logger', () => {
     const loxa = new Logger({
       service: 'checkout',
       sink,
-      collectorUrl: 'http://localhost:9090/v1/events',
+      collectorUrl: 'http://localhost:9090/events',
     });
     const ctx = loxa.startEvent({ event: 'test' });
     loxa.finish(ctx, 'success');

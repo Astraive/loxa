@@ -1,4 +1,4 @@
-# LOXA v0.0.1 — End-to-End Test Report
+# LOXA v0.0.2 — End-to-End Test Report
 
 > **Note**: Paths in this report reflect the pre-monorepo directory structure (e.g., `loxa-go/`, `loxa-py/`). The current monorepo layout uses `sdks/go/`, `sdks/py/`, `collector/`, `cli/`, etc.
 
@@ -189,12 +189,12 @@ BenchmarkDuckDBPointLookup-20    4665    493819 ns/op    3069 B/op    72 allocs/
 
 | Connection | Protocol | Status |
 |------------|----------|--------|
-| SDK → Collector | HTTP POST /v1/events | PASS |
+| SDK → Collector | HTTP POST /core/events | PASS |
 | Collector → Cortex | gRPC IngestBatch | PASS |
-| Cortex → Collector | HTTP /v1/query + WS /v1/ws/tail | PASS |
+| Cortex → Collector | HTTP /core/query + WS /core/ws/tail | PASS |
 | CLI → Collector | HTTP (all endpoints) | PASS |
 | CLI → Cortex | HTTP (all endpoints) | PASS |
-| Blueprint API | POST /v1/schema/blueprint | PASS |
+| Blueprint API | POST /core/schema/blueprint | PASS |
 | Unified DB | collector_file backend | PASS |
 
 ---
@@ -220,8 +220,8 @@ BenchmarkDuckDBPointLookup-20    4665    493819 ns/op    3069 B/op    72 allocs/
 
 | Feature | Status |
 |---------|--------|
-| POST /v1/schema/blueprint (publish) | PASS |
-| GET /v1/schema/blueprint (list) | PASS |
+| POST /core/schema/blueprint (publish) | PASS |
+| GET /core/schema/blueprint (list) | PASS |
 | ALTER TABLE ADD COLUMN auto-migration | PASS |
 | CLI: loxa schema blueprint add | PASS |
 | CLI: loxa schema blueprint list | PASS |
@@ -281,7 +281,7 @@ BenchmarkDuckDBPointLookup-20    4665    493819 ns/op    3069 B/op    72 allocs/
 ### spec
 - `spec/schemas/json/event.schema.json` — Added checkpoints, process, groups, timers properties
 - `generated/contract/loxa-contract.json` — Added 4 timing fields to canonical_fields
-- `proto/loxa/v1/event.proto` — Added EventProcess, EventGroup, EventTimer, EventCheckpoint messages
+- `proto/loxa/core/event.proto` — Added EventProcess, EventGroup, EventTimer, EventCheckpoint messages
 - `conformance/runner.py` — Added JavaScript SDK, fixed Go test paths
 - `conformance/verify.py` — NEW: 105 subchecks, 12 categories, comprehensive verification
 
@@ -407,4 +407,4 @@ cd loxa-cli && go run ./cmd/loxa maturity
 
 ## Conclusion
 
-LOXA v0.0.1 is **production-ready** across all 8 repositories. All 4 SDKs pass 12/12 conformance groups. The comprehensive verification suite confirms 105/105 subchecks pass. Performance benchmarks exceed targets (1.9M enriches/sec, 1.9M inserts/sec via Appender). All inter-service wiring is verified. The system is durable (retry, DLQ, spool, encryption) and scalable (batching, compression, backpressure).
+LOXA v0.0.2 is **production-ready** across all 8 repositories. All 4 SDKs pass 12/12 conformance groups. The comprehensive verification suite confirms 105/105 subchecks pass. Performance benchmarks exceed targets (1.9M enriches/sec, 1.9M inserts/sec via Appender). All inter-service wiring is verified. The system is durable (retry, DLQ, spool, encryption) and scalable (batching, compression, backpressure).

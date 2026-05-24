@@ -1,9 +1,9 @@
-use loxa::{Config, Logger, Params, LOXA_EVENT_VERSION, LOXA_SPEC_VERSION};
+use loxa::{Config, New, Params, LOXA_EVENT_VERSION, LOXA_SPEC_VERSION};
 use serde_json::Value;
 
 #[test]
 fn emit_smoke() {
-    let logger = Logger::new(Config::test("test"));
+    let logger = New(Config::test("test"));
     let mut ctx = logger.start_event(
         Params::new("test.run")
             .with_kind("cli")
@@ -28,7 +28,7 @@ fn emit_smoke() {
 
 #[test]
 fn finish_error_sets_error_payload() {
-    let logger = Logger::new(Config::test("test"));
+    let logger = New(Config::test("test"));
     let mut ctx = logger.start_event(Params::new("test.error"));
     let _ = logger.finish_error(&mut ctx, "boom");
     let encoded = logger.emit(&ctx).unwrap();

@@ -1,6 +1,6 @@
 # Canonical Duplicate Field Policy
 
-**Version**: 0.0.1  
+**Version**: 0.0.2  
 **Date**: May 15, 2026  
 **Status**: Production - All SDKs MUST implement this policy
 
@@ -190,10 +190,10 @@ SDK:
 
 | SDK | Default Policy | Minimum Version |
 |-----|---|---|
-| Go | CanonicalWins | 0.0.1 |
-| Python | CanonicalWins | 0.0.1 |
-| Rust | CanonicalWins | 0.0.1 |
-| Collector | CanonicalWins | 0.0.1 |
+| Go | CanonicalWins | 0.0.2 |
+| Python | CanonicalWins | 0.0.2 |
+| Rust | CanonicalWins | 0.0.2 |
+| Collector | CanonicalWins | 0.0.2 |
 
 **All SDKs MUST default to CanonicalWins for production safety.**
 
@@ -277,7 +277,7 @@ The collector MUST:
 
 | Version | Behavior |
 |---------|----------|
-| 0.0.1 | CanonicalWins default, support all 3 policies |
+| 0.0.2 | CanonicalWins default, support all 3 policies |
 
 ---
 

@@ -47,7 +47,6 @@ func (s *collectorBackedEventStore) FindByService(ctx context.Context, service s
 	return s.client.FindByService(ctx, service, from, to, 1000)
 }
 
-// Lifecycle-aware query methods (delegate to collector bridge)
 func (s *collectorBackedEventStore) FindByEventName(ctx context.Context, eventName string, limit, offset int) ([]*models.Event, error) {
 	return s.client.FindByEventName(ctx, eventName, limit)
 }
@@ -57,35 +56,35 @@ func (s *collectorBackedEventStore) FindByOutcome(ctx context.Context, outcome s
 }
 
 func (s *collectorBackedEventStore) FindByLevel(ctx context.Context, level string, limit, offset int) ([]*models.Event, error) {
-	return nil, nil
+	return s.client.FindByLevel(ctx, level, limit)
 }
 
 func (s *collectorBackedEventStore) FindByDurationRange(ctx context.Context, minMs, maxMs float64, limit, offset int) ([]*models.Event, error) {
-	return nil, nil
+	return s.client.FindByDurationRange(ctx, minMs, maxMs, limit)
 }
 
 func (s *collectorBackedEventStore) FindByEnvironment(ctx context.Context, env string, limit, offset int) ([]*models.Event, error) {
-	return nil, nil
+	return s.client.FindByEnvironment(ctx, env, limit)
 }
 
 func (s *collectorBackedEventStore) FindByRelease(ctx context.Context, release string, limit, offset int) ([]*models.Event, error) {
-	return nil, nil
+	return s.client.FindByRelease(ctx, release, limit)
 }
 
 func (s *collectorBackedEventStore) CountByOutcome(ctx context.Context, service string, from, to time.Time) (map[string]int64, error) {
-	return nil, nil
+	return s.client.CountByOutcome(ctx, service, from, to)
 }
 
 func (s *collectorBackedEventStore) CountByEventName(ctx context.Context, service string, from, to time.Time) (map[string]int64, error) {
-	return nil, nil
+	return s.client.CountByEventName(ctx, service, from, to)
 }
 
 func (s *collectorBackedEventStore) AverageDuration(ctx context.Context, eventName string, from, to time.Time) (float64, error) {
-	return 0, nil
+	return s.client.AverageDuration(ctx, eventName, from, to)
 }
 
 func (s *collectorBackedEventStore) PercentileDuration(ctx context.Context, eventName string, percentile float64, from, to time.Time) (float64, error) {
-	return 0, nil
+	return s.client.PercentileDuration(ctx, eventName, percentile, from, to)
 }
 
 func (s *collectorBackedEventStore) DistinctServices(ctx context.Context) ([]string, error) {
@@ -93,11 +92,48 @@ func (s *collectorBackedEventStore) DistinctServices(ctx context.Context) ([]str
 }
 
 func (s *collectorBackedEventStore) DistinctEventNames(ctx context.Context) ([]string, error) {
-	return nil, nil
+	return s.client.DistinctEventNames(ctx)
 }
 
 func (s *collectorBackedEventStore) ListLifecycleSummaries(ctx context.Context, filter *LifecycleFilter) ([]*models.LifecycleSummary, int, error) {
-	return nil, 0, nil
+	// Build a filter map for the bridge client
+	filterMap := make(map[string]any)
+	if filter != nil {
+		if filter.Service != "" {
+			filterMap["service"] = filter.Service
+		}
+		if filter.EventName != "" {
+			filterMap["event_name"] = filter.EventName
+		}
+		if filter.Outcome != "" {
+			filterMap["outcome"] = filter.Outcome
+		}
+	}
+	rows, total, err := s.client.ListLifecycleSummaries(ctx, filterMap, 100, 0)
+	if err != nil {
+		return nil, 0, err
+	}
+	summaries := make([]*models.LifecycleSummary, 0, len(rows))
+	for _, row := range rows {
+		summary := &models.LifecycleSummary{}
+		if id, ok := row["id"].(string); ok {
+			summary.EventID = id
+		}
+		if ev, ok := row["event"].(string); ok {
+			summary.Event = ev
+		}
+		if svc, ok := row["service"].(string); ok {
+			summary.Service = svc
+		}
+		if outcome, ok := row["outcome"].(string); ok {
+			summary.Outcome = outcome
+		}
+		if dur, ok := row["duration_ms"].(float64); ok {
+			summary.DurationMs = dur
+		}
+		summaries = append(summaries, summary)
+	}
+	return summaries, total, nil
 }
 
 type storageWithExternalEvents struct {

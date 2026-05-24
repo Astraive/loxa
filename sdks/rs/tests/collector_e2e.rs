@@ -4,7 +4,7 @@
 // Run: cargo test --test collector_e2e -- --test-threads=1
 
 use loxa::{
-    CollectorSinkWithEndpoint, Config, HTTPClient, HTTPRequest, Logger, Params,
+    CollectorSinkWithEndpoint, Config, HTTPClient, HTTPRequest, New, Params,
     WithCollectorEndpoint,
 };
 use serde_json::Value;
@@ -23,7 +23,7 @@ fn collector_health() -> bool {
 fn send_raw_envelope(envelope: &Value) -> (u16, String) {
     let client = HTTPClient::with_timeout_ms(5_000);
     let body = serde_json::to_vec(envelope).unwrap();
-    let req = HTTPRequest::new("POST", format!("{COLLECTOR_URL}/v1/events"))
+    let req = HTTPRequest::new("POST", format!("{COLLECTOR_URL}/events"))
         .with_header("Content-Type", "application/json")
         .with_body(body);
     let resp = client.send(&req).unwrap();
@@ -37,7 +37,7 @@ fn send_raw_envelope(envelope: &Value) -> (u16, String) {
 #[test]
 fn production_config_with_collector_endpoint_auto_wires_httpbatch() {
     let cfg = Config::production("wired_svc").with_collector_endpoint(COLLECTOR_URL);
-    let logger = Logger::new(cfg);
+    let logger = New(cfg);
 
     // Logger should have HttpBatch as the only sink
     assert!(
@@ -51,7 +51,7 @@ fn production_config_with_collector_endpoint_auto_wires_httpbatch() {
 #[test]
 fn dev_config_with_collector_endpoint_auto_wires_httpbatch() {
     let cfg = Config::dev("wired_dev").with_collector_endpoint(COLLECTOR_URL);
-    let logger = Logger::new(cfg);
+    let logger = New(cfg);
 
     assert!(
         logger.sink_names().contains(&"HttpBatch".to_string()),
@@ -76,7 +76,7 @@ fn explicit_file_sink_preserved_alongside_collector_endpoint() {
     let cfg = Config::test("explicit")
         .with_sink(loxa::FileSink("/tmp/loxa-e2e.log"))
         .with_collector_endpoint(COLLECTOR_URL);
-    let logger = Logger::new(cfg);
+    let logger = New(cfg);
 
     // File sink is non-terminal — it should be preserved alongside HttpBatch
     let names = logger.sink_names();
@@ -97,7 +97,7 @@ fn httpbatch_sink_not_duplicated_when_already_configured() {
     let cfg = Config::test("no_dup")
         .with_sink(CollectorSinkWithEndpoint(COLLECTOR_URL))
         .with_collector_endpoint(COLLECTOR_URL);
-    let logger = Logger::new(cfg);
+    let logger = New(cfg);
 
     let http_count = logger
         .sink_names()
@@ -110,7 +110,7 @@ fn httpbatch_sink_not_duplicated_when_already_configured() {
 #[test]
 fn no_collector_endpoint_keeps_default_sink() {
     let cfg = Config::test("no_endpoint");
-    let logger = Logger::new(cfg);
+    let logger = New(cfg);
 
     // No collector endpoint = no HttpBatch auto-wire
     assert!(!logger.sink_names().contains(&"HttpBatch".to_string()));
@@ -134,7 +134,7 @@ fn raw_envelope_accepted_by_collector() {
 
     let envelope = serde_json::json!({
         "api_version": "v1",
-        "source": {"sdk": "loxa-rs", "version": "0.0.1", "service": "e2e_raw"},
+        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "e2e_raw"},
         "events": [{
             "event_id": "evt_e2e_raw_001",
             "event": "e2e.raw_envelope",
@@ -178,7 +178,7 @@ fn batch_envelope_accepted_by_collector() {
 
     let envelope = serde_json::json!({
         "api_version": "v1",
-        "source": {"sdk": "loxa-rs", "version": "0.0.1", "service": "e2e_batch"},
+        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "e2e_batch"},
         "events": events
     });
 
@@ -227,7 +227,7 @@ fn http_event_with_trace_context_accepted() {
 
     let envelope = serde_json::json!({
         "api_version": "v1",
-        "source": {"sdk": "loxa-rs", "version": "0.0.1", "service": "e2e_http"},
+        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "e2e_http"},
         "events": [{
             "event_id": "evt_e2e_http_001",
             "event": "GET /api/users",
@@ -256,7 +256,7 @@ fn error_event_with_error_details_accepted() {
 
     let envelope = serde_json::json!({
         "api_version": "v1",
-        "source": {"sdk": "loxa-rs", "version": "0.0.1", "service": "e2e_error"},
+        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "e2e_error"},
         "events": [{
             "event_id": "evt_e2e_error_001",
             "event": "e2e.error_event",
@@ -282,7 +282,7 @@ fn enriched_event_with_attrs_accepted() {
 
     let envelope = serde_json::json!({
         "api_version": "v1",
-        "source": {"sdk": "loxa-rs", "version": "0.0.1", "service": "e2e_attrs"},
+        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "e2e_attrs"},
         "events": [{
             "event_id": "evt_e2e_attrs_001",
             "event": "e2e.enriched",
@@ -308,7 +308,7 @@ fn collector_rejects_invalid_envelope() {
     assert!(collector_health());
 
     let bad_envelope = serde_json::json!({
-        "source": {"sdk": "loxa-rs", "version": "0.0.1", "service": "test"},
+        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "test"},
         "events": [{"event_id": "x", "event": "test", "kind": "event", "timestamp": "2026-05-20T12:00:00Z", "service": "test"}]
     });
 
@@ -323,7 +323,7 @@ fn collector_rejects_empty_events() {
 
     let bad_envelope = serde_json::json!({
         "api_version": "v1",
-        "source": {"sdk": "loxa-rs", "version": "0.0.1", "service": "test"},
+        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "test"},
         "events": []
     });
 
@@ -342,7 +342,7 @@ fn full_sdk_flow_emit_to_collector() {
 
     // 1. Init logger with collector endpoint (auto-wires HttpBatchSink)
     let logger =
-        Logger::new(Config::production("e2e_full_flow").with_collector_endpoint(COLLECTOR_URL));
+        New(Config::production("e2e_full_flow").with_collector_endpoint(COLLECTOR_URL));
 
     // 2. Start an event
     let mut ctx = logger.start_event(

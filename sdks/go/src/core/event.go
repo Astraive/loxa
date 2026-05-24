@@ -753,6 +753,9 @@ func (e *Event) Clone() *Event {
 		FinishedAt:    e.FinishedAt,
 		Attrs:         cloneAttrs(e.Attrs),
 		Checkpoints:   cloneCheckpoints(e.Checkpoints),
+		Processes:     cloneProcesses(e.Processes),
+		Groups:        cloneGroups(e.Groups),
+		Timers:        cloneTimers(e.Timers),
 		state:         e.state,
 		logger:        e.logger,
 	}

@@ -41,19 +41,19 @@ func ValidateSpecAssets(specRepoPath string) error {
 			filepath.Join(specRepoPath, "openapi", "collector.openapi.yaml"),
 		),
 		firstExisting(
-			filepath.Join(specRepoPath, "spec", "proto", "loxa", "v1", "event.proto"),
-			filepath.Join(specRepoPath, "proto", "loxa", "v1", "event.proto"),
-			filepath.Join(specRepoPath, "releases", "v1", "proto", "loxa", "v1", "event.proto"),
+			filepath.Join(specRepoPath, "spec", "proto", "loxa", "core", "event.proto"),
+			filepath.Join(specRepoPath, "proto", "loxa", "core", "event.proto"),
+			filepath.Join(specRepoPath, "releases", "v1", "proto", "loxa", "core", "event.proto"),
 		),
 		firstExisting(
-			filepath.Join(specRepoPath, "spec", "proto", "loxa", "v1", "ingest.proto"),
-			filepath.Join(specRepoPath, "proto", "loxa", "v1", "ingest.proto"),
-			filepath.Join(specRepoPath, "releases", "v1", "proto", "loxa", "v1", "ingest.proto"),
+			filepath.Join(specRepoPath, "spec", "proto", "loxa", "core", "ingest.proto"),
+			filepath.Join(specRepoPath, "proto", "loxa", "core", "ingest.proto"),
+			filepath.Join(specRepoPath, "releases", "v1", "proto", "loxa", "core", "ingest.proto"),
 		),
 		firstExisting(
-			filepath.Join(specRepoPath, "spec", "proto", "loxa", "v1", "collector.proto"),
-			filepath.Join(specRepoPath, "proto", "loxa", "v1", "collector.proto"),
-			filepath.Join(specRepoPath, "releases", "v1", "proto", "loxa", "v1", "collector.proto"),
+			filepath.Join(specRepoPath, "spec", "proto", "loxa", "core", "collector.proto"),
+			filepath.Join(specRepoPath, "proto", "loxa", "core", "collector.proto"),
+			filepath.Join(specRepoPath, "releases", "v1", "proto", "loxa", "core", "collector.proto"),
 		),
 		filepath.Join(specRepoPath, "generated", "go", "contract", "contract.go"),
 		firstExisting(

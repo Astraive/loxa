@@ -1,5 +1,5 @@
 use flate2::read::GzDecoder;
-use loxa::{Config, Logger, Params};
+use loxa::{Config, New, Params};
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::sync::mpsc;
@@ -68,8 +68,8 @@ fn http_batch_sink_posts_gzipped_events_to_collector() {
         stream.flush().expect("flush response");
     });
 
-    let endpoint = format!("http://{addr}/v1/events");
-    let logger = Logger::new(Config::test("checkout").with_sink(loxa::HttpBatchSink(&endpoint)));
+    let endpoint = format!("http://{addr}/events");
+    let logger = New(Config::test("checkout").with_sink(loxa::HttpBatchSink(&endpoint)));
     let mut ctx = logger.start_event(Params::new("checkout.collector").with_kind("cli"));
     logger.enrich(&mut ctx, "tenant.id", "tenant-1");
     logger.finish(&mut ctx, "success").expect("finish event");
@@ -80,7 +80,7 @@ fn http_batch_sink_posts_gzipped_events_to_collector() {
         .expect("captured request");
     handle.join().expect("server thread");
 
-    assert!(head.starts_with("POST /v1/events HTTP/1.1"));
+    assert!(head.starts_with("POST /events HTTP/1.1"));
     assert!(head.contains("Content-Type: application/json"));
     assert!(head.contains("Content-Encoding: gzip"));
     assert!(decoded.contains("\"events\":["));
@@ -113,8 +113,8 @@ fn http_batch_sink_uses_api_key_from_environment() {
     std::env::set_var("LOXA_COLLECTOR_API_KEY", "secret-key");
     std::env::set_var("LOXA_COLLECTOR_API_KEY_HEADER", "X-API-Key");
 
-    let endpoint = format!("http://{addr}/v1/events");
-    let logger = Logger::new(Config::test("checkout").with_sink(loxa::HttpBatchSink(&endpoint)));
+    let endpoint = format!("http://{addr}/events");
+    let logger = New(Config::test("checkout").with_sink(loxa::HttpBatchSink(&endpoint)));
     let mut ctx = logger.start_event(Params::new("checkout.collector").with_kind("cli"));
     logger.finish(&mut ctx, "success").expect("finish event");
     logger.emit(&ctx).expect("emit via collector sink");

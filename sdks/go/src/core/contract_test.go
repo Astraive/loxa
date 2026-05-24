@@ -29,12 +29,12 @@ func TestEmitIncludesContractFieldsAndStructuredAttrs(t *testing.T) {
 		UserID:     "user_001",
 		TenantID:   "tenant_001",
 	})
-	l.Enrich(ctx,
+	_ = l.Enrich(ctx,
 		String("cart.id", "cart_001"),
 		String("http.client_ip", "127.0.0.1"),
 		Group("resource", String("id", "order_123")),
 	)
-	l.Finish(ctx, "success")
+	_ = l.Finish(ctx, "success")
 	if err := l.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
@@ -103,8 +103,8 @@ func TestCheckpointEmitImmediatelyProducesStandaloneEvent(t *testing.T) {
 		Kind:    "http",
 		Service: "checkout",
 	})
-	l.Checkpoint(ctx, "db.started", String("phase", "db"))
-	l.Finish(ctx, "success")
+	_ = l.Checkpoint(ctx, "db.started", String("phase", "db"))
+	_ = l.Finish(ctx, "success")
 	if err := l.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}

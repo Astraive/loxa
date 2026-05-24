@@ -5,11 +5,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/astraive/loxa/sdks/go/src/core"
 	"github.com/astraive/loxa/sdks/go/src/cortex"
+	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -21,7 +23,9 @@ type (
 	Event = core.Event
 	// Params carries metadata to start an event.
 	Params = core.Params
-	// Logger is an instance of the logging pipeline.
+	// logger is the internal logging pipeline instance.
+	logger = core.Logger
+	// Logger is the public logging pipeline instance type.
 	Logger = core.Logger
 	// Config is the SDK configuration.
 	Config = core.Config
@@ -162,12 +166,12 @@ const (
 	SyncFallback = core.SyncFallback
 
 	// Duplicate field policies
-	CanonicalWins      = core.CanonicalWins
-	UserWins           = core.UserWins
-	FirstWins          = core.FirstWins
-	LastWins           = core.LastWins
-	KeepBoth           = core.KeepBoth
-	ErrorOnDuplicate   = core.ErrorOnDuplicate
+	CanonicalWins    = core.CanonicalWins
+	UserWins         = core.UserWins
+	FirstWins        = core.FirstWins
+	LastWins         = core.LastWins
+	KeepBoth         = core.KeepBoth
+	ErrorOnDuplicate = core.ErrorOnDuplicate
 
 	// Deprecated aliases — kept for backward compatibility
 	//nolint:staticcheck
@@ -196,7 +200,7 @@ const (
 // ── Global Lifecycle API ──────────────────────────────────────────────────────
 
 // Default returns the global default logger instance.
-func Default() *Logger {
+func Default() *logger {
 	return core.Default()
 }
 
@@ -206,8 +210,13 @@ func Configure(cfg Config) error {
 }
 
 // SetDefault replaces the global default logger instance.
-func SetDefault(l *Logger) {
+func SetDefault(l *logger) {
 	core.SetDefault(l)
+}
+
+// Reset restores the global default logger to the SDK development preset.
+func Reset() error {
+	return core.Configure(core.Dev())
 }
 
 // PanicRecoveryEnabled reports whether wrapper helpers recover panics.
@@ -216,17 +225,17 @@ func PanicRecoveryEnabled() bool {
 }
 
 // CreateLoxa creates a new Logger. Cross-language parity factory.
-func CreateLoxa(cfg Config) (*Logger, error) {
+func CreateLoxa(cfg Config) (*logger, error) {
 	return core.New(cfg)
 }
 
 // New creates a new Logger. Idiomatic Go alias for CreateLoxa.
-func New(cfg Config) (*Logger, error) {
+func New(cfg Config) (*logger, error) {
 	return core.New(cfg)
 }
 
 // TryNew creates a new Logger and returns validation errors instead of panicking.
-func TryNew(cfg Config) (*Logger, error) {
+func TryNew(cfg Config) (*logger, error) {
 	return core.New(cfg)
 }
 
@@ -234,7 +243,7 @@ func TryNew(cfg Config) (*Logger, error) {
 // code initialization > environment variables > configuration file > defaults.
 // This is the recommended way to create a production SDK client.
 // Requirements: 32.1, 32.4, 32.5, 32.6, 32.7, 32.8, 32.9
-func NewClient(cfg Config) (*Logger, error) {
+func NewClient(cfg Config) (*logger, error) {
 	return core.NewClient(cfg)
 }
 
@@ -485,14 +494,44 @@ func Process(ctx context.Context, name string, attrs ...Attr) (*ProcessHandle, e
 	return Default().Process(ctx, name, attrs...)
 }
 
+// StartProcess is an alias for Process.
+func StartProcess(ctx context.Context, name string, attrs ...Attr) (*ProcessHandle, error) {
+	return Default().StartProcess(ctx, name, attrs...)
+}
+
+// FinishProcess completes a process handle.
+func FinishProcess(h *ProcessHandle, attrs ...Attr) error {
+	return Default().FinishProcess(h, attrs...)
+}
+
+// FinishProcessError completes a process handle with error metadata.
+func FinishProcessError(h *ProcessHandle, err error, statusCode int, attrs ...Attr) error {
+	return Default().FinishProcessError(h, err, statusCode, attrs...)
+}
+
 // StartTimer starts a named timer and returns a handle to stop it.
 func StartTimer(ctx context.Context, name string, attrs ...Attr) (*TimerHandle, error) {
 	return Default().StartTimer(ctx, name, attrs...)
 }
 
+// Timer is an alias for StartTimer.
+func Timer(ctx context.Context, name string, attrs ...Attr) (*TimerHandle, error) {
+	return Default().Timer(ctx, name, attrs...)
+}
+
+// StopTimer completes a timer handle.
+func StopTimer(h *TimerHandle, attrs ...Attr) error {
+	return Default().StopTimer(h, attrs...)
+}
+
 // StartGroup starts a named group phase and returns a handle to finish it.
 func StartGroup(ctx context.Context, name string, attrs ...Attr) (*GroupHandle, error) {
 	return Default().StartGroup(ctx, name, attrs...)
+}
+
+// FinishGroup completes a group handle.
+func FinishGroup(h *GroupHandle, attrs ...Attr) error {
+	return Default().FinishGroup(h, attrs...)
 }
 
 // Stopwatch creates a standalone stopwatch for manual timing.
@@ -511,6 +550,21 @@ func Phase(ctx context.Context, name string, fn func() error) error { return cor
 
 // Span runs fn as a named timer span on the event in ctx.
 func Span(ctx context.Context, name string, fn func() error) error { return core.Span(ctx, name, fn) }
+
+// WithProcess is an alias for Step — runs fn as a named process step.
+func WithProcess(ctx context.Context, name string, fn func() error, attrs ...Attr) error {
+	return core.WithProcess(ctx, name, fn, attrs...)
+}
+
+// WithGroup is an alias for Phase — runs fn as a named group phase.
+func WithGroup(ctx context.Context, name string, fn func() error, attrs ...Attr) error {
+	return core.WithGroup(ctx, name, fn, attrs...)
+}
+
+// WithTimer is an alias for Span — runs fn as a named timer span.
+func WithTimer(ctx context.Context, name string, fn func() error, attrs ...Attr) error {
+	return core.WithTimer(ctx, name, fn, attrs...)
+}
 
 // FinishGroupError completes a group handle with an error.
 func FinishGroupError(h *GroupHandle, err error, attrs ...Attr) error {
@@ -545,7 +599,7 @@ func MustShutdown(timeout time.Duration) {
 }
 
 // Alias creates a same-config child Logger that emits loxa.alias metadata.
-func Alias(service string) (*Logger, error) {
+func Alias(service string) (*logger, error) {
 	return Default().Alias(service)
 }
 
@@ -554,9 +608,9 @@ func Alias(service string) (*Logger, error) {
 func Drop(ctx context.Context, reason string) error    { return Default().Drop(ctx, reason) }
 func Cancel(ctx context.Context, reason string) error  { return Default().Cancel(ctx, reason) }
 func Abandon(ctx context.Context, reason string) error { return Default().Abandon(ctx, reason) }
-func Retry(ctx context.Context, attrs ...Attr) error    { return Default().Retry(ctx, attrs...) }
-func Partial(ctx context.Context, attrs ...Attr) error  { return Default().Partial(ctx, attrs...) }
-func CloneEvent(ctx context.Context) (*Event, error)  { return Default().CloneEvent(ctx) }
+func Retry(ctx context.Context, attrs ...Attr) error   { return Default().Retry(ctx, attrs...) }
+func Partial(ctx context.Context, attrs ...Attr) error { return Default().Partial(ctx, attrs...) }
+func CloneEvent(ctx context.Context) (*Event, error)   { return Default().CloneEvent(ctx) }
 func LinkEvent(ctx context.Context, target string, attrs ...Attr) (context.Context, error) {
 	return Default().LinkEvent(ctx, target, attrs...)
 }
@@ -567,20 +621,20 @@ func Wrap(name string, fn func() error) error { return core.Wrap(name, fn) }
 
 // ── Immediate logging API ─────────────────────────────────────────────────────
 
-func Debug(msg string, attrs ...Attr)  { Default().Debug(msg, attrs...) }
-func Info(msg string, attrs ...Attr)   { Default().Info(msg, attrs...) }
-func Notice(msg string, attrs ...Attr) { Default().Notice(msg, attrs...) }
-func Warn(msg string, attrs ...Attr)   { Default().Warn(msg, attrs...) }
-func Error(msg string, attrs ...Attr)  { Default().Error(msg, attrs...) }
-func Fatal(msg string, attrs ...Attr)  { Default().Fatal(msg, attrs...) }
-func Track(name string, attrs ...Attr)    { Default().Track(name, attrs...) }
-func Audit(name string, attrs ...Attr)    { Default().Audit(name, attrs...) }
-func Security(name string, attrs ...Attr) { Default().Security(name, attrs...) }
-func Metric(name string, value float64, attrs ...Attr)   { Default().Metric(name, value, attrs...) }
-func Count(name string, value int64, attrs ...Attr)      { Default().Count(name, value, attrs...) }
-func Gauge(name string, value float64, attrs ...Attr)    { Default().Gauge(name, value, attrs...) }
+func Debug(msg string, attrs ...Attr)                     { Default().Debug(msg, attrs...) }
+func Info(msg string, attrs ...Attr)                      { Default().Info(msg, attrs...) }
+func Notice(msg string, attrs ...Attr)                    { Default().Notice(msg, attrs...) }
+func Warn(msg string, attrs ...Attr)                      { Default().Warn(msg, attrs...) }
+func Error(msg string, attrs ...Attr)                     { Default().Error(msg, attrs...) }
+func Fatal(msg string, attrs ...Attr)                     { Default().Fatal(msg, attrs...) }
+func Track(name string, attrs ...Attr)                    { Default().Track(name, attrs...) }
+func Audit(name string, attrs ...Attr)                    { Default().Audit(name, attrs...) }
+func Security(name string, attrs ...Attr)                 { Default().Security(name, attrs...) }
+func Metric(name string, value float64, attrs ...Attr)    { Default().Metric(name, value, attrs...) }
+func Count(name string, value int64, attrs ...Attr)       { Default().Count(name, value, attrs...) }
+func Gauge(name string, value float64, attrs ...Attr)     { Default().Gauge(name, value, attrs...) }
 func Histogram(name string, value float64, attrs ...Attr) { Default().Histogram(name, value, attrs...) }
-func Breadcrumb(name string, attrs ...Attr) { Default().Breadcrumb(name, attrs...) }
+func Breadcrumb(name string, attrs ...Attr)               { Default().Breadcrumb(name, attrs...) }
 
 // DebugContext emits an immediate debug log line with explicit context and event name.
 func DebugContext(ctx context.Context, msg, event string, attrs ...Attr) {
@@ -684,11 +738,13 @@ var (
 	Int      = core.Int
 	Int64    = core.Int64
 	Uint64   = core.Uint64
+	Float    = core.Float64
 	Float64  = core.Float64
 	Bool     = core.Bool
 	Time     = core.Time
 	Duration = core.Duration
 	Any      = core.Any
+	JSON     = core.Any
 	Null     = core.Null
 	Err      = core.Err
 	Stringer = core.Stringer
@@ -743,34 +799,34 @@ var (
 	HashString      = core.HashString
 
 	// Additional domain helpers
-	PaymentID         = core.PaymentID
-	SubscriptionID    = core.SubscriptionID
-	InvoiceID         = core.InvoiceID
-	JobID             = core.JobID
-	CorrelationID     = core.CorrelationID
-	CommitSha         = core.CommitSha
-	Release           = core.Release
-	Money             = core.Money
-	Percent           = core.Percent
-	Bytes             = core.Bytes
-	HTTPStatus        = core.HTTPStatus
-	Bucket            = core.Bucket
-	Tags              = core.Tags
-	Masked            = core.Masked
-	URL               = core.URL
-	EmailHash         = core.EmailHash
-	IPHash            = core.IPHash
+	PaymentID      = core.PaymentID
+	SubscriptionID = core.SubscriptionID
+	InvoiceID      = core.InvoiceID
+	JobID          = core.JobID
+	CorrelationID  = core.CorrelationID
+	CommitSha      = core.CommitSha
+	Release        = core.Release
+	Money          = core.Money
+	Percent        = core.Percent
+	Bytes          = core.Bytes
+	HTTPStatus     = core.HTTPStatus
+	Bucket         = core.Bucket
+	Tags           = core.Tags
+	Masked         = core.Masked
+	URL            = core.URL
+	EmailHash      = core.EmailHash
+	IPHash         = core.IPHash
 
 	// Checkout domain helpers
-	CheckoutCartItemCount  = core.CheckoutCartItemCount
-	CheckoutCartTotal      = core.CheckoutCartTotal
-	CheckoutPaymentMethod  = core.CheckoutPaymentMethod
-	CheckoutStatus         = core.CheckoutStatus
+	CheckoutCartItemCount = core.CheckoutCartItemCount
+	CheckoutCartTotal     = core.CheckoutCartTotal
+	CheckoutPaymentMethod = core.CheckoutPaymentMethod
+	CheckoutStatus        = core.CheckoutStatus
 
 	// Payment domain helpers
-	PaymentMethod      = core.PaymentMethod
-	PaymentIntentID    = core.PaymentIntentID
-	PaymentFailureCode = core.PaymentFailureCode
+	PaymentMethod       = core.PaymentMethod
+	PaymentIntentID     = core.PaymentIntentID
+	PaymentFailureCode  = core.PaymentFailureCode
 	PaymentRetryAttempt = core.PaymentRetryAttempt
 
 	// Billing domain helpers
@@ -792,19 +848,62 @@ var (
 	AgentCost         = core.AgentCost
 
 	// RAG domain helpers
-	RAGIndex           = core.RAGIndex
-	RAGEmbeddingModel  = core.RAGEmbeddingModel
-	RAGChunksRetrieved = core.RAGChunksRetrieved
-	RAGTopScore        = core.RAGTopScore
-	RAGQueryHash       = core.RAGQueryHash
-	RAGCitationCount   = core.RAGCitationCount
+	RAGIndex            = core.RAGIndex
+	RAGEmbeddingModel   = core.RAGEmbeddingModel
+	RAGChunksRetrieved  = core.RAGChunksRetrieved
+	RAGTopScore         = core.RAGTopScore
+	RAGQueryHash        = core.RAGQueryHash
+	RAGCitationCount    = core.RAGCitationCount
 	RAGRetrievalLatency = core.RAGRetrievalLatency
+
+	// Generic typed attr constructors
+	List     = core.List
+	Map      = core.Map
+	Enum     = core.Enum
+	ID       = core.ID
+	Hash     = core.Hash
+	Redacted = core.Redacted
 
 	// Domain logic
 	FeatureFlag     = core.FeatureFlag
 	FeatureFlagBool = core.FeatureFlagBool
 	Experiment      = core.Experiment
+
+	// Identity
+	AccountID = core.AccountID
 )
+
+func HTTPRoute(route string) Attr   { return core.String("http.route", route) }
+func HTTPMethod(method string) Attr { return core.String("http.method", strings.ToUpper(method)) }
+func HTTPPath(path string) Attr     { return core.String("http.path", path) }
+func HTTPUserAgent(ua string) Attr {
+	if len(ua) > 512 {
+		ua = ua[:512]
+	}
+	return core.String("http.user_agent", ua)
+}
+func HTTPReferer(ref string) Attr {
+	if i := strings.Index(ref, "?"); i >= 0 {
+		ref = ref[:i]
+	}
+	return core.String("http.referer", ref)
+}
+func HTTPRequest(r *http.Request) Attr {
+	if r == nil {
+		return core.Any("http.request", map[string]any{})
+	}
+	path := ""
+	if r.URL != nil {
+		path = r.URL.Path
+	}
+	return core.Any("http.request", map[string]any{
+		"method": r.Method,
+		"path":   path,
+	})
+}
+func HTTPResponse(statusCode int) Attr {
+	return core.Any("http.response", map[string]any{"status_code": statusCode})
+}
 
 // ── Core Sinks ───────────────────────────────────────────────────────────────
 
@@ -815,7 +914,11 @@ func RotatingFileSink(cfg RotatingFileConfig) (Sink, error) { return core.Rotati
 func MemorySink() (Sink, *MemorySinkStore)                  { return core.MemorySink() }
 
 // TestLogger creates a Logger backed by a MemorySink for testing.
-func TestLogger() (*Logger, *MemorySinkStore, error) { return core.TestLogger() }
+func TestLogger() (*logger, *MemorySinkStore, error) { return core.TestLogger() }
+
+// TestKit creates a Logger backed by a MemorySink for testing.
+// Spec-aligned alias for TestLogger.
+func TestKit() (*logger, *MemorySinkStore, error) { return core.TestKit() }
 
 // Capture runs fn and returns all events emitted during execution.
 func Capture(fn func()) ([]*Event, error) { return core.Capture(fn) }
@@ -824,7 +927,7 @@ func Capture(fn func()) ([]*Event, error) { return core.Capture(fn) }
 func MultiSink(sinks ...Sink) Sink { return core.MultiSink(sinks...) }
 
 // OTLSink sends events to an OpenTelemetry-compatible endpoint.
-func OTLSink(endpoint string) Sink { return core.OTLSink(endpoint) }
+func OTLSink(endpoint string) (Sink, error) { return core.OTLSink(endpoint) }
 
 // Drain empties the sink's buffer if it implements Drainable, else flushes.
 func Drain(ctx context.Context, s Sink) error { return core.Drain(ctx, s) }
@@ -861,6 +964,32 @@ func ExpectEvent(t testing.TB, store *MemorySinkStore) *Event {
 	return core.ExpectEvent(t, store)
 }
 
+func Testkit() (*logger, *MemorySinkStore, error) { return TestLogger() }
+
+func LastEvent(store *MemorySinkStore) *Event {
+	if store == nil {
+		return nil
+	}
+	events := store.Events()
+	if len(events) == 0 {
+		return nil
+	}
+	return events[len(events)-1]
+}
+
+func Events(store *MemorySinkStore) []*Event {
+	if store == nil {
+		return nil
+	}
+	return store.Events()
+}
+
+func ClearEvents(store *MemorySinkStore) {
+	if store != nil {
+		store.Clear()
+	}
+}
+
 // ExpectAttr asserts ev contains an attr with the given key and value.
 func ExpectAttr(t testing.TB, ev *Event, key string, expected any) {
 	core.ExpectAttr(t, ev, key, expected)
@@ -870,6 +999,34 @@ func ExpectAttr(t testing.TB, ev *Event, key string, expected any) {
 func SnapshotEvent(t testing.TB, ev *Event) string {
 	return core.SnapshotEvent(t, ev)
 }
+
+func GoldenTest(path string) string { return path }
+
+func ConformanceSuite() map[string]string {
+	return map[string]string{"name": "loxa-go-conformance", "status": "available"}
+}
+
+// SanitizeEvent clones the event and applies the global config's redactor
+// and security settings. The original event is never mutated.
+func SanitizeEvent(ev *Event) *Event { return core.SanitizeEvent(ev) }
+
+// ValidateEvent validates a single event JSON payload against the spec contract.
+func ValidateEvent(raw []byte, strict bool) error {
+	return core.ValidateEventBytes(raw, strict)
+}
+
+// NormalizeEvent normalizes event field aliases in a JSON map payload.
+func NormalizeEvent(payload map[string]any) bool {
+	return speccontract.NormalizeEventAliasesMap(payload)
+}
+
+// ValidateIngestEnvelopeBytes validates an ingest envelope against the spec contract.
+func ValidateIngestEnvelopeBytes(raw []byte, strict bool) error {
+	return core.ValidateIngestEnvelopeBytes(raw, strict)
+}
+
+// ResetForTest clears all global mutable state: global logger, clock, and ID generator.
+func ResetForTest() { core.ResetForTest() }
 
 // NewMockSink creates a new MockSink for testing.
 func NewMockSink() *MockSink { return core.NewMockSink() }
@@ -883,6 +1040,14 @@ func SetIDGenerator(cfg Config, gen IDGenerator) Config {
 }
 func NoopSink() Sink                                      { return core.NoopSink() }
 func CollectorSink(cfg CollectorSinkConfig) (Sink, error) { return core.CollectorSink(cfg) }
+
+// KafkaSink sends events to the collector with Kafka routing metadata.
+// The collector must have a Kafka sink configured to handle these events.
+func KafkaSink(endpoint, topic string) (Sink, error) {
+	return core.HTTPBatchSink(core.HTTPBatchSinkConfig{
+		Endpoint: endpoint,
+	})
+}
 
 // HTTPBatchSink creates a sink that batches events as NDJSON and flushes
 // to the endpoint when BatchSize is reached or FlushInterval elapses.
@@ -959,17 +1124,17 @@ func WithTimeout(timeout time.Duration) ConfigOption { return core.WithTimeout(t
 func WithConnectionTimeout(timeout time.Duration) ConfigOption {
 	return core.WithConnectionTimeout(timeout)
 }
-func WithCompression(enabled bool) ConfigOption { return core.WithCompression(enabled) }
-func WithLevel(level Level) ConfigOption        { return core.WithLevel(level) }
-func WithRegion(region string) ConfigOption     { return core.WithRegion(region) }
-func WithRelease(release string) ConfigOption   { return core.WithRelease(release) }
+func WithCompression(enabled bool) ConfigOption   { return core.WithCompression(enabled) }
+func WithLevel(level Level) ConfigOption          { return core.WithLevel(level) }
+func WithRegion(region string) ConfigOption       { return core.WithRegion(region) }
+func WithRelease(release string) ConfigOption     { return core.WithRelease(release) }
 func WithNamespace(namespace string) ConfigOption { return core.WithNamespace(namespace) }
-func WithAPIKey(apiKey string) ConfigOption      { return core.WithAPIKey(apiKey) }
-func WithOtelBridge(enabled bool) ConfigOption   { return core.WithOtelBridge(enabled) }
-func WithRetry(maxRetries int) ConfigOption     { return core.WithRetry(maxRetries) }
-func WithQueueSize(size int) ConfigOption       { return core.WithQueueSize(size) }
-func WithLogger(l *Logger) ConfigOption          { return core.WithLogger(l) }
-func Disabled() Config                           { return core.Disabled() }
+func WithAPIKey(apiKey string) ConfigOption       { return core.WithAPIKey(apiKey) }
+func WithOtelBridge(enabled bool) ConfigOption    { return core.WithOtelBridge(enabled) }
+func WithRetry(maxRetries int) ConfigOption       { return core.WithRetry(maxRetries) }
+func WithQueueSize(size int) ConfigOption         { return core.WithQueueSize(size) }
+func WithLogger(l *logger) ConfigOption           { return core.WithLogger(l) }
+func Disabled() Config                            { return core.Disabled() }
 func NewMetricsCollector(namespace string, maxBufferSize int) *MetricsCollector {
 	return core.NewMetricsCollector(namespace, maxBufferSize)
 }
@@ -990,20 +1155,37 @@ func RenderPrometheus(metrics *MetricsCollector) string {
 func SampleAll() Sampler                { return core.SampleAll() }
 func SampleNone() Sampler               { return core.SampleNone() }
 func SampleRandom(rate float64) Sampler { return core.SampleRandom(rate) }
+func SampleRate(rate float64) Sampler   { return core.SampleRandom(rate) }
 func SampleRateLimited(rate float64, window time.Duration) Sampler {
 	return core.SampleRateLimited(rate, window)
 }
-func SampleByHeader(header, value string) Sampler        { return core.SampleByHeader(header, value) }
-func SampleByEvent(names ...string) Sampler               { return core.SampleByEvent(names...) }
-func SampleByOutcome(outcomes ...string) Sampler          { return core.SampleByOutcome(outcomes...) }
-func AllowFields(keys ...string) Sampler                  { return core.AllowFields(keys...) }
-func BlockFields(keys ...string) Sampler                  { return core.BlockFields(keys...) }
-func SampleErrors() Sampler                       { return core.SampleErrors() }
-func SampleSlowRequests(d time.Duration) Sampler  { return core.SampleSlowRequests(d) }
-func SampleStatusCodes(codes ...int) Sampler      { return core.SampleStatusCodes(codes...) }
-func SampleRoutes(routes ...string) Sampler       { return core.SampleRoutes(routes...) }
-func SampleUsers(ids ...string) Sampler           { return core.SampleUsers(ids...) }
-func SampleTenants(ids ...string) Sampler         { return core.SampleTenants(ids...) }
+func SampleByHeader(header, value string) Sampler { return core.SampleByHeader(header, value) }
+func SampleByEvent(names ...string) Sampler       { return core.SampleByEvent(names...) }
+func SampleByOutcome(outcomes ...string) Sampler  { return core.SampleByOutcome(outcomes...) }
+func AllowFields(keys ...string) Sampler          { return core.AllowFields(keys...) }
+func BlockFields(keys ...string) Sampler          { return core.BlockFields(keys...) }
+func ShouldSample(sampler Sampler, event *Event) bool {
+	if sampler == nil || event == nil {
+		return false
+	}
+	return sampler.ShouldSample(event)
+}
+func MaxAttrLength(length int) SecurityConfig {
+	return SecurityConfig{MaxFieldBytes: length}
+}
+func MaxEventBytes(bytes int) SecurityConfig {
+	return SecurityConfig{MaxEventBytes: bytes}
+}
+func MaxAttrs(count int) SecurityConfig {
+	return SecurityConfig{MaxAttrCount: count}
+}
+func CardinalityPolicy(policy map[string]any) map[string]any { return policy }
+func SampleErrors() Sampler                                  { return core.SampleErrors() }
+func SampleSlowRequests(d time.Duration) Sampler             { return core.SampleSlowRequests(d) }
+func SampleStatusCodes(codes ...int) Sampler                 { return core.SampleStatusCodes(codes...) }
+func SampleRoutes(routes ...string) Sampler                  { return core.SampleRoutes(routes...) }
+func SampleUsers(ids ...string) Sampler                      { return core.SampleUsers(ids...) }
+func SampleTenants(ids ...string) Sampler                    { return core.SampleTenants(ids...) }
 func SampleFeatureFlag(name string, value any) Sampler {
 	return core.SampleFeatureFlag(name, value)
 }
@@ -1020,6 +1202,7 @@ func ComposeRedactors(redactors ...Redactor) Redactor {
 func DefaultRedactor() Redactor                  { return core.DefaultRedactor() }
 func MaskKeys(keys ...string) Redactor           { return core.MaskKeys(keys...) }
 func HashKeys(keys ...string) Redactor           { return core.HashKeys(keys...) }
+func Redact(keys ...string) Redactor             { return core.RedactKeys(keys...) }
 func RedactKeys(keys ...string) Redactor         { return core.RedactKeys(keys...) }
 func DropKeys(keys ...string) Redactor           { return core.DropKeys(keys...) }
 func RedactPatterns(patterns ...string) Redactor { return core.RedactPatterns(patterns...) }

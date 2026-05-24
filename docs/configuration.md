@@ -80,7 +80,7 @@ auth:
 
 When enabled, all requests must include the API key:
 ```bash
-curl -H "Authorization: Bearer lx_sec_live_k2M9aQp_your_secret" http://localhost:9090/v1/events -d '[...]'
+curl -H "Authorization: Bearer lx_sec_live_k2M9aQp_your_secret" http://localhost:9090/core/events -d '[...]'
 ```
 
 See [Authentication](authentication.md) and [Authorization](authorization.md) for full details.
@@ -272,7 +272,7 @@ identity:
   
   # Bound identity (for single-tenant deployments)
   service_name: my-service
-  service_version: 0.0.1
+  service_version: 0.0.2
   deployment_environment: production
   deployment_region: us-west-2
   tenant_id: tenant-123

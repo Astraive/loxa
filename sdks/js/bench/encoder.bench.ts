@@ -29,7 +29,7 @@ describe('encoder', () => {
       float64('duration_ms', 42.5),
       bool('cache_hit', true),
       string('http.method', 'GET'),
-      string('http.path', '/api/v1/users'),
+      string('http.path', '/api/users'),
       string('http.user_agent', 'Mozilla/5.0'),
     );
     logger.finish(ctx, 'success');

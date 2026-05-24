@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 
-from loxa import Config, LOXA_EVENT_VERSION, LOXA_SPEC_VERSION, Logger, MemorySink, Params
+from loxa import Config, LOXA_EVENT_VERSION, LOXA_SPEC_VERSION, MemorySink, Params, new
 
 
 def test_emit_smoke() -> None:
     sink = MemorySink()
-    logger = Logger(Config(service="test", environment="test", level="debug", strict=True, sinks=[sink]))
+    logger = new(Config(service="test", environment="test", level="debug", strict=True, sinks=[sink]))
 
     ctx = logger.start_event(Params(event="test.run", kind="cli", message="hello"))
     logger.enrich(ctx, answer=42)
@@ -29,7 +29,7 @@ def test_emit_smoke() -> None:
 
 def test_finish_error_sets_error_payload() -> None:
     sink = MemorySink()
-    logger = Logger(Config(service="test", environment="test", level="debug", strict=True, sinks=[sink]))
+    logger = new(Config(service="test", environment="test", level="debug", strict=True, sinks=[sink]))
     ctx = logger.start_event(Params(event="test.error"))
     logger.finish_error(ctx, ValueError("boom"))
     payload = json.loads(logger.emit(ctx))

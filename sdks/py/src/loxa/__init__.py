@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable
 from dataclasses import replace
 
 from .core import (  # noqa: F403
     String, Int, Int64, Uint64, Float64, Bool, Time, Duration,
     Null, Group, SensitiveString, HashString, MarkSensitive,
+    List, Map, Enum, ID, Hash, Redacted, AccountID, DeploymentID,
+    HTTPRoute, HTTPMethod, HTTPPath, HTTPUserAgent, HTTPReferer,
     CanonicalWins, UserWins, FirstWins, LastWins, KeepBoth, ErrorOnDuplicate,
     ExpandDotKeys, PreserveDotKeys, SnakeCaseKeys, CamelCaseKeys,
     AsyncConfig, SecurityConfig, FieldNamingConfig, Config,
@@ -16,20 +19,23 @@ from .core import (  # noqa: F403
     WithCollectorEndpoint, WithDuplicatePolicy, WithStatsHandler,
     WithDeploymentID, WithIncludeHost, WithPanicRecovery, WithExitOnFatal,
     WithRelease, WithNamespace, WithApiKey, WithOtelBridge, WithRetry,
-    WithTimeout, WithQueueSize, WithLogger,
+    WithTimeout, WithQueueSize, WithFlushInterval, WithBatchSize, WithLogger,
     Disabled, FromEnv,
     with_service, with_version, with_environment, with_sink, with_sampler,
     with_redactor, with_metrics, with_schema, with_event_schema, with_async,
     with_collector_endpoint, with_duplicate_policy, with_stats_handler,
     with_deployment_id, with_include_host, with_panic_recovery,
     with_exit_on_fatal, with_release, with_namespace, with_api_key,
-    with_otel_bridge, with_retry, with_timeout, with_queue_size, with_logger,
+    with_otel_bridge, with_retry, with_timeout, with_queue_size, with_flush_interval, with_batch_size, with_logger,
     disabled, from_env,
     StatsHandler, DeliveryFailureHandler,
     FromContext, HasEvent, EventID, RequestIDFromContext, TraceIDFromContext, SpanIDFromContext,
-    Attr, Params, EventContext, Logger,
+    Attr, Params, EventContext, Logger, sanitize_event,
     DuplicateEmitError, EventAlreadyFinishedError, EventClosedError, EventValidationError,
     LevelDebug, LevelInfo, LevelNotice, LevelWarn, LevelError, LevelFatal, ParseLevel,
+    # generic typed attr constructors (snake_case)
+    list_, map_, enum_, id_, hash_, redacted, account_id, deployment_id,
+    http_route, http_method, http_path, http_user_agent, http_referer,
     # domain helpers (snake_case)
     payment_id, subscription_id, invoice_id, job_id, message_id,
     correlation_id, commit_sha, release,
@@ -57,9 +63,9 @@ from .core import (  # noqa: F403
     AgentToolName, AgentToolOutcome, AgentInputTokens, AgentOutputTokens,
     AgentCost, RAGIndex, RAGEmbeddingModel, RAGChunksRetrieved,
     RAGTopScore, RAGQueryHash, RAGCitationCount, RAGRetrievalLatency,
-    default_redactor, redact_keys, hash_keys, mask_keys, drop_keys,
+    default_redactor, redact, redact_keys, hash_keys, mask_keys, drop_keys,
     redact_patterns, compose_redactors,
-    sample_all, sample_none, sample_random, sample_errors,
+    sample_all, sample_none, sample_random, sample_rate, sample_errors,
     sample_slow_requests, sample_status_codes, sample_routes,
     sample_users, sample_tenants, sample_feature_flag, sample_by_header,
     any_sampler, all_sampler, not_sampler, sample_rate_limited,
@@ -75,6 +81,7 @@ from .sinks import (
     FileSink, HTTPBatchSink, MemorySink, NoopSink, StdoutSink,
     MultiSink, multi_sink, drain, pause, resume, queue_size, health, otlp_sink,
     MultiSinkFactory, Drain, Pause, Resume, QueueSize, Health, OTLPSink,
+    kafka_sink, KafkaSink,
 )
 from .core.http_client import CollectorClient
 from .cortex import CortexClient, GraphView, IncidentContext, Remediation, RemediationFeedback
@@ -86,6 +93,7 @@ from .testkit import (  # noqa: F403
     TestLogger, Capture, AssertEvent, AssertRedacted, AssertHasCheckpoint,
     DecodeEvents, CapturingLogger, expect_event, expect_attr,
     snapshot_event, mock_sink, fake_clock, set_id_generator,
+    testkit, reset_for_test,
 )
 
 # Re-export AttrAny as loxa.Any (hides typing.Any at top level)
@@ -98,6 +106,11 @@ Any = _loxa_Any
 _default: Logger = Logger(load_layered_config())
 
 
+def _reset_default() -> None:
+    global _default
+    _default = Logger(load_layered_config())
+
+
 # ---------------------------------------------------------------------------
 # Lowercase Pythonic facade — delegates to _default
 # ---------------------------------------------------------------------------
@@ -106,6 +119,9 @@ def configure(config: Config) -> Logger:
     from .core.config import new_client
     _default = new_client(config)
     return _default
+
+def reset() -> Logger:
+    return configure(load_layered_config())
 
 
 def default() -> Logger:
@@ -227,8 +243,32 @@ def process(ctx: EventContext, name: str, *attrs: Attr, **fields: Any) -> "Proce
     return ctx.start_process(name, **fields)
 
 
+def start_process(ctx: EventContext, name: str, *attrs: Attr, **fields: Any) -> "ProcessHandle":
+    return ctx.start_process(name, **fields)
+
+
+def finish_process(handle: "ProcessHandle", **attrs: Any) -> None:
+    handle.finish(**attrs)
+
+
+def finish_process_error(handle: "ProcessHandle", error: BaseException, **attrs: Any) -> None:
+    handle.finish_error(error, **attrs)
+
+
+def finish_group(handle: "GroupHandle", **attrs: Any) -> None:
+    handle.finish(**attrs)
+
+
+def timer(ctx: EventContext, name: str, *attrs: Attr, **fields: Any) -> "TimerHandle":
+    return ctx.start_timer(name, **fields)
+
+
 def start_timer(ctx: EventContext, name: str, *attrs: Attr, **fields: Any) -> "TimerHandle":
     return ctx.start_timer(name, **fields)
+
+
+def stop_timer(handle: "TimerHandle", **attrs: Any) -> None:
+    handle.stop(**attrs)
 
 
 def start_group(ctx: EventContext, name: str, *attrs: Attr, **fields: Any) -> "GroupHandle":
@@ -262,6 +302,58 @@ def flush(timeout: float | None = None) -> None:
 
 def shutdown(timeout: float | None = None) -> None:
     _default.shutdown()
+
+
+def drain(target: Any | None = None, timeout: float | None = None) -> list:
+    """Drain either the global logger pipeline or a specific sink."""
+    if target is not None:
+        sink_drain = getattr(target, "flush", None)
+        if callable(sink_drain):
+            sink_drain()
+        return []
+    return _default.drain()
+
+
+def pause(target: Any | None = None) -> None:
+    """Pause global logger emission or a specific sink if provided."""
+    if target is not None:
+        sink_pause = getattr(target, "pause", None)
+        if callable(sink_pause):
+            sink_pause()
+        return
+    _default.pause()
+
+
+def resume(target: Any | None = None) -> None:
+    """Resume global logger emission or a specific sink if provided."""
+    if target is not None:
+        sink_resume = getattr(target, "resume", None)
+        if callable(sink_resume):
+            sink_resume()
+        return
+    _default.resume()
+
+
+def queue_size(target: Any | None = None) -> int:
+    """Return queue size for the global logger or an explicit sink."""
+    if target is not None:
+        sink_queue_size = getattr(target, "queue_size", None)
+        if callable(sink_queue_size):
+            return sink_queue_size()
+        if isinstance(sink_queue_size, int):
+            return sink_queue_size
+        return 0
+    return _default.queue_size()
+
+
+def health(target: Any | None = None) -> bool:
+    """Return health for the global logger or an explicit sink."""
+    if target is not None:
+        sink_health = getattr(target, "health", None)
+        if callable(sink_health):
+            return sink_health()
+        return True
+    return _default.health()
 
 
 def debug(message: str, **attrs: Any) -> str:
@@ -351,6 +443,82 @@ def breadcrumb(name: str, **attrs: Any) -> str:
     return _default.emit(ctx)
 
 
+def float(key: str, value: float) -> Attr:
+    return Float64(key, value)
+
+
+def json(key: str, value: object) -> Attr:
+    return Any(key, value)
+
+SanitizeEvent = sanitize_event
+TestKit = testkit
+ResetForTest = reset_for_test
+
+list = list_
+map = map_
+enum = enum_
+id = id_
+hash = hash_
+deploymentId = DeploymentID
+httpRoute = HTTPRoute
+httpMethod = HTTPMethod
+httpPath = HTTPPath
+httpUserAgent = HTTPUserAgent
+httpReferer = HTTPReferer
+
+def http_request(req: Any) -> Attr:
+    method = getattr(req, "method", "")
+    path = getattr(req, "path", "") or getattr(getattr(req, "url", None), "path", "")
+    return Map("http.request", {"method": method, "path": path})
+
+def http_response(res: Any) -> Attr:
+    status = getattr(res, "status_code", None) or getattr(res, "status", None)
+    return Map("http.response", {"status_code": status})
+
+httpRequest = http_request
+httpResponse = http_response
+
+
+# ---------------------------------------------------------------------------
+# Security / policy helpers
+# ---------------------------------------------------------------------------
+def max_attr_length(length: int) -> dict[str, object]:
+    """Return a config dict with max field bytes set."""
+    return {"max_field_bytes": length}
+
+
+def max_attrs(count: int) -> dict[str, object]:
+    """Return a config dict with max attr count set."""
+    return {"max_attr_count": count}
+
+
+def cardinality_policy(policy: dict[str, object]) -> dict[str, object]:
+    """Pass-through cardinality policy config."""
+    return policy
+
+
+MaxAttrLength = max_attr_length
+MaxAttrs = max_attrs
+CardinalityPolicy = cardinality_policy
+
+
+# --- Validate / Normalize / Sanitize event (top-level) ---
+def validate_event(event: dict[str, object]) -> tuple[bool, list[str]]:
+    """Validate an event map against the Loxa spec contract."""
+    from .core.spec_contract import validate_event_map
+    return validate_event_map(event)
+
+
+def normalize_event(event: dict[str, object]) -> dict[str, object]:
+    """Normalize event field names (aliases → canonical)."""
+    from .core.spec_contract import normalize_event_aliases
+    return normalize_event_aliases(event)
+
+
+ValidateEvent = validate_event
+NormalizeEvent = normalize_event
+
+
 # ---------------------------------------------------------------------------
 # Lifecycle extras
 # ---------------------------------------------------------------------------
@@ -394,6 +562,70 @@ def wrap(ctx: EventContext, fn: Callable[..., Any], *args: Any, **kwargs: Any) -
     return _default.wrap(ctx, fn, *args, **kwargs)
 
 
+def run_event(params: Params, fn: Callable[[EventContext], Any], *attrs: Attr, **named: Any) -> str:
+    """Start, run, finish, and emit an event automatically."""
+    ctx = _default.start_event(replace(params))
+    try:
+        result = fn(ctx)
+        _default.finish(ctx, "success", *attrs, **named)
+        return _default.emit(ctx)
+    except BaseException:
+        _default.finish_error(ctx, sys.exc_info()[1] if sys.exc_info()[1] else Exception("unknown error"))
+        return _default.emit(ctx)
+
+
+def run(ctx: EventContext, fn: Callable[[EventContext], Any], *attrs: Attr, **named: Any) -> str:
+    """Run fn with existing event, auto finish/emit."""
+    try:
+        result = fn(ctx)
+        _default.finish(ctx, "success", *attrs, **named)
+        return _default.emit(ctx)
+    except BaseException:
+        _default.finish_error(ctx, sys.exc_info()[1] if sys.exc_info()[1] else Exception("unknown error"))
+        return _default.emit(ctx)
+
+
+def from_request(req: Any, logger: Optional[Logger] = None) -> EventContext:
+    """Create an event from a framework HTTP request object.
+
+    Extracts method, path, route, headers, and creates an HTTP event.
+    Cross-SDK parity with Go's StartHTTPEventFromRequest.
+    """
+    l = logger or _default
+    method = getattr(req, 'method', None) or (req.get('method', 'GET') if isinstance(req, dict) else 'GET')
+    path = (getattr(req, 'path', None) or getattr(req, 'url', None)
+            or (req.get('path', req.get('url', '/')) if isinstance(req, dict) else '/'))
+    route = (getattr(req, 'route', None) or path
+             or (req.get('route', path) if isinstance(req, dict) else path))
+    request_id = ''
+    trace_id = ''
+    user_agent = ''
+    referer = ''
+    headers = getattr(req, 'headers', None) or (req.get('headers', {}) if isinstance(req, dict) else {})
+    if isinstance(headers, dict):
+        request_id = headers.get('x-request-id', headers.get('X-Request-Id', ''))
+        trace_id = headers.get('traceparent', headers.get('x-trace-id', headers.get('X-Trace-Id', '')))
+        user_agent = headers.get('user-agent', headers.get('User-Agent', ''))
+        referer = headers.get('referer', headers.get('referrer', ''))
+    ctx = l.start_event(Params(
+        event="http.request",
+        kind="http",
+        level="info",
+    ))
+    l.set(ctx, "http.method", str(method).upper())
+    l.set(ctx, "http.path", str(path))
+    l.set(ctx, "http.route", str(route))
+    if request_id:
+        l.set(ctx, "request.id", str(request_id))
+    if trace_id:
+        l.set(ctx, "trace.id", str(trace_id))
+    if user_agent:
+        l.set(ctx, "http.user_agent", str(user_agent)[:512])
+    if referer:
+        l.set(ctx, "http.referer", str(referer).split('?')[0])
+    return ctx
+
+
 # ---------------------------------------------------------------------------
 # Go-style uppercase aliases — import loxa as logger; logger.Enrich(...)
 # ---------------------------------------------------------------------------
@@ -427,7 +659,14 @@ Get = get
 GetGroup = get_group
 Checkpoint = checkpoint
 Process = process
+StartProcess = start_process
+FinishProcess = finish_process
+FinishProcessError = finish_process_error
+FinishGroup = finish_group
+FinishGroupError = finish_group_error
 StartTimer = start_timer
+Timer = timer
+StopTimer = stop_timer
 StartGroup = start_group
 Stopwatch = stopwatch
 Finish = finish
@@ -438,6 +677,14 @@ CreateLoxa = create_loxa
 Alias = alias
 Flush = flush
 Shutdown = shutdown
+Drain = drain
+Pause = pause
+Resume = resume
+QueueSize = queue_size
+Health = health
+FromRequest = from_request
+Run = run
+RunEvent = run_event
 
 Debug = debug
 Info = info
@@ -455,6 +702,8 @@ Count = count
 Gauge = gauge
 Histogram = histogram
 Breadcrumb = breadcrumb
+Float = float
+Json = json
 
 Drop = drop
 Cancel = cancel
@@ -466,6 +715,8 @@ LinkEvent = link_event
 CurrentEvent = current_event
 BindEvent = bind_event
 Wrap = wrap
+RunEvent = run_event
+Run = run
 
 
 # ---------------------------------------------------------------------------
@@ -602,6 +853,14 @@ def SampleRandom(rate: float):
     return sample_random(rate)
 
 
+def SampleRate(rate: float):
+    return sample_rate(rate)
+
+
+def Redact(*keys: str):
+    return redact(*keys)
+
+
 def SampleErrors():
     return sample_errors()
 
@@ -695,34 +954,44 @@ __all__ = [
     # Errors
     "DuplicateEmitError", "EventAlreadyFinishedError", "EventClosedError", "EventValidationError",
     # Core types
-    "Attr", "EventContext", "Params", "Logger", "Config", "AsyncConfig", "SecurityConfig", "FieldNamingConfig",
+    "Attr", "EventContext", "Params", "Config", "AsyncConfig", "SecurityConfig", "FieldNamingConfig",
     # Policies
     "CanonicalWins", "UserWins", "FirstWins", "LastWins", "KeepBoth", "ErrorOnDuplicate",
     "ExpandDotKeys", "PreserveDotKeys", "SnakeCaseKeys", "CamelCaseKeys",
     # Levels
     "LevelDebug", "LevelInfo", "LevelNotice", "LevelWarn", "LevelError", "LevelFatal", "ParseLevel",
     # Lowercase facade
-    "configure", "default", "new", "create_loxa", "alias", "dev", "production", "test",
+    "configure", "reset", "default", "new", "create_loxa", "alias", "dev", "production", "test",
     "start_event", "start_http_event", "start_job_event", "start_queue_event", "start_cli_event", "start_cron_event",
     "start_event_from",
     "append", "enrich", "set", "merge", "delete", "get", "get_group",
-    "checkpoint", "finish", "finish_error", "emit", "emit_event",
+    "checkpoint", "process", "start_process", "finish_process", "finish_process_error",
+    "start_group", "finish_group", "timer", "start_timer", "stop_timer", "stopwatch",
+    "finish", "finish_error", "emit", "emit_event",
     "flush", "shutdown",
     "debug", "info", "notice", "warn", "error", "fatal",
     "event", "track", "audit", "security", "metric", "count", "gauge", "histogram", "breadcrumb",
+    "float", "json", "list", "map", "enum", "id", "hash",
     "drop", "cancel", "abandon", "retry", "partial",
     "clone_event", "link_event", "current_event", "bind_event", "wrap",
+    "run_event", "run", "from_request",
     # Uppercase aliases
     "Configure", "Default", "New", "Dev", "Production", "Test",
     "TryNew", "NewClient", "CreateLoxa", "Alias",
     "StartEvent", "StartHTTPEvent", "StartJobEvent", "StartQueueEvent", "StartCLIEvent", "StartCronEvent",
     "Append", "Enrich", "Set", "Merge", "Delete", "Get", "GetGroup",
+    "Process", "StartProcess", "FinishProcess", "FinishProcessError", "FinishGroup",
+    "FinishGroupError",
+    "Timer", "StartTimer", "StopTimer", "StartGroup", "Stopwatch",
     "Checkpoint", "Finish", "FinishError", "Emit", "EmitEvent",
     "Flush", "Shutdown",
     "Debug", "Info", "Notice", "Warn", "Error", "Fatal",
     "Event", "Track", "Audit", "Security", "Metric", "Count", "Gauge", "Histogram", "Breadcrumb",
+    "Float", "Json",
     "Drop", "Cancel", "Abandon", "Retry", "Partial",
     "CloneEvent", "LinkEvent", "CurrentEvent", "BindEvent", "Wrap",
+    "RunEvent", "Run", "FromRequest",
+    "SanitizeEvent", "TestKit", "ResetForTest",
     # Attr constructors
     "String", "Int", "Int64", "Uint64", "Float64", "Bool", "Time", "Duration", "Any", "Null", "Group",
     "SensitiveString", "HashString", "MarkSensitive",
@@ -737,8 +1006,10 @@ __all__ = [
     "PaymentID", "SubscriptionID", "InvoiceID", "JobID", "MessageID", "CorrelationID",
     "CommitSHA", "Release",
     "money", "percent", "bytes_attr", "http_status", "status_code", "error_code",
+    "deployment_id", "http_route", "http_method", "http_path", "http_user_agent", "http_referer",
     "bucket", "tags", "masked", "url", "email_hash", "ip_hash", "region",
     "Money", "Percent", "Bytes", "HTTPStatus", "StatusCode", "ErrorCode",
+    "DeploymentID", "HTTPRoute", "HTTPMethod", "HTTPPath", "HTTPUserAgent", "HTTPReferer",
     "Bucket", "Tags", "Masked", "URL", "EmailHash", "IPHash", "Region",
     # Domain packs
     "checkout_cart_item_count", "checkout_cart_total", "checkout_payment_method", "checkout_status",
@@ -760,24 +1031,25 @@ __all__ = [
     # Sampler
     "SampleAll", "SampleNone", "SampleRandom", "SampleErrors", "SampleSlowRequests", "SampleStatusCodes", "SampleRoutes", "SampleUsers", "SampleTenants", "SampleFeatureFlag", "SampleByHeader", "SampleRateLimited", "AnySampler", "AllSampler", "NotSampler",
     "sample_rate_limited",
-    "SampleByEvent", "SampleByOutcome", "ShouldSample", "AllowFields", "BlockFields",
-    "sample_by_event", "sample_by_outcome", "should_sample", "allow_fields", "block_fields",
+    "SampleRate", "SampleByEvent", "SampleByOutcome", "ShouldSample", "AllowFields", "BlockFields",
+    "sample_rate", "sample_by_event", "sample_by_outcome", "should_sample", "allow_fields", "block_fields",
     # Redactor
-    "DefaultRedactor", "RedactKeys", "RedactPatterns", "HashKeys", "MaskKeys", "DropKeys", "ComposeRedactors",
+    "DefaultRedactor", "Redact", "RedactKeys", "RedactPatterns", "HashKeys", "MaskKeys", "DropKeys", "ComposeRedactors",
     # Metrics
     "MetricsCollector", "MetricsSnapshot", "NewMetricsCollector", "RenderPrometheus",
     # Sinks
     "StdoutSink", "StderrSink", "FileSink", "RotatingFileSink", "MemorySink", "NoopSink", "CollectorSink", "HTTPBatchSink",
     "MultiSink", "multi_sink", "MultiSinkFactory", "otlp_sink", "OTLPSink",
     "drain", "Drain", "pause", "Pause", "resume", "Resume", "queue_size", "QueueSize", "health", "Health",
+    "kafka_sink", "KafkaSink",
     # Config options
     "WithService", "WithVersion", "WithEnvironment", "WithSink", "WithSampler", "WithRedactor", "WithMetrics", "WithSchema", "WithEventSchema", "WithAsync", "WithCollectorEndpoint", "WithDuplicatePolicy", "WithStatsHandler", "WithDeploymentID", "WithIncludeHost", "WithPanicRecovery", "WithExitOnFatal",
-    "WithRelease", "WithNamespace", "WithApiKey", "WithOtelBridge", "WithRetry", "WithTimeout", "WithQueueSize", "WithLogger",
+    "WithRelease", "WithNamespace", "WithApiKey", "WithOtelBridge", "WithRetry", "WithTimeout", "WithQueueSize", "WithFlushInterval", "WithBatchSize", "WithLogger",
     "with_service", "with_version", "with_environment", "with_sink", "with_sampler", "with_redactor",
     "with_metrics", "with_schema", "with_event_schema", "with_async", "with_collector_endpoint",
     "with_duplicate_policy", "with_stats_handler", "with_deployment_id", "with_include_host",
     "with_panic_recovery", "with_exit_on_fatal",
-    "with_release", "with_namespace", "with_api_key", "with_otel_bridge", "with_retry", "with_timeout", "with_queue_size", "with_logger",
+    "with_release", "with_namespace", "with_api_key", "with_otel_bridge", "with_retry", "with_timeout", "with_queue_size", "with_flush_interval", "with_batch_size", "with_logger",
     "Disabled", "disabled", "FromEnv", "from_env",
     # Timing
     "ProcessHandle", "TimerHandle", "GroupHandle", "StopwatchHandle",
@@ -785,9 +1057,14 @@ __all__ = [
     "measure", "step", "phase", "span",
     # Context helpers
     "FromContext", "HasEvent", "EventID", "RequestIDFromContext", "TraceIDFromContext", "SpanIDFromContext",
+    # Sanitize
+    "sanitize_event",
     # Testkit
     "TestLogger", "Capture", "AssertEvent", "AssertRedacted", "AssertHasCheckpoint", "DecodeEvents", "CapturingLogger",
-    "expect_event", "expect_attr", "snapshot_event", "mock_sink", "fake_clock", "set_id_generator",
+    "testkit", "events", "last_event", "clear_events",
+    "expect_event", "expect_attr", "snapshot_event", "golden_test",
+    "conformance_suite", "mock_sink", "fake_clock", "set_clock",
+    "set_id_generator", "reset_for_test",
     # Collector
     "CollectorClient",
     # Cortex

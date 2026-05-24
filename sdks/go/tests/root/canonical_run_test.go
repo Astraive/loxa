@@ -15,7 +15,7 @@ func TestRunEventSuccess(t *testing.T) {
 	}
 
 	err := loxa.RunEvent(context.Background(), loxa.Params{Event: "run.success"}, func(ctx context.Context) error {
-		loxa.Enrich(ctx, loxa.String("k", "v"))
+		_ = loxa.Enrich(ctx, loxa.String("k", "v"))
 		return nil
 	})
 	if err != nil {

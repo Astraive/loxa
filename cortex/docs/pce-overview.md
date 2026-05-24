@@ -81,7 +81,7 @@ When a new incident matches a signature, the learner ranks remediations by:
 
 ### Feedback Loop
 
-Operators submit feedback through the `/v1/feedback/remediation` endpoint. Each feedback record includes:
+Operators submit feedback through the `/feedback/remediation` endpoint. Each feedback record includes:
 
 - Incident ID
 - Remediation action taken

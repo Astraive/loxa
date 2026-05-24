@@ -21,7 +21,7 @@ CANONICAL_EVENT = {
     "outcome": "success",
     "attrs": {
         "http.method": "GET",
-        "http.path": "/api/v1/test",
+        "http.path": "/api/test",
         "http.status_code": 200,
         "custom.label": "equivalence-check",
     },
@@ -56,12 +56,12 @@ def emit_event_via_api(event: dict) -> dict | None:
 
 
 def query_events(marker: str) -> list[dict]:
-    """Query stored events from the collector using /v1/query with SQL."""
+    """Query stored events from the collector using /query with SQL."""
     # Query the raw column for events matching the test marker
     sql = f"SELECT raw FROM events WHERE raw LIKE '%{marker}%' ORDER BY event_id DESC"
     payload = json.dumps({"query": sql}).encode("utf-8")
     req = urllib.request.Request(
-        f"{COLLECTOR_URL}/v1/query",
+        f"{COLLECTOR_URL}/query",
         data=payload,
         headers={"Content-Type": "application/json"},
         method="POST",

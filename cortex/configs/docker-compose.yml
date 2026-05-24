@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -20,8 +18,8 @@ services:
 
   cortex:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: cortex/configs/Dockerfile
     ports:
       - "8080:8080"
       - "9090:9090"
@@ -41,6 +39,7 @@ services:
       - ./configs:/app/configs
 
   cortex-cli:
+    profiles: ["cli"]
     image: astraive/loxa-cli:latest
     environment:
       LOXA_CORTEX_URL: http://cortex:8080

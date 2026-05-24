@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	loxav1 "github.com/astraive/loxa/gen/go/loxa/v1"
+	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"

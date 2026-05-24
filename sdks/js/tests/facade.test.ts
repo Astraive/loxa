@@ -1,14 +1,17 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { Logger } from '../src/core/logger.ts';
 import {
   loxa, configure, reset, startEvent, append, enrich, finish, finishError, emit,
   checkpoint, set, get, del, getGroup, merge, shutdown,
-  defaultLogger, Logger, MemorySink,
+  startProcess, finishProcess, finishProcessError,
+  startGroup, finishGroup, finishGroupError, timer, stopTimer,
+  defaultLogger, MemorySink,
   production, dev, test as testPreset,
   stdoutSink, memorySink, noopSink,
   userId, cartId, featureFlag, int,
   EventView, ConfigBuilder,
-  createLoxa, alias, New,
+  createLoxa, alias,
 } from '../src/index.ts';
 
 describe('Facade', () => {
@@ -96,6 +99,24 @@ describe('Facade', () => {
   it('shutdown works', async () => {
     configure(dev('test'));
     await shutdown(); // should not throw
+  });
+
+  it('process/group/timer facade compatibility methods work', () => {
+    configure(dev('test'));
+    const ctx = startEvent({ event: 'test' });
+    const p1 = startProcess(ctx, 'process.1');
+    finishProcess(p1);
+    const p2 = startProcess(ctx, 'process.2');
+    finishProcessError(p2, new Error('boom'));
+    const g1 = startGroup(ctx, 'group.1');
+    finishGroup(g1);
+    const g2 = startGroup(ctx, 'group.2');
+    finishGroupError(g2, new Error('group-boom'));
+    const t1 = timer(ctx, 'timer.1');
+    stopTimer(t1);
+    assert.equal(ctx.processes.length, 2);
+    assert.equal(ctx.groups.length, 2);
+    assert.equal(ctx.timers.length, 1);
   });
 
   it('defaultLogger returns Logger instance', () => {

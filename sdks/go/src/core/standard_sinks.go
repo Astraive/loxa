@@ -664,23 +664,10 @@ func (s *multiSink) Close(ctx context.Context) error {
 // ── OTLSink ───────────────────────────────────────────────────────────────────
 
 // OTLSink sends events to an OpenTelemetry-compatible endpoint.
-func OTLSink(endpoint string) Sink {
-	return &otlSink{endpoint: endpoint}
+// OTLSink creates an OTLP-compatible sink that forwards events via HTTP batch.
+func OTLSink(endpoint string) (Sink, error) {
+	return HTTPBatchSink(HTTPBatchSinkConfig{Endpoint: endpoint})
 }
-
-type otlSink struct {
-	endpoint string
-}
-
-func (s *otlSink) Name() string { return "otel:" + s.endpoint }
-
-func (s *otlSink) WriteEvent(ctx context.Context, encoded []byte, ev *Event) error {
-	return nil
-}
-
-func (s *otlSink) Flush(ctx context.Context) error { return nil }
-
-func (s *otlSink) Close(ctx context.Context) error { return nil }
 
 // ── Drain / Pause / Resume / QueueSize / Health ──────────────────────────────
 

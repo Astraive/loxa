@@ -137,7 +137,7 @@ func (c *Client) Reconstruct(ctx context.Context, incidentID, mode string) (*Inc
 		"mode":        mode,
 	}
 	var result IncidentContext
-	if err := c.postJSON(ctx, "/v1/reconstruct", body, &result); err != nil {
+	if err := c.postJSON(ctx, "/reconstruct", body, &result); err != nil {
 		return nil, err
 	}
 	NormalizeIncidentContext(&result)
@@ -150,7 +150,7 @@ func (c *Client) Reconstruct(ctx context.Context, incidentID, mode string) (*Inc
 // ReconstructIncident reconstructs an incident using the URL-path variant.
 func (c *Client) ReconstructIncident(ctx context.Context, incidentID, mode string) (*IncidentContext, error) {
 	body := map[string]string{"mode": mode}
-	path := "/v1/incidents/" + url.PathEscape(incidentID) + "/reconstruct"
+	path := "/incidents/" + url.PathEscape(incidentID) + "/reconstruct"
 	var result IncidentContext
 	if err := c.postJSON(ctx, path, body, &result); err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func (c *Client) ReconstructIncident(ctx context.Context, incidentID, mode strin
 
 // ServiceGraph fetches the dependency graph for a service.
 func (c *Client) ServiceGraph(ctx context.Context, service string, depth int) (*GraphView, error) {
-	path := "/v1/graph/service/" + url.PathEscape(service) + "?depth=" + strconv.Itoa(depth)
+	path := "/graph/service/" + url.PathEscape(service) + "?depth=" + strconv.Itoa(depth)
 	var result GraphView
 	if err := c.getJSON(ctx, path, &result); err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func (c *Client) ServiceGraph(ctx context.Context, service string, depth int) (*
 
 // IncidentGraph fetches the graph for a specific incident.
 func (c *Client) IncidentGraph(ctx context.Context, incidentID string, depth int) (*GraphView, error) {
-	path := "/v1/graph/incident/" + url.PathEscape(incidentID) + "?depth=" + strconv.Itoa(depth)
+	path := "/graph/incident/" + url.PathEscape(incidentID) + "?depth=" + strconv.Itoa(depth)
 	var result GraphView
 	if err := c.getJSON(ctx, path, &result); err != nil {
 		return nil, err
@@ -196,7 +196,7 @@ func (c *Client) RecordRemediation(ctx context.Context, r *Remediation) error {
 	if err := ValidateRemediation(r); err != nil {
 		return err
 	}
-	return c.postJSON(ctx, "/v1/feedback/remediation", r, nil)
+	return c.postJSON(ctx, "/feedback/remediation", r, nil)
 }
 
 // RecordFeedback records feedback on a remediation outcome.
@@ -205,7 +205,7 @@ func (c *Client) RecordFeedback(ctx context.Context, rf *RemediationFeedback) er
 	if err := ValidateRemediationFeedback(rf); err != nil {
 		return err
 	}
-	return c.postJSON(ctx, "/v1/feedback/incident", rf, nil)
+	return c.postJSON(ctx, "/feedback/incident", rf, nil)
 }
 
 // SimilarIncidents finds incidents similar to the given one.
@@ -215,7 +215,7 @@ func (c *Client) SimilarIncidents(ctx context.Context, incidentID string) ([]map
 		"mode":        "fast",
 	}
 	var result IncidentContext
-	if err := c.postJSON(ctx, "/v1/reconstruct", body, &result); err != nil {
+	if err := c.postJSON(ctx, "/reconstruct", body, &result); err != nil {
 		return nil, err
 	}
 	return result.SimilarIncidents, nil
@@ -224,7 +224,7 @@ func (c *Client) SimilarIncidents(ctx context.Context, incidentID string) ([]map
 // IngestBatch sends events directly to cortex.
 func (c *Client) IngestBatch(ctx context.Context, events []map[string]any) error {
 	body := map[string]any{"events": events}
-	return c.postJSON(ctx, "/v1/events/batch", body, nil)
+	return c.postJSON(ctx, "/events/batch", body, nil)
 }
 
 // --- internal helpers ---

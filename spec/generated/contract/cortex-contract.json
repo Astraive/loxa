@@ -76,13 +76,13 @@
     "similar_shape"
   ],
   "routes": {
-    "ingest_event": "POST /v1/events",
-    "ingest_batch": "POST /v1/events/batch",
-    "ingest_jsonl": "POST /v1/events/jsonl",
-    "reconstruct": "POST /v1/incidents/{incident_id}/reconstruct",
-    "service_graph": "GET /v1/graph/service/{service}",
-    "incident_graph": "GET /v1/graph/incident/{incident_id}",
-    "record_feedback": "POST /v1/feedback/remediation",
-    "stream_events": "GET /v1/ws"
+    "ingest_event": "POST /events",
+    "ingest_batch": "POST /events/batch",
+    "ingest_jsonl": "POST /events/jsonl",
+    "reconstruct": "POST /incidents/{incident_id}/reconstruct",
+    "service_graph": "GET /graph/service/{service}",
+    "incident_graph": "GET /graph/incident/{incident_id}",
+    "record_feedback": "POST /feedback/remediation",
+    "stream_events": "GET /ws"
   }
 }

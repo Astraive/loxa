@@ -50,5 +50,5 @@ class RotatingFileSink:
 
 
 def CollectorSink(config=None):
-    endpoint = getattr(config, "endpoint", "http://127.0.0.1:9090/v1/events") if config is not None else "http://127.0.0.1:9090/v1/events"
+    endpoint = getattr(config, "endpoint", "http://127.0.0.1:9090/events") if config is not None else "http://127.0.0.1:9090/events"
     return HTTPBatchSink(endpoint)

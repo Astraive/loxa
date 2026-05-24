@@ -5,6 +5,13 @@ pub fn test_logger(service: &str) -> Logger {
     Logger::new(Config::test(service).with_sink(SinkConfig::Memory(MemorySinkStore::new())))
 }
 
+/// Spec-aligned alias for test_logger.
+pub fn testkit(service: &str) -> (Logger, MemorySinkStore) {
+    let store = MemorySinkStore::new();
+    let logger = Logger::new(Config::test(service).with_sink(SinkConfig::Memory(store.clone())));
+    (logger, store)
+}
+
 pub fn assert_contains(encoded: &str, needle: &str) {
     assert!(encoded.contains(needle), "event did not contain {needle}");
 }
@@ -63,7 +70,23 @@ pub fn assert_has_checkpoint(encoded: &str, name: &str) {
     }
 }
 
-pub fn expect_event(_logger: &Logger, _name: &str, _f: impl FnOnce(&EventContext)) {}
+pub fn expect_event(logger: &Logger, name: &str, f: impl FnOnce(&EventContext)) {
+    for sink in &logger.config().sinks {
+        if let SinkConfig::Memory(store) = sink {
+            for encoded in store.events() {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&encoded) {
+                    if val.get("event").and_then(|v| v.as_str()) == Some(name) {
+                        let ctx: EventContext = serde_json::from_value(val)
+                            .expect("expect_event: failed to deserialize event context");
+                        f(&ctx);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+    panic!("expect_event: no event named \"{name}\" found");
+}
 
 pub fn expect_attr(event: &EventContext, key: &str, expected: &serde_json::Value) -> bool {
     event.attrs.get(key) == Some(expected)
@@ -77,9 +100,20 @@ pub fn mock_sink() -> SinkConfig {
     SinkConfig::Memory(MemorySinkStore::new())
 }
 
-pub fn fake_clock() {}
+pub fn fake_clock(unix_ms: u128) {
+    crate::internal::clock::freeze_at(unix_ms);
+}
 
-pub fn set_id_generator(_f: fn() -> String) {}
+pub fn set_id_generator(f: fn() -> String) {
+    crate::internal::core::uuidv7::set_id_generator(Box::new(f));
+}
+
+/// Reset all global mutable state: global logger, clock, and ID generator.
+pub fn reset_for_test() {
+    crate::set_global_logger(Logger::new(Config::dev("loxa")));
+    crate::internal::clock::unfreeze();
+    crate::internal::core::uuidv7::reset_id_generator();
+}
 
 fn get_nested_value<'a>(obj: &'a serde_json::Value, path: &str) -> Option<&'a serde_json::Value> {
     let parts: Vec<&str> = path.split('.').collect();

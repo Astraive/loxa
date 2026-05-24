@@ -83,7 +83,6 @@ export class ProcessHandle {
   }
 
   finishError(err: unknown, ...attrs: any[]): void {
-    const extra = { error_message: String(err) };
     this.finish({ key: 'error_message', value: String(err) }, ...attrs);
   }
 
@@ -125,6 +124,9 @@ export class TimerHandle {
     if (Object.keys(extra).length > 0) entry.attrs = extra;
     if (!this._event.timers) this._event.timers = [];
     this._event.timers.push(entry);
+  }
+  stopTimer(...attrs: any[]): void {
+    this.stop(...attrs);
   }
 
   duration(): number {
@@ -190,9 +192,12 @@ export class GroupHandle {
     this._event.groups.push(entry);
   }
 
+  finishError(err: unknown, ...attrs: any[]): void {
+    this.finish({ key: 'error_message', value: String(err) }, ...attrs);
+  }
+
   finishGroupError(err: unknown, ...attrs: any[]): void {
-    const extra = { error_message: String(err) };
-    this.finish(...attrs);
+    this.finishError(err, ...attrs);
   }
 
   duration(): number {

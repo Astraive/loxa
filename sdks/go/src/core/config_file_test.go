@@ -186,7 +186,7 @@ func TestMergeFileConfig(t *testing.T) {
 	fc := FileConfig{
 		CollectorURL:      "http://file:8080",
 		ServiceName:       "file-svc",
-		ServiceVersion:    "1.0.0",
+		ServiceVersion:    "0.0.2",
 		Environment:       "production",
 		TenantID:          "t1",
 		BatchSize:         100,
@@ -207,8 +207,8 @@ func TestMergeFileConfig(t *testing.T) {
 	if merged.Service != "file-svc" {
 		t.Errorf("Service = %q, want %q", merged.Service, "file-svc")
 	}
-	if merged.Version != "1.0.0" {
-		t.Errorf("Version = %q, want %q", merged.Version, "1.0.0")
+	if merged.Version != "0.0.2" {
+		t.Errorf("Version = %q, want %q", merged.Version, "0.0.2")
 	}
 	if merged.Environment != "production" {
 		t.Errorf("Environment = %q, want %q", merged.Environment, "production")

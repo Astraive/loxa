@@ -58,6 +58,6 @@ loxa schema validate --file event.json --schema-version v1
 
 ## Version
 
-- Schema Version: v0.0.1
+- Schema Version: v0.0.2
 - Status: Active
 - Last Updated: 2024-01-15

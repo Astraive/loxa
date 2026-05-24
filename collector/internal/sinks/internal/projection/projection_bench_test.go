@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-var benchEvent = []byte(`{"event":{"name":"checkout_payment_failed","type":"payment_flow","category":"checkout","action":"pay","level":"error","timestamp":"2026-05-21T10:42:18.731Z","status_code":402,"outcome":"failed","ids":{"request_id":"req_9f8c2a41","trace_id":"trc_7b21d90f4a8c","span_id":"spn_checkout_payment_001","correlation_id":"corr_user456_cart789","session_id":"sess_7xk29"},"service":{"name":"checkout-service","version":"2.4.1","environment":"production","region":"ap-south-1","host":"checkout-prod-17"},"http":{"method":"POST","route":"/api/v1/checkout/pay","path":"/api/v1/checkout/pay","status_code":402,"duration_ms":8611},"actor":{"user_id":"user_456","country":"IN"},"payment":{"provider":"stripe","method":"card","amount_cents":1399900}}}`)
+var benchEvent = []byte(`{"event":{"name":"checkout_payment_failed","type":"payment_flow","category":"checkout","action":"pay","level":"error","timestamp":"2026-05-21T10:42:18.731Z","status_code":402,"outcome":"failed","ids":{"request_id":"req_9f8c2a41","trace_id":"trc_7b21d90f4a8c","span_id":"spn_checkout_payment_001","correlation_id":"corr_user456_cart789","session_id":"sess_7xk29"},"service":{"name":"checkout-service","version":"2.4.1","environment":"production","region":"ap-south-1","host":"checkout-prod-17"},"http":{"method":"POST","route":"/api/checkout/pay","path":"/api/checkout/pay","status_code":402,"duration_ms":8611},"actor":{"user_id":"user_456","country":"IN"},"payment":{"provider":"stripe","method":"card","amount_cents":1399900}}}`)
 
 var benchSchema = map[string]string{
 	"event_id":       "event_id",

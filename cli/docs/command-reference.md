@@ -372,7 +372,10 @@ loxa status --output json
 
 ### loxa sinks
 
-List configured sinks and their status.
+List configured sinks and their status. Supports explicit subcommands:
+- `loxa sinks list`
+- `loxa sinks show <name>`
+- `loxa sinks test <name>`
 
 ```bash
 loxa sinks
@@ -382,6 +385,10 @@ loxa sinks
 
 ```bash
 loxa sinks --output json
+```
+
+```bash
+loxa sinks test duckdb
 ```
 
 ---

@@ -18,6 +18,8 @@
 - `loxa watch`
 - `loxa status`
 - `loxa sinks`
+- `loxa sinks show <name>`
+- `loxa sinks test <name>`
 - `loxa dlq`
 - `loxa replay`
 - `loxa delete tenant <tenant_id>`

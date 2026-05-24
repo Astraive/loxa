@@ -5,6 +5,10 @@ import (
 	"testing"
 )
 
+type ctxKey string
+
+const ctxCaptureKey ctxKey = "ctx-key"
+
 type contextCaptureSink struct {
 	val any
 }
@@ -12,7 +16,7 @@ type contextCaptureSink struct {
 func (s *contextCaptureSink) Name() string { return "context-capture" }
 
 func (s *contextCaptureSink) WriteEvent(ctx context.Context, _ []byte, _ *Event) error {
-	s.val = ctx.Value("ctx-key")
+	s.val = ctx.Value(ctxCaptureKey)
 	return nil
 }
 
@@ -29,7 +33,7 @@ func TestInfoContextUsesCallerContextForSyncWrites(t *testing.T) {
 		t.Fatalf("new logger: %v", err)
 	}
 
-	ctx := context.WithValue(context.Background(), "ctx-key", "ctx-value")
+	ctx := context.WithValue(context.Background(), ctxCaptureKey, "ctx-value")
 	l.InfoContext(ctx, "msg", "event")
 
 	if sink.val != "ctx-value" {

@@ -1,4 +1,4 @@
-use loxa::{Config, Logger, Params};
+use loxa::{Config, New, Params};
 use serde::Deserialize;
 use serde_json::Value;
 use std::fs;
@@ -68,10 +68,10 @@ fn collector_ack_behavior_fixtures() {
             }
         });
 
-        let endpoint = format!("http://{addr}/v1/events");
+        let endpoint = format!("http://{addr}/events");
         println!("test endpoint: {endpoint}");
         let logger =
-            Logger::new(Config::test("checkout").with_sink(loxa::HttpBatchSink(&endpoint)));
+            New(Config::test("checkout").with_sink(loxa::HttpBatchSink(&endpoint)));
         let mut ctx = logger.start_event(Params::new("payment.completed").with_kind("cli"));
         logger.finish(&mut ctx, "success").expect("finish event");
         let result = logger.emit(&ctx);

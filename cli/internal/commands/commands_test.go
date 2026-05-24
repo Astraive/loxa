@@ -10,7 +10,22 @@ import (
 	"testing"
 
 	"github.com/astraive/loxa-cli/internal/config"
+	"github.com/astraive/loxa-cli/internal/output"
 )
+
+func captureStdout(t *testing.T, run func() error) (string, error) {
+	t.Helper()
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	defer func() { os.Stdout = old }()
+
+	err := run()
+	_ = w.Close()
+	buf := make([]byte, 8192)
+	n, _ := r.Read(buf)
+	return string(buf[:n]), err
+}
 
 func TestEmitSamplePrintsEnvelope(t *testing.T) {
 	cfg := config.Config{CollectorURL: "http://127.0.0.1:9090"}
@@ -49,7 +64,7 @@ func TestEmitSampleWritesOutputFile(t *testing.T) {
 
 func TestDLQListHitsCollectorAPI(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/dlq" {
+		if r.URL.Path != "/dlq" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
 		_, _ = w.Write([]byte(`{"events":[],"count":0}`))
@@ -67,7 +82,7 @@ func TestEmitSampleSendsAPIKeyFromEnv(t *testing.T) {
 
 	var gotAuth string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/events" {
+		if r.URL.Path != "/events" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
 		gotAuth = r.Header.Get("Authorization")
@@ -87,7 +102,7 @@ func TestEmitSampleSendsAPIKeyFromEnv(t *testing.T) {
 
 func TestSchemaListHitsCollectorAPI(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/schema" {
+		if r.URL.Path != "/schema" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
 		_, _ = w.Write([]byte(`{"registry":[]}`))
@@ -102,7 +117,7 @@ func TestSchemaListHitsCollectorAPI(t *testing.T) {
 
 func TestAuditPIIHitsCollectorAPI(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/audit/pii" {
+		if r.URL.Path != "/audit/pii" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
 		if r.Method != http.MethodPost {
@@ -178,9 +193,9 @@ func TestDoctorChecksCortexWhenConfigured(t *testing.T) {
 		switch r.URL.Path {
 		case "/health", "/ready":
 			w.WriteHeader(http.StatusOK)
-		case "/v1/status":
+		case "/status":
 			_, _ = w.Write([]byte(`{"status":"ok"}`))
-		case "/v1/events":
+		case "/events":
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = w.Write([]byte(`{"status":"accepted","accepted":1}`))
 		case "/metrics":
@@ -227,7 +242,7 @@ func TestRunCortexServerRequiresConfiguredRepo(t *testing.T) {
 
 func TestRunCortexReconstructHitsSharedClientPath(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/reconstruct" {
+		if r.URL.Path != "/reconstruct" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
 		if r.Method != http.MethodPost {
@@ -245,7 +260,7 @@ func TestRunCortexReconstructHitsSharedClientPath(t *testing.T) {
 
 func TestRunCortexGraphHitsSharedClientPath(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasPrefix(r.URL.Path, "/v1/graph/service/checkout") {
+		if !strings.HasPrefix(r.URL.Path, "/graph/service/checkout") {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
 		_, _ = w.Write([]byte(`{"nodes":[{"id":"n1"}],"edges":[]}`))
@@ -260,7 +275,7 @@ func TestRunCortexGraphHitsSharedClientPath(t *testing.T) {
 
 func TestStatusHitsCollectorAPI(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/status" {
+		if r.URL.Path != "/status" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
 		_, _ = w.Write([]byte(`{"status":"ok","uptime":"5m","events_accepted":100}`))
@@ -275,7 +290,7 @@ func TestStatusHitsCollectorAPI(t *testing.T) {
 
 func TestSinksListHitsCollectorAPI(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/sinks" {
+		if r.URL.Path != "/sinks" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
 		_, _ = w.Write([]byte(`{"sinks":[{"name":"duckdb","type":"primary","health":"ok"}]}`))
@@ -288,9 +303,67 @@ func TestSinksListHitsCollectorAPI(t *testing.T) {
 	}
 }
 
+func TestSinksTestHitsCollectorAPI(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/sinks/duckdb/test" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected method %s", r.Method)
+		}
+		_, _ = w.Write([]byte(`{"status":"ok","message":"sink test passed"}`))
+	}))
+	defer srv.Close()
+
+	cfg := config.Config{CollectorURL: srv.URL}
+	if err := SinksCommand(context.Background(), cfg, []string{"test", "duckdb"}); err != nil {
+		t.Fatalf("sinks test: %v", err)
+	}
+}
+
+func TestSinksTestJSONOutput(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"status":"ok","message":"sink test passed"}`))
+	}))
+	defer srv.Close()
+
+	cfg := config.Config{CollectorURL: srv.URL}
+	ctx := output.WithFormat(context.Background(), "json")
+	out, err := captureStdout(t, func() error {
+		return SinksCommand(ctx, cfg, []string{"test", "duckdb"})
+	})
+	if err != nil {
+		t.Fatalf("sinks test json: %v", err)
+	}
+	if !strings.Contains(out, `"status":"ok"`) {
+		t.Fatalf("expected raw json output, got %s", out)
+	}
+}
+
+func TestSinksTestTextOutput(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"status":"ok","message":"sink test passed"}`))
+	}))
+	defer srv.Close()
+
+	cfg := config.Config{CollectorURL: srv.URL}
+	out, err := captureStdout(t, func() error {
+		return SinksCommand(context.Background(), cfg, []string{"test", "duckdb"})
+	})
+	if err != nil {
+		t.Fatalf("sinks test text: %v", err)
+	}
+	if !strings.Contains(out, "Sink test: duckdb") {
+		t.Fatalf("expected sink test section, got %s", out)
+	}
+	if !strings.Contains(out, "sink test passed") {
+		t.Fatalf("expected readable sink test output, got %s", out)
+	}
+}
+
 func TestGraphServiceHitsCortexAPI(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasPrefix(r.URL.Path, "/v1/graph/service/") {
+		if !strings.HasPrefix(r.URL.Path, "/graph/service/") {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
 		_, _ = w.Write([]byte(`{"nodes":[{"id":"n1","label":"checkout","type":"service"}],"edges":[]}`))
@@ -305,7 +378,7 @@ func TestGraphServiceHitsCortexAPI(t *testing.T) {
 
 func TestDebugEventQueriesCollector(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/query" {
+		if r.URL.Path != "/query" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
 		_, _ = w.Write([]byte(`{"columns":["event_id","event"],"rows":[["evt_1","test.event"]]}`))
@@ -321,9 +394,9 @@ func TestDebugEventQueriesCollector(t *testing.T) {
 func TestDebugPipelineShowsStatus(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/v1/status":
+		case "/status":
 			_, _ = w.Write([]byte(`{"status":"ok"}`))
-		case "/v1/sinks":
+		case "/sinks":
 			_, _ = w.Write([]byte(`{"sinks":[]}`))
 		default:
 			t.Fatalf("unexpected path %s", r.URL.Path)

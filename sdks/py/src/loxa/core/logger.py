@@ -318,6 +318,45 @@ class Logger:
             if callable(close):
                 close()
 
+    def drain(self, timeout: float = 30.0) -> list:
+        """Drain the pipeline — stop accepting new events and flush pending."""
+        if self._pipeline is not None:
+            return self._pipeline.drain()
+        self.flush(timeout=timeout)
+        return []
+
+    def pause(self) -> None:
+        """Pause event emission."""
+        for sink in self._config.sinks:
+            pause_fn = getattr(sink, "pause", None)
+            if callable(pause_fn):
+                pause_fn()
+
+    def resume(self) -> None:
+        """Resume event emission."""
+        for sink in self._config.sinks:
+            resume_fn = getattr(sink, "resume", None)
+            if callable(resume_fn):
+                resume_fn()
+
+    def queue_size(self) -> int:
+        """Return the current sink queue size."""
+        for sink in self._config.sinks:
+            qs = getattr(sink, "queue_size", None)
+            if callable(qs):
+                return qs()
+        if self._pipeline is not None:
+            return getattr(self._pipeline, 'size', lambda: 0)()
+        return 0
+
+    def health(self) -> bool:
+        """Return SDK health status."""
+        for sink in self._config.sinks:
+            h = getattr(sink, "health", None)
+            if callable(h):
+                return h()
+        return True
+
     def debug(self, message: str, **attrs: Any) -> str:
         return self._emit_immediate("debug", message, **attrs)
 

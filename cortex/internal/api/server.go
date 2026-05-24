@@ -146,23 +146,24 @@ func (s *Server) Router() http.Handler {
 		r.Use(s.rateLimit.Middleware)
 	}
 
-	r.Route("/v1", func(r chi.Router) {
-		r.Post("/events", s.IngestEvent)
-		r.Post("/events/batch", s.IngestBatch)
-		r.Post("/events/jsonl", s.IngestJSONL)
+	registerAPIRoutes := func(router chi.Router) {
+		router.Post("/events", s.IngestEvent)
+		router.Post("/events/batch", s.IngestBatch)
+		router.Post("/events/jsonl", s.IngestJSONL)
 
-		r.Post("/reconstruct", s.Reconstruct)
-		r.Post("/incidents/{incident_id}/reconstruct", s.ReconstructIncident)
+		router.Post("/reconstruct", s.Reconstruct)
+		router.Post("/incidents/{incident_id}/reconstruct", s.ReconstructIncident)
 
-		r.Post("/feedback/remediation", s.RecordRemediation)
-		r.Post("/feedback/incident", s.RecordIncidentFeedback)
+		router.Post("/feedback/remediation", s.RecordRemediation)
+		router.Post("/feedback/incident", s.RecordIncidentFeedback)
 
-		r.Get("/graph/service/{service}", s.ServiceGraph)
-		r.Get("/graph/incident/{incident_id}", s.IncidentGraph)
-	})
+		router.Get("/graph/service/{service}", s.ServiceGraph)
+		router.Get("/graph/incident/{incident_id}", s.IncidentGraph)
+	}
+	registerAPIRoutes(r)
 
 	r.Handle("/graphql", s.graphql.Handler())
-	r.Handle("/v1/ws", s.WebSocketHandler())
+	r.Handle("/ws", s.WebSocketHandler())
 
 	return r
 }

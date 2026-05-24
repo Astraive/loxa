@@ -18,6 +18,15 @@ export function sampleRandom(rate: number): Sampler {
   return () => Math.random() < rate;
 }
 
+/** Fixed sample rate — alias for sampleRandom. */
+export function sampleRate(rate: number): Sampler {
+  return sampleRandom(rate);
+}
+
+export function shouldSample(sampler: Sampler, event: Event): boolean {
+  return sampler(event);
+}
+
 /** Keep only error events. */
 export function sampleErrors(): Sampler {
   return (ev) => ev.outcome === 'error' || ev.error !== null;
@@ -122,4 +131,20 @@ export function allowFields(...keys: string[]): Sampler {
 /** Block list field sampler — drops events that contain ANY of the blocked fields. */
 export function blockFields(...keys: string[]): Sampler {
   return (ev) => !keys.some(k => k in ev.attrs || (ev as any)[k] !== undefined);
+}
+
+export function maxAttrLength(length: number): { maxAttrLength: number } {
+  return { maxAttrLength: length };
+}
+
+export function maxEventBytes(bytes: number): { maxEventBytes: number } {
+  return { maxEventBytes: bytes };
+}
+
+export function maxAttrs(count: number): { maxAttrs: number } {
+  return { maxAttrs: count };
+}
+
+export function cardinalityPolicy(policy: Record<string, unknown>): Record<string, unknown> {
+  return { ...policy };
 }

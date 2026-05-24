@@ -13,7 +13,7 @@ def test_e2e_collector_pipeline():
     # 1. Create logger with collector sink
     config = (
         loxa.Production("e2e-test-service")
-        .with_collector_endpoint("http://127.0.0.1:9090/v1/events")
+        .with_collector_endpoint("http://127.0.0.1:9090/events")
     )
     logger = loxa.New(config)
 
@@ -35,10 +35,10 @@ def test_e2e_collector_pipeline():
     time.sleep(1)
     print("  Flushed to collector\n")
 
-    # 4. Verify via collector /v1/status (accepted count)
+    # 4. Verify via collector /status (accepted count)
     print("  Verifying via collector status...")
     status_req = urllib.request.Request(
-        "http://127.0.0.1:9090/v1/status",
+        "http://127.0.0.1:9090/status",
         method="GET",
     )
     with urllib.request.urlopen(status_req, timeout=5) as resp:
@@ -48,7 +48,7 @@ def test_e2e_collector_pipeline():
     print(f"  Collector accepted count: {accepted}")
     assert accepted >= 3, f"Expected >=3 accepted, got {accepted}"
 
-    # Also verify via /v1/events query (if DuckDB available)
+    # Also verify via /query (if DuckDB available)
     # Fall back to checking accepted count
     e2e_events = []
     for i in range(3):
@@ -58,7 +58,7 @@ def test_e2e_collector_pipeline():
     # Verify collector has events in DuckDB via query endpoint
     try:
         query_req = urllib.request.Request(
-            "http://127.0.0.1:9090/v1/query",
+            "http://127.0.0.1:9090/query",
             data=json.dumps({"sql": "SELECT event, service, outcome FROM events WHERE service = 'e2e-test-service' LIMIT 10"}).encode(),
             headers={"content-type": "application/json"},
             method="POST",
@@ -74,7 +74,7 @@ def test_e2e_collector_pipeline():
 
     # 5. CollectorClient health/ready/version/status
     from loxa.core.http_client import CollectorClient
-    cc = CollectorClient("http://127.0.0.1:9090/v1/events")
+    cc = CollectorClient("http://127.0.0.1:9090/events")
 
     assert cc.health() is True, "collector health check failed"
     print("\n  Collector health: True")

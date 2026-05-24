@@ -53,9 +53,8 @@ func TestEmitUsesFallbackSinkOnPrimaryFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new logger: %v", err)
 	}
-
 	ctx := l.StartEvent(context.Background(), Params{Event: "fallback.test"})
-	l.Finish(ctx, "success")
+	_ = l.Finish(ctx, "success")
 	if err := l.Emit(ctx); !errors.Is(err, primaryErr) {
 		t.Fatalf("expected primary error, got: %v", err)
 	}
@@ -76,7 +75,7 @@ func TestStatsHandlerReceivesEmitDropAndError(t *testing.T) {
 			t.Fatalf("new logger: %v", err)
 		}
 		ctx := l.StartEvent(context.Background(), Params{Event: "drop.test"})
-		l.Finish(ctx, "success")
+		_ = l.Finish(ctx, "success")
 		if err := l.Emit(ctx); err != nil {
 			t.Fatalf("emit: %v", err)
 		}
@@ -96,7 +95,7 @@ func TestStatsHandlerReceivesEmitDropAndError(t *testing.T) {
 			t.Fatalf("new logger: %v", err)
 		}
 		ctx := l.StartEvent(context.Background(), Params{Event: "emit.test"})
-		l.Finish(ctx, "success")
+		_ = l.Finish(ctx, "success")
 		if err := l.Emit(ctx); err != nil {
 			t.Fatalf("emit: %v", err)
 		}
@@ -117,7 +116,7 @@ func TestStatsHandlerReceivesEmitDropAndError(t *testing.T) {
 			t.Fatalf("new logger: %v", err)
 		}
 		ctx := l.StartEvent(context.Background(), Params{Event: "error.test"})
-		l.Finish(ctx, "success")
+		_ = l.Finish(ctx, "success")
 		_ = l.Emit(ctx)
 		if len(stats.errors) == 0 || !errors.Is(stats.errors[0], expectedErr) {
 			t.Fatalf("expected error callback with sink failure")
@@ -130,4 +129,3 @@ func TestStatsHandlerReceivesEmitDropAndError(t *testing.T) {
 		}
 	})
 }
-

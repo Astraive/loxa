@@ -98,7 +98,7 @@ func BenchmarkAuthMiddlewareHit(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		req := httptest.NewRequest("POST", "/v1/events", bytes.NewReader([]byte(`[{"event_name":"test"}]`)))
+		req := httptest.NewRequest("POST", "/events", bytes.NewReader([]byte(`[{"event_name":"test"}]`)))
 		req.Header.Set("Authorization", "Bearer lx_sec_live_kBenchKey_bench_secret_value")
 		req.Header.Set("X-Loxa-Service", "bench-service")
 		req.Header.Set("X-Loxa-Env", "live")
@@ -127,7 +127,7 @@ func BenchmarkAuthMiddlewareMiss(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		cache.Invalidate(record.KeyID) // force miss every time
-		req := httptest.NewRequest("POST", "/v1/events", bytes.NewReader([]byte(`[{"event_name":"test"}]`)))
+		req := httptest.NewRequest("POST", "/events", bytes.NewReader([]byte(`[{"event_name":"test"}]`)))
 		req.Header.Set("Authorization", "Bearer lx_sec_live_kBenchKey_bench_secret_value")
 		req.Header.Set("X-Loxa-Service", "bench-service")
 		req.Header.Set("X-Loxa-Env", "live")
@@ -154,7 +154,7 @@ func BenchmarkAuthLocalKey(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		req := httptest.NewRequest("POST", "/v1/events", bytes.NewReader([]byte(`[{"event_name":"test"}]`)))
+		req := httptest.NewRequest("POST", "/events", bytes.NewReader([]byte(`[{"event_name":"test"}]`)))
 		req.Header.Set("Authorization", "Bearer lx_local_dev_mydevtoken")
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)

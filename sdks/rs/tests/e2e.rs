@@ -1,10 +1,10 @@
 // Integration tests for Rust SDK with collector
-use loxa::{Config, Logger, Params};
+use loxa::{Config, New, Params};
 use serde_json::Value;
 
 #[test]
 fn test_emit_to_collector_basic() {
-    let logger = Logger::new(Config::test("integration_test"));
+    let logger = New(Config::test("integration_test"));
     let mut ctx = logger.start_event(Params::new("basic_event"));
     let _ = logger.finish(&mut ctx, "success");
     let payload = logger.emit(&ctx).unwrap();
@@ -17,7 +17,7 @@ fn test_emit_to_collector_basic() {
 
 #[test]
 fn test_event_integrity_through_pipeline() {
-    let logger = Logger::new(Config::test("test_service"));
+    let logger = New(Config::test("test_service"));
 
     let mut ctx = logger.start_event(
         Params::new("integrity_test")
@@ -42,7 +42,7 @@ fn test_event_integrity_through_pipeline() {
 
 #[test]
 fn test_multiple_events_ordering() {
-    let logger = Logger::new(Config::test("order_test"));
+    let logger = New(Config::test("order_test"));
 
     for i in 0..5 {
         let mut ctx = logger.start_event(Params::new(format!("event_{}", i)));
@@ -56,7 +56,7 @@ fn test_multiple_events_ordering() {
 
 #[test]
 fn test_error_event_collection() {
-    let logger = Logger::new(Config::test("error_test"));
+    let logger = New(Config::test("error_test"));
 
     let mut ctx =
         logger.start_event(Params::new("error_event").with_message("Something went wrong"));
@@ -73,7 +73,7 @@ fn test_error_event_collection() {
 
 #[test]
 fn test_partial_event_outcome() {
-    let logger = Logger::new(Config::test("partial_test"));
+    let logger = New(Config::test("partial_test"));
 
     let mut ctx = logger.start_event(Params::new("partial_event"));
     let _ = logger.finish(&mut ctx, "partial");
@@ -85,7 +85,7 @@ fn test_partial_event_outcome() {
 
 #[test]
 fn test_trace_context_preservation() {
-    let logger = Logger::new(Config::test("trace_test"));
+    let logger = New(Config::test("trace_test"));
 
     let mut ctx = logger.start_event(
         Params::new("trace_event"), // Params has trace_id/span_id fields, but they're set via inherit_from or ContextCarrier
@@ -106,7 +106,7 @@ fn test_trace_context_preservation() {
 
 #[test]
 fn test_canonical_fields_immutable() {
-    let logger = Logger::new(Config::test("canon_test"));
+    let logger = New(Config::test("canon_test"));
 
     let mut ctx = logger.start_event(Params::new("canon_event"));
 
@@ -124,7 +124,7 @@ fn test_canonical_fields_immutable() {
 
 #[test]
 fn test_enrichment_preserved() {
-    let logger = Logger::new(Config::test("enrich_test"));
+    let logger = New(Config::test("enrich_test"));
 
     let mut ctx = logger.start_event(Params::new("enrich_event"));
 
@@ -144,7 +144,7 @@ fn test_duration_calculated() {
     use std::thread;
     use std::time::Duration;
 
-    let logger = Logger::new(Config::test("duration_test"));
+    let logger = New(Config::test("duration_test"));
 
     let mut ctx = logger.start_event(Params::new("duration_event"));
 
@@ -160,7 +160,7 @@ fn test_duration_calculated() {
 
 #[test]
 fn test_schema_version_set() {
-    let logger = Logger::new(Config::test("schema_test"));
+    let logger = New(Config::test("schema_test"));
 
     let mut ctx = logger.start_event(Params::new("schema_event"));
 
@@ -168,13 +168,13 @@ fn test_schema_version_set() {
     let payload = logger.emit(&ctx).unwrap();
 
     let event: Value = serde_json::from_str(&payload).unwrap();
-    // Schema version should be canonical (0.0.1)
+    // Schema version should be canonical (0.0.2)
     assert!(event.get("schema_version").is_some());
 }
 
 #[test]
 fn test_sampling_in_pipeline() {
-    let logger = Logger::new(Config::test("sample_test"));
+    let logger = New(Config::test("sample_test"));
 
     for i in 0..3 {
         let mut ctx = logger.start_event(Params::new(format!("sampled_{}", i)));
@@ -187,7 +187,7 @@ fn test_sampling_in_pipeline() {
 
 #[test]
 fn test_finish_twice_error_handling() {
-    let logger = Logger::new(Config::test("finish_test"));
+    let logger = New(Config::test("finish_test"));
 
     let mut ctx = logger.start_event(Params::new("finish_event"));
 
@@ -199,7 +199,7 @@ fn test_finish_twice_error_handling() {
 
 #[test]
 fn test_emit_after_finish() {
-    let logger = Logger::new(Config::test("emit_test"));
+    let logger = New(Config::test("emit_test"));
 
     let mut ctx = logger.start_event(Params::new("emit_event"));
 
@@ -215,7 +215,7 @@ fn test_concurrent_emissions() {
     use std::sync::{Arc, Mutex};
     use std::thread;
 
-    let logger = Arc::new(Mutex::new(Logger::new(Config::test("concurrent_test"))));
+    let logger = Arc::new(Mutex::new(New(Config::test("concurrent_test"))));
 
     let mut handles = vec![];
 
@@ -239,7 +239,7 @@ fn test_concurrent_emissions() {
 
 #[test]
 fn test_event_attributes_json() {
-    let logger = Logger::new(Config::test("attrs_test"));
+    let logger = New(Config::test("attrs_test"));
 
     let mut ctx = logger.start_event(Params::new("attrs_event"));
 
@@ -258,7 +258,7 @@ fn test_event_attributes_json() {
 
 #[test]
 fn test_event_version_integrity() {
-    let logger = Logger::new(Config::test("version_test"));
+    let logger = New(Config::test("version_test"));
 
     let mut ctx = logger.start_event(Params::new("version_event"));
     let _ = logger.finish(&mut ctx, "success");

@@ -1,6 +1,6 @@
 # Cortex
 
-**Status: v0.0.1 STABLE**
+**Status: v0.0.2 STABLE**
 
 Cortex is the control plane for the LOXA observability platform. It provides the Persistent Context Engine (PCE), incident intelligence, causal chain reconstruction, similar incident matching, and remediation learning. Cortex consumes events from the collector, builds service topology graphs, and surfaces actionable incident context to operators.
 
@@ -88,7 +88,7 @@ docker compose up
 Reconstruct an incident:
 
 ```bash
-curl -X POST http://localhost:9091/v1/reconstruct \
+curl -X POST http://localhost:9091/reconstruct \
   -H "Content-Type: application/json" \
   -d '{"incident_id": "inc-001", "mode": "fast"}'
 ```
@@ -96,13 +96,13 @@ curl -X POST http://localhost:9091/v1/reconstruct \
 Get the service graph:
 
 ```bash
-curl http://localhost:9091/v1/graph/service/payment-service
+curl http://localhost:9091/graph/service/payment-service
 ```
 
 Find similar incidents:
 
 ```bash
-curl -X POST http://localhost:9091/v1/signatures/search \
+curl -X POST http://localhost:9091/signatures/search \
   -H "Content-Type: application/json" \
   -d '{"symptoms": ["timeout", "5xx_spike"], "services": ["payment-service"]}'
 ```
@@ -110,7 +110,7 @@ curl -X POST http://localhost:9091/v1/signatures/search \
 Submit feedback:
 
 ```bash
-curl -X POST http://localhost:9091/v1/feedback/remediation \
+curl -X POST http://localhost:9091/feedback/remediation \
   -H "Content-Type: application/json" \
   -d '{"incident_id": "inc-001", "action": "restart_pod", "outcome": "resolved", "confidence": 0.9}'
 ```
@@ -122,17 +122,17 @@ curl -X POST http://localhost:9091/v1/feedback/remediation \
 | `/healthz` | GET | Liveness probe |
 | `/readyz` | GET | Readiness probe |
 | `/metrics` | GET | Prometheus metrics |
-| `/v1/events` | POST | Ingest a single event |
-| `/v1/events/batch` | POST | Ingest a batch of events |
-| `/v1/events/jsonl` | POST | Ingest NDJSON stream |
-| `/v1/reconstruct` | POST | Reconstruct an incident context |
-| `/v1/incidents/{id}/reconstruct` | POST | Reconstruct by incident ID |
-| `/v1/graph/service/{service}` | GET | Get service graph neighborhood |
-| `/v1/graph/incident/{id}` | GET | Get incident graph |
-| `/v1/feedback/remediation` | POST | Record remediation feedback |
-| `/v1/feedback/incident` | POST | Record incident feedback |
+| `/events` | POST | Ingest a single event |
+| `/events/batch` | POST | Ingest a batch of events |
+| `/events/jsonl` | POST | Ingest NDJSON stream |
+| `/reconstruct` | POST | Reconstruct an incident context |
+| `/incidents/{id}/reconstruct` | POST | Reconstruct by incident ID |
+| `/graph/service/{service}` | GET | Get service graph neighborhood |
+| `/graph/incident/{id}` | GET | Get incident graph |
+| `/feedback/remediation` | POST | Record remediation feedback |
+| `/feedback/incident` | POST | Record incident feedback |
 | `/graphql` | POST | GraphQL query endpoint |
-| `/v1/ws` | GET | WebSocket live event stream |
+| `/ws` | GET | WebSocket live event stream |
 
 ## Documentation
 

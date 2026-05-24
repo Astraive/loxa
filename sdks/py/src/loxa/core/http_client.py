@@ -120,7 +120,7 @@ class CollectorClient:
         timeout: float = 2.0,
         retries: int = 2,
         sdk_name: str = "loxa-py",
-        sdk_version: str = "0.0.1",
+        sdk_version: str = "0.0.2",
         service: str = "",
     ) -> None:
         self.endpoint = endpoint
@@ -183,23 +183,29 @@ class CollectorClient:
 
     def health(self) -> bool:
         """Check if the collector is healthy."""
-        req = Request(f"{self._base_url()}/healthz", method="GET")
-        try:
-            with urlopen(req, timeout=self.timeout) as resp:
-                data = json.loads(resp.read())
-                return data.get("status") == "ok"
-        except (URLError, HTTPError, OSError, json.JSONDecodeError):
-            return False
+        for path in ("/health", "/healthz"):
+            req = Request(f"{self._base_url()}{path}", method="GET")
+            try:
+                with urlopen(req, timeout=self.timeout) as resp:
+                    data = json.loads(resp.read())
+                    if data.get("status") == "ok":
+                        return True
+            except (URLError, HTTPError, OSError, json.JSONDecodeError):
+                continue
+        return False
 
     def ready(self) -> bool:
         """Check if the collector is ready to accept requests."""
-        req = Request(f"{self._base_url()}/readyz", method="GET")
-        try:
-            with urlopen(req, timeout=self.timeout) as resp:
-                data = json.loads(resp.read())
-                return data.get("status") in ("ok", "ready")
-        except (URLError, HTTPError, OSError, json.JSONDecodeError):
-            return False
+        for path in ("/ready", "/readyz"):
+            req = Request(f"{self._base_url()}{path}", method="GET")
+            try:
+                with urlopen(req, timeout=self.timeout) as resp:
+                    data = json.loads(resp.read())
+                    if data.get("status") in ("ok", "ready"):
+                        return True
+            except (URLError, HTTPError, OSError, json.JSONDecodeError):
+                continue
+        return False
 
     def version(self) -> dict:
         """Fetch version info from the collector."""
@@ -209,7 +215,7 @@ class CollectorClient:
 
     def status(self) -> dict:
         """Fetch operational status from the collector."""
-        req = Request(f"{self._base_url()}/v1/status", method="GET")
+        req = Request(f"{self._base_url()}/status", method="GET")
         if self.api_key:
             if self.auth_header.lower() == "authorization":
                 req.add_header(self.auth_header, f"Bearer {self.api_key}")
@@ -286,18 +292,35 @@ def _collector_request(
         return json.loads(raw.decode("utf-8")) if raw else {}
 
 
-def _collector_validate(self, payload): return _collector_request(self, "POST", "/v1/validate", payload)
+def _collector_validate(self, payload): return _collector_request(self, "POST", "/validate", payload)
 def _collector_ingest(self, encoded_events): return self.send_batch(encoded_events)
-def _collector_query(self, **params): return _collector_request(self, "GET", "/v1/query", params=params)
-def _collector_tail(self, **params): return _collector_request(self, "GET", "/v1/tail", params=params)
-def _collector_delete(self, **params): return _collector_request(self, "DELETE", "/v1/events", params=params)
-def _collector_replay(self, **params): return _collector_request(self, "POST", "/v1/replay", params=params)
-def _collector_dlq_list(self, **params): return _collector_request(self, "GET", "/v1/dlq", params=params)
-def _collector_dlq_read(self, dlq_id): return _collector_request(self, "GET", f"/v1/dlq/{dlq_id}")
-def _collector_dlq_replay(self, dlq_id): return _collector_request(self, "POST", f"/v1/dlq/{dlq_id}/replay")
-def _collector_keys_create(self, **params): return _collector_request(self, "POST", "/v1/keys", params=params)
-def _collector_keys_revoke(self, key_id): return _collector_request(self, "DELETE", f"/v1/keys/{key_id}")
-def _collector_sinks_list(self): return _collector_request(self, "GET", "/v1/sinks")
+def _collector_query(self, **params): return _collector_request(self, "POST", "/query", body=params)
+def _collector_tail(self, **params): return _collector_request(self, "GET", "/tail", params=params)
+def _collector_delete(self, **params):
+    event_id = params.get("event_id") or params.get("id")
+    if event_id:
+        return _collector_request(self, "DELETE", f"/events/{event_id}")
+    tenant_id = params.get("tenant_id")
+    if tenant_id:
+        return _collector_request(self, "DELETE", f"/events/by-tenant/{tenant_id}")
+    user_id = params.get("user_id")
+    if user_id:
+        return _collector_request(self, "DELETE", f"/events/by-user/{user_id}")
+    raise ValueError("delete requires one of: event_id/id, tenant_id, user_id")
+
+def _collector_replay(self, **params): return _collector_request(self, "POST", "/replay", body=params)
+def _collector_dlq_list(self, **params): return _collector_request(self, "GET", "/dlq", params=params)
+def _collector_dlq_read(self, dlq_id): return _collector_request(self, "GET", f"/dlq/{dlq_id}")
+def _collector_dlq_replay(self, dlq_id): return _collector_request(self, "POST", f"/dlq/{dlq_id}/replay")
+def _collector_keys_create(self, **params): return _collector_request(self, "POST", "/keys", body=params)
+def _collector_keys_revoke(self, key_id): return _collector_request(self, "DELETE", f"/keys/{key_id}")
+def _collector_keys_rotate(self, key_id): return _collector_request(self, "POST", f"/keys/{key_id}/rotate")
+def _collector_sinks_list(self): return _collector_request(self, "GET", "/sinks")
+def _collector_sinks_test(self, name): return _collector_request(self, "POST", f"/sinks/{name}/test")
+def _collector_policy_validate(self, policy): return _collector_request(self, "POST", "/policy/validate", policy)
+def _collector_schema_check(self, event): return _collector_request(self, "POST", "/schema/check", event)
+def _collector_schema_publish(self, schema): return _collector_request(self, "POST", "/schema/publish", schema)
+def _collector_retention_apply(self, policy=None): return _collector_request(self, "POST", "/retention/apply", body=policy or {})
 CollectorClient.validate = _collector_validate
 CollectorClient.ingest = _collector_ingest
 CollectorClient.query = _collector_query
@@ -309,4 +332,10 @@ CollectorClient.dlq_read = _collector_dlq_read
 CollectorClient.dlq_replay = _collector_dlq_replay
 CollectorClient.keys_create = _collector_keys_create
 CollectorClient.keys_revoke = _collector_keys_revoke
+CollectorClient.keys_rotate = _collector_keys_rotate
 CollectorClient.sinks_list = _collector_sinks_list
+CollectorClient.sinks_test = _collector_sinks_test
+CollectorClient.policy_validate = _collector_policy_validate
+CollectorClient.schema_check = _collector_schema_check
+CollectorClient.schema_publish = _collector_schema_publish
+CollectorClient.retention_apply = _collector_retention_apply

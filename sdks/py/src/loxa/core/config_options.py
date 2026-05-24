@@ -29,6 +29,8 @@ def WithOtelBridge(value: bool) -> ConfigOption: return lambda cfg: cfg.with_ote
 def WithRetry(value: bool) -> ConfigOption: return lambda cfg: cfg.with_retry(value)
 def WithTimeout(value: float) -> ConfigOption: return lambda cfg: cfg.with_timeout(value)
 def WithQueueSize(value: int) -> ConfigOption: return lambda cfg: setattr(cfg.async_config, "queue_size", value) or cfg
+def WithFlushInterval(value: int) -> ConfigOption: return lambda cfg: setattr(cfg.async_config, "flush_interval_ms", value) or cfg
+def WithBatchSize(value: int) -> ConfigOption: return lambda cfg: setattr(cfg.async_config, "batch_size", value) or cfg
 def WithLogger(value: Any) -> ConfigOption: return lambda cfg: cfg.with_logger(value)
 def Disabled() -> Config:
     return Config.disabled()
@@ -61,6 +63,8 @@ with_otel_bridge = WithOtelBridge
 with_retry = WithRetry
 with_timeout = WithTimeout
 with_queue_size = WithQueueSize
+with_flush_interval = WithFlushInterval
+with_batch_size = WithBatchSize
 with_logger = WithLogger
 disabled = Disabled
 from_env = FromEnv

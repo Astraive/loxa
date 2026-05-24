@@ -311,7 +311,7 @@ All SDKs test against golden fixtures in:
 
 ### 11.1 HTTP Ingest Endpoint
 ```
-POST /v1/events
+POST /events
 Content-Type: application/json
 Authorization: Bearer <API_KEY>
 ```
@@ -406,5 +406,5 @@ For a release to be marked "stable" (not alpha), SDKs must pass:
 ---
 
 **Last Updated**: May 15, 2026
-**Version**: 0.0.1
+**Version**: 0.0.2
 **Status**: Stable v1

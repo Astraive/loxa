@@ -25,6 +25,10 @@ def sample_random(rate: float) -> Sampler:
     return lambda event: random.random() < bounded
 
 
+def sample_rate(rate: float) -> Sampler:
+    return sample_random(rate)
+
+
 def sample_errors() -> Sampler:
     return lambda event: event.outcome == "error" or event.error is not None
 

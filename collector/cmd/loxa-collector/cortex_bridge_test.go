@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	loxav1 "github.com/astraive/loxa/gen/go/loxa/v1"
+	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )

@@ -27,7 +27,7 @@ func TestTraceContextPropagation(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create logger: %v", err)
 		}
-		defer logger.Shutdown(context.Background())
+		defer func() { _ = logger.Shutdown(context.Background()) }()
 
 		ctx = logger.StartEvent(ctx, Params{Event: "test.event"})
 		ev, ok := FromContext(ctx)
@@ -62,7 +62,7 @@ func TestTraceContextPropagation(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create logger: %v", err)
 		}
-		defer logger.Shutdown(context.Background())
+		defer func() { _ = logger.Shutdown(context.Background()) }()
 
 		ctx := logger.StartEvent(context.Background(), Params{Event: "test.event"})
 		ev, ok := FromContext(ctx)
@@ -108,7 +108,7 @@ func TestTraceContextPropagation(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create logger: %v", err)
 		}
-		defer logger.Shutdown(context.Background())
+		defer func() { _ = logger.Shutdown(context.Background()) }()
 
 		explicitTraceID := "0af7651916cd43dd8448eb211c80319c"
 		explicitSpanID := "00f067aa0ba902b7"
@@ -144,7 +144,7 @@ func TestTraceContextPropagation(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create logger: %v", err)
 		}
-		defer logger.Shutdown(context.Background())
+		defer func() { _ = logger.Shutdown(context.Background()) }()
 
 		// Create event with trace context
 		ctx := logger.StartEvent(context.Background(), Params{Event: "test.event"})

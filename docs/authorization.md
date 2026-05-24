@@ -136,16 +136,16 @@ Each collector endpoint requires a specific permission:
 
 | Route | Method | Permission | Description |
 |-------|--------|------------|-------------|
-| `/v1/events` | `POST` | `events:write` | Ingest events |
-| `/v1/events` | `GET` | `events:read` | Query events |
-| `/v1/events` | `DELETE` | `events:delete` | Delete events |
-| `/v1/logs` | `POST` | `logs:write` | Ingest logs |
-| `/v1/traces` | `POST` | `traces:write` | Ingest traces |
-| `/v1/tail` | `GET` | `events:read` | Tail live events |
-| `/v1/schema/publish` | `POST` | `schema:write` | Publish schemas |
-| `/v1/audit/pii` | `POST` | `pii_audit:read` | Audit PII fields |
-| `/v1/dlq` | `GET` | `events:read` | List dead-letter queue |
-| `/v1/dlq/replay` | `POST` | `events:write` | Replay from DLQ |
+| `/core/events` | `POST` | `events:write` | Ingest events |
+| `/core/events` | `GET` | `events:read` | Query events |
+| `/core/events` | `DELETE` | `events:delete` | Delete events |
+| `/core/logs` | `POST` | `logs:write` | Ingest logs |
+| `/core/traces` | `POST` | `traces:write` | Ingest traces |
+| `/core/tail` | `GET` | `events:read` | Tail live events |
+| `/core/schema/publish` | `POST` | `schema:write` | Publish schemas |
+| `/core/audit/pii` | `POST` | `pii_audit:read` | Audit PII fields |
+| `/core/dlq` | `GET` | `events:read` | List dead-letter queue |
+| `/core/dlq/replay` | `POST` | `events:write` | Replay from DLQ |
 | `/healthz` | `GET` | *(public)* | Health check |
 | `/readyz` | `GET` | *(public)* | Readiness check |
 | `/metrics` | `GET` | `events:read` | Prometheus metrics |

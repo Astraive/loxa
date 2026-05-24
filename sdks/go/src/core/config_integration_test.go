@@ -32,7 +32,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewClient() error = %v", err)
 		}
-		defer logger.Shutdown(context.Background())
+		defer func() { _ = logger.Shutdown(context.Background()) }()
 
 		// Verify configuration was applied
 		if logger == nil {
@@ -62,7 +62,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewClient() error = %v", err)
 		}
-		defer logger.Shutdown(context.Background())
+		defer func() { _ = logger.Shutdown(context.Background()) }()
 
 		// Verify code config took precedence
 		// (We can't directly inspect the logger's config, but we verified it was created successfully)
@@ -118,7 +118,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewClient() error = %v", err)
 		}
-		defer logger.Shutdown(context.Background())
+		defer func() { _ = logger.Shutdown(context.Background()) }()
 
 		// Logger was created successfully, defaults were applied
 	})
@@ -135,7 +135,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewClient() error = %v", err)
 		}
-		defer logger.Shutdown(context.Background())
+		defer func() { _ = logger.Shutdown(context.Background()) }()
 
 		// Emit some events
 		logger.Info("test message 1")
@@ -207,7 +207,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewClient() error = %v", err)
 		}
-		defer logger.Shutdown(context.Background())
+		defer func() { _ = logger.Shutdown(context.Background()) }()
 
 		// Logger was created successfully with all options
 	})
@@ -246,7 +246,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewClient() error = %v", err)
 		}
-		defer logger.Shutdown(context.Background())
+		defer func() { _ = logger.Shutdown(context.Background()) }()
 
 		// Logger was created successfully with env var configuration
 	})
@@ -410,7 +410,7 @@ func TestFlushAndShutdownBehavior(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewClient() error = %v", err)
 		}
-		defer logger.Shutdown(context.Background())
+		defer func() { _ = logger.Shutdown(context.Background()) }()
 
 		// Emit multiple events
 		for i := 0; i < 10; i++ {
@@ -485,7 +485,7 @@ func TestFlushAndShutdownBehavior(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewClient() error = %v", err)
 		}
-		defer logger.Shutdown(context.Background())
+		defer func() { _ = logger.Shutdown(context.Background()) }()
 
 		// Emit events
 		logger.Info("test message")

@@ -97,7 +97,7 @@ use loxa::{
 fn main() {
     // 1. Configure the default logger
     loxa::configure(Config::production("checkout-service")
-        .with_sink(HttpBatchSink("http://collector:9090/v1/events"))
+        .with_sink(HttpBatchSink("http://collector:9090/events"))
         .with_sampler(SampleAll())
         .with_redactor(DefaultRedactor()))
         .expect("failed to configure loxa");
@@ -229,7 +229,7 @@ let mut evt = loxa::start_event(Params::new("order.created").with_kind("event"))
 
 // HTTP event -- method and path are pre-populated
 let mut evt = loxa::start_event(
-    StartHTTPEvent("POST", "/api/v1/orders")
+    StartHTTPEvent("POST", "/api/orders")
 );
 
 // Background job
@@ -616,8 +616,8 @@ Append(&mut evt, AppVersion("3.12.0"));
 ```rust
 Append(&mut evt, StatusCode(200));
 Append(&mut evt, Method("POST"));
-Append(&mut evt, Path("/api/v1/orders"));
-Append(&mut evt, Route("/api/v1/orders"));
+Append(&mut evt, Path("/api/orders"));
+Append(&mut evt, Route("/api/orders"));
 ```
 
 ---
@@ -712,7 +712,7 @@ use loxa::middleware::actix::LoxaMiddleware;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let logger = loxa::create_loxa(Config::production("api-server")
-        .with_sink(HttpBatchSink("http://collector:9090/v1/events")));
+        .with_sink(HttpBatchSink("http://collector:9090/events")));
 
     HttpServer::new(move || {
         App::new()
@@ -741,7 +741,7 @@ use std::sync::Arc;
 #[tokio::main]
 async fn main() {
     let logger = Arc::new(loxa::create_loxa(Config::production("api-server")
-        .with_sink(HttpBatchSink("http://collector:9090/v1/events"))));
+        .with_sink(HttpBatchSink("http://collector:9090/events"))));
 
     let app = Router::new()
         .route("/orders", post(create_order))
@@ -818,7 +818,7 @@ let config = Config::production("my-service")
     .with_version("1.2.3")
     .with_environment("staging")
     .with_region("us-east-1")
-    .with_sink(HttpBatchSink("http://collector:9090/v1/events"))
+    .with_sink(HttpBatchSink("http://collector:9090/events"))
     .with_sampler(SampleAll())
     .with_redactor(DefaultRedactor())
     .with_schema(DefaultSchema())
@@ -838,7 +838,7 @@ let logger = loxa::create_loxa(
         .with_version("2.0.0")
         .with_environment("production")
         .with_region("eu-west-1")
-        .with_sink(HttpBatchSink("http://collector:9090/v1/events"))
+        .with_sink(HttpBatchSink("http://collector:9090/events"))
         .with_sampler(SampleErrors())
         .with_redactor(RedactKeys(&["password", "ssn", "credit_card"]))
         .with_duplicate_policy(CanonicalWins)
@@ -865,7 +865,7 @@ let config = Config::production("svc").with_sink(StdoutSink());
 
 // Multiple sinks
 let config = Config::production("svc")
-    .with_sink(HttpBatchSink("http://collector:9090/v1/events"))
+    .with_sink(HttpBatchSink("http://collector:9090/events"))
     .with_sink(StdoutSink());  // Also log to stdout
 
 // File sink with rotation

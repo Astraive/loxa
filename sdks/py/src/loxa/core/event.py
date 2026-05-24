@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import copy
+import hashlib
+
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Callable
@@ -260,3 +263,92 @@ class EventContext:
 
     def is_emitted(self) -> bool:
         return self.emitted
+
+
+# ── Standalone sanitize_event ─────────────────────────────────────────────────
+
+
+def _resolve_bucket(ctx: EventContext, key: str) -> tuple[dict[str, Any], str]:
+    for prefix, bucket in [
+        ("user.", ctx.user),
+        ("tenant.", ctx.tenant),
+        ("resource.", ctx.resource),
+        ("http.", ctx.http),
+    ]:
+        if key.startswith(prefix):
+            return bucket, key[len(prefix):]
+    return ctx.attrs, key
+
+
+def _get_path(target: dict[str, Any], key: str) -> Any:
+    if "." not in key:
+        return target.get(key)
+    parts = key.split(".")
+    current = target
+    for part in parts:
+        if not isinstance(current, dict) or part not in current:
+            return None
+        current = current[part]
+    return current
+
+
+def _set_path_direct(target: dict[str, Any], key: str, value: Any) -> None:
+    if "." not in key:
+        target[key] = value
+        return
+    parts = key.split(".")
+    current = target
+    for part in parts[:-1]:
+        child = current.get(part)
+        if not isinstance(child, dict):
+            child = {}
+            current[part] = child
+        current = child
+    current[parts[-1]] = value
+
+
+def _delete_path(target: dict[str, Any], key: str) -> None:
+    if "." not in key:
+        target.pop(key, None)
+        return
+    parts = key.split(".")
+    current = target
+    for part in parts[:-1]:
+        child = current.get(part)
+        if not isinstance(child, dict):
+            return
+        current = child
+    current.pop(parts[-1], None)
+
+
+def sanitize_event(ctx: EventContext) -> EventContext:
+    """Create a sanitized copy: drop, hash, and redact sensitive attrs.
+
+    The original EventContext is never mutated.
+    """
+    if not ctx._drop_keys and not ctx._hash_keys and not ctx._sensitive_keys:
+        return ctx
+    safe = copy.deepcopy(ctx)
+    for key in ctx._drop_keys:
+        bucket, local = _resolve_bucket(safe, key)
+        _delete_path(bucket, local)
+    for key in ctx._hash_keys:
+        bucket, local = _resolve_bucket(safe, key)
+        _hash_at_path(bucket, local)
+    for key in ctx._sensitive_keys:
+        bucket, local = _resolve_bucket(safe, key)
+        _redact_at_path(bucket, local)
+    return safe
+
+
+def _hash_at_path(target: dict[str, Any], key: str) -> None:
+    value = _get_path(target, key)
+    if value is None:
+        return
+    hashed = hashlib.sha256(str(value).encode("utf-8")).hexdigest()
+    _set_path_direct(target, key, hashed)
+
+
+def _redact_at_path(target: dict[str, Any], key: str) -> None:
+    if _get_path(target, key) is not None:
+        _set_path_direct(target, key, "[REDACTED]")

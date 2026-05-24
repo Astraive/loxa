@@ -66,7 +66,7 @@ export class CollectorClient {
 
   /** Send a batch of events to the collector. */
   async sendBatch(events: Record<string, any>[]): Promise<CollectorResponse> {
-    const envelope = buildIngestEnvelope('loxa-js', '0.0.1', '', events);
+    const envelope = buildIngestEnvelope('loxa-js', '0.0.2', '', events);
     let body = Buffer.from(JSON.stringify(envelope), 'utf-8');
 
     const headers: Record<string, string> = {
@@ -80,7 +80,7 @@ export class CollectorClient {
 
     if (this.apiKey) headers[this.authHeader] = this.apiKey;
 
-    const res = await this.request('POST', '/v1/events', body, headers);
+    const res = await this.request('POST', '/events', body, headers);
     return parseCollectorResponse(res.body);
   }
 
@@ -88,7 +88,7 @@ export class CollectorClient {
 
   /** Validate an event against the collector schema. */
   async validate(event: Record<string, any>): Promise<any> {
-    const res = await this.request('POST', '/v1/validate', Buffer.from(JSON.stringify(event), 'utf-8'));
+    const res = await this.request('POST', '/validate', Buffer.from(JSON.stringify(event), 'utf-8'));
     return JSON.parse(res.body);
   }
 
@@ -99,62 +99,98 @@ export class CollectorClient {
 
   /** Query events from the collector. */
   async query(query: Record<string, any>): Promise<any> {
-    const res = await this.request('POST', '/v1/query', Buffer.from(JSON.stringify(query), 'utf-8'));
+    const res = await this.request('POST', '/query', Buffer.from(JSON.stringify(query), 'utf-8'));
     return JSON.parse(res.body);
   }
 
   /** Tail events from the collector (streaming stub). */
   async tail(query: Record<string, any>): Promise<any> {
-    const res = await this.request('POST', '/v1/tail', Buffer.from(JSON.stringify(query), 'utf-8'));
+    const res = await this.request('POST', '/tail', Buffer.from(JSON.stringify(query), 'utf-8'));
     return JSON.parse(res.body);
   }
 
   /** Delete events from the collector. */
   async delete(query: Record<string, any>): Promise<any> {
-    const res = await this.request('DELETE', '/v1/events', Buffer.from(JSON.stringify(query), 'utf-8'));
+    const res = await this.request('DELETE', '/events', Buffer.from(JSON.stringify(query), 'utf-8'));
     return JSON.parse(res.body);
   }
 
   /** Replay events from the collector. */
   async replay(query: Record<string, any>): Promise<any> {
-    const res = await this.request('POST', '/v1/replay', Buffer.from(JSON.stringify(query), 'utf-8'));
+    const res = await this.request('POST', '/replay', Buffer.from(JSON.stringify(query), 'utf-8'));
     return JSON.parse(res.body);
   }
 
   /** List DLQ entries. */
   async dlqList(query?: Record<string, any>): Promise<any> {
-    const res = await this.request('GET', `/v1/dlq${query ? '?' + new URLSearchParams(query as any).toString() : ''}`);
+    const res = await this.request('GET', `/dlq${query ? '?' + new URLSearchParams(query as any).toString() : ''}`);
     return JSON.parse(res.body);
   }
 
   /** Read a DLQ entry by ID. */
   async dlqRead(id: string): Promise<any> {
-    const res = await this.request('GET', `/v1/dlq/${encodeURIComponent(id)}`);
+    const res = await this.request('GET', `/dlq/${encodeURIComponent(id)}`);
     return JSON.parse(res.body);
   }
 
   /** Replay a DLQ entry by ID. */
   async dlqReplay(id: string): Promise<any> {
-    const res = await this.request('POST', `/v1/dlq/${encodeURIComponent(id)}/replay`);
+    const res = await this.request('POST', `/dlq/${encodeURIComponent(id)}/replay`);
     return JSON.parse(res.body);
   }
 
   /** Create an API key. */
   async keysCreate(name: string, scopes?: string[]): Promise<any> {
     const body = JSON.stringify({ name, scopes: scopes || ['ingest'] });
-    const res = await this.request('POST', '/v1/keys', Buffer.from(body, 'utf-8'));
+    const res = await this.request('POST', '/keys', Buffer.from(body, 'utf-8'));
     return JSON.parse(res.body);
   }
 
   /** Revoke an API key. */
   async keysRevoke(id: string): Promise<any> {
-    const res = await this.request('DELETE', `/v1/keys/${encodeURIComponent(id)}`);
+    const res = await this.request('POST', `/keys/${encodeURIComponent(id)}/revoke`);
+    return JSON.parse(res.body);
+  }
+
+  /** Rotate an API key. */
+  async keysRotate(id: string): Promise<any> {
+    const res = await this.request('POST', `/keys/${encodeURIComponent(id)}/rotate`);
     return JSON.parse(res.body);
   }
 
   /** List configured sinks. */
   async sinksList(): Promise<any> {
-    const res = await this.request('GET', '/v1/sinks');
+    const res = await this.request('GET', '/sinks');
+    return JSON.parse(res.body);
+  }
+
+  /** Test a configured sink. */
+  async sinksTest(name: string): Promise<any> {
+    const res = await this.request('POST', `/sinks/${encodeURIComponent(name)}/test`);
+    return JSON.parse(res.body);
+  }
+
+  /** Validate an event governance policy. */
+  async policyValidate(policy: Record<string, any>): Promise<any> {
+    const res = await this.request('POST', '/policy/validate', Buffer.from(JSON.stringify(policy), 'utf-8'));
+    return JSON.parse(res.body);
+  }
+
+  /** Check an event against the active schema. */
+  async schemaCheck(event: Record<string, any>): Promise<any> {
+    const res = await this.request('POST', '/schema/check', Buffer.from(JSON.stringify(event), 'utf-8'));
+    return JSON.parse(res.body);
+  }
+
+  /** Publish schema metadata. */
+  async schemaPublish(schema: Record<string, any>): Promise<any> {
+    const res = await this.request('POST', '/schema/publish', Buffer.from(JSON.stringify(schema), 'utf-8'));
+    return JSON.parse(res.body);
+  }
+
+  /** Apply retention policy immediately. */
+  async retentionApply(policy?: Record<string, any>): Promise<any> {
+    const res = await this.request('POST', '/retention/apply', Buffer.from(JSON.stringify(policy || {}), 'utf-8'));
     return JSON.parse(res.body);
   }
 

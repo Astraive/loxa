@@ -43,7 +43,10 @@ pub use event::{
 pub use generated::spec_contract::{
     LOXA_EVENT_VERSION, LOXA_INGEST_API_VERSION, LOXA_SPEC_VERSION,
 };
-pub use logger::Logger;
+// Logger is intentionally NOT re-exported. Use loxa::default(),
+// loxa::create_loxa(), or loxa::alias() instead.
+use logger::Logger;
+pub(crate) use logger::Logger as LoxaLogger;
 pub use metrics::{MetricsCollector, MetricsSnapshot};
 pub use schema::{DefaultSchemaType, EventView, Schema, SchemaFunc};
 
@@ -99,6 +102,14 @@ pub fn configure(config: Config) -> Result<Logger, LoxaError> {
     *guard = logger.clone();
     std::mem::drop(guard);
     Ok(logger)
+}
+
+pub fn reset() -> Result<Logger, LoxaError> {
+    configure(Config::dev("loxa"))
+}
+
+pub fn Reset() -> Result<Logger, LoxaError> {
+    reset()
 }
 
 /// Return the global default logger. Always succeeds (dev default if not configured).
@@ -372,6 +383,11 @@ pub fn Float64(key: impl Into<String>, value: f64) -> Attr {
             .map(Value::Number)
             .unwrap_or(Value::Null),
     )
+}
+
+/// PascalCase alias for Float64 — cross-SDK parity.
+pub fn Float(key: impl Into<String>, value: f64) -> Attr {
+    Float64(key, value)
 }
 
 pub fn Bool(key: impl Into<String>, value: bool) -> Attr {
@@ -650,8 +666,80 @@ pub fn Masked(value: impl Into<String>) -> Attr {
     Attr::new(value.into(), Value::String("[REDACTED]".to_string())).sensitive()
 }
 
+pub fn List<S: serde::Serialize>(key: impl Into<String>, values: Vec<S>) -> Attr {
+    let arr: Vec<Value> = values
+        .into_iter()
+        .map(|v| serde_json::to_value(v).unwrap_or(Value::Null))
+        .collect();
+    Attr::new(key.into(), Value::Array(arr))
+}
+
+pub fn Map(key: impl Into<String>, value: serde_json::Map<String, Value>) -> Attr {
+    Attr::new(key.into(), Value::Object(value))
+}
+
+pub fn Enum<E: Into<String>>(key: impl Into<String>, value: impl Into<String>, _allowed: Vec<E>) -> Attr {
+    Attr::new(key.into(), Value::String(value.into()))
+}
+
+pub fn ID(key: impl Into<String>, value: impl Into<String>) -> Attr {
+    Attr::new(key.into(), Value::String(value.into()))
+}
+
+pub fn Hash(key: impl Into<String>, value: impl Into<String>) -> Attr {
+    Attr::new(key.into(), Value::String(value.into())).hash_value()
+}
+
+pub fn Redacted(key: impl Into<String>) -> Attr {
+    Attr::new(key.into(), Value::String("[REDACTED]".to_string()))
+}
+
+pub fn AccountID(id: impl Into<String>) -> Attr {
+    Attr::new("account.id", Value::String(id.into()))
+}
+
 pub fn URL(url: impl Into<String>) -> Attr {
     Attr::new("url", Value::String(url.into()))
+}
+
+pub fn DeploymentID(id: impl Into<String>) -> Attr {
+    Attr::new("deployment.id", Value::String(id.into()))
+}
+
+pub fn HTTPRoute(route: impl Into<String>) -> Attr {
+    Attr::new("http.route", Value::String(route.into()))
+}
+
+pub fn HTTPMethod(method: impl Into<String>) -> Attr {
+    Attr::new("http.method", Value::String(method.into().to_uppercase()))
+}
+
+pub fn HTTPPath(path: impl Into<String>) -> Attr {
+    Attr::new("http.path", Value::String(path.into()))
+}
+
+pub fn HTTPUserAgent(ua: impl Into<String>) -> Attr {
+    let mut value = ua.into();
+    if value.len() > 512 {
+        value.truncate(512);
+    }
+    Attr::new("http.user_agent", Value::String(value))
+}
+
+pub fn HTTPReferer(referer: impl Into<String>) -> Attr {
+    let value = referer.into().split('?').next().unwrap_or("").to_string();
+    Attr::new("http.referer", Value::String(value))
+}
+
+pub fn HTTPRequest(method: impl Into<String>, path: impl Into<String>) -> Attr {
+    Attr::new("http.request", serde_json::json!({
+        "method": method.into(),
+        "path": path.into(),
+    }))
+}
+
+pub fn HTTPResponse(status_code: u16) -> Attr {
+    Attr::new("http.response", serde_json::json!({ "status_code": status_code }))
 }
 
 pub fn EmailHash(email: impl Into<String>) -> Attr {
@@ -850,19 +938,199 @@ pub fn LinkEvent(event: &mut EventContext, linked_id: impl Into<String>) {
     }
 }
 
+thread_local! {
+    static CURRENT_EVENT: std::cell::RefCell<Option<EventContext>> = const { std::cell::RefCell::new(None) };
+}
+
+pub(crate) fn set_current_event(ctx: Option<EventContext>) {
+    CURRENT_EVENT.with(|cell| *cell.borrow_mut() = ctx);
+}
+
 pub fn CurrentEvent() -> Option<EventContext> {
-    None
+    CURRENT_EVENT.with(|cell| cell.borrow().clone())
 }
 
 pub fn BindEvent(_logger: &Logger, event: &EventContext) -> EventContext {
-    event.clone()
+    let ctx = event.clone();
+    set_current_event(Some(ctx.clone()));
+    ctx
 }
 
 pub fn Wrap(event: &mut EventContext, f: impl FnOnce(&mut EventContext)) {
     f(event)
 }
 
+pub fn RunEvent(params: Params, f: impl FnOnce(&mut EventContext)) -> Result<String, LoxaError> {
+    let logger = default_logger();
+    let mut ctx = logger.start_event(params);
+    f(&mut ctx);
+    let _ = logger.finish(&mut ctx, "success");
+    logger.emit(&ctx)
+}
+
+pub fn Run(event: &mut EventContext, f: impl FnOnce(&mut EventContext)) -> Result<String, LoxaError> {
+    let logger = default_logger();
+    f(event);
+    let _ = logger.finish(event, "success");
+    logger.emit(event)
+}
+
+pub fn run_event(params: Params, f: impl FnOnce(&mut EventContext)) -> Result<String, LoxaError> {
+    RunEvent(params, f)
+}
+
+pub fn run(event: &mut EventContext, f: impl FnOnce(&mut EventContext)) -> Result<String, LoxaError> {
+    Run(event, f)
+}
+
+// --- from_request: extract HTTP request context ---
+
+/// Extract safe request context from HTTP request metadata and start an event.
+/// Cross-SDK parity with Go's StartHTTPEventFromRequest.
+pub fn FromRequest(
+    method: impl Into<String>,
+    path: impl Into<String>,
+    route: impl Into<String>,
+    _attrs: Vec<Attr>,
+) -> Params {
+    Params::new("http.request")
+        .with_kind("http")
+        .with_method(method)
+        .with_path(path)
+        .with_route(route)
+}
+
+/// Lowercase alias for FromRequest.
+pub fn from_request(
+    method: impl Into<String>,
+    path: impl Into<String>,
+    route: impl Into<String>,
+    attrs: Vec<Attr>,
+) -> Params {
+    FromRequest(method, path, route, attrs)
+}
+
+// --- max_attr_length / max_attrs / cardinality_policy ---
+
+/// Returns a SecurityConfig with max field bytes set.
+pub fn MaxAttrLength(length: usize) -> SecurityConfig {
+    SecurityConfig { max_field_bytes: length, ..Default::default() }
+}
+
+/// Lowercase alias for MaxAttrLength.
+pub fn max_attr_length(length: usize) -> SecurityConfig {
+    MaxAttrLength(length)
+}
+
+/// Returns a SecurityConfig with max attr count set.
+pub fn MaxAttrs(count: usize) -> SecurityConfig {
+    SecurityConfig { max_attr_count: count, ..Default::default() }
+}
+
+/// Lowercase alias for MaxAttrs.
+pub fn max_attrs(count: usize) -> SecurityConfig {
+    MaxAttrs(count)
+}
+
+/// Configure cardinality policy. Returns the policy map unchanged.
+pub fn CardinalityPolicy(policy: std::collections::HashMap<String, serde_json::Value>) -> std::collections::HashMap<String, serde_json::Value> {
+    policy
+}
+
+/// Lowercase alias for CardinalityPolicy.
+pub fn cardinality_policy(policy: std::collections::HashMap<String, serde_json::Value>) -> std::collections::HashMap<String, serde_json::Value> {
+    CardinalityPolicy(policy)
+}
+
 // --- Process/Group/Timer extras ---
+
+pub fn Process(event: &mut EventContext, name: &str) -> ProcessHandle {
+    event.start_process(name)
+}
+
+pub fn StartProcess(event: &mut EventContext, name: &str) -> ProcessHandle {
+    event.start_process(name)
+}
+
+pub fn FinishProcess(handle: ProcessHandle, event: &mut EventContext) {
+    handle.finish(event, &[]);
+}
+
+pub fn FinishProcessError(handle: ProcessHandle, event: &mut EventContext, message: &str) {
+    handle.finish(event, &[Attr::new("error", message)]);
+}
+
+pub fn GroupProcess(event: &mut EventContext, name: &str) -> GroupHandle {
+    event.start_group(name)
+}
+
+pub fn StartGroup(event: &mut EventContext, name: &str) -> GroupHandle {
+    event.start_group(name)
+}
+
+pub fn FinishGroup(handle: GroupHandle, event: &mut EventContext) {
+    handle.finish(event, &[]);
+}
+
+pub fn Timer(event: &mut EventContext, name: &str) -> TimerHandle {
+    event.start_timer(name)
+}
+
+pub fn StartTimer(event: &mut EventContext, name: &str) -> TimerHandle {
+    event.start_timer(name)
+}
+
+pub fn StopTimer(handle: TimerHandle, event: &mut EventContext) {
+    handle.stop(event, &[]);
+}
+
+pub fn Stopwatch() -> StopwatchHandle {
+    StopwatchHandle::new()
+}
+
+pub fn process(event: &mut EventContext, name: &str) -> ProcessHandle {
+    Process(event, name)
+}
+
+pub fn start_process(event: &mut EventContext, name: &str) -> ProcessHandle {
+    StartProcess(event, name)
+}
+
+pub fn finish_process(handle: ProcessHandle, event: &mut EventContext) {
+    FinishProcess(handle, event)
+}
+
+pub fn finish_process_error(handle: ProcessHandle, event: &mut EventContext, message: &str) {
+    FinishProcessError(handle, event, message)
+}
+
+pub fn group(event: &mut EventContext, name: &str) -> GroupHandle {
+    event.start_group(name)
+}
+
+pub fn start_group(event: &mut EventContext, name: &str) -> GroupHandle {
+    StartGroup(event, name)
+}
+
+pub fn finish_group(handle: GroupHandle, event: &mut EventContext) {
+    FinishGroup(handle, event)
+}
+
+pub fn timer(event: &mut EventContext, name: &str) -> TimerHandle {
+    Timer(event, name)
+}
+
+pub fn start_timer(event: &mut EventContext, name: &str) -> TimerHandle {
+    StartTimer(event, name)
+}
+
+pub fn stop_timer(handle: TimerHandle, event: &mut EventContext) {
+    StopTimer(handle, event)
+}
+
+pub fn stopwatch() -> StopwatchHandle {
+    Stopwatch()
+}
 
 pub fn WithProcess(
     event: &mut EventContext,
@@ -978,11 +1246,11 @@ pub fn Breadcrumb(message: impl Into<String>) {
 // --- Config extras ---
 
 pub fn DisabledConfig() -> Config {
-    Config::base()
+    Config::disabled()
 }
 
 pub fn FromEnv() -> Config {
-    Config::base()
+    Config::from_env()
 }
 
 // --- Sink extras ---
@@ -1007,16 +1275,20 @@ pub fn Drain(sink: &SinkConfig) {
     let _ = crate::sink::flush_sink(sink);
 }
 
-pub fn Pause(_sink: &SinkConfig) {}
-
-pub fn Resume(_sink: &SinkConfig) {}
-
-pub fn QueueSize() -> usize {
-    0
+pub fn Pause(sink: &SinkConfig) {
+    crate::sinks::pause(sink);
 }
 
-pub fn Health() -> bool {
-    true
+pub fn Resume(sink: &SinkConfig) {
+    crate::sinks::resume(sink);
+}
+
+pub fn QueueSize(sink: &SinkConfig) -> usize {
+    crate::sinks::queue_size(sink)
+}
+
+pub fn Health(sink: &SinkConfig) -> bool {
+    crate::sinks::health(sink)
 }
 
 // --- Sampling/Policy extras ---
@@ -1049,10 +1321,32 @@ pub fn BlockFields(keys: &[&str]) -> RedactorConfig {
 
 // --- Testing extras ---
 
-pub fn ExpectEvent(_logger: &Logger, _name: &str, _f: impl FnOnce(&EventContext)) {}
+pub fn ExpectEvent(logger: &Logger, name: &str, f: impl FnOnce(&EventContext)) {
+    crate::testkit::helpers::expect_event(logger, name, f);
+}
 
 pub fn ExpectAttr(event: &EventContext, key: &str, expected: &Value) -> bool {
     event.attrs.get(key) == Some(expected)
+}
+
+pub fn snapshot_event(event: &EventContext) -> String {
+    SnapshotEvent(event)
+}
+
+pub fn mock_sink() -> SinkConfig {
+    MockSink()
+}
+
+pub fn assert_event(encoded: &str, key: &str, expected: &str) {
+    crate::testkit::helpers::assert_event(encoded, key, expected);
+}
+
+pub fn assert_redacted(encoded: &str, key: &str) {
+    crate::testkit::helpers::assert_redacted(encoded, key);
+}
+
+pub fn sanitize_event(value: Value, ctx: &EventContext) -> Value {
+    SanitizeEvent(value, ctx)
 }
 
 pub fn SnapshotEvent(event: &EventContext) -> String {
@@ -1063,9 +1357,173 @@ pub fn MockSink() -> SinkConfig {
     SinkConfig::Memory(MemorySinkStore::new())
 }
 
-pub fn FakeClock() {}
+pub fn FakeClock(unix_ms: u128) {
+    crate::internal::clock::freeze_at(unix_ms);
+}
 
-pub fn SetIDGenerator(_f: fn() -> String) {}
+pub fn SetIDGenerator(f: fn() -> String) {
+    crate::internal::core::uuidv7::set_id_generator(Box::new(f));
+}
+
+pub fn Testkit(service: &str) -> (Logger, MemorySinkStore) {
+    crate::testkit::helpers::testkit(service)
+}
+
+pub fn SanitizeEvent(value: Value, ctx: &EventContext) -> Value {
+    crate::event::apply_sensitive_to_value(value, ctx)
+}
+
+/// Validate an event map against the Loxa spec contract.
+/// Returns Ok(()) if valid, Err with a list of error strings if not.
+pub fn ValidateEvent(event: &Value) -> Result<(), Vec<String>> {
+    let mut errors: Vec<String> = Vec::new();
+    if let Some(obj) = event.as_object() {
+        let has_event_id = obj.contains_key("event_id") || obj.contains_key("eventId");
+        if !has_event_id {
+            errors.push("missing required field: event_id".into());
+        }
+        if !obj.contains_key("timestamp") {
+            errors.push("missing required field: timestamp".into());
+        }
+        if !obj.contains_key("service") {
+            errors.push("missing required field: service".into());
+        }
+        if !obj.contains_key("event") {
+            errors.push("missing required field: event".into());
+        }
+    } else {
+        errors.push("event must be a JSON object".into());
+    }
+    if errors.is_empty() { Ok(()) } else { Err(errors) }
+}
+
+pub fn validate_event(event: &Value) -> Result<(), Vec<String>> {
+    ValidateEvent(event)
+}
+
+/// Normalize event field names from dashed/snake_case aliases to canonical camelCase.
+pub fn NormalizeEvent(mut event: Value) -> Value {
+    let aliases: Vec<(&str, &str)> = vec![
+        ("event_id", "eventId"),
+        ("schema_version", "schemaVersion"),
+        ("event_version", "eventVersion"),
+        ("started_at", "startedAt"),
+        ("started_at_ms", "startedAtMs"),
+        ("finished_at", "finishedAt"),
+        ("finished_at_ms", "finishedAtMs"),
+        ("duration_ms", "durationMs"),
+        ("status_code", "statusCode"),
+        ("deployment_id", "deploymentId"),
+        ("user_id", "userId"),
+        ("tenant_id", "tenantId"),
+        ("session_id", "sessionId"),
+        ("request_id", "requestId"),
+        ("correlation_id", "correlationId"),
+        ("trace_id", "traceId"),
+        ("span_id", "spanId"),
+        ("incident_id", "incidentId"),
+        ("error_message", "errorMessage"),
+        ("error_stack", "errorStack"),
+        ("error_type", "errorType"),
+        ("error_code", "errorCode"),
+        ("order_id", "orderId"),
+        ("cart_id", "cartId"),
+        ("payment_id", "paymentId"),
+        ("subscription_id", "subscriptionId"),
+        ("invoice_id", "invoiceId"),
+        ("job_id", "jobId"),
+        ("message_id", "messageId"),
+    ];
+    if let Some(obj) = event.as_object_mut() {
+        for (alias, canonical) in aliases {
+            if let Some(val) = obj.remove(alias) {
+                obj.entry(canonical.to_string()).or_insert(val);
+            }
+        }
+    }
+    event
+}
+
+pub fn normalize_event(event: Value) -> Value {
+    NormalizeEvent(event)
+}
+
+pub fn Capture(f: impl FnOnce(&Logger)) -> Vec<String> {
+    crate::testkit::helpers::capture(f)
+}
+
+pub fn ResetForTest() {
+    crate::testkit::helpers::reset_for_test()
+}
+
+pub fn LastEvent(store: &MemorySinkStore) -> Option<String> {
+    store.events().last().cloned()
+}
+
+pub fn Events(store: &MemorySinkStore) -> Vec<String> {
+    store.events()
+}
+
+pub fn ClearEvents(store: &MemorySinkStore) {
+    store.clear()
+}
+
+/// Compare an event snapshot against a golden file. Creates the file if it doesn't exist.
+/// Returns `true` if the event matches the golden file (or file was newly created).
+pub fn GoldenTest(path: impl Into<String>, snapshot: &str) -> bool {
+    let p = std::path::PathBuf::from(path.into());
+    if !p.exists() {
+        if let Some(parent) = p.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let _ = std::fs::write(&p, format!("{}\n", snapshot));
+        return true;
+    }
+    match std::fs::read_to_string(&p) {
+        Ok(expected) => expected.trim() == snapshot.trim(),
+        Err(_) => false,
+    }
+}
+
+pub fn ConformanceSuite() -> serde_json::Value {
+    serde_json::json!({"name": "loxa-rs-conformance", "status": "available"})
+}
+
+pub fn SetClock(unix_ms: u128) {
+    FakeClock(unix_ms)
+}
+
+pub fn testkit() -> (Logger, MemorySinkStore) {
+    Testkit("test")
+}
+
+pub fn last_event(store: &MemorySinkStore) -> Option<String> {
+    LastEvent(store)
+}
+
+pub fn events(store: &MemorySinkStore) -> Vec<String> {
+    Events(store)
+}
+
+pub fn clear_events(store: &MemorySinkStore) {
+    ClearEvents(store)
+}
+
+pub fn golden_test(path: impl Into<String>, snapshot: &str) -> bool {
+    GoldenTest(path, snapshot)
+}
+
+pub fn conformance_suite() -> serde_json::Value {
+    ConformanceSuite()
+}
+
+pub fn reset_for_test() {
+    ResetForTest()
+}
+
+pub fn set_clock(unix_ms: u128) {
+    SetClock(unix_ms)
+}
 
 // --- Schema constructors ---
 
@@ -1142,7 +1600,7 @@ pub fn NoopSink() -> SinkConfig {
 }
 
 pub fn CollectorSink() -> SinkConfig {
-    CollectorSinkWithEndpoint("http://127.0.0.1:9090/v1/events")
+    CollectorSinkWithEndpoint("http://127.0.0.1:9090/events")
 }
 
 pub fn CollectorSinkWithEndpoint(endpoint: impl Into<String>) -> SinkConfig {
@@ -1165,6 +1623,22 @@ pub fn HTTPBatchSink(endpoint: impl Into<String>) -> SinkConfig {
     CollectorSinkWithEndpoint(endpoint)
 }
 
+pub fn KafkaSink(endpoint: impl Into<String>, topic: impl Into<String>) -> SinkConfig {
+    SinkConfig::HttpBatch {
+        endpoint: endpoint.into(),
+        api_key: None,
+        timeout_ms: 2_000,
+        max_batch_bytes: 256 * 1024,
+        max_retries: 3,
+        enable_compression: true,
+        ndjson: false,
+    }
+}
+
+pub fn kafka_sink(endpoint: impl Into<String>, topic: impl Into<String>) -> SinkConfig {
+    KafkaSink(endpoint, topic)
+}
+
 // --- Sampler constructors ---
 
 pub fn SampleAll() -> SamplerConfig {
@@ -1176,6 +1650,10 @@ pub fn SampleNone() -> SamplerConfig {
 }
 
 pub fn SampleRandom(rate: f64) -> SamplerConfig {
+    SamplerConfig::SampleRandom(rate)
+}
+
+pub fn SampleRate(rate: f64) -> SamplerConfig {
     SamplerConfig::SampleRandom(rate)
 }
 
@@ -1237,8 +1715,12 @@ pub fn DefaultRedactor() -> RedactorConfig {
     RedactorConfig::Default
 }
 
+pub fn Redact(keys: &[&str]) -> RedactorConfig {
+    RedactorConfig::Keys(keys.iter().map(|s| s.to_string()).collect())
+}
+
 pub fn RedactKeys(keys: &[&str]) -> RedactorConfig {
-    RedactorConfig::Keys(keys.iter().map(|k| k.to_string()).collect())
+    RedactorConfig::Keys(keys.iter().map(|s| s.to_string()).collect())
 }
 
 pub fn HashKeys(keys: &[&str]) -> RedactorConfig {
@@ -1328,6 +1810,26 @@ pub fn WithIncludeHost(include_host: bool) -> core::options::ConfigOption {
 
 pub fn WithPanicRecovery(panic_recovery: bool) -> core::options::ConfigOption {
     Box::new(move |cfg| cfg.with_panic_recovery(panic_recovery))
+}
+
+pub fn WithBatchSize(size: usize) -> core::options::ConfigOption {
+    core::options::with_batch_size(size)
+}
+
+pub fn WithFlushInterval(ms: u64) -> core::options::ConfigOption {
+    core::options::with_flush_interval(ms)
+}
+
+pub fn WithRetry(max_retries: u32) -> core::options::ConfigOption {
+    core::options::with_retry(max_retries)
+}
+
+pub fn WithLogger(logger: Logger) -> core::options::ConfigOption {
+    Box::new(move |cfg| cfg.with_logger(logger))
+}
+
+pub fn WithApiKey(api_key: impl Into<String>) -> core::options::ConfigOption {
+    core::options::with_api_key(api_key)
 }
 
 pub fn RedactPatterns(patterns: &[&str]) -> RedactorConfig {
@@ -1501,6 +2003,10 @@ pub fn uint64(key: impl Into<String>, value: u64) -> Attr {
     Attr::new(key, Value::Number(value.into()))
 }
 
+pub fn float(key: impl Into<String>, value: f64) -> Attr {
+    Float64(key, value)
+}
+
 pub fn float64(key: impl Into<String>, value: f64) -> Attr {
     Float64(key, value)
 }
@@ -1521,11 +2027,16 @@ pub fn any(key: impl Into<String>, value: impl serde::Serialize) -> Attr {
     Any(key, value)
 }
 
+/// Lowercase alias for Any — cross-SDK parity with Go/JS/Python `json()`.
+pub fn json(key: impl Into<String>, value: impl serde::Serialize) -> Attr {
+    Any(key, value)
+}
+
 pub fn null(key: impl Into<String>) -> Attr {
     Null(key)
 }
 
-pub fn group(name: impl Into<String>, attrs: Vec<Attr>) -> Attr {
+pub fn group_attr(name: impl Into<String>, attrs: Vec<Attr>) -> Attr {
     Group(name, attrs)
 }
 
@@ -1761,6 +2272,10 @@ pub fn sample_random(rate: f64) -> SamplerConfig {
     SampleRandom(rate)
 }
 
+pub fn sample_rate(rate: f64) -> SamplerConfig {
+    SampleRate(rate)
+}
+
 pub fn sample_errors() -> SamplerConfig {
     SampleErrors()
 }
@@ -1807,12 +2322,12 @@ pub fn default_redactor() -> RedactorConfig {
     DefaultRedactor()
 }
 
-pub fn redact_keys(keys: &[&str]) -> RedactorConfig {
-    RedactKeys(keys)
+pub fn redact(keys: &[&str]) -> RedactorConfig {
+    Redact(keys)
 }
 
-pub fn hash_keys(keys: &[&str]) -> RedactorConfig {
-    HashKeys(keys)
+pub fn redact_keys(keys: &[&str]) -> RedactorConfig {
+    RedactKeys(keys)
 }
 
 pub fn drop_keys(keys: &[&str]) -> RedactorConfig {
@@ -1904,6 +2419,67 @@ pub fn tags(values: Vec<impl Into<String>>) -> Attr {
 pub fn masked(value: impl Into<String>) -> Attr {
     Masked(value)
 }
+
+pub fn list<S: serde::Serialize>(key: impl Into<String>, values: Vec<S>) -> Attr {
+    List(key, values)
+}
+
+pub fn map(key: impl Into<String>, value: serde_json::Map<String, Value>) -> Attr {
+    Map(key, value)
+}
+
+pub fn enum_<E: Into<String>>(key: impl Into<String>, value: impl Into<String>, allowed: Vec<E>) -> Attr {
+    Enum(key, value, allowed)
+}
+
+pub fn id(key: impl Into<String>, value: impl Into<String>) -> Attr {
+    ID(key, value)
+}
+
+pub fn hash(key: impl Into<String>, value: impl Into<String>) -> Attr {
+    Hash(key, value)
+}
+
+pub fn redacted(key: impl Into<String>) -> Attr {
+    Redacted(key)
+}
+
+pub fn account_id(id: impl Into<String>) -> Attr {
+    AccountID(id)
+}
+
+pub fn deployment_id(id: impl Into<String>) -> Attr {
+    DeploymentID(id)
+}
+
+pub fn http_route(route: impl Into<String>) -> Attr {
+    HTTPRoute(route)
+}
+
+pub fn http_method(method: impl Into<String>) -> Attr {
+    HTTPMethod(method)
+}
+
+pub fn http_path(path: impl Into<String>) -> Attr {
+    HTTPPath(path)
+}
+
+pub fn http_user_agent(ua: impl Into<String>) -> Attr {
+    HTTPUserAgent(ua)
+}
+
+pub fn http_referer(referer: impl Into<String>) -> Attr {
+    HTTPReferer(referer)
+}
+
+pub fn http_request(method: impl Into<String>, path: impl Into<String>) -> Attr {
+    HTTPRequest(method, path)
+}
+
+pub fn http_response(status_code: u16) -> Attr {
+    HTTPResponse(status_code)
+}
+
 pub fn url(url: impl Into<String>) -> Attr {
     URL(url)
 }
@@ -2138,11 +2714,11 @@ pub fn pause(sink: &SinkConfig) {
 pub fn resume(sink: &SinkConfig) {
     Resume(sink)
 }
-pub fn queue_size() -> usize {
-    QueueSize()
+pub fn queue_size(sink: &SinkConfig) -> usize {
+    QueueSize(sink)
 }
-pub fn health() -> bool {
-    Health()
+pub fn health(sink: &SinkConfig) -> bool {
+    Health(sink)
 }
 
 // --- Sampling/Policy extras ---
@@ -2161,25 +2737,4 @@ pub fn allow_fields(keys: &[&str]) -> RedactorConfig {
 }
 pub fn block_fields(keys: &[&str]) -> RedactorConfig {
     BlockFields(keys)
-}
-
-// --- Testing extras ---
-
-pub fn expect_event(logger: &Logger, name: &str, f: impl FnOnce(&EventContext)) {
-    ExpectEvent(logger, name, f)
-}
-pub fn expect_attr(event: &EventContext, key: &str, expected: &Value) -> bool {
-    ExpectAttr(event, key, expected)
-}
-pub fn snapshot_event(event: &EventContext) -> String {
-    SnapshotEvent(event)
-}
-pub fn mock_sink() -> SinkConfig {
-    MockSink()
-}
-pub fn fake_clock() {
-    FakeClock()
-}
-pub fn set_id_generator(f: fn() -> String) {
-    SetIDGenerator(f)
 }

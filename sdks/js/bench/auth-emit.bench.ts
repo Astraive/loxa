@@ -20,7 +20,7 @@ describe('Emit with Auth', () => {
   bench('emit_auth_5_attrs', () => {
     const ctx = logger.startEvent({ event: 'bench.auth.attrs' });
     ctx.set('http.method', 'POST');
-    ctx.set('http.path', '/api/v1/payments');
+    ctx.set('http.path', '/api/payments');
     ctx.set('http.status', 200);
     ctx.set('payment.amount', 99.99);
     ctx.set('payment.success', true);

@@ -70,6 +70,11 @@ def _matches_key(key: str, wanted: set[str]) -> bool:
     return any(piece in wanted for piece in pieces)
 
 
+def redact(*keys: str) -> Redactor:
+    """Alias for redact_keys."""
+    return redact_keys(*keys)
+
+
 def redact_keys(*keys: str) -> Redactor:
     wanted = {key.lower() for key in keys}
     return lambda payload: _walk(

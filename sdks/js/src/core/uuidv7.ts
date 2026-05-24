@@ -1,10 +1,23 @@
 import { randomBytes } from 'node:crypto';
 
+let customIdGenerator: (() => string) | null = null;
+
+export function setUUIDGenerator(fn?: (() => string) | null): void {
+  customIdGenerator = fn ?? null;
+}
+
+export function resetUUIDGenerator(): void {
+  customIdGenerator = null;
+}
+
 /**
  * Generate a UUIDv7 string (monotonic, sortable by time).
  * Format: xxxxxxxx-xxxx-7xxx-yxxx-xxxxxxxxxxxx
  */
 export function uuidv7(): string {
+  if (customIdGenerator) {
+    return customIdGenerator();
+  }
   const now = Date.now();
   const bytes = randomBytes(16);
 

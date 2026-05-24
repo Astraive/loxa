@@ -13,7 +13,7 @@ func TestProcess_BasicFlow(t *testing.T) {
 		t.Fatalf("StartProcess: %v", err)
 	}
 	time.Sleep(5 * time.Millisecond)
-	proc.Finish(Int("status_code", 302), String("gateway", "stripe"))
+	_ = proc.Finish(Int("status_code", 302), String("gateway", "stripe"))
 
 	if len(ev.Processes) != 1 {
 		t.Fatalf("expected 1 process, got %d", len(ev.Processes))
@@ -40,7 +40,7 @@ func TestProcess_FinishError(t *testing.T) {
 	ev := newTestEvent(t)
 	proc, _ := ev.StartProcess("payment_attempt")
 	time.Sleep(2 * time.Millisecond)
-	proc.FinishError(errTest, 504, String("error_code", "gateway_timeout"))
+	_ = proc.FinishError(errTest, 504, String("error_code", "gateway_timeout"))
 
 	if len(ev.Processes) != 1 {
 		t.Fatalf("expected 1 process, got %d", len(ev.Processes))
@@ -55,7 +55,7 @@ func TestProcess_StepCounter(t *testing.T) {
 	ev := newTestEvent(t)
 	for i := 1; i <= 3; i++ {
 		proc, _ := ev.StartProcess("step")
-		proc.Finish()
+		_ = proc.Finish()
 	}
 	if len(ev.Processes) != 3 {
 		t.Fatalf("expected 3 processes, got %d", len(ev.Processes))
@@ -74,7 +74,7 @@ func TestTimer_StartStop(t *testing.T) {
 		t.Fatalf("StartTimer: %v", err)
 	}
 	time.Sleep(5 * time.Millisecond)
-	timer.Stop(Int("status_code", 200))
+	_ = timer.Stop(Int("status_code", 200))
 
 	if len(ev.Timers) != 1 {
 		t.Fatalf("expected 1 timer, got %d", len(ev.Timers))
@@ -98,7 +98,7 @@ func TestGroup_StartFinish(t *testing.T) {
 		t.Fatalf("StartGroup: %v", err)
 	}
 	time.Sleep(5 * time.Millisecond)
-	group.Finish(Int("status_code", 402), String("final_reason", "insufficient_funds"))
+	_ = group.Finish(Int("status_code", 402), String("final_reason", "insufficient_funds"))
 
 	if len(ev.Groups) != 1 {
 		t.Fatalf("expected 1 group, got %d", len(ev.Groups))
@@ -133,7 +133,7 @@ func TestTiming_Concurrent(t *testing.T) {
 			defer wg.Done()
 			proc, _ := ev.StartProcess("concurrent_step")
 			time.Sleep(time.Millisecond)
-			proc.Finish()
+			_ = proc.Finish()
 		}()
 	}
 	wg.Wait()
@@ -148,15 +148,15 @@ func TestTiming_WireFormat(t *testing.T) {
 
 	proc, _ := ev.StartProcess("redirect_to_gateway")
 	time.Sleep(5 * time.Millisecond)
-	proc.Finish(Int("status_code", 302), String("gateway", "stripe"))
+	_ = proc.Finish(Int("status_code", 302), String("gateway", "stripe"))
 
 	group, _ := ev.StartGroup("payment_flow")
 	time.Sleep(5 * time.Millisecond)
-	group.Finish(Int("status_code", 402))
+	_ = group.Finish(Int("status_code", 402))
 
 	timer, _ := ev.StartTimer("stripe.create_session")
 	time.Sleep(5 * time.Millisecond)
-	timer.Stop(Int("status_code", 200))
+	_ = timer.Stop(Int("status_code", 200))
 
 	// Verify process
 	if len(ev.Processes) != 1 {

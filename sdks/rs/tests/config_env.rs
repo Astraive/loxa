@@ -9,7 +9,7 @@ fn env_overrides_file_defaults() {
     std::env::set_var("LOXA_REGION", "ap-south-1");
     std::env::set_var(
         "LOXA_COLLECTOR_ENDPOINT",
-        "http://collector.example/v1/events",
+        "http://collector.example/events",
     );
     std::env::set_var("LOXA_ASYNC_ENABLED", "true");
 
@@ -24,7 +24,7 @@ fn env_overrides_file_defaults() {
     assert_eq!(cfg.version, "9.9.9");
     assert_eq!(cfg.environment, "test");
     assert_eq!(cfg.region, "ap-south-1");
-    assert_eq!(cfg.collector_endpoint, "http://collector.example/v1/events");
+    assert_eq!(cfg.collector_endpoint, "http://collector.example/events");
     assert!(!cfg.async_enabled);
 }
 

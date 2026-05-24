@@ -138,7 +138,7 @@ func TestHandleIngestAuthFailure(t *testing.T) {
 	srv := httptest.NewServer(buildMux(state))
 	defer srv.Close()
 
-	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/events", strings.NewReader(`[{"event":"a"}]`))
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/events", strings.NewReader(`[{"event":"a"}]`))
 	req.Header.Set("Content-Type", "application/json")
 	// No Authorization header → should get 401 from middleware
 	resp, err := http.DefaultClient.Do(req)
@@ -386,7 +386,7 @@ func TestHandleSchemaPublishAndDiff(t *testing.T) {
 	}
 	state.ready.Store(true)
 
-	publishReq := httptest.NewRequest(http.MethodPost, "/v1/schema/publish", strings.NewReader(`{"schema_version":"v2","event_version":"v1","required_fields":["event_id","timestamp"]}`))
+	publishReq := httptest.NewRequest(http.MethodPost, "/schema/publish", strings.NewReader(`{"schema_version":"v2","event_version":"v1","required_fields":["event_id","timestamp"]}`))
 	publishRec := httptest.NewRecorder()
 	state.handleSchemaPublish(publishRec, publishReq)
 	if publishRec.Code != http.StatusOK {
@@ -396,7 +396,7 @@ func TestHandleSchemaPublishAndDiff(t *testing.T) {
 		t.Fatal("expected registry entry to be published")
 	}
 
-	diffReq := httptest.NewRequest(http.MethodPost, "/v1/schema/diff", strings.NewReader(`{"schema_version":"v2","event_version":"v1","required_fields":["event_id","service"]}`))
+	diffReq := httptest.NewRequest(http.MethodPost, "/schema/diff", strings.NewReader(`{"schema_version":"v2","event_version":"v1","required_fields":["event_id","service"]}`))
 	diffRec := httptest.NewRecorder()
 	state.handleSchemaDiff(diffRec, diffReq)
 	if diffRec.Code != http.StatusOK {
@@ -429,7 +429,7 @@ func TestHandlePIIAudit(t *testing.T) {
 	}
 	state.ready.Store(true)
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/audit/pii", strings.NewReader(`{"limit":10}`))
+	req := httptest.NewRequest(http.MethodPost, "/audit/pii", strings.NewReader(`{"limit":10}`))
 	rec := httptest.NewRecorder()
 	state.handlePIIAudit(rec, req)
 
@@ -451,7 +451,7 @@ func TestHandleOTLPLogs(t *testing.T) {
 	state.ready.Store(true)
 
 	body := `{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"checkout"}},{"key":"deployment.environment","value":{"stringValue":"prod"}}]},"scopeLogs":[{"logRecords":[{"severityText":"INFO","body":{"stringValue":"payment.completed"},"attributes":[{"key":"user.id","value":{"stringValue":"usr_1"}}]}]}]}]}`
-	req := httptest.NewRequest(http.MethodPost, "/v1/otlp/logs", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/otlp/logs", strings.NewReader(body))
 	rec := httptest.NewRecorder()
 	state.handleOTLPLogs(rec, req)
 	if rec.Code != http.StatusAccepted {
@@ -496,7 +496,7 @@ func TestHandleOTLPLogsProtobuf(t *testing.T) {
 		t.Fatalf("marshal protobuf: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/otlp/logs", bytes.NewReader(raw))
+	req := httptest.NewRequest(http.MethodPost, "/otlp/logs", bytes.NewReader(raw))
 	req.Header.Set("Content-Type", "application/x-protobuf")
 	rec := httptest.NewRecorder()
 	state.handleOTLPLogs(rec, req)
@@ -1115,13 +1115,14 @@ func TestControlEndpointsRequireAPIKeyWhenAuthEnabled(t *testing.T) {
 	}{
 		{method: http.MethodGet, path: "/status"},
 		{method: http.MethodGet, path: "/sinks"},
-		{method: http.MethodGet, path: "/v1/sinks/primary"},
+		{method: http.MethodGet, path: "/sinks/primary"},
+		{method: http.MethodPost, path: "/sinks/primary/test"},
 		{method: http.MethodPost, path: "/query"},
 		{method: http.MethodGet, path: "/dlq"},
-		{method: http.MethodGet, path: "/v1/dlq/some-id"},
-		{method: http.MethodPost, path: "/v1/dlq/some-id/replay"},
-		{method: http.MethodPost, path: "/v1/dlq/replay"},
-		{method: http.MethodDelete, path: "/v1/dlq/some-id"},
+		{method: http.MethodGet, path: "/dlq/some-id"},
+		{method: http.MethodPost, path: "/dlq/some-id/replay"},
+		{method: http.MethodPost, path: "/dlq/replay"},
+		{method: http.MethodDelete, path: "/dlq/some-id"},
 		{method: http.MethodGet, path: "/tail"},
 	}
 	for _, tc := range cases {
@@ -1138,6 +1139,94 @@ func TestControlEndpointsRequireAPIKeyWhenAuthEnabled(t *testing.T) {
 		if resp.StatusCode != http.StatusUnauthorized {
 			t.Fatalf("expected 401 for %s %s, got %d", tc.method, tc.path, resp.StatusCode)
 		}
+	}
+}
+
+func TestSinkTestEndpointSuccess(t *testing.T) {
+	sink := &fakeSink{}
+	state := &collectorState{
+		cfg:         testCollectorConfig(),
+		ingestSink:  sink,
+		rateLimiter: rate.NewLimiter(rate.Limit(1000), 1000),
+	}
+	state.ready.Store(true)
+
+	srv := httptest.NewServer(buildMux(state))
+	defer srv.Close()
+
+	req, err := http.NewRequest(http.MethodPost, srv.URL+"/sinks/primary/test", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("request sink test: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var payload map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got := fmt.Sprint(payload["name"]); got != "primary" {
+		t.Fatalf("expected sink name primary, got %q", got)
+	}
+	if got := fmt.Sprint(payload["status"]); got != "healthy" {
+		t.Fatalf("expected healthy status, got %q", got)
+	}
+	if got := fmt.Sprint(payload["check"]); got != "writeability" {
+		t.Fatalf("expected writeability check, got %q", got)
+	}
+	if len(sink.events) != 1 {
+		t.Fatalf("expected one test event written, got %d", len(sink.events))
+	}
+	if !strings.Contains(string(sink.events[0]), `"collector.sink.test"`) {
+		t.Fatalf("expected sink test event payload, got %s", string(sink.events[0]))
+	}
+}
+
+func TestSinkTestEndpointFailure(t *testing.T) {
+	state := &collectorState{
+		cfg:         testCollectorConfig(),
+		ingestSink:  errSink{err: context.DeadlineExceeded},
+		rateLimiter: rate.NewLimiter(rate.Limit(1000), 1000),
+	}
+	state.ready.Store(true)
+	state.sinkHealthy.Store(true)
+
+	srv := httptest.NewServer(buildMux(state))
+	defer srv.Close()
+
+	req, err := http.NewRequest(http.MethodPost, srv.URL+"/sinks/primary/test", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("request sink test: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusServiceUnavailable {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("expected 503, got %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var payload map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got := fmt.Sprint(payload["status"]); got != "down" {
+		t.Fatalf("expected down status, got %q", got)
+	}
+	if got := fmt.Sprint(payload["last_error"]); got == "" {
+		t.Fatalf("expected last_error to be populated")
+	}
+	if state.sinkHealthy.Load() {
+		t.Fatalf("expected sinkHealthy to be false after failure")
 	}
 }
 

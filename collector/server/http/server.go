@@ -19,15 +19,23 @@ type PublicHandlerSet interface {
 	HandleReady(http.ResponseWriter, *http.Request)
 	HandleVersion(http.ResponseWriter, *http.Request)
 	HandleStatus(http.ResponseWriter, *http.Request)
+	HandleValidate(http.ResponseWriter, *http.Request)
 	HandleSinks(http.ResponseWriter, *http.Request)
 	HandleSink(http.ResponseWriter, *http.Request)
+	HandleSinkTest(http.ResponseWriter, *http.Request)
 	HandleSchemaList(http.ResponseWriter, *http.Request)
 	HandleSchemaDiff(http.ResponseWriter, *http.Request)
+	HandleSchemaCheck(http.ResponseWriter, *http.Request)
 	HandleSchemaPublish(http.ResponseWriter, *http.Request)
 	HandleBlueprintPublish(http.ResponseWriter, *http.Request)
 	HandleBlueprintList(http.ResponseWriter, *http.Request)
 	HandleQuery(http.ResponseWriter, *http.Request)
 	HandlePIIAudit(http.ResponseWriter, *http.Request)
+	HandlePolicyValidate(http.ResponseWriter, *http.Request)
+	HandleRetentionApply(http.ResponseWriter, *http.Request)
+	HandleKeyCreate(http.ResponseWriter, *http.Request)
+	HandleKeyRevoke(http.ResponseWriter, *http.Request)
+	HandleKeyRotate(http.ResponseWriter, *http.Request)
 	HandleDeleteEvents(http.ResponseWriter, *http.Request)
 	HandleDLQList(http.ResponseWriter, *http.Request)
 	HandleDLQReplayAll(http.ResponseWriter, *http.Request)
@@ -35,6 +43,7 @@ type PublicHandlerSet interface {
 	HandleDLQReplay(http.ResponseWriter, *http.Request)
 	HandleDLQDelete(http.ResponseWriter, *http.Request)
 	HandleTail(http.ResponseWriter, *http.Request)
+	HandleReplay(http.ResponseWriter, *http.Request)
 }
 
 // RouteProtector wraps an http.Handler with a permission check.
@@ -60,11 +69,11 @@ func BuildMux(ingestPath, healthPath, readyPath, metricsPath string, metricsEnab
 	if ingestPath != "" {
 		route("POST", ingestPath, handlers.HandleIngest, "events:write")
 	}
-	route("POST", "/v1/events", handlers.HandleIngest, "events:write")
-	route("POST", "/v1/events/batch", handlers.HandleIngest, "events:write")
-	route("POST", "/v1/events/ndjson", handlers.HandleIngest, "events:write")
-	route("POST", "/v1/otlp/logs", handlers.HandleOTLPLogs, "logs:write")
-	route("POST", "/otlp/v1/logs", handlers.HandleOTLPLogs, "logs:write")
+	route("POST", "/events", handlers.HandleIngest, "events:write")
+	route("POST", "/events/batch", handlers.HandleIngest, "events:write")
+	route("POST", "/events/ndjson", handlers.HandleIngest, "events:write")
+	route("POST", "/validate", handlers.HandleValidate, "schema:read")
+	route("POST", "/otlp/logs", handlers.HandleOTLPLogs, "logs:write")
 
 	// ── Public (no auth) ─────────────────────────────────────────────────
 	if healthPath != "" {
@@ -76,50 +85,54 @@ func BuildMux(ingestPath, healthPath, readyPath, metricsPath string, metricsEnab
 	}
 	mux.HandleFunc("GET /ready", handlers.HandleReady)
 	mux.HandleFunc("GET /version", handlers.HandleVersion)
-	mux.HandleFunc("GET /v1/status", handlers.HandleStatus)
 	mux.HandleFunc("GET /status", handlers.HandleStatus)
 
 	// ── Read endpoints ───────────────────────────────────────────────────
-	route("GET", "/v1/sinks", handlers.HandleSinks, "events:read")
 	route("GET", "/sinks", handlers.HandleSinks, "events:read")
-	route("GET", "/v1/sinks/{name}", handlers.HandleSink, "events:read")
-	route("GET", "/v1/schema", handlers.HandleSchemaList, "schema:read")
-	route("POST", "/v1/schema/diff", handlers.HandleSchemaDiff, "schema:read")
-	route("POST", "/v1/query", handlers.HandleQuery, "events:read")
+	route("GET", "/sinks/{name}", handlers.HandleSink, "events:read")
+	route("POST", "/sinks/{name}/test", handlers.HandleSinkTest, "events:write")
+	route("GET", "/schema", handlers.HandleSchemaList, "schema:read")
+	route("POST", "/schema/check", handlers.HandleSchemaCheck, "schema:read")
+	route("POST", "/schema/diff", handlers.HandleSchemaDiff, "schema:read")
 	route("POST", "/query", handlers.HandleQuery, "events:read")
-	route("GET", "/v1/schema/blueprint", handlers.HandleBlueprintList, "schema:read")
+	route("GET", "/schema/blueprint", handlers.HandleBlueprintList, "schema:read")
 
 	// ── Tail (events:read) ───────────────────────────────────────────────
 	route("GET", "/tail", handlers.HandleTail, "events:read")
-	route("GET", "/v1/tail", handlers.HandleTail, "events:read")
 
 	// ── Write endpoints ──────────────────────────────────────────────────
-	route("POST", "/v1/schema/publish", handlers.HandleSchemaPublish, "schema:write")
-	route("POST", "/v1/schema/blueprint", handlers.HandleBlueprintPublish, "schema:write")
+	route("POST", "/schema/publish", handlers.HandleSchemaPublish, "schema:write")
+	route("POST", "/schema/blueprint", handlers.HandleBlueprintPublish, "schema:write")
+
+	// ── Replay ───────────────────────────────────────────────────────────
+	route("POST", "/replay", handlers.HandleReplay, "events:write")
 
 	// ── Admin endpoints ──────────────────────────────────────────────────
-	route("POST", "/v1/audit/pii", handlers.HandlePIIAudit, "pii_audit:read")
-	route("DELETE", "/v1/events", handlers.HandleDeleteEvents, "events:delete")
-	route("DELETE", "/v1/events/by-tenant/{tenant_id}", handlers.HandleDeleteEvents, "events:delete")
-	route("DELETE", "/v1/events/by-user/{user_id}", handlers.HandleDeleteEvents, "events:delete")
-	route("DELETE", "/v1/events/{event_id}", handlers.HandleDeleteEvents, "events:delete")
+	route("POST", "/audit/pii", handlers.HandlePIIAudit, "pii_audit:read")
+	route("POST", "/policy/validate", handlers.HandlePolicyValidate, "schema:read")
+	route("POST", "/retention/apply", handlers.HandleRetentionApply, "project:admin")
+	route("POST", "/keys", handlers.HandleKeyCreate, "project:admin")
+	route("POST", "/keys/{id}/revoke", handlers.HandleKeyRevoke, "project:admin")
+	route("DELETE", "/keys/{id}", handlers.HandleKeyRevoke, "project:admin")
+	route("POST", "/keys/{id}/rotate", handlers.HandleKeyRotate, "project:admin")
+	route("DELETE", "/events", handlers.HandleDeleteEvents, "events:delete")
+	route("DELETE", "/events/by-tenant/{tenant_id}", handlers.HandleDeleteEvents, "events:delete")
+	route("DELETE", "/events/by-user/{user_id}", handlers.HandleDeleteEvents, "events:delete")
+	route("DELETE", "/events/{event_id}", handlers.HandleDeleteEvents, "events:delete")
 
 	// ── DLQ ──────────────────────────────────────────────────────────────
-	route("GET", "/v1/dlq", handlers.HandleDLQList, "events:read")
 	route("GET", "/dlq", handlers.HandleDLQList, "events:read")
-	route("POST", "/v1/dlq/replay", handlers.HandleDLQReplayAll, "events:write")
-	route("GET", "/v1/dlq/{id}", handlers.HandleDLQShow, "events:read")
-	route("POST", "/v1/dlq/{id}/replay", handlers.HandleDLQReplay, "events:write")
-	route("DELETE", "/v1/dlq/{id}", handlers.HandleDLQDelete, "events:delete")
+	route("POST", "/dlq/replay", handlers.HandleDLQReplayAll, "events:write")
+	route("GET", "/dlq/{id}", handlers.HandleDLQShow, "events:read")
+	route("POST", "/dlq/{id}/replay", handlers.HandleDLQReplay, "events:write")
+	route("DELETE", "/dlq/{id}", handlers.HandleDLQDelete, "events:delete")
 
 	// ── WebSocket tail ───────────────────────────────────────────────────
 	if tailWebSocketHandler != nil {
 		if protect != nil {
 			mux.Handle("GET /ws/tail", protect(tailWebSocketHandler, "events:read"))
-			mux.Handle("GET /v1/ws/tail", protect(tailWebSocketHandler, "events:read"))
 		} else {
 			mux.Handle("GET /ws/tail", tailWebSocketHandler)
-			mux.Handle("GET /v1/ws/tail", tailWebSocketHandler)
 		}
 	}
 

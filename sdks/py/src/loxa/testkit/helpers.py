@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from collections.abc import Callable
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any
 
+from collections.abc import Callable
 from ..core.config import Config
 from ..core.logger import Logger
 from ..sinks import MemorySink
@@ -14,6 +16,9 @@ from ..sinks import MemorySink
 def TestLogger(service: str = "test"):
     sink = MemorySink()
     return Logger(Config.test(service).with_sink(sink)), sink
+
+
+
 
 
 def Capture(fn: Callable[[Logger], Any]):
@@ -81,6 +86,44 @@ def mock_sink() -> MemorySink:
 
 
 _fake_now: datetime | None = None
+_captured_events: list[dict[str, Any]] = []
+
+
+def testkit(service: str = "test") -> dict[str, Any]:
+    logger, sink = TestLogger(service)
+    return {
+        "logger": logger,
+        "sink": sink,
+        "capture": Capture,
+        "events": events,
+        "last_event": last_event,
+        "clear_events": clear_events,
+    }
+
+
+def events() -> list[dict[str, Any]]:
+    return list(_captured_events)
+
+
+def last_event() -> dict[str, Any] | None:
+    return _captured_events[-1] if _captured_events else None
+
+
+def clear_events() -> None:
+    _captured_events.clear()
+
+
+def golden_test(path: str, event: dict[str, Any]) -> bool:
+    snapshot = json.dumps(snapshot_event(event), sort_keys=True, separators=(",", ":"))
+    target = Path(path)
+    if not target.exists():
+        target.write_text(snapshot + "\n", encoding="utf-8")
+        return True
+    return json.dumps(json.loads(target.read_text(encoding="utf-8")), sort_keys=True, separators=(",", ":")) == snapshot
+
+
+def conformance_suite() -> dict[str, str]:
+    return {"name": "loxa-py-conformance", "status": "available"}
 
 
 def fake_clock(value: datetime | None = None) -> datetime:
@@ -93,12 +136,26 @@ def fake_clock(value: datetime | None = None) -> datetime:
 
 
 def set_id_generator(fn: Callable[[], str] | None = None) -> None:
-    from ..core.uuidv7 import uuidv7_like
-    global _id_gen
-    _id_gen = fn or (lambda: uuidv7_like("evt"))
+    from ..core.uuidv7 import set_id_generator as _set_core_id_generator
+    if fn is None:
+        _set_core_id_generator(None)
+        return
+    _set_core_id_generator(lambda prefix: fn())
 
 
-_id_gen: Callable[[], str] | None = None
+def reset_for_test() -> None:
+    """Clear all global mutable state: default logger, clock, and ID generator."""
+    clear_events()
+    global _fake_now
+    _fake_now = None
+    from ..core.uuidv7 import reset_id_generator as _reset_core_id_generator
+    _reset_core_id_generator()
+    from .. import _reset_default
+    _reset_default()
+
+
+def set_clock(value: datetime | None = None) -> datetime:
+    return fake_clock(value)
 
 
 def _get_path(payload: dict[str, Any], key: str) -> Any:

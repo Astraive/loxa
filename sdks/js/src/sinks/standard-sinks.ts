@@ -54,7 +54,79 @@ export class FileSink implements Sink {
   close() {}
 }
 
-export class RotatingFileSink extends FileSink {}
+export class RotatingFileSink implements Sink {
+  private path: string;
+  private maxBytes: number;
+  private maxBackups: number;
+  private currentSize: number;
+  private writeCount: number;
+
+  constructor(path: string, maxBytes?: number, maxBackups?: number) {
+    this.path = path;
+    this.maxBytes = maxBytes ?? 100 * 1024 * 1024;
+    this.maxBackups = maxBackups ?? 5;
+    this.currentSize = this.getFileSize();
+    this.writeCount = 0;
+  }
+
+  name() { return 'rotating_file'; }
+
+  write(encoded: string): void {
+    const line = encoded + '\n';
+    const lineBytes = Buffer.byteLength(line, 'utf-8');
+
+    if (this.currentSize + lineBytes > this.maxBytes) {
+      this.rotate();
+    }
+
+    fs.appendFileSync(this.path, line);
+    this.currentSize += lineBytes;
+    this.writeCount++;
+  }
+
+  flush() {}
+  close() {}
+
+  private getFileSize(): number {
+    try {
+      return fs.statSync(this.path).size;
+    } catch {
+      return 0;
+    }
+  }
+
+  private rotate(): void {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const backupPath = `${this.path}.${timestamp}`;
+    try {
+      fs.renameSync(this.path, backupPath);
+    } catch {
+      // File might not exist yet — carry on
+    }
+    this.currentSize = 0;
+    this.pruneBackups();
+  }
+
+  private pruneBackups(): void {
+    const dir = this.path.substring(0, this.path.lastIndexOf('/') + 1) || '.';
+    const base = this.path.substring(this.path.lastIndexOf('/') + 1);
+    try {
+      const files = fs.readdirSync(dir)
+        .filter(f => f.startsWith(base + '.') && f !== base)
+        .map(f => ({
+          name: f,
+          mtime: fs.statSync(`${dir}/${f}`).mtimeMs,
+        }))
+        .sort((a, b) => b.mtime - a.mtime);
+
+      for (const file of files.slice(this.maxBackups)) {
+        fs.unlinkSync(`${dir}/${file.name}`);
+      }
+    } catch {
+      // Best-effort cleanup
+    }
+  }
+}
 
 /** Noop sink — discards all events. */
 export class NoopSink implements Sink {
@@ -122,7 +194,7 @@ export class HTTPBatchSink implements Sink {
     this.apiKey = opts.apiKey || '';
     this.authHeader = opts.authHeader || 'Authorization';
     this.sdkName = opts.sdkName || 'loxa-js';
-    this.sdkVersion = opts.sdkVersion || '0.0.1';
+    this.sdkVersion = opts.sdkVersion || '0.0.2';
     this.service = opts.service || '';
     this.timeout = opts.timeout || 2000;
     this.retries = opts.retries ?? 3;
@@ -387,15 +459,19 @@ export class MultiSink implements Sink {
   }
 }
 
-// --- OTLP Sink (passthrough stub for now) ---
+// --- OTLP Sink ---
 
 export class OtlpSink implements Sink {
-  private endpoint: string;
-  constructor(endpoint?: string) { this.endpoint = endpoint || ''; }
+  private delegate: HTTPBatchSink;
+  constructor(endpoint?: string) {
+    this.delegate = new HTTPBatchSink({
+      endpoint: endpoint || 'http://127.0.0.1:9090/events',
+    });
+  }
   name() { return 'otlp'; }
-  async write(encoded: string): Promise<void> { /* OTLP not yet implemented */ }
-  flush() {}
-  close() {}
+  async write(encoded: string): Promise<void> { await this.delegate.write(encoded); }
+  async flush(): Promise<void> { await this.delegate.flush(); }
+  async close(): Promise<void> { await this.delegate.close(); }
 }
 
 // --- Lowercase factory functions ---
@@ -405,8 +481,40 @@ export function stderrSink(): StderrSink { return new StderrSink(); }
 export function noopSink(): NoopSink { return new NoopSink(); }
 export function memorySink(): MemorySink { return new MemorySink(); }
 export function fileSink(path: string): FileSink { return new FileSink(path); }
-export function rotatingFileSink(path: string): RotatingFileSink { return new RotatingFileSink(path); }
+export function rotatingFileSink(path: string, maxBytes?: number, maxBackups?: number): RotatingFileSink { return new RotatingFileSink(path, maxBytes, maxBackups); }
 export function collectorSink(opts: HTTPBatchSinkOptions): CollectorSink { return new CollectorSink(opts); }
 export function httpBatchSink(opts: HTTPBatchSinkOptions): HTTPBatchSink { return new HTTPBatchSink(opts); }
 export function multiSink(...sinks: Sink[]): MultiSink { return new MultiSink(sinks); }
 export function otlpSink(endpoint?: string): OtlpSink { return new OtlpSink(endpoint); }
+
+export async function drain(sink: Sink & { drain?: () => void | Promise<void> }): Promise<void> {
+  if (typeof sink.drain === 'function') return sink.drain();
+  await Promise.resolve(sink.flush?.());
+}
+
+export function pause(sink: Sink & { pause?: () => void }): void {
+  sink.pause?.();
+}
+
+export function resume(sink: Sink & { resume?: () => void }): void {
+  sink.resume?.();
+}
+
+export function queueSize(sink: Sink & { queueSize?: () => number; getLength?: () => number }): number {
+  if (typeof sink.queueSize === 'function') return sink.queueSize();
+  if (typeof sink.getLength === 'function') return sink.getLength();
+  return 0;
+}
+
+export function health(sink: Sink): { name: string; status: 'healthy' } {
+  return { name: sink.name(), status: 'healthy' };
+}
+
+export function kafkaSink(config?: Record<string, unknown>): Sink {
+  const endpoint = (config?.endpoint as string) || 'http://127.0.0.1:9090/events';
+  return new HTTPBatchSink({ endpoint });
+}
+
+export function httpSink(opts: HTTPBatchSinkOptions): HTTPBatchSink {
+  return httpBatchSink(opts);
+}

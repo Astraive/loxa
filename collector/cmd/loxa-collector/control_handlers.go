@@ -85,17 +85,55 @@ func (s *collectorState) handleSink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := r.PathValue("name")
-	for _, sink := range s.sinksForShutdown() {
-		if sink.Name == name {
-			writeJSON(w, http.StatusOK, sinkStatus(sink.Name, s.effectiveSinkHealthy(), ""))
-			return
-		}
-	}
-	if s.ingestSink != nil && s.ingestSink.Name() == name {
-		writeJSON(w, http.StatusOK, sinkStatus(name, s.effectiveSinkHealthy(), ""))
+	if sink, ok := s.findSinkByName(name); ok {
+		writeJSON(w, http.StatusOK, sinkStatus(sink.Name, s.effectiveSinkHealthy(), ""))
 		return
 	}
 	writeJSON(w, http.StatusNotFound, map[string]any{"error": "sink_not_found"})
+}
+
+func (s *collectorState) handleSinkTest(w http.ResponseWriter, r *http.Request) {
+	if !s.isAuthorized(r) {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
+		return
+	}
+	name := r.PathValue("name")
+	sink, ok := s.findSinkByName(name)
+	if !ok {
+		writeJSON(w, http.StatusNotFound, map[string]any{"error": "sink_not_found"})
+		return
+	}
+	start := time.Now()
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	payload := []byte(`{"event":"collector.sink.test","service":"loxa.collector","attributes":{"kind":"sink_test","source":"collector"}}`)
+	err := sink.Sink.WriteEvent(ctx, payload, nil)
+	if err == nil {
+		err = sink.Sink.Flush(ctx)
+	}
+	result := sinkStatus(sink.Name, err == nil, "")
+	result["latency_ms"] = time.Since(start).Milliseconds()
+	result["tested_at"] = time.Now().UTC().Format(time.RFC3339Nano)
+	result["check"] = "writeability"
+	if err != nil {
+		s.sinkHealthy.Store(false)
+		s.metrics.sinkWriteErrors.Add(1)
+		result["last_error"] = err.Error()
+		writeJSON(w, http.StatusServiceUnavailable, result)
+		return
+	}
+	s.sinkHealthy.Store(true)
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *collectorState) findSinkByName(name string) (namedSink, bool) {
+	for _, sink := range s.sinksForShutdown() {
+		if sink.Name == name || sink.Sink.Name() == name {
+			return sink, true
+		}
+	}
+	return namedSink{}, false
 }
 
 func sinkStatus(name string, healthy bool, lastErr string) map[string]any {
@@ -200,6 +238,36 @@ func (s *collectorState) handleQuery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"columns": columns, "rows": result, "row_count": len(result)})
+}
+
+func (s *collectorState) handleReplay(w http.ResponseWriter, r *http.Request) {
+	if !s.isAuthorized(r) {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
+		return
+	}
+	var req struct {
+		Events [][]byte `json:"events"`
+		Filter string   `json:"filter"`
+	}
+	body, err := io.ReadAll(io.LimitReader(r.Body, 10<<20))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "read_failed", "message": err.Error()})
+		return
+	}
+	if err := json.Unmarshal(body, &req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_replay_request", "message": err.Error()})
+		return
+	}
+	if len(req.Events) == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "empty_events", "message": "events array required"})
+		return
+	}
+	accepted, err := s.handleIngestBatch(r.Context(), req.Events)
+	if err != nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "replay_failed", "message": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]any{"accepted": accepted, "replayed": len(req.Events)})
 }
 
 func (s *collectorState) handleDLQList(w http.ResponseWriter, r *http.Request) {

@@ -39,7 +39,7 @@ func BenchmarkEmitWithAuthAndAttrs(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ctx := loxa.StartEvent(context.Background(), loxa.Params{Event: "bench.auth.attrs"})
 		loxa.Set(ctx, loxa.String("http.method", "POST"))
-		loxa.Set(ctx, loxa.String("http.path", "/api/v1/payments"))
+		loxa.Set(ctx, loxa.String("http.path", "/api/payments"))
 		loxa.Set(ctx, loxa.Int("http.status", 200))
 		loxa.Set(ctx, loxa.Float64("payment.amount", 99.99))
 		loxa.Set(ctx, loxa.Bool("payment.success", true))

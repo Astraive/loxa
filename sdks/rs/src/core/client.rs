@@ -165,13 +165,14 @@ pub struct CollectorHttpClient {
 
 impl CollectorHttpClient {
     pub fn new(endpoint: impl Into<String>) -> Self {
+        let endpoint = normalize_collector_endpoint(endpoint.into());
         Self {
-            endpoint: endpoint.into(),
+            endpoint,
             api_key: None,
             auth_header: "Authorization".to_string(),
             timeout_ms: 2_000,
             sdk_name: "loxa-rs".to_string(),
-            sdk_version: "0.0.1".to_string(),
+            sdk_version: "0.0.2".to_string(),
             service: None,
         }
     }
@@ -221,107 +222,136 @@ impl CollectorHttpClient {
         format!("{}/tail", self.endpoint.trim_end_matches('/'))
     }
 
-    /// Validate events against the collector schema.
+    /// Send an authenticated HTTP request to the collector.
+    fn request(&self, method: &str, path: &str, body: Option<Value>) -> Result<CollectorResponse, String> {
+        let url = format!("{}{}", self.endpoint.trim_end_matches('/'), path);
+        let client = HTTPClient::with_timeout_ms(self.timeout_ms);
+        let mut request = HTTPRequest::new(method, &url);
+
+        if let Some(api_key) = &self.api_key {
+            request = request.with_header(
+                &self.auth_header,
+                format!("Bearer {}", api_key),
+            );
+        }
+
+        request = request
+            .with_header("User-Agent", format!("{}/{}", self.sdk_name, self.sdk_version))
+            .with_header("Content-Type", "application/json");
+
+        if let Some(body) = body {
+            let bytes = serde_json::to_vec(&body).map_err(|e| e.to_string())?;
+            request = request.with_body(bytes);
+        }
+
+        let response = client.send(&request).map_err(|e| e.to_string())?;
+        let body: Value = serde_json::from_str(&response.body).map_err(|e| e.to_string())?;
+        Ok(CollectorResponse { status_code: response.status_code, body })
+    }
+
+    /// Validate events locally against the ingest envelope contract.
+    /// The collector does not expose a dedicated `/validate` endpoint.
     pub fn validate(&self, events: &[String]) -> Result<CollectorResponse, String> {
         let envelope = self.envelope(events);
-        self.validate_envelope(&envelope)
-            .map(|_| CollectorResponse {
-                status_code: 200,
-                body: serde_json::json!({"accepted": events.len(), "rejected": 0, "invalid": 0}),
-            })
+        self.validate_envelope(&envelope)?;
+        Ok(CollectorResponse {
+            status_code: 200,
+            body: serde_json::json!({
+                "status": "accepted",
+                "valid": true
+            }),
+        })
     }
 
     /// Ingest events into the collector.
     pub fn ingest(&self, events: &[String]) -> Result<CollectorResponse, String> {
-        self.validate(events)
+        let envelope = self.envelope(events);
+        self.request("POST", "/events", Some(envelope))
     }
 
     /// Query events from the collector.
-    pub fn query(&self, _query: &str) -> Result<CollectorResponse, String> {
-        Ok(CollectorResponse {
-            status_code: 200,
-            body: serde_json::json!({"events": []}),
-        })
+    pub fn query(&self, query: &str) -> Result<CollectorResponse, String> {
+        self.request("POST", "/query", Some(serde_json::json!({"query": query})))
     }
 
     /// Tail recent events from the collector.
-    pub fn tail(&self, _count: u32) -> Result<CollectorResponse, String> {
-        Ok(CollectorResponse {
-            status_code: 200,
-            body: serde_json::json!({"events": []}),
-        })
+    pub fn tail(&self, count: u32) -> Result<CollectorResponse, String> {
+        self.request("GET", &format!("/tail?limit={}", count), None)
     }
 
-    /// Delete events from the collector.
-    pub fn delete(&self, _query: &str) -> Result<CollectorResponse, String> {
-        Ok(CollectorResponse {
-            status_code: 200,
-            body: serde_json::json!({"deleted": 0}),
-        })
-    }
-
-    /// Replay events from the collector.
-    pub fn replay(&self, event_ids: &[String]) -> Result<CollectorResponse, String> {
-        Ok(CollectorResponse {
-            status_code: 200,
-            body: serde_json::json!({"replayed": event_ids.len()}),
-        })
-    }
-
-    /// List dead-letter queue entries.
-    pub fn dlq_list(&self, _limit: u32) -> Result<CollectorResponse, String> {
-        Ok(CollectorResponse {
-            status_code: 200,
-            body: serde_json::json!({"entries": []}),
-        })
-    }
-
-    /// Read a dead-letter queue entry.
-    pub fn dlq_read(&self, _entry_id: &str) -> Result<CollectorResponse, String> {
-        Ok(CollectorResponse {
-            status_code: 200,
-            body: serde_json::json!({"entry": null}),
-        })
+    /// Delete events from the collector by event ID.
+    pub fn delete(&self, event_id: &str) -> Result<CollectorResponse, String> {
+        self.request("DELETE", &format!("/events/{}", event_id), None)
     }
 
     /// Replay events from the dead-letter queue.
+    pub fn replay(&self, event_ids: &[String]) -> Result<CollectorResponse, String> {
+        self.request("POST", "/replay", Some(serde_json::json!({"event_ids": event_ids})))
+    }
+
+    /// List dead-letter queue entries.
+    pub fn dlq_list(&self, limit: u32) -> Result<CollectorResponse, String> {
+        self.request("GET", &format!("/dlq?limit={}", limit), None)
+    }
+
+    /// Read a dead-letter queue entry.
+    pub fn dlq_read(&self, entry_id: &str) -> Result<CollectorResponse, String> {
+        self.request("GET", &format!("/dlq/{}", entry_id), None)
+    }
+
+    /// Replay specific dead-letter queue entries.
     pub fn dlq_replay(&self, entry_ids: &[String]) -> Result<CollectorResponse, String> {
-        Ok(CollectorResponse {
-            status_code: 200,
-            body: serde_json::json!({"replayed": entry_ids.len()}),
-        })
+        self.request("POST", "/dlq/replay", Some(serde_json::json!({"entry_ids": entry_ids})))
     }
 
     /// Create an API key.
     pub fn keys_create(&self, name: &str) -> Result<CollectorResponse, String> {
-        Ok(CollectorResponse {
-            status_code: 200,
-            body: serde_json::json!({"key": "", "name": name}),
-        })
+        self.request("POST", "/keys", Some(serde_json::json!({"name": name})))
     }
 
     /// Revoke an API key.
-    pub fn keys_revoke(&self, _key_id: &str) -> Result<CollectorResponse, String> {
-        Ok(CollectorResponse {
-            status_code: 200,
-            body: serde_json::json!({"revoked": true}),
-        })
+    pub fn keys_revoke(&self, key_id: &str) -> Result<CollectorResponse, String> {
+        self.request("DELETE", &format!("/keys/{}", key_id), None)
     }
 
     /// List configured sinks on the collector.
     pub fn sinks_list(&self) -> Result<CollectorResponse, String> {
-        Ok(CollectorResponse {
-            status_code: 200,
-            body: serde_json::json!({"sinks": []}),
-        })
+        self.request("GET", "/sinks", None)
+    }
+
+    /// Test a configured sink on the collector.
+    pub fn sinks_test(&self, name: &str) -> Result<CollectorResponse, String> {
+        self.request("POST", &format!("/sinks/{}/test", name), None)
+    }
+
+    /// Rotate an API key.
+    pub fn keys_rotate(&self, key_id: &str) -> Result<CollectorResponse, String> {
+        self.request("POST", &format!("/keys/{}/rotate", key_id), None)
+    }
+
+    /// Validate an event governance policy.
+    pub fn policy_validate(&self, policy: &Value) -> Result<CollectorResponse, String> {
+        self.request("POST", "/policy/validate", Some(policy.clone()))
+    }
+
+    /// Check an event against the active schema.
+    pub fn schema_check(&self, event: &Value) -> Result<CollectorResponse, String> {
+        self.request("POST", "/schema/check", Some(event.clone()))
+    }
+
+    /// Publish schema metadata.
+    pub fn schema_publish(&self, schema: &Value) -> Result<CollectorResponse, String> {
+        self.request("POST", "/schema/publish", Some(schema.clone()))
+    }
+
+    /// Apply retention policy immediately.
+    pub fn retention_apply(&self, policy: &Value) -> Result<CollectorResponse, String> {
+        self.request("POST", "/retention/apply", Some(policy.clone()))
     }
 
     /// Check collector health.
     pub fn health(&self) -> Result<CollectorResponse, String> {
-        Ok(CollectorResponse {
-            status_code: 200,
-            body: serde_json::json!({"status": "ok"}),
-        })
+        self.request("GET", "/health", None)
     }
 }
 
@@ -380,6 +410,17 @@ fn infer_service(events: &[Value]) -> Option<String> {
         }
     }
     None
+}
+
+fn normalize_collector_endpoint(endpoint: String) -> String {
+    let mut base = endpoint.trim().trim_end_matches('/').to_string();
+    for suffix in ["/events", "/events/batch"] {
+        if base.ends_with(suffix) {
+            base.truncate(base.len() - suffix.len());
+            break;
+        }
+    }
+    base.trim_end_matches('/').to_string()
 }
 
 /// Validate an ingest envelope against the spec.

@@ -47,7 +47,7 @@ def run_encoder_benchmark(iterations: int = 10000) -> dict:
                     loxa.String("trace.id", "trace-000"),
                     loxa.String("span.id", "span-111"),
                     loxa.String("http.method", "GET"),
-                    loxa.String("http.path", "/api/v1/users"),
+                    loxa.String("http.path", "/api/users"),
                     loxa.String("http.user_agent", "Mozilla/5.0"),
                 )
 

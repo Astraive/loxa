@@ -252,6 +252,21 @@ func Span(ctx context.Context, name string, fn func() error) error {
 	return h.Stop()
 }
 
+// WithProcess is an alias for Step — runs fn as a named process step.
+func WithProcess(ctx context.Context, name string, fn func() error, attrs ...Attr) error {
+	return Step(ctx, name, fn)
+}
+
+// WithGroup is an alias for Phase — runs fn as a named group phase.
+func WithGroup(ctx context.Context, name string, fn func() error, attrs ...Attr) error {
+	return Phase(ctx, name, fn)
+}
+
+// WithTimer is an alias for Span — runs fn as a named timer span.
+func WithTimer(ctx context.Context, name string, fn func() error, attrs ...Attr) error {
+	return Span(ctx, name, fn)
+}
+
 // extractStatusCode finds and returns the status_code value from attrs, or 0 if not found.
 func extractStatusCode(attrs []Attr) int {
 	for _, a := range attrs {

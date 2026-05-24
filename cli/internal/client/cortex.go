@@ -53,7 +53,7 @@ func IngestCortexBatch(ctx context.Context, baseURL string, events []map[string]
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(baseURL, "/")+"/v1/events/batch", bytes.NewReader(raw))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(baseURL, "/")+"/events/batch", bytes.NewReader(raw))
 	if err != nil {
 		return err
 	}
@@ -85,24 +85,24 @@ func ReconstructCortexIncident(ctx context.Context, baseURL, incidentID, mode st
 	if err != nil {
 		return nil, err
 	}
-	return postCortexJSON(ctx, baseURL, "/v1/reconstruct", raw)
+	return postCortexJSON(ctx, baseURL, "/reconstruct", raw)
 }
 
 func RecordCortexRemediation(ctx context.Context, baseURL string, payload []byte) ([]byte, error) {
-	return postCortexJSON(ctx, baseURL, "/v1/feedback/remediation", payload)
+	return postCortexJSON(ctx, baseURL, "/feedback/remediation", payload)
 }
 
 func RecordCortexFeedback(ctx context.Context, baseURL string, payload []byte) ([]byte, error) {
-	return postCortexJSON(ctx, baseURL, "/v1/feedback/incident", payload)
+	return postCortexJSON(ctx, baseURL, "/feedback/incident", payload)
 }
 
 func FetchCortexServiceGraph(ctx context.Context, baseURL, service string, depth int) ([]byte, error) {
-	path := fmt.Sprintf("/v1/graph/service/%s?depth=%d", service, depth)
+	path := fmt.Sprintf("/graph/service/%s?depth=%d", service, depth)
 	return getCortexJSON(ctx, baseURL, path)
 }
 
 func FetchCortexIncidentGraph(ctx context.Context, baseURL, incidentID string, depth int) ([]byte, error) {
-	path := fmt.Sprintf("/v1/graph/incident/%s?depth=%d", incidentID, depth)
+	path := fmt.Sprintf("/graph/incident/%s?depth=%d", incidentID, depth)
 	return getCortexJSON(ctx, baseURL, path)
 }
 

@@ -316,7 +316,7 @@ def encode_batch_envelope(encoded_events: Iterable[str]) -> str:
             "api_version": "v1",
             "source": {
                 "sdk": "loxa-py",
-                "version": "0.0.1",
+                "version": "0.0.2",
                 "service": service,
             },
             "events": events,

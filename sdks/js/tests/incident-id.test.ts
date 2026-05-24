@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { Event, MemorySink, Logger, IncidentID } from '../src/index.ts';
+import { Event, MemorySink, createLoxa, IncidentID } from '../src/index.ts';
 
 describe('IncidentID', () => {
   it('sets incidentId from params', () => {
@@ -14,7 +14,7 @@ describe('IncidentID', () => {
 
   it('emits incident_id in JSON output', async () => {
     const sink = new MemorySink();
-    const logger = new Logger({
+    const logger = createLoxa({
       service: 'test-svc',
       environment: 'test',
       sink,
@@ -38,7 +38,7 @@ describe('IncidentID', () => {
 
   it('omits incident_id when not set', async () => {
     const sink = new MemorySink();
-    const logger = new Logger({
+    const logger = createLoxa({
       service: 'test-svc',
       environment: 'test',
       sink,

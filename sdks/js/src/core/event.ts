@@ -10,6 +10,24 @@ import type { Level } from './level.ts';
 import { ProcessHandle, TimerHandle, GroupHandle } from './timing.ts';
 import type { ProcessEntry, GroupEntry, TimerEntry } from './timing.ts';
 
+// --- Injectable clock for testing ---
+let _clock: () => number = Date.now;
+
+/** Returns the current time in ms. Uses injected clock if set, otherwise Date.now(). */
+export function _now(): number { return _clock(); }
+
+/** Set a custom clock function for deterministic testing. Returns the previous clock. */
+export function setClock(clock: () => number): () => number {
+  const prev = _clock;
+  _clock = clock;
+  return prev;
+}
+
+/** Reset the clock to Date.now (for use in test teardown). */
+export function resetClock(): void {
+  _clock = Date.now;
+}
+
 // --- Attr types ---
 
 export type AttrKind = 'string' | 'number' | 'boolean' | 'null' | 'group' | 'any';
@@ -40,6 +58,9 @@ export function Null(key: string): Attr {
 }
 export function Any(key: string, value: any): Attr {
   return { key, kind: 'any', value };
+}
+export function Json(key: string, value: any): Attr {
+  return Any(key, value);
 }
 export function Group(key: string, attrs: Attr[]): Attr {
   return { key, kind: 'group', value: attrs };
@@ -74,6 +95,7 @@ export const float = Float64;
 export const bool = Bool;
 export const null_ = Null;
 export const any = Any;
+export const json = Json;
 export const group = Group;
 export const sensitiveString = SensitiveString;
 export const hashString = HashString;
@@ -124,9 +146,46 @@ export function Percent(key: string, value: number): Attr { return Float64(key, 
 export function Bytes(key: string, value: number): Attr { return Int64(key, value); }
 
 // HTTP/status helpers
-export function HttpStatus(key: string, code: number): Attr { return Int(key, code); }
-export function StatusCode(key: string, code: number): Attr { return Int(key, code); }
+export function HttpStatus(code: number): Attr;
+export function HttpStatus(key: string, code: number): Attr;
+export function HttpStatus(keyOrCode: string | number, code?: number): Attr {
+  if (typeof keyOrCode === 'number') return Int('status_code', keyOrCode);
+  return Int(keyOrCode, code ?? 0);
+}
+export function StatusCode(code: number): Attr;
+export function StatusCode(key: string, code: number): Attr;
+export function StatusCode(keyOrCode: string | number, code?: number): Attr {
+  if (typeof keyOrCode === 'number') return Int('status_code', keyOrCode);
+  return Int(keyOrCode, code ?? 0);
+}
 export function ErrorCodeExt(key: string, code: string): Attr { return String(key, code); }
+
+// Generic typed attr constructors
+export function List(key: string, ...values: any[]): Attr { return Any(key, values); }
+export function MapAttr(key: string, value: Record<string, any>): Attr { return Any(key, value); }
+export function Enum(key: string, value: string, ...allowed: string[]): Attr { return String(key, value); }
+export function ID(key: string, value: string): Attr { return String(key, value); }
+export function Hash(key: string, value: string): Attr { return HashString(key, value); }
+export function Redacted(key: string): Attr { return String(key, '[REDACTED]'); }
+export function AccountID(id: string): Attr { return String('account.id', id); }
+export function DeploymentID(id: string): Attr { return String('deployment.id', id); }
+export function HttpRoute(route: string): Attr { return String('http.route', route); }
+export function HttpMethod(method: string): Attr { return String('http.method', method.toUpperCase()); }
+export function HttpPath(path: string): Attr { return String('http.path', path); }
+export function HttpUserAgent(ua: string): Attr { return String('http.user_agent', ua.slice(0, 512)); }
+export function HttpReferer(ref: string): Attr { return String('http.referer', ref.split('?')[0]); }
+export function HttpRequest(req: any): Attr {
+  return MapAttr('http.request', {
+    method: req?.method ?? '',
+    path: req?.path ?? req?.url?.pathname ?? req?.url ?? '',
+    route: req?.route?.path ?? req?.route ?? '',
+  });
+}
+export function HttpResponse(res: any): Attr {
+  return MapAttr('http.response', {
+    status_code: res?.statusCode ?? res?.status ?? 0,
+  });
+}
 
 // Bucket / tags / masked / url / hash helpers
 export function Bucket(key: string, bucket: string): Attr { return String(key, bucket); }
@@ -232,6 +291,7 @@ export const money = Money;
 export const percent = Percent;
 export const bytes = Bytes;
 export const httpStatus = HttpStatus;
+export const statusCode = StatusCode;
 export const statusCodeFn = StatusCode;
 export const errorCodeExt = ErrorCodeExt;
 export const bucket = Bucket;
@@ -240,7 +300,24 @@ export const masked = Masked;
 export const url = Url;
 export const emailHash = EmailHash;
 export const ipHash = IpHash;
+export const list = List;
+export const mapAttr = MapAttr;
+export const enum_ = Enum;
+export const id = ID;
+export const hash = Hash;
+export const redacted = Redacted;
+export const accountId = AccountID;
+export const deploymentId = DeploymentID;
+export const httpRoute = HttpRoute;
+export const httpMethod = HttpMethod;
+export const httpPath = HttpPath;
+export const httpUserAgent = HttpUserAgent;
+export const httpReferer = HttpReferer;
+export const httpRequest = HttpRequest;
+export const httpResponse = HttpResponse;
+export const map = MapAttr;
 export const regionEx = RegionEx;
+export const region = RegionEx;
 export const checkoutCartItemCount = CheckoutCartItemCount;
 export const checkoutCartTotal = CheckoutCartTotal;
 export const checkoutPaymentMethod = CheckoutPaymentMethod;
@@ -392,7 +469,7 @@ export class Event {
     this.incidentId = params.incidentId || '';
     this.parentId = params.parentId || '';
 
-    this.startedAt = Date.now();
+    this.startedAt = _now();
     this.timestamp = new Date(this.startedAt).toISOString();
 
     this.service = params.service || service;
@@ -517,7 +594,7 @@ export class Event {
     this.ensureMutable();
     this.checkpoints.push({
       name,
-      at_ms: Date.now() - this.startedAt,
+      at_ms: _now() - this.startedAt,
       attrs,
     });
   }
@@ -526,19 +603,31 @@ export class Event {
   startProcess(name: string, ...attrs: Attr[]): ProcessHandle {
     this.ensureMutable();
     this._processStep++;
-    return new ProcessHandle(this, name, this._processStep, Date.now());
+    return new ProcessHandle(this, name, this._processStep, _now());
+  }
+  /** Compatibility alias for startProcess. */
+  process(name: string, ...attrs: Attr[]): ProcessHandle {
+    return this.startProcess(name, ...attrs);
   }
 
   /** Start a named timer and return a handle to stop it. */
   startTimer(name: string, ...attrs: Attr[]): TimerHandle {
     this.ensureMutable();
-    return new TimerHandle(this, name, Date.now());
+    return new TimerHandle(this, name, _now());
+  }
+  /** Compatibility alias for startTimer. */
+  timer(name: string, ...attrs: Attr[]): TimerHandle {
+    return this.startTimer(name, ...attrs);
   }
 
   /** Start a named group phase and return a handle to finish it. */
   startGroup(name: string, ...attrs: Attr[]): GroupHandle {
     this.ensureMutable();
-    return new GroupHandle(this, name, Date.now());
+    return new GroupHandle(this, name, _now());
+  }
+  /** Compatibility alias for startGroup. */
+  group(name: string, ...attrs: Attr[]): GroupHandle {
+    return this.startGroup(name, ...attrs);
   }
 
   /** Finish the event with an outcome. */
@@ -548,7 +637,7 @@ export class Event {
       throw new EventAlreadyFinishedError();
     }
     this.outcome = outcome;
-    this.finishedAt = Date.now();
+    this.finishedAt = _now();
     this.durationMs = this.finishedAt - this.startedAt;
     this._state = EventStateFinished;
     for (const attr of attrs) {

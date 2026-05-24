@@ -35,6 +35,21 @@ def SensitiveString(key: str, value: str) -> Attr: return Attr(key, value, sensi
 def HashString(key: str, value: str) -> Attr: return Attr(key, value, hash_value=True)
 def MarkSensitive(attr: Attr) -> Attr: return Attr(attr.key, attr.value, sensitive=True, hash_value=attr.hash_value, drop=attr.drop)
 
+# --- Generic typed attr constructors ---
+def list_(key: str, *values: Any) -> Attr: return Any(key, list(values))
+def map_(key: str, value: dict) -> Attr: return Any(key, value)
+def enum_(key: str, value: str, *allowed: str) -> Attr: return String(key, value)
+def id_(key: str, value: str) -> Attr: return String(key, value)
+def hash_(key: str, value: str) -> Attr: return HashString(key, value)
+def redacted(key: str) -> Attr: return String(key, "[REDACTED]")
+def account_id(value: str) -> Attr: return String("account.id", value)
+def deployment_id(value: str) -> Attr: return String("deployment.id", value)
+def http_route(value: str) -> Attr: return String("http.route", value)
+def http_method(value: str) -> Attr: return String("http.method", value.upper())
+def http_path(value: str) -> Attr: return String("http.path", value)
+def http_user_agent(value: str) -> Attr: return String("http.user_agent", value[:512])
+def http_referer(value: str) -> Attr: return String("http.referer", value.split("?", 1)[0])
+
 # --- Identity & domain helpers ---
 def payment_id(value: str) -> Attr: return String("payment.id", value)
 def subscription_id(value: str) -> Attr: return String("payment.subscription_id", value)
@@ -95,6 +110,19 @@ def rag_citation_count(value: int) -> Attr: return Int("rag.citation_count", val
 def rag_retrieval_latency(value: int) -> Attr: return Int("rag.retrieval_latency", value)
 
 # --- PascalCase aliases ---
+List = list_
+Map = map_
+Enum = enum_
+ID = id_
+Hash = hash_
+Redacted = redacted
+AccountID = account_id
+DeploymentID = deployment_id
+HTTPRoute = http_route
+HTTPMethod = http_method
+HTTPPath = http_path
+HTTPUserAgent = http_user_agent
+HTTPReferer = http_referer
 PaymentID = payment_id
 SubscriptionID = subscription_id
 InvoiceID = invoice_id

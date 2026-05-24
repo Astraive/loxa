@@ -71,7 +71,7 @@ func TestPublicAPISurfaceCoreFlow(t *testing.T) {
 		t.Fatalf("expected span id")
 	}
 
-	loxa.Enrich(ctx,
+	_ = loxa.Enrich(ctx,
 		loxa.String("user.id", "u_123"),
 		loxa.Int("cart.items", 3),
 		loxa.Bool("payment.retry", false),
@@ -95,7 +95,7 @@ func TestPublicAPISurfaceCoreFlow(t *testing.T) {
 		loxa.Country("IN"),
 		loxa.Device("desktop"),
 		loxa.Platform("web"),
-		loxa.AppVersion("1.0.0"),
+		loxa.AppVersion("0.0.2"),
 		loxa.ErrorType("ValidationError"),
 		loxa.ErrorCode("INVALID_INPUT"),
 		loxa.ErrorMessage("validation failed"),
@@ -109,8 +109,8 @@ func TestPublicAPISurfaceCoreFlow(t *testing.T) {
 		loxa.MarkSensitive(loxa.String("auth.token", "secret")),
 		loxa.HashString("user.email", "person@example.com"),
 	)
-	loxa.Checkpoint(ctx, "payment_started")
-	loxa.Finish(ctx, "success", loxa.Int("status_code", 200))
+	_ = loxa.Checkpoint(ctx, "payment_started")
+	_ = loxa.Finish(ctx, "success", loxa.Int("status_code", 200))
 	if err := loxa.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
@@ -138,9 +138,9 @@ func TestLifecycleShortcutsAndManualEventAPI(t *testing.T) {
 	_ = loxa.StartCron(context.Background(), "daily_billing")
 
 	ev := loxa.NewEvent(loxa.Params{Event: "manual.event"})
-	ev.Enrich(loxa.String("k", "v"))
-	ev.Checkpoint("cp")
-	ev.Finish("success")
+	_ = ev.Enrich(loxa.String("k", "v"))
+	_ = ev.Checkpoint("cp")
+	_ = ev.Finish("success")
 	if err := loxa.EmitEvent(ev); err != nil {
 		t.Fatalf("emit event: %v", err)
 	}
@@ -169,9 +169,9 @@ func TestImmediateLoggerAndHelpers(t *testing.T) {
 		t.Fatalf("new logger: %v", err)
 	}
 	ctx := lg.StartEvent(context.Background(), loxa.Params{Event: "logger.event"})
-	lg.Enrich(ctx, loxa.String("user.id", "u_1"))
-	lg.Checkpoint(ctx, "db_started")
-	lg.Finish(ctx, "success")
+	_ = lg.Enrich(ctx, loxa.String("user.id", "u_1"))
+	_ = lg.Checkpoint(ctx, "db_started")
+	_ = lg.Finish(ctx, "success")
 	if err := lg.Emit(ctx); err != nil {
 		t.Fatalf("logger emit: %v", err)
 	}
@@ -182,8 +182,8 @@ func TestImmediateLoggerAndHelpers(t *testing.T) {
 
 	captured, err := testkit.Capture(func() {
 		cctx := loxa.StartEvent(context.Background(), loxa.Params{Event: "capture.event"})
-		loxa.Enrich(cctx, loxa.String("a", "b"))
-		loxa.Finish(cctx, "success")
+		_ = loxa.Enrich(cctx, loxa.String("a", "b"))
+		_ = loxa.Finish(cctx, "success")
 		_ = loxa.Emit(cctx)
 	})
 	if err != nil {
@@ -218,8 +218,8 @@ func TestHTTPClientInstrumentation(t *testing.T) {
 		})
 		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, downstream.URL, nil)
 		_, _ = client.Do(req)
-		loxa.Enrich(ctx, loxa.UserID("u_1"))
-		loxa.Finish(ctx, "success", loxa.Int("status_code", 200))
+		_ = loxa.Enrich(ctx, loxa.UserID("u_1"))
+		_ = loxa.Finish(ctx, "success", loxa.Int("status_code", 200))
 		_ = loxa.Emit(ctx)
 		w.WriteHeader(http.StatusOK)
 	})

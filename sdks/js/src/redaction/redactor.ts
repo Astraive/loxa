@@ -5,6 +5,14 @@ export type Redactor = (payload: Record<string, any>) => Record<string, any>;
 
 const REDACTED = '[REDACTED]';
 
+/**
+ * Convenience alias for redactKeys.
+ * Usage: redact('password', 'secret', 'token')
+ */
+export function redact(...keys: string[]): Redactor {
+  return redactKeys(...keys);
+}
+
 /** Safety-net keys for obviously sensitive fields. Collector owns full PII policy. */
 const DEFAULT_KEYS: Set<string> = new Set([
   'password', 'passwd', 'pwd', 'secret', 'token', 'access_token', 'refresh_token',

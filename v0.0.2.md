@@ -27,11 +27,12 @@ const event = loxa.startEvent({
   route: "/checkout",
 });
 
-event.append(
-  loxa.userId(user.id),
-  loxa.int("cart.item_count", req.body.items.length),
-  loxa.money("cart.total", req.body.total, "INR"),
-);
+event.set("user.id", user.id);
+event.set("cart.item_count", req.body.items.length);
+event.merge({
+  "cart.total": req.body.total,
+  "cart.currency": "INR",
+});
 
 event.checkpoint("cart_loaded");
 
@@ -40,15 +41,16 @@ const payment = event.process("payment.authorize");
 try {
   const order = await processOrder(req.body);
 
-  payment.finish(
-    loxa.string("payment.provider", order.paymentProvider),
-    loxa.string("payment.status", order.paymentStatus),
-  );
+  payment.finish();
+  event.set("payment.provider", order.paymentProvider);
+  event.set("payment.status", order.paymentStatus);
 
-  event.finish("success", loxa.string("order.id", order.id));
+  event.set("order.id", order.id);
+  event.finish("success");
 } catch (err) {
   payment.finishError(err);
-  event.finishError(err, loxa.string("error.stage", "payment"));
+  event.set("error.stage", "payment");
+  event.finishError(err);
 } finally {
   await event.emit();
 }
@@ -125,23 +127,21 @@ Application
   │    └─ distributed tracing
   │
   └─ Loxa SDK
-       └─ business-wide events
+       └─ collector-first business-wide events
              ↓
         Loxa Collector
+             ├─ ingest / validation / redaction / policy
              ├─ auth / API keys / RBAC
-             ├─ validation
-             ├─ redaction
-             ├─ schema policy
-             ├─ sampling
-             ├─ dedupe
-             ├─ cardinality policy
-             ├─ durable spool
-             ├─ DLQ
-             ├─ replay
-             ├─ query
-             ├─ tail
-             ├─ delete
-             └─ sink fanout
+             ├─ sampling / dedupe / queueing / DLQ / replay
+             ├─ query / tail / delete / sink fanout
+             └─ durable delivery control plane
+             ↓
+        Loxa Cortex
+             ├─ reconstruction
+             ├─ graph / topology
+             ├─ remediation feedback
+             ├─ GraphQL
+             └─ WebSocket intelligence APIs
 ```
 
 ---
@@ -175,7 +175,7 @@ The product should feel like:
 Stripe-level DX for business observability.
 OpenTelemetry-friendly, not OpenTelemetry-hostile.
 Collector-first like real infra.
-SDK-simple like a logger.
+SDK-simple around `loxa`.
 Wide-event-native like modern event analytics.
 ```
 
@@ -422,7 +422,7 @@ It has offset time but no duration.
 
 ```ts
 event.checkpoint("cart_loaded");
-event.checkpoint("risk_checked", loxa.string("risk.bucket", "low"));
+event.checkpoint("risk_checked", { "risk.bucket": "low" });
 ```
 
 Use checkpoint for:
@@ -565,14 +565,15 @@ app.post("/checkout", async (req, res) => {
     route: "/checkout",
   });
 
-  event.append(
-    loxa.userId(req.user.id),
-    loxa.tenantId(req.user.tenantId),
-    loxa.string("user.plan", req.user.plan),
-    loxa.int("cart.item_count", req.body.items.length),
-    loxa.money("cart.total", req.body.total, "INR"),
-    loxa.string("checkout.payment_method", req.body.paymentMethod),
-  );
+  event.set("user.id", req.user.id);
+  event.set("tenant.id", req.user.tenantId);
+  event.set("user.plan", req.user.plan);
+  event.set("cart.item_count", req.body.items.length);
+  event.merge({
+    "cart.total": req.body.total,
+    "cart.currency": "INR",
+    "checkout.payment_method": req.body.paymentMethod,
+  });
 
   const checkout = event.group("checkout_flow");
 
@@ -581,26 +582,30 @@ app.post("/checkout", async (req, res) => {
 
     const loadCart = event.process("load_cart");
     const cart = await loadCartFromDb(req.body.cartId);
-    loadCart.finish(loxa.int("cart.item_count", cart.items.length));
+    loadCart.finish();
+    event.set("cart.item_count", cart.items.length);
 
     const payment = event.process("payment.authorize");
     const auth = await authorizePayment(cart);
-    payment.finish(
-      loxa.string("payment.provider", auth.provider),
-      loxa.string("payment.status", auth.status),
-    );
+    payment.finish();
+    event.set("payment.provider", auth.provider);
+    event.set("payment.status", auth.status);
 
     const orderProcess = event.process("order.create");
     const order = await createOrder(cart, auth);
-    orderProcess.finish(loxa.string("order.id", order.id));
+    orderProcess.finish();
+    event.set("order.id", order.id);
 
-    checkout.finish(loxa.string("checkout.status", "completed"));
+    checkout.finish();
+    event.set("checkout.status", "completed");
 
-    event.finish("success", loxa.httpStatus(200));
+    event.set("status_code", 200);
+    event.finish("success");
     res.json(order);
   } catch (err) {
     checkout.finishError(err);
-    event.finishError(err, loxa.httpStatus(500));
+    event.set("status_code", 500);
+    event.finishError(err);
     res.status(500).json({ error: "Failed" });
   } finally {
     await event.emit();
@@ -616,30 +621,32 @@ const event = loxa.startEvent({
   kind: "job",
 });
 
-event.append(
-  loxa.string("payment.id", payment.id),
-  loxa.string("order.id", order.id),
-  loxa.int("payment.retry_attempt", attempt),
-);
+event.set("payment.id", payment.id);
+event.set("order.id", order.id);
+event.set("payment.retry_attempt", attempt);
 
 const retryGroup = event.group("retry_flow");
 
 try {
   const wait = event.timer("retry.backoff_wait");
   await sleep(backoffMs);
-  wait.stop(loxa.duration("backoff.ms", backoffMs));
+  wait.stop();
+  event.set("backoff.ms", backoffMs);
 
   const authorize = event.process("payment.authorize_retry");
   const result = await gateway.authorize(payment);
-  authorize.finish(loxa.string("payment.status", result.status));
+  authorize.finish();
+  event.set("payment.status", result.status);
 
-  retryGroup.finish(loxa.string("retry.status", "authorized"));
+  retryGroup.finish();
+  event.set("retry.status", "authorized");
   event.finish("success");
 } catch (err) {
   retryGroup.finishError(err);
 
   if (isRetriable(err)) {
-    event.finish("retried", loxa.string("error.code", safeErrorCode(err)));
+    event.set("error.code", safeErrorCode(err));
+    event.finish("retried");
   } else {
     event.finishError(err);
   }
@@ -659,19 +666,21 @@ const event = loxa.startEvent({
 });
 
 try {
-  event.append(
-    loxa.string("auth.method", "password"),
-    loxa.string("auth.identifier_hash", hashEmail(req.body.email)),
-  );
+  event.set("auth.method", "password");
+  event.set("auth.identifier_hash", hashEmail(req.body.email));
 
   const verify = event.process("auth.verify_credentials");
   const user = await verifyCredentials(req.body.email, req.body.password);
-  verify.finish(loxa.bool("auth.credentials_valid", true));
+  verify.finish();
+  event.set("auth.credentials_valid", true);
 
-  event.append(loxa.userId(user.id));
-  event.finish("success", loxa.httpStatus(200));
+  event.set("user.id", user.id);
+  event.set("status_code", 200);
+  event.finish("success");
 } catch (err) {
-  event.finishError(err, loxa.httpStatus(401), loxa.string("auth.failure_reason", "invalid_credentials"));
+  event.set("status_code", 401);
+  event.set("auth.failure_reason", "invalid_credentials");
+  event.finishError(err);
 } finally {
   await event.emit();
 }
@@ -681,14 +690,20 @@ try {
 
 ```ts
 await loxa.runEvent({ event: "job.invoice_generate", kind: "job" }, async event => {
-  event.append(
-    loxa.string("job.id", job.id),
-    loxa.string("tenant.id", job.tenantId),
-  );
+  event.set("job.id", job.id);
+  event.set("tenant.id", job.tenantId);
 
-  await event.withProcess("load_customer", () => loadCustomer(job.customerId));
-  await event.withProcess("generate_invoice_pdf", () => generateInvoicePdf(job));
-  await event.withProcess("send_invoice_email", () => sendInvoiceEmail(job));
+  const loadCustomerStep = event.process("load_customer");
+  await loadCustomer(job.customerId);
+  loadCustomerStep.finish();
+
+  const generateInvoiceStep = event.process("generate_invoice_pdf");
+  await generateInvoicePdf(job);
+  generateInvoiceStep.finish();
+
+  const sendInvoiceStep = event.process("send_invoice_email");
+  await sendInvoiceEmail(job);
+  sendInvoiceStep.finish();
 
   event.finish("success");
 });
@@ -698,34 +713,34 @@ await loxa.runEvent({ event: "job.invoice_generate", kind: "job" }, async event 
 
 ```ts
 await loxa.runEvent({ event: "agent.run", kind: "agent" }, async event => {
-  event.append(
-    loxa.string("agent.name", "checkout-support-agent"),
-    loxa.string("agent.provider", "openai"),
-    loxa.string("agent.model", "gpt-5.5"),
-    loxa.string("agent.run_type", "customer_support"),
-    loxa.userId(user.id),
-  );
+  event.merge({
+    "agent.name": "checkout-support-agent",
+    "agent.provider": "openai",
+    "agent.model": "gpt-5.5",
+    "agent.run_type": "customer_support",
+    "user.id": user.id,
+  });
 
   event.checkpoint("prompt_built");
 
   const reasoning = event.group("agent_reasoning_phase");
   const result = await runAgent(input, {
     onToolCallStart(tool) {
-      event.process(`agent.tool.${tool.name}`).append(
-        loxa.string("agent.tool.name", tool.name),
-      );
+      const toolProcess = event.process(`agent.tool.${tool.name}`);
+      toolProcess.finish();
+      event.set("agent.tool.name", tool.name);
     },
   });
-  reasoning.finish(
-    loxa.int("agent.steps", result.steps.length),
-    loxa.int("agent.tool_calls", result.toolCalls.length),
-  );
+  reasoning.finish();
+  event.set("agent.steps", result.steps.length);
+  event.set("agent.tool_calls", result.toolCalls.length);
 
-  event.append(
-    loxa.int("agent.tokens.input", result.usage.inputTokens),
-    loxa.int("agent.tokens.output", result.usage.outputTokens),
-    loxa.money("agent.cost", result.costCents, "USD"),
-  );
+  event.set("agent.tokens.input", result.usage.inputTokens);
+  event.set("agent.tokens.output", result.usage.outputTokens);
+  event.merge({
+    "agent.cost": result.costCents,
+    "agent.cost_currency": "USD",
+  });
 
   event.finish("success");
 });
@@ -735,10 +750,8 @@ await loxa.runEvent({ event: "agent.run", kind: "agent" }, async event => {
 
 ```ts
 await loxa.runEvent({ event: "rag.query", kind: "ai" }, async event => {
-  event.append(
-    loxa.string("rag.index", "docs-v3"),
-    loxa.string("rag.embedding_model", "text-embedding-3-large"),
-  );
+  event.set("rag.index", "docs-v3");
+  event.set("rag.embedding_model", "text-embedding-3-large");
 
   const retrieval = event.group("rag_retrieval_phase");
 
@@ -748,19 +761,17 @@ await loxa.runEvent({ event: "rag.query", kind: "ai" }, async event => {
 
   const search = event.process("vector.search");
   const chunks = await vectorDb.search(queryEmbedding);
-  search.finish(
-    loxa.int("rag.chunks.retrieved", chunks.length),
-    loxa.float("rag.top_score", chunks[0]?.score ?? 0),
-  );
+  search.finish();
+  event.set("rag.chunks.retrieved", chunks.length);
+  event.set("rag.top_score", chunks[0]?.score ?? 0);
 
   retrieval.finish();
 
   const generate = event.process("llm.generate_answer");
   const answer = await generateAnswer(input, chunks);
-  generate.finish(
-    loxa.int("agent.tokens.input", answer.usage.inputTokens),
-    loxa.int("agent.tokens.output", answer.usage.outputTokens),
-  );
+  generate.finish();
+  event.set("agent.tokens.input", answer.usage.inputTokens);
+  event.set("agent.tokens.output", answer.usage.outputTokens);
 
   event.finish("success");
 });
@@ -804,22 +815,22 @@ Avoid raw blobs by default:
 
 ```ts
 // Bad
-loxa.string("request.body", JSON.stringify(req.body));
+event.set("request.body", JSON.stringify(req.body));
 
 // Good
-loxa.int("cart.item_count", req.body.items.length);
-loxa.money("cart.total", req.body.total, "INR");
+event.set("cart.item_count", req.body.items.length);
+event.merge({ "cart.total": req.body.total, "cart.currency": "INR" });
 ```
 
 Feature flags should be normalized:
 
 ```ts
 // Bad
-loxa.string("feature_flags", JSON.stringify(user.flags));
+event.set("feature_flags", JSON.stringify(user.flags));
 
 // Good
-loxa.featureFlag("checkout_v2", "on");
-loxa.featureFlag("risk_engine_v2", "off");
+event.set("feature.checkout_v2", "on");
+event.set("feature.risk_engine_v2", "off");
 ```
 
 ---
@@ -868,9 +879,9 @@ These can be stored for lookup and correlation, but should not be blindly indexe
 ## Prefer buckets
 
 ```ts
-loxa.string("user.ltv_bucket", bucketLtv(user.ltv));
-loxa.string("risk.score_bucket", bucketRisk(score));
-loxa.string("cart.total_bucket", bucketMoney(cart.total));
+event.set("user.ltv_bucket", bucketLtv(user.ltv));
+event.set("risk.score_bucket", bucketRisk(score));
+event.set("cart.total_bucket", bucketMoney(cart.total));
 ```
 
 ---
@@ -958,8 +969,10 @@ vendor lock-in
 
 ```ts
 loxa.configure(
-  loxa.production("checkout")
-    .withOtelBridge({
+  {
+    service: "checkout",
+    environment: "production",
+    otelBridge: {
       mode: "link",
       spanAttributeAllowlist: [
         "loxa.event_id",
@@ -969,7 +982,8 @@ loxa.configure(
         "checkout.payment_method",
         "payment.provider",
       ],
-    })
+    },
+  }
 );
 ```
 
@@ -980,7 +994,7 @@ loxa.configure(
 Default endpoint:
 
 ```txt
-POST /v1/events
+POST /core/events
 ```
 
 Batch request:
@@ -1029,7 +1043,7 @@ quarantine  store invalid events separately
 
 # 14. Collector responsibilities
 
-The collector should own production complexity.
+The collector should own ingestion and delivery complexity.
 
 ## Ingest
 
@@ -1099,6 +1113,19 @@ file
 webhook
 ```
 
+## Cortex responsibilities
+
+The cortex layer should own incident intelligence and higher-order analysis.
+
+```txt
+incident reconstruction
+service and incident graph views
+topology resolution
+remediation feedback
+GraphQL access
+WebSocket intelligence streams
+```
+
 ---
 
 # 15. API keys and RBAC
@@ -1160,38 +1187,43 @@ Loxa should feel like the same product in every language.
 Default/global client:
   loxa.<method>()
 
-Cross-language factory:
+Optional custom client:
   createLoxa / create_loxa / CreateLoxa
 
-Custom alias:
-  logger = createLoxa(...)
-  logger.<method>()
+Optional same-config alias:
+  loxa.alias("name")
+```
 
-Same-config alias:
-  logger = loxa.alias("logger")
+Documentation rule:
+
+```txt
+Official examples should import and use only loxa.
+Custom client names are user-defined and optional.
+No exported SDK singleton other than `loxa` should be documented.
 ```
 
 ## Language mapping
 
-| Concept               | JS/TS          | Python          | Go               | Rust            |
-| --------------------- | -------------- | --------------- | ---------------- | --------------- |
-| Default client        | `loxa.info()`  | `loxa.info()`   | `loxa.Info(ctx)` | `loxa::info()`  |
-| Factory               | `createLoxa()` | `create_loxa()` | `CreateLoxa()`   | `create_loxa()` |
-| Idiomatic constructor | `new Loxa()`   | `Loxa()`        | `New()`          | `Loxa::new()`   |
-| Alias                 | `loxa.alias()` | `loxa.alias()`  | `loxa.Alias()`   | `loxa::alias()` |
+| Concept                | JS/TS                    | Python        | Go               | Rust              |
+| ---------------------- | ------------------------ | ------------- | ---------------- | ----------------- |
+| Official import/facade | `import { loxa } ...`    | `import loxa` | `package loxa`   | `loxa::info()`    |
+| Default usage          | `loxa.info()`            | `loxa.info()` | `loxa.Info(ctx)` | `loxa::info()`    |
+| Optional factory       | `createLoxa()`           | `create_loxa()` | `CreateLoxa()` | `create_loxa()`   |
+| Optional constructor   | `new Loxa()`             | `new()`       | `New()`          | `New()` / `TryNew()` |
+| Optional alias         | `loxa.alias()`           | `loxa.alias()` | `loxa.Alias()` | `loxa::alias()`   |
 
 ## Go rule
 
 Go should support both:
 
 ```go
-logger := loxa.CreateLoxa(loxa.Config{Service: "api"})
+client, _ := loxa.CreateLoxa(loxa.Config{Service: "api"})
 ```
 
 and:
 
 ```go
-logger := loxa.New(loxa.Config{Service: "api"})
+client, _ := loxa.New(loxa.Config{Service: "api"})
 ```
 
 But `CreateLoxa` should be documented as the cross-language parity constructor, and `New` should be the idiomatic Go alias.
@@ -1199,6 +1231,24 @@ But `CreateLoxa` should be documented as the cross-language parity constructor, 
 ```txt
 CreateLoxa == New
 ```
+
+## Public implementation verification
+
+The public implementation should be described from exported entrypoints, not from internal symbols or older aspirational checklists.
+
+```txt
+Collector is the ingest, query, tail, delete, DLQ, replay, schema, and sink control plane.
+Cortex is the reconstruction, graph, feedback, GraphQL, and WebSocket intelligence plane.
+SDK docs should lead with `loxa`, then mention factories as secondary.
+```
+
+Important verification notes:
+
+1. JS/TS exports helper constructors like `string`, `int`, `money`, and `userId` from the package root, but they are not methods on the default `loxa` instance.
+2. Python should be documented as `import loxa`.
+3. Go root exports `CreateLoxa` and `New`, but the default product story should still begin with `loxa.Info(...)`, `loxa.StartEvent(...)`, and other package-level functions.
+4. Rust intentionally does not re-export the `Logger` type. Public guidance should use `loxa::default()`, `loxa::create_loxa(...)`, `loxa::alias(...)`, and `loxa::start_event(...)`.
+5. Framework integrations are often module or subpackage exports, not root helper names.
 
 ---
 
@@ -1210,7 +1260,7 @@ This section defines the full API family. Not every method must ship on day one,
 
 1. `configure(config)` — configure the global client.
 2. `createLoxa(config)` / `create_loxa(config)` / `CreateLoxa(config)` — create independent client.
-3. `new Loxa(config)` / `Loxa(config)` / `New(config)` / `Loxa::new(config)` — idiomatic constructor.
+3. `new Loxa(config)` / `new(config)` / `New(config)` / `New(config)` — optional idiomatic constructor.
 4. `production(service)` — production preset.
 5. `development(service)` — development preset.
 6. `test(service)` — test preset.
@@ -1543,7 +1593,7 @@ jobs helper pack
 | ------------ | ------------- | -------------- | ------------- | -------------- |
 | Configure    | `configure`   | `configure`    | `Configure`   | `configure`    |
 | Factory      | `createLoxa`  | `create_loxa`  | `CreateLoxa`  | `create_loxa`  |
-| Constructor  | `new Loxa`    | `Loxa`         | `New`         | `Loxa::new`    |
+| Constructor  | `new Loxa`    | `new`          | `New`         | `New` / `TryNew` |
 | Alias        | `alias`       | `alias`        | `Alias`       | `alias`        |
 | Info         | `info`        | `info`         | `Info`        | `info`         |
 | Warn         | `warn`        | `warn`         | `Warn`        | `warn`         |
@@ -1575,24 +1625,35 @@ Keep collector payloads identical.
 # 20. Recommended JS/TS API shape
 
 ```ts
-import { loxa, createLoxa, Loxa } from "@loxa/js";
+import { loxa } from "@loxa/js";
 
-const logger = createLoxa({
-  service: "checkout-api",
-  environment: "production",
-});
+await loxa.info("server started");
 
-logger.info("server started");
-
-const event = logger.startEvent({
+const event = loxa.startEvent({
   event: "checkout.request",
   kind: "http",
+  method: "POST",
+  path: "/checkout",
 });
 
-event.append(loxa.userId("u_123"));
+event.set("user.id", "u_123");
+event.set("cart.item_count", 3);
+event.merge({
+  "checkout.payment_method": "card",
+  "cart.total": 129999,
+});
+
 event.checkpoint("cart_loaded");
 event.finish("success");
 await event.emit();
+```
+
+Important:
+
+```txt
+JS/TS should document `loxa` as the only official import.
+Named factories like `createLoxa` are secondary.
+Attr helpers such as `string`, `int`, `money`, and `userId` are package exports, not methods on the default `loxa` instance.
 ```
 
 Recommended exports:
@@ -1620,24 +1681,28 @@ export type LoxaClient = {
 # 21. Recommended Python API shape
 
 ```py
-from loxa import loxa, create_loxa, Loxa
+import loxa
 
-logger = create_loxa(
-    service="checkout-api",
-    environment="production",
+loxa.info("server started")
+
+ctx = loxa.start_event(
+    loxa.Params(
+        event="checkout.request",
+        kind="http",
+        method="POST",
+        path="/checkout",
+    )
 )
 
-logger.info("server started")
-
-event = logger.start_event(
-    event="checkout.request",
-    kind="http",
+loxa.append(
+    ctx,
+    loxa.UserID("u_123"),
+    loxa.Int("cart.item_count", 3),
+    loxa.Money("cart.total", 129999, "INR"),
 )
-
-event.append(loxa.user_id("u_123"))
-event.checkpoint("cart_loaded")
-event.finish("success")
-event.emit()
+loxa.checkpoint(ctx, "cart_loaded")
+loxa.finish(ctx, "success")
+loxa.emit(ctx)
 ```
 
 Python should use snake_case for method names, but should not force user field keys into snake_case.
@@ -1658,22 +1723,19 @@ import (
 func main() {
     ctx := context.Background()
 
-    logger := loxa.CreateLoxa(loxa.Config{
-        Service: "checkout-api",
-        Environment: "production",
-    })
+    loxa.Info("server started")
 
-    logger.Info(ctx, "server started")
-
-    event := logger.StartEvent(ctx, loxa.StartEventParams{
+    ctx = loxa.StartEvent(ctx, loxa.Params{
         Event: "checkout.request",
         Kind:  "http",
+        Method: "POST",
+        Path: "/checkout",
     })
 
-    event.Append(loxa.UserID("u_123"))
-    event.Checkpoint("cart_loaded")
-    event.Finish("success")
-    event.Emit(ctx)
+    _ = loxa.Set(ctx, loxa.UserID("u_123"), loxa.CartID("cart_456"))
+    _ = loxa.Checkpoint(ctx, "cart_loaded")
+    _ = loxa.Finish(ctx, "success")
+    _ = loxa.Emit(ctx)
 }
 ```
 
@@ -1691,35 +1753,28 @@ They must behave identically.
 # 23. Recommended Rust API shape
 
 ```rust
-use loxa::{create_loxa, Config};
+use loxa::{self, Params};
 
-let logger = create_loxa(Config {
-    service: Some("checkout-api".into()),
-    environment: Some("production".into()),
-    ..Default::default()
-});
+loxa::info("server started");
 
-logger.info("server started");
+let mut event = loxa::start_event(
+    None,
+    Params::new("checkout.request").with_kind("http"),
+);
 
-let mut event = logger.start_event(StartEventParams {
-    event: "checkout.request".into(),
-    kind: "http".into(),
-    ..Default::default()
-});
-
-event.append(loxa::user_id("u_123"));
-event.checkpoint("cart_loaded");
-event.finish("success");
-event.emit().await?;
+loxa::set(&mut event, "user.id", "u_123");
+loxa::set(&mut event, "cart.item_count", 3);
+loxa::checkpoint(&mut event, "cart_loaded");
+loxa::finish(&mut event);
+loxa::emit(&mut event)?;
 ```
 
 Rust should expose:
 
 ```txt
-create_loxa(config)
-Loxa::new(config)
 loxa::info(...)
-logger.info(...)
+create_loxa(config)
+alias(name)
 ```
 
 ---
@@ -1995,7 +2050,7 @@ testkit
 ## Phase 2 — Collector core
 
 ```txt
-/v1/events ingest
+/core/events ingest
 batch accept/reject response
 API key auth
 validation modes
@@ -2056,7 +2111,8 @@ Loxa should make this easy:
 
 ```ts
 const event = loxa.startEvent({ event: "checkout.request", kind: "http" });
-event.append(loxa.userId(user.id), loxa.money("cart.total", total, "INR"));
+event.set("user.id", user.id);
+event.merge({ "cart.total": total, "cart.currency": "INR" });
 event.checkpoint("payment_started");
 event.finish("success");
 await event.emit();

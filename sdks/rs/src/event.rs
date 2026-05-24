@@ -4,7 +4,6 @@ use serde::Serialize;
 use serde_json::{Map, Value};
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
-use std::time::{SystemTime, UNIX_EPOCH};
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
@@ -274,87 +273,87 @@ impl ContextSource for ContextCarrier {
     }
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, serde::Deserialize)]
 pub struct EventContext {
     pub timestamp: String,
     pub schema_version: String,
     pub event_version: String,
     pub event_id: String,
     pub request_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub trace_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub span_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub incident_id: Option<String>,
     pub service: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub version: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub environment: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub region: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub deployment_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub host: Option<String>,
     pub event: String,
     pub kind: String,
     pub level: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub message: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub outcome: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub duration_ms: Option<u128>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub method: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub route: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub status_code: Option<u16>,
-    #[serde(skip_serializing_if = "Map::is_empty")]
+    #[serde(skip_serializing_if = "Map::is_empty", default)]
     pub http: Map<String, Value>,
-    #[serde(skip_serializing_if = "Map::is_empty")]
+    #[serde(skip_serializing_if = "Map::is_empty", default)]
     pub user: Map<String, Value>,
-    #[serde(skip_serializing_if = "Map::is_empty")]
+    #[serde(skip_serializing_if = "Map::is_empty", default)]
     pub tenant: Map<String, Value>,
-    #[serde(skip_serializing_if = "Map::is_empty")]
+    #[serde(skip_serializing_if = "Map::is_empty", default)]
     pub resource: Map<String, Value>,
-    #[serde(skip_serializing_if = "Map::is_empty")]
+    #[serde(skip_serializing_if = "Map::is_empty", default)]
     pub attrs: Map<String, Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub error: Option<Map<String, Value>>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub checkpoints: Vec<Map<String, Value>>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub processes: Vec<Map<String, Value>>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub groups: Vec<Map<String, Value>>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub timers: Vec<Map<String, Value>>,
-    #[serde(skip)]
+    #[serde(skip, default)]
     process_step: u32,
-    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    #[serde(skip_serializing_if = "std::ops::Not::not", default)]
     pub partial: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub partial_reason: Option<String>,
     pub event_state: String,
-    #[serde(skip_serializing_if = "is_zero_u32")]
+    #[serde(skip_serializing_if = "is_zero_u32", default)]
     pub delivery_attempts: u32,
-    #[serde(skip)]
+    #[serde(skip, default)]
     started_unix_ms: u128,
-    #[serde(skip)]
+    #[serde(skip, default)]
     emitted: bool,
-    #[serde(skip)]
+    #[serde(skip, default = "default_lifecycle")]
     lifecycle: Arc<Mutex<LifecycleState>>,
-    #[serde(skip)]
+    #[serde(skip, default)]
     pending_error: Option<String>,
-    #[serde(skip)]
+    #[serde(skip, default)]
     pub(crate) sensitive_keys: Vec<String>,
-    #[serde(skip)]
+    #[serde(skip, default)]
     pub(crate) hash_keys: Vec<String>,
 }
 
@@ -774,16 +773,22 @@ fn set_nested(target: &mut Map<String, Value>, key: &str, value: Value) {
     }
 }
 
+fn default_lifecycle() -> Arc<Mutex<LifecycleState>> {
+    Arc::new(Mutex::new(LifecycleState {
+        state: String::new(),
+        emitted: false,
+        emit_attempted: false,
+        emitted_payload: None,
+    }))
+}
+
 fn now_unix_ms() -> u128 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis()
+    crate::internal::clock::unix_millis()
 }
 
 /// Apply sensitive/hash flags from an EventContext onto a serialized Value.
 /// This is used during emit when we can't mutate the original EventContext.
-pub(crate) fn apply_sensitive_to_value(mut value: Value, ctx: &EventContext) -> Value {
+pub fn apply_sensitive_to_value(mut value: Value, ctx: &EventContext) -> Value {
     if ctx.sensitive_keys.is_empty() && ctx.hash_keys.is_empty() {
         return value;
     }

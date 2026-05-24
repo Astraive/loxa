@@ -1,8 +1,8 @@
-use loxa::{Config, EventContext, Logger, LoxaError, Params, SinkConfig};
+use loxa::{Config, EventContext, LoxaError, New, Params, SinkConfig};
 
 #[test]
 fn duplicate_emit_is_idempotent_and_finish_after_emit_are_typed() {
-    let logger = Logger::new(Config::test("checkout").with_sink(SinkConfig::Noop));
+    let logger = New(Config::test("checkout").with_sink(SinkConfig::Noop));
     let mut ctx = logger.start_event(Params::new("state.machine"));
     logger.finish(&mut ctx, "success").unwrap();
     let first = logger.emit(&ctx).unwrap();
@@ -16,7 +16,7 @@ fn duplicate_emit_is_idempotent_and_finish_after_emit_are_typed() {
 
 #[test]
 fn validation_failure_does_not_mark_emitted() {
-    let logger = Logger::new(Config::test("checkout"));
+    let logger = New(Config::test("checkout"));
     let ctx = EventContext::new("", Params::new("bad"));
     assert!(matches!(logger.emit(&ctx), Err(LoxaError::Validation(_))));
     assert!(!ctx.is_emitted());
@@ -25,7 +25,7 @@ fn validation_failure_does_not_mark_emitted() {
 
 #[test]
 fn created_transitions_to_active_on_enrich() {
-    let logger = Logger::new(Config::test("checkout").with_sink(SinkConfig::Noop));
+    let logger = New(Config::test("checkout").with_sink(SinkConfig::Noop));
     let mut ctx = logger.start_event(Params::new("state.transition"));
     assert_eq!(ctx.lifecycle_state(), "created");
     logger.enrich(&mut ctx, "user.id", "u1");

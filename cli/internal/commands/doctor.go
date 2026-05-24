@@ -63,7 +63,7 @@ func DoctorCommand(ctx context.Context, cfg config.Config, args []string) error 
 			if err != nil {
 				return err
 			}
-			raw, err := speccontract.MarshalIngestEnvelope("loxa-cli", "1.0.0", "loxa-doctor", []json.RawMessage{rawEvent})
+			raw, err := speccontract.MarshalIngestEnvelope("loxa-cli", "0.0.2", "loxa-doctor", []json.RawMessage{rawEvent})
 			if err != nil {
 				return err
 			}

@@ -1,6 +1,8 @@
 package client
 
 import (
+	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -49,5 +51,33 @@ func TestPostIngestRetriesRetryableCollectorResponse(t *testing.T) {
 	}
 	if hits.Load() < 2 {
 		t.Fatalf("expected retry to happen, hits=%d", hits.Load())
+	}
+}
+
+func TestTestSinkPostsToCollectorEndpoint(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected method %s", r.Method)
+		}
+		if r.URL.Path != "/sinks/duckdb/test" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		if r.Header.Get("Content-Type") != "application/json" {
+			t.Fatalf("expected application/json content type, got %q", r.Header.Get("Content-Type"))
+		}
+		body, _ := io.ReadAll(r.Body)
+		if strings.TrimSpace(string(body)) != "{}" {
+			t.Fatalf("expected default JSON body, got %q", string(body))
+		}
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	}))
+	defer srv.Close()
+
+	resp, err := TestSink(context.Background(), srv.URL, "duckdb")
+	if err != nil {
+		t.Fatalf("test sink: %v", err)
+	}
+	if !strings.Contains(string(resp), `"status":"ok"`) {
+		t.Fatalf("unexpected response: %s", string(resp))
 	}
 }

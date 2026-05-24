@@ -369,7 +369,7 @@ SDKs emit canonical events to the collector using the ingest endpoint.
 ### Endpoint
 
 ```text
-POST /v1/events
+POST /core/events
 ```
 
 ### Request Shape

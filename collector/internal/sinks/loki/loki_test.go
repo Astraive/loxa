@@ -40,7 +40,7 @@ func TestFlushPushesLokiPayload(t *testing.T) {
 	defer srv.Close()
 
 	rawSink, err := New(Config{
-		URL:           srv.URL + "/loki/api/v1/push",
+		URL:           srv.URL + "/loki/api/core/push",
 		TenantID:      "tenant-a",
 		Labels:        map[string]string{"service": "checkout"},
 		BatchSize:     10,

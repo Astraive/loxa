@@ -32,7 +32,7 @@ class Engine:
     def ingest(self, events: Iterable[dict]) -> None:
         """Ingest a stream of events into the engine.
 
-        Sends events in batches to ``POST /v1/events/batch``.
+        Sends events in batches to ``POST /events/batch``.
         """
         batch = []
         for event in events:
@@ -50,18 +50,18 @@ class Engine:
     ) -> Context:
         """Reconstruct incident context from a signal.
 
-        Calls ``POST /v1/reconstruct`` and maps the cortex response
+        Calls ``POST /reconstruct`` and maps the cortex response
         to the benchmark-required ``Context`` shape.
         """
         body = {
             "incident_id": signal.get("incident_id", signal.get("signal_id", "")),
             "mode": mode,
         }
-        resp = self._post("/v1/reconstruct", body)
+        resp = self._post("/reconstruct", body)
         return self._map_response(resp)
 
     def _send_batch(self, events: list[dict]) -> None:
-        self._post("/v1/events/batch", {"events": events})
+        self._post("/events/batch", {"events": events})
 
     def _post(self, path: str, body: dict) -> dict:
         url = f"{self.cortex_url}{path}"

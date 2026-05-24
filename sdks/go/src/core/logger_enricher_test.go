@@ -25,7 +25,7 @@ func TestEmitAppliesContextEnricher(t *testing.T) {
 
 	ctx := context.WithValue(context.Background(), enricherCtxKey("tenant"), "tenant-1")
 	ctx = l.StartEvent(ctx, Params{Event: "enricher.test"})
-	l.Finish(ctx, "success")
+	_ = l.Finish(ctx, "success")
 	if err := l.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}

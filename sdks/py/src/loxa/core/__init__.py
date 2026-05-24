@@ -6,6 +6,11 @@
 from .attr import (
     String, Int, Int64, Uint64, Float64, Bool, Time, Duration,
     Any as AttrAny, Null, Group, SensitiveString, HashString, MarkSensitive,
+    # generic typed attr constructors
+    List, Map, Enum, ID, Hash, Redacted, AccountID, DeploymentID,
+    HTTPRoute, HTTPMethod, HTTPPath, HTTPUserAgent, HTTPReferer,
+    list_, map_, enum_, id_, hash_, redacted, account_id, deployment_id,
+    http_route, http_method, http_path, http_user_agent, http_referer,
     # domain helpers (snake_case)
     payment_id, subscription_id, invoice_id, job_id, message_id,
     correlation_id, commit_sha, release,
@@ -55,14 +60,14 @@ from .config_options import (
     WithCollectorEndpoint, WithDuplicatePolicy, WithStatsHandler,
     WithDeploymentID, WithIncludeHost, WithPanicRecovery, WithExitOnFatal,
     WithRelease, WithNamespace, WithApiKey, WithOtelBridge, WithRetry,
-    WithTimeout, WithQueueSize, WithLogger,
+    WithTimeout, WithQueueSize, WithFlushInterval, WithBatchSize, WithLogger,
     Disabled, FromEnv,
     with_service, with_version, with_environment, with_sink, with_sampler,
     with_redactor, with_metrics, with_schema, with_event_schema, with_async,
     with_collector_endpoint, with_duplicate_policy, with_stats_handler,
     with_deployment_id, with_include_host, with_panic_recovery,
     with_exit_on_fatal, with_release, with_namespace, with_api_key,
-    with_otel_bridge, with_retry, with_timeout, with_queue_size, with_logger,
+    with_otel_bridge, with_retry, with_timeout, with_queue_size, with_flush_interval, with_batch_size, with_logger,
     disabled, from_env,
 )
 
@@ -78,6 +83,7 @@ from .event import (
     EVENT_CREATED, EVENT_ACTIVE, EVENT_FINISHED,
     EVENT_EMITTING, EVENT_EMITTED, EVENT_FAILED_VALIDATION,
     EVENT_DELIVERY_FAILED,
+    sanitize_event,
 )
 
 # errors — typed errors
@@ -94,14 +100,14 @@ from .level import (
 
 # redactor — PII redaction
 from .redactor import (
-    default_redactor, redact_keys, hash_keys, mask_keys, drop_keys,
+    default_redactor, redact, redact_keys, hash_keys, mask_keys, drop_keys,
     redact_patterns, compose_redactors, REDACTED_VALUE,
     sensitive_attrs_redactor,
 )
 
 # sampler — sampling strategies
 from .sampler import (
-    sample_all, sample_none, sample_random, sample_errors,
+    sample_all, sample_none, sample_random, sample_rate, sample_errors,
     sample_slow_requests, sample_status_codes, sample_routes,
     sample_users, sample_tenants, sample_feature_flag, sample_by_header,
     any_sampler, all_sampler, not_sampler, sample_rate_limited,

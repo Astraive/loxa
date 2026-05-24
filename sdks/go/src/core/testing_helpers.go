@@ -21,6 +21,12 @@ func TestLogger() (*Logger, *MemorySinkStore, error) {
 	return l, store, nil
 }
 
+// TestKit creates a logger configured for tests plus its backing memory store.
+// Spec-aligned alias for TestLogger.
+func TestKit() (*Logger, *MemorySinkStore, error) {
+	return TestLogger()
+}
+
 // Capture runs fn with a temporary memory sink and returns captured events.
 func Capture(fn func()) ([]*Event, error) {
 	captureMu.Lock()
@@ -221,4 +227,12 @@ func (c *FakeClock) Advance(d time.Duration) {
 func SetIDGenerator(cfg Config, gen IDGenerator) Config {
 	cfg.IDGen = gen
 	return cfg
+}
+
+// ResetForTest clears all global mutable state: global logger, clock, and ID generator.
+func ResetForTest() {
+	defaultLoggerMu.Lock()
+	defaultLog = nil
+	defaultLoggerMu.Unlock()
+	globalIDGen = &uuidV7Gen{}
 }
