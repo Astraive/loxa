@@ -28,9 +28,7 @@ class LoxaHandler(logging.Handler):
     def _attrs(self, record: logging.LogRecord) -> dict[str, Any]:
         reserved = set(logging.makeLogRecord({}).__dict__)
         attrs = {
-            f"log.{key}": value
-            for key, value in record.__dict__.items()
-            if key not in reserved and _json_safe(value)
+            f"log.{key}": value for key, value in record.__dict__.items() if key not in reserved and _json_safe(value)
         }
         attrs["log.logger"] = record.name
         attrs["log.module"] = record.module

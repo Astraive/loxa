@@ -6,8 +6,6 @@ from collections.abc import Callable
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any
-
-from collections.abc import Callable
 from ..core.config import Config
 from ..core.logger import Logger
 from ..sinks import MemorySink
@@ -16,9 +14,6 @@ from ..sinks import MemorySink
 def TestLogger(service: str = "test"):
     sink = MemorySink()
     return Logger(Config.test(service).with_sink(sink)), sink
-
-
-
 
 
 def Capture(fn: Callable[[Logger], Any]):
@@ -137,6 +132,7 @@ def fake_clock(value: datetime | None = None) -> datetime:
 
 def set_id_generator(fn: Callable[[], str] | None = None) -> None:
     from ..core.uuidv7 import set_id_generator as _set_core_id_generator
+
     if fn is None:
         _set_core_id_generator(None)
         return
@@ -149,8 +145,10 @@ def reset_for_test() -> None:
     global _fake_now
     _fake_now = None
     from ..core.uuidv7 import reset_id_generator as _reset_core_id_generator
+
     _reset_core_id_generator()
     from .. import _reset_default
+
     _reset_default()
 
 

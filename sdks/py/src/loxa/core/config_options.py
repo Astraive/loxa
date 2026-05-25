@@ -5,38 +5,124 @@ from .config import Config
 
 ConfigOption = Callable[[Config], Config]
 
-def WithService(value: str) -> ConfigOption: return lambda cfg: cfg.with_service(value)
-def WithVersion(value: str) -> ConfigOption: return lambda cfg: cfg.with_version(value)
-def WithEnvironment(value: str) -> ConfigOption: return lambda cfg: cfg.with_environment(value)
-def WithSink(value: Any) -> ConfigOption: return lambda cfg: cfg.with_sink(value)
-def WithSampler(value: Any) -> ConfigOption: return lambda cfg: cfg.with_sampler(value)
-def WithRedactor(value: Any) -> ConfigOption: return lambda cfg: cfg.with_redactor(value)
-def WithMetrics(value: Any) -> ConfigOption: return lambda cfg: cfg.with_metrics(value)
-def WithSchema(value: Any) -> ConfigOption: return lambda cfg: cfg.with_schema(value)
-def WithEventSchema(value: Any) -> ConfigOption: return lambda cfg: cfg.with_event_schema(value)
-def WithAsync(value: bool) -> ConfigOption: return lambda cfg: cfg.with_async(value)
-def WithCollectorEndpoint(value: str) -> ConfigOption: return lambda cfg: cfg.with_collector_endpoint(value)
-def WithDuplicatePolicy(value: str) -> ConfigOption: return lambda cfg: cfg.with_duplicate_policy(value)
-def WithStatsHandler(value: Any) -> ConfigOption: return lambda cfg: setattr(cfg, "stats_handler", value) or cfg
-def WithDeploymentID(value: str) -> ConfigOption: return lambda cfg: setattr(cfg, "deployment_id", value) or cfg
-def WithIncludeHost(value: bool) -> ConfigOption: return lambda cfg: setattr(cfg, "include_host", value) or cfg
-def WithPanicRecovery(value: bool) -> ConfigOption: return lambda cfg: setattr(cfg, "panic_recovery", value) or cfg
-def WithExitOnFatal(enabled: bool = True) -> ConfigOption: return lambda cfg: cfg.with_exit_on_fatal(enabled)
-def WithRelease(value: str) -> ConfigOption: return lambda cfg: cfg.with_release(value)
-def WithNamespace(value: str) -> ConfigOption: return lambda cfg: cfg.with_namespace(value)
-def WithApiKey(value: str) -> ConfigOption: return lambda cfg: cfg.with_api_key(value)
-def WithOtelBridge(value: bool) -> ConfigOption: return lambda cfg: cfg.with_otel_bridge(value)
-def WithRetry(value: bool) -> ConfigOption: return lambda cfg: cfg.with_retry(value)
-def WithTimeout(value: float) -> ConfigOption: return lambda cfg: cfg.with_timeout(value)
-def WithQueueSize(value: int) -> ConfigOption: return lambda cfg: setattr(cfg.async_config, "queue_size", value) or cfg
-def WithFlushInterval(value: int) -> ConfigOption: return lambda cfg: setattr(cfg.async_config, "flush_interval_ms", value) or cfg
-def WithBatchSize(value: int) -> ConfigOption: return lambda cfg: setattr(cfg.async_config, "batch_size", value) or cfg
-def WithLogger(value: Any) -> ConfigOption: return lambda cfg: cfg.with_logger(value)
+
+def WithService(value: str) -> ConfigOption:
+    return lambda cfg: cfg.with_service(value)
+
+
+def WithVersion(value: str) -> ConfigOption:
+    return lambda cfg: cfg.with_version(value)
+
+
+def WithEnvironment(value: str) -> ConfigOption:
+    return lambda cfg: cfg.with_environment(value)
+
+
+def WithSink(value: Any) -> ConfigOption:
+    return lambda cfg: cfg.with_sink(value)
+
+
+def WithSampler(value: Any) -> ConfigOption:
+    return lambda cfg: cfg.with_sampler(value)
+
+
+def WithRedactor(value: Any) -> ConfigOption:
+    return lambda cfg: cfg.with_redactor(value)
+
+
+def WithMetrics(value: Any) -> ConfigOption:
+    return lambda cfg: cfg.with_metrics(value)
+
+
+def WithSchema(value: Any) -> ConfigOption:
+    return lambda cfg: cfg.with_schema(value)
+
+
+def WithEventSchema(value: Any) -> ConfigOption:
+    return lambda cfg: cfg.with_event_schema(value)
+
+
+def WithAsync(value: bool) -> ConfigOption:
+    return lambda cfg: cfg.with_async(value)
+
+
+def WithCollectorEndpoint(value: str) -> ConfigOption:
+    return lambda cfg: cfg.with_collector_endpoint(value)
+
+
+def WithDuplicatePolicy(value: str) -> ConfigOption:
+    return lambda cfg: cfg.with_duplicate_policy(value)
+
+
+def WithStatsHandler(value: Any) -> ConfigOption:
+    return lambda cfg: setattr(cfg, "stats_handler", value) or cfg
+
+
+def WithDeploymentID(value: str) -> ConfigOption:
+    return lambda cfg: setattr(cfg, "deployment_id", value) or cfg
+
+
+def WithIncludeHost(value: bool) -> ConfigOption:
+    return lambda cfg: setattr(cfg, "include_host", value) or cfg
+
+
+def WithPanicRecovery(value: bool) -> ConfigOption:
+    return lambda cfg: setattr(cfg, "panic_recovery", value) or cfg
+
+
+def WithExitOnFatal(enabled: bool = True) -> ConfigOption:
+    return lambda cfg: cfg.with_exit_on_fatal(enabled)
+
+
+def WithRelease(value: str) -> ConfigOption:
+    return lambda cfg: cfg.with_release(value)
+
+
+def WithNamespace(value: str) -> ConfigOption:
+    return lambda cfg: cfg.with_namespace(value)
+
+
+def WithApiKey(value: str) -> ConfigOption:
+    return lambda cfg: cfg.with_api_key(value)
+
+
+def WithOtelBridge(value: bool) -> ConfigOption:
+    return lambda cfg: cfg.with_otel_bridge(value)
+
+
+def WithRetry(value: bool) -> ConfigOption:
+    return lambda cfg: cfg.with_retry(value)
+
+
+def WithTimeout(value: float) -> ConfigOption:
+    return lambda cfg: cfg.with_timeout(value)
+
+
+def WithQueueSize(value: int) -> ConfigOption:
+    return lambda cfg: setattr(cfg.async_config, "queue_size", value) or cfg
+
+
+def WithFlushInterval(value: int) -> ConfigOption:
+    return lambda cfg: setattr(cfg.async_config, "flush_interval_ms", value) or cfg
+
+
+def WithBatchSize(value: int) -> ConfigOption:
+    return lambda cfg: setattr(cfg.async_config, "batch_size", value) or cfg
+
+
+def WithLogger(value: Any) -> ConfigOption:
+    return lambda cfg: cfg.with_logger(value)
+
+
 def Disabled() -> Config:
     return Config.disabled()
+
+
 def FromEnv() -> Config:
     from .config import _apply_env_vars
+
     return _apply_env_vars(Config())
+
 
 # --- snake_case aliases ---
 with_service = WithService

@@ -1,7 +1,7 @@
 use loxa::{
-    AnySampler, CollectorSink, Config, ContextCarrier, EventContext, HashString,
-    MarkSensitive, New, NotSampler, Params, SampleErrors, SampleRandom, SensitiveString, SinkConfig,
-    StartEvent, TryNew,
+    AnySampler, CollectorSink, Config, ContextCarrier, EventContext, HashString, MarkSensitive,
+    New, NotSampler, Params, SampleErrors, SampleRandom, SensitiveString, SinkConfig, StartEvent,
+    TryNew,
 };
 
 #[test]
@@ -64,14 +64,13 @@ fn sensitive_helpers_mark_attributes() {
 
 #[test]
 fn sampler_combinators_are_real() {
-    let allow_logger = New(
-        Config::test("checkout").with_sampler(AnySampler(&[loxa::SampleNone(), SampleErrors()])),
-    );
-    let deny_logger =
-        New(Config::test("checkout").with_sampler(NotSampler(SampleErrors())));
-    let random_deny = New(
-        Config::test("checkout").with_sampler(AnySampler(&[loxa::SampleNone(), SampleRandom(0.0)])),
-    );
+    let allow_logger =
+        New(Config::test("checkout")
+            .with_sampler(AnySampler(&[loxa::SampleNone(), SampleErrors()])));
+    let deny_logger = New(Config::test("checkout").with_sampler(NotSampler(SampleErrors())));
+    let random_deny =
+        New(Config::test("checkout")
+            .with_sampler(AnySampler(&[loxa::SampleNone(), SampleRandom(0.0)])));
 
     let mut allow_ctx = EventContext::new("checkout", Params::new("request"));
     let _ = allow_ctx.finish_error("boom");

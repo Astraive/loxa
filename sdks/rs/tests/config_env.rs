@@ -7,10 +7,7 @@ fn env_overrides_file_defaults() {
     std::env::set_var("LOXA_SERVICE_VERSION", "9.9.9");
     std::env::set_var("LOXA_ENVIRONMENT", "staging");
     std::env::set_var("LOXA_REGION", "ap-south-1");
-    std::env::set_var(
-        "LOXA_COLLECTOR_ENDPOINT",
-        "http://collector.example/events",
-    );
+    std::env::set_var("LOXA_COLLECTOR_ENDPOINT", "http://collector.example/events");
     std::env::set_var("LOXA_ASYNC_ENABLED", "true");
 
     let cfg = Config::test("checkout");

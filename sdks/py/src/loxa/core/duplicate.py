@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 from .duplicate_policy import CanonicalWins, ErrorOnDuplicate, FirstWins, KeepBoth, LastWins, UserWins
 
+
 def apply_duplicate(target: dict[str, Any], key: str, value: Any, policy: str) -> None:
     if key not in target or policy in {UserWins, LastWins}:
         target[key] = value

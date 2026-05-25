@@ -107,7 +107,7 @@ class EventContext:
 
     def checkpoint(self, name: str, **attrs: object) -> None:
         self._ensure_mutable()
-        max_cp = getattr(self, '_max_checkpoints', 32)
+        max_cp = getattr(self, "_max_checkpoints", 32)
         if len(self.checkpoints) >= max_cp:
             return
         checkpoint = {
@@ -121,6 +121,7 @@ class EventContext:
 
     def start_process(self, name: str, **attrs: object) -> "ProcessHandle":
         from .timing import ProcessHandle
+
         self._ensure_mutable()
         self._mark_active()
         self._process_step += 1
@@ -128,12 +129,14 @@ class EventContext:
 
     def start_timer(self, name: str, **attrs: object) -> "TimerHandle":
         from .timing import TimerHandle
+
         self._ensure_mutable()
         self._mark_active()
         return TimerHandle(self, name, datetime.now(timezone.utc))
 
     def start_group(self, name: str, **attrs: object) -> "GroupHandle":
         from .timing import GroupHandle
+
         self._ensure_mutable()
         self._mark_active()
         return GroupHandle(self, name, datetime.now(timezone.utc))
@@ -276,7 +279,7 @@ def _resolve_bucket(ctx: EventContext, key: str) -> tuple[dict[str, Any], str]:
         ("http.", ctx.http),
     ]:
         if key.startswith(prefix):
-            return bucket, key[len(prefix):]
+            return bucket, key[len(prefix) :]
     return ctx.attrs, key
 
 

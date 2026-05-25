@@ -346,7 +346,10 @@ fn test_collector_api_stubs() {
     assert_eq!(client.sdk_version, "0.0.2");
     // Envelope building test
     let envelope = client.envelope(&["{\"event\":\"test\"}".to_string()]);
-    assert_eq!(envelope.get("api_version").and_then(|v| v.as_str()), Some("v1"));
+    assert_eq!(
+        envelope.get("api_version").and_then(|v| v.as_str()),
+        Some("v1")
+    );
     // Validate (local, no HTTP call) should work
     let result = client.validate(&["{\"event\":\"test\"}".to_string()]);
     assert!(result.is_ok());

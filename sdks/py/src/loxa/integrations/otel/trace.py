@@ -1,5 +1,6 @@
 from ...core.attr import String
 
+
 def EnrichTrace(trace_id: str = "", span_id: str = ""):
     attrs = []
     if trace_id:

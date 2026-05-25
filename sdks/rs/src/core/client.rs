@@ -223,20 +223,25 @@ impl CollectorHttpClient {
     }
 
     /// Send an authenticated HTTP request to the collector.
-    fn request(&self, method: &str, path: &str, body: Option<Value>) -> Result<CollectorResponse, String> {
+    fn request(
+        &self,
+        method: &str,
+        path: &str,
+        body: Option<Value>,
+    ) -> Result<CollectorResponse, String> {
         let url = format!("{}{}", self.endpoint.trim_end_matches('/'), path);
         let client = HTTPClient::with_timeout_ms(self.timeout_ms);
         let mut request = HTTPRequest::new(method, &url);
 
         if let Some(api_key) = &self.api_key {
-            request = request.with_header(
-                &self.auth_header,
-                format!("Bearer {}", api_key),
-            );
+            request = request.with_header(&self.auth_header, format!("Bearer {}", api_key));
         }
 
         request = request
-            .with_header("User-Agent", format!("{}/{}", self.sdk_name, self.sdk_version))
+            .with_header(
+                "User-Agent",
+                format!("{}/{}", self.sdk_name, self.sdk_version),
+            )
             .with_header("Content-Type", "application/json");
 
         if let Some(body) = body {
@@ -246,7 +251,10 @@ impl CollectorHttpClient {
 
         let response = client.send(&request).map_err(|e| e.to_string())?;
         let body: Value = serde_json::from_str(&response.body).map_err(|e| e.to_string())?;
-        Ok(CollectorResponse { status_code: response.status_code, body })
+        Ok(CollectorResponse {
+            status_code: response.status_code,
+            body,
+        })
     }
 
     /// Validate events locally against the ingest envelope contract.
@@ -286,7 +294,11 @@ impl CollectorHttpClient {
 
     /// Replay events from the dead-letter queue.
     pub fn replay(&self, event_ids: &[String]) -> Result<CollectorResponse, String> {
-        self.request("POST", "/replay", Some(serde_json::json!({"event_ids": event_ids})))
+        self.request(
+            "POST",
+            "/replay",
+            Some(serde_json::json!({"event_ids": event_ids})),
+        )
     }
 
     /// List dead-letter queue entries.
@@ -301,7 +313,11 @@ impl CollectorHttpClient {
 
     /// Replay specific dead-letter queue entries.
     pub fn dlq_replay(&self, entry_ids: &[String]) -> Result<CollectorResponse, String> {
-        self.request("POST", "/dlq/replay", Some(serde_json::json!({"entry_ids": entry_ids})))
+        self.request(
+            "POST",
+            "/dlq/replay",
+            Some(serde_json::json!({"entry_ids": entry_ids})),
+        )
     }
 
     /// Create an API key.

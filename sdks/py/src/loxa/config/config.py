@@ -200,6 +200,7 @@ def new_client(code_config: Config):  # -> Logger
     merged.validate()
 
     from ..core.logger import Logger
+
     return Logger(merged)
 
 

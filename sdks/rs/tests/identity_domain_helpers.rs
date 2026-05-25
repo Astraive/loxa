@@ -17,7 +17,10 @@ fn identity_domain_helpers_work() {
     assert_eq!(loxa::commit_sha("abc123").key, "commit.sha");
     assert_eq!(loxa::release("1.2.3").key, "release");
     assert_eq!(loxa::region("us-east-1").key, "region");
-    assert_eq!(loxa::checkout_cart_item_count(3).key, "checkout.cart_item_count");
+    assert_eq!(
+        loxa::checkout_cart_item_count(3).key,
+        "checkout.cart_item_count"
+    );
     assert_eq!(loxa::payment_provider("stripe").key, "payment.provider");
     assert_eq!(loxa::billing_plan("pro").key, "billing.plan");
     assert_eq!(loxa::agent_model("gpt-5.5").key, "agent.model");

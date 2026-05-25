@@ -4,8 +4,13 @@
 from __future__ import annotations
 
 import json
+import sys
 import warnings
 from pathlib import Path
+
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+    sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
 
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="jsonschema")
 warnings.filterwarnings(
@@ -207,9 +212,9 @@ def main() -> int:
 
     strict_schema = (manifest_dir / str(manifest["strict_schema"])).resolve()
     loose_schema = (manifest_dir / str(manifest["loose_schema"])).resolve()
-    event_schema = (spec_root / "spec" / "schemas" / "json" / "event.schema.json").resolve()
-    ingest_schema = (spec_root / "spec" / "schemas" / "json" / "ingest-envelope.schema.json").resolve()
-    collector_schema = (spec_root / "spec" / "schemas" / "json" / "collector-response.schema.json").resolve()
+    event_schema = (spec_root / "schema" / "event.schema.json").resolve()
+    ingest_schema = (spec_root / "schema" / "ingest.schema.json").resolve()
+    collector_schema = (spec_root / "schema" / "collector-response.schema.json").resolve()
 
     if not strict_schema.exists() or not loose_schema.exists():
         raise FileNotFoundError("manifest schema paths must exist")

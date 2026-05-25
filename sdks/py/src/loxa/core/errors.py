@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+
 @dataclass(slots=True)
 class ErrorInfo:
     type: str
@@ -9,6 +10,7 @@ class ErrorInfo:
     code: str = ""
     retryable: bool = False
     stack: str = ""
+
 
 def extract_error(error: BaseException) -> dict[str, object]:
     return {"type": error.__class__.__name__, "message": str(error)}

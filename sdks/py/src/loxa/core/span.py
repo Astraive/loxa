@@ -23,10 +23,12 @@ class SpanContext:
 def create_span_id() -> str:
     """Generate a new random span ID."""
     from uuid import uuid4
+
     return uuid4().hex[:16]
 
 
 def create_trace_id() -> str:
     """Generate a new random trace ID."""
     from uuid import uuid4
+
     return uuid4().hex

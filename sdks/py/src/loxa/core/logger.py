@@ -69,7 +69,10 @@ class Logger:
         if any(isinstance(sink, HTTPBatchSink) for sink in self._config.sinks):
             return
         if not self._config.sinks or all(self._is_default_terminal_sink(sink) for sink in self._config.sinks):
-            self._config = replace(self._config, sinks=[HTTPBatchSink(endpoint, api_key=self._config.api_key, service=self._config.service)])
+            self._config = replace(
+                self._config,
+                sinks=[HTTPBatchSink(endpoint, api_key=self._config.api_key, service=self._config.service)],
+            )
 
     @staticmethod
     def _is_default_terminal_sink(sink: object) -> bool:
@@ -125,6 +128,7 @@ class Logger:
             params.deployment_id = self._config.deployment_id
         if self._config.include_host and not params.host:
             import socket
+
             params.host = socket.gethostname()
         ctx = EventContext(service=params.service or self._config.service, params=params)
         ctx._max_checkpoints = self._config.max_checkpoints
@@ -346,7 +350,7 @@ class Logger:
             if callable(qs):
                 return qs()
         if self._pipeline is not None:
-            return getattr(self._pipeline, 'size', lambda: 0)()
+            return getattr(self._pipeline, "size", lambda: 0)()
         return 0
 
     def health(self) -> bool:
@@ -472,6 +476,7 @@ class Logger:
 
     def clone_event(self, ctx: EventContext) -> EventContext:
         import copy
+
         return copy.deepcopy(ctx)
 
     def link_event(self, parent: EventContext, child: EventContext) -> None:
@@ -516,9 +521,7 @@ class Logger:
             snapshot.started_at = ctx.started_at
             snapshot.finished_at = now
             snapshot.event_state = EVENT_FINISHED
-            snapshot.attrs = {
-                key: value for key, value in checkpoint.items() if key not in {"name", "at_ms"}
-            }
+            snapshot.attrs = {key: value for key, value in checkpoint.items() if key not in {"name", "at_ms"}}
             safe_snapshot = self._sanitize_event(snapshot)
             payload = self._config.schema.encode(EventView(safe_snapshot))
             if isinstance(payload, dict):
@@ -544,6 +547,7 @@ class Logger:
 
     def _apply_duplicate_field_policy(self, ctx: EventContext) -> None:
         from .canonical import is_canonical
+
         policy = self._config.duplicate_policy
         keys_to_remove: list[str] = []
         for key in list(ctx.attrs.keys()):
@@ -591,6 +595,7 @@ class Logger:
             except Exception:
                 pass
             from .config import DeliveryFailureHandler as _DFH
+
             if isinstance(self._stats_handler, _DFH):
                 try:
                     self._stats_handler.on_delivery_failed(ctx, error)
@@ -645,9 +650,14 @@ class Logger:
     @staticmethod
     def _resolve_bucket(ctx: EventContext, key: str) -> tuple[dict[str, Any], str]:
         """Return (bucket, local_key) for a potentially group-prefixed key."""
-        for prefix, bucket in [("user.", ctx.user), ("tenant.", ctx.tenant), ("resource.", ctx.resource), ("http.", ctx.http)]:
+        for prefix, bucket in [
+            ("user.", ctx.user),
+            ("tenant.", ctx.tenant),
+            ("resource.", ctx.resource),
+            ("http.", ctx.http),
+        ]:
             if key.startswith(prefix):
-                return bucket, key[len(prefix):]
+                return bucket, key[len(prefix) :]
         return ctx.attrs, key
 
     def _sanitize_event(self, ctx: EventContext) -> EventContext:

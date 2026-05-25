@@ -76,10 +76,10 @@ fn collector_and_cortex_client_families_work() {
         .with_timeout_ms(500)
         .with_service("catalog");
 
-    let encoded = vec![
-        serde_json::to_string(&serde_json::json!({"service":"catalog","event":"checkout.request"}))
-            .unwrap(),
-    ];
+    let encoded = vec![serde_json::to_string(
+        &serde_json::json!({"service":"catalog","event":"checkout.request"}),
+    )
+    .unwrap()];
     let envelope = collector.envelope(&encoded);
     collector.validate_envelope(&envelope).expect("envelope");
     assert!(collector.tail_endpoint().ends_with("/tail"));
@@ -89,7 +89,10 @@ fn collector_and_cortex_client_families_work() {
     assert_eq!(collector.tail(10).unwrap().status_code, 200);
     assert_eq!(collector.delete("evt_1").unwrap().status_code, 200);
     assert_eq!(
-        collector.replay(&["evt_1".to_string()]).unwrap().status_code,
+        collector
+            .replay(&["evt_1".to_string()])
+            .unwrap()
+            .status_code,
         202
     );
     assert_eq!(collector.dlq_list(10).unwrap().status_code, 200);
@@ -137,8 +140,8 @@ fn collector_and_cortex_client_families_work() {
     assert_eq!(collector.health().unwrap().status_code, 200);
     let _ = stop.send(());
 
-    let cortex = loxa::CortexClient::new("http://127.0.0.1:9")
-        .with_timeout(Duration::from_millis(10));
+    let cortex =
+        loxa::CortexClient::new("http://127.0.0.1:9").with_timeout(Duration::from_millis(10));
     assert!(!cortex.health());
     assert!(!cortex.ready());
 }

@@ -2,7 +2,10 @@ use std::time::Duration;
 
 #[test]
 fn process_group_timer_and_stopwatch_helpers_work() {
-    let mut ctx = loxa::start_event(None, loxa::Params::new("checkout.request").with_kind("http"));
+    let mut ctx = loxa::start_event(
+        None,
+        loxa::Params::new("checkout.request").with_kind("http"),
+    );
 
     loxa::with_process(&mut ctx, "authorize_payment", |handle, event| {
         handle.finish(event, &[loxa::string("payment.status", "approved")]);

@@ -107,7 +107,9 @@ def mask_keys(*keys: str, prefix: int = 2, suffix: int = 2) -> Redactor:
     wanted = {key.lower() for key in keys}
     return lambda payload: _walk(
         copy.deepcopy(payload),
-        lambda key, value: (True, _mask(value, prefix=prefix, suffix=suffix)) if _matches_key(key, wanted) else (True, value),
+        lambda key, value: (
+            (True, _mask(value, prefix=prefix, suffix=suffix)) if _matches_key(key, wanted) else (True, value)
+        ),
     )
 
 

@@ -95,44 +95,52 @@ class Engine:
         # Related events
         related_events = []
         for ce in resp.get("causal_chain", []):
-            related_events.append({
-                "event_id": ce.get("event_id", ""),
-                "ts": ce.get("timestamp", ""),
-                "kind": ce.get("kind", ""),
-                "service": ce.get("service", ""),
-            })
+            related_events.append(
+                {
+                    "event_id": ce.get("event_id", ""),
+                    "ts": ce.get("timestamp", ""),
+                    "kind": ce.get("kind", ""),
+                    "service": ce.get("service", ""),
+                }
+            )
 
         # Causal chain
         causal_chain = []
         for ce in resp.get("causal_chain", []):
-            causal_chain.append(CausalEdge(
-                cause_id=ce.get("attributes", {}).get("cause_id", ""),
-                effect_id=ce.get("event_id", ""),
-                evidence=ce.get("description", ""),
-                confidence=ce.get("attributes", {}).get("confidence", 0.5),
-            ))
+            causal_chain.append(
+                CausalEdge(
+                    cause_id=ce.get("attributes", {}).get("cause_id", ""),
+                    effect_id=ce.get("event_id", ""),
+                    evidence=ce.get("description", ""),
+                    confidence=ce.get("attributes", {}).get("confidence", 0.5),
+                )
+            )
 
         # Similar incidents
         similar = []
         for si in resp.get("similar_incidents", []):
-            similar.append(IncidentMatch(
-                past_incident_id=si.get("incident_id", ""),
-                similarity=si.get("similarity", 0.0),
-                rationale=si.get("shape", ""),
-            ))
+            similar.append(
+                IncidentMatch(
+                    past_incident_id=si.get("incident_id", ""),
+                    similarity=si.get("similarity", 0.0),
+                    rationale=si.get("shape", ""),
+                )
+            )
 
         # Remediation
         remediations = []
         for ra in resp.get("suggested_actions", []):
-            remediations.append(Remediation(
-                incident_id=resp.get("incident_id", ""),
-                action=ra.get("action", ""),
-                attributes={
-                    "success_rate": ra.get("success_rate", 0.0),
-                    "avg_time_to_resolve": ra.get("avg_time_to_resolve_seconds", 0),
-                    "priority": ra.get("priority", 0),
-                },
-            ))
+            remediations.append(
+                Remediation(
+                    incident_id=resp.get("incident_id", ""),
+                    action=ra.get("action", ""),
+                    attributes={
+                        "success_rate": ra.get("success_rate", 0.0),
+                        "avg_time_to_resolve": ra.get("avg_time_to_resolve_seconds", 0),
+                        "priority": ra.get("priority", 0),
+                    },
+                )
+            )
 
         return Context(
             related_events=related_events,

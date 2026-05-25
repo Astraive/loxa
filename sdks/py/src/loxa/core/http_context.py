@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 def extract_headers(headers: dict[str, str]) -> dict[str, str]:
     lower = {k.lower(): v for k, v in headers.items()}
     return {

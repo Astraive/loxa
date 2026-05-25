@@ -26,13 +26,27 @@ fn basic_logging_and_event_facades_work() {
 
     let events = store.events();
     assert_eq!(events.len(), 9);
-    assert!(events.iter().any(|event| event.contains("\"message\":\"notice event\"")));
-    assert!(events.iter().any(|event| event.contains("\"event\":\"checkout.page_view\"")));
-    assert!(events.iter().any(|event| event.contains("\"event\":\"user.login\"")));
-    assert!(events.iter().any(|event| event.contains("\"event\":\"auth.failure\"")));
-    assert!(events.iter().any(|event| event.contains("\"event\":\"latency\"")));
+    assert!(events
+        .iter()
+        .any(|event| event.contains("\"message\":\"notice event\"")));
+    assert!(events
+        .iter()
+        .any(|event| event.contains("\"event\":\"checkout.page_view\"")));
+    assert!(events
+        .iter()
+        .any(|event| event.contains("\"event\":\"user.login\"")));
+    assert!(events
+        .iter()
+        .any(|event| event.contains("\"event\":\"auth.failure\"")));
+    assert!(events
+        .iter()
+        .any(|event| event.contains("\"event\":\"latency\"")));
     assert!(events.iter().any(|event| event.contains("\"count\":4")));
     assert!(events.iter().any(|event| event.contains("\"gauge\":0.72")));
-    assert!(events.iter().any(|event| event.contains("\"histogram\":512.0")));
-    assert!(events.iter().any(|event| event.contains("\"message\":\"nav.click\"")));
+    assert!(events
+        .iter()
+        .any(|event| event.contains("\"histogram\":512.0")));
+    assert!(events
+        .iter()
+        .any(|event| event.contains("\"message\":\"nav.click\"")));
 }

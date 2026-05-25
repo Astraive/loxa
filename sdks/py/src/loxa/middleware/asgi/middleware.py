@@ -9,7 +9,9 @@ from ... import Bool, Emit, Enrich, Finish, FinishError, Int, Params, StartHTTPE
 class Middleware:
     """ASGI middleware that captures request lifecycle as one LOXA wide event."""
 
-    def __init__(self, app=None, service: str = "", route_resolver: Callable[[dict[str, Any]], str] | None = None) -> None:
+    def __init__(
+        self, app=None, service: str = "", route_resolver: Callable[[dict[str, Any]], str] | None = None
+    ) -> None:
         self.app = app
         self.service = service
         self.route_resolver = route_resolver

@@ -7,6 +7,7 @@ LevelWarn = "warn"
 LevelError = "error"
 LevelFatal = "fatal"
 
+
 def ParseLevel(value: str) -> str:
     lowered = (value or "").strip().lower()
     return lowered if lowered in {LevelDebug, LevelInfo, LevelNotice, LevelWarn, LevelError, LevelFatal} else LevelInfo

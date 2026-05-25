@@ -9,12 +9,27 @@ from ..sinks.stdout import StdoutSink
 from ..generated.spec_contract import LOXA_EVENT_VERSION, LOXA_INGEST_API_VERSION, LOXA_SPEC_VERSION
 
 __all__ = [
-    "CanonicalWins", "UserWins", "FirstWins", "LastWins", "KeepBoth", "ErrorOnDuplicate",
-    "ExpandDotKeys", "PreserveDotKeys", "SnakeCaseKeys", "CamelCaseKeys",
-    "StatsHandler", "DeliveryFailureHandler",
-    "AsyncConfig", "SecurityConfig", "FieldNamingConfig", "Config",
-    "LOXA_EVENT_VERSION", "LOXA_INGEST_API_VERSION", "LOXA_SPEC_VERSION",
-    "load_layered_config", "new_client",
+    "CanonicalWins",
+    "UserWins",
+    "FirstWins",
+    "LastWins",
+    "KeepBoth",
+    "ErrorOnDuplicate",
+    "ExpandDotKeys",
+    "PreserveDotKeys",
+    "SnakeCaseKeys",
+    "CamelCaseKeys",
+    "StatsHandler",
+    "DeliveryFailureHandler",
+    "AsyncConfig",
+    "SecurityConfig",
+    "FieldNamingConfig",
+    "Config",
+    "LOXA_EVENT_VERSION",
+    "LOXA_INGEST_API_VERSION",
+    "LOXA_SPEC_VERSION",
+    "load_layered_config",
+    "new_client",
 ]
 
 CanonicalWins = "canonical_wins"
@@ -216,6 +231,7 @@ class Config:
     @classmethod
     def from_env(cls) -> "Config":
         from .config import _apply_env_vars
+
         return _apply_env_vars(cls())
 
     def validate(self) -> None:
@@ -269,6 +285,7 @@ def new_client(code_config: Config):  # -> Logger
     merged.validate()
 
     from .logger import Logger
+
     return Logger(merged)
 
 

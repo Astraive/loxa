@@ -45,7 +45,7 @@ pub fn assert_event(encoded: &str, key: &str, expected: &str) {
     }
 }
 
-/// Assert that a field value is "[REDACTED]".
+/// Assert that a field value is `"[REDACTED]"`.
 pub fn assert_redacted(encoded: &str, key: &str) {
     assert_event(encoded, key, "[REDACTED]");
 }

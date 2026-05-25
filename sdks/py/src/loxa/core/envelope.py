@@ -19,6 +19,7 @@ class Envelope:
 
     def to_json(self) -> str:
         import json
+
         return json.dumps(self.payload, separators=(",", ":"), sort_keys=True)
 
     @classmethod

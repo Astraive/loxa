@@ -131,7 +131,9 @@ class MetricsCollector:
         with self._lock:
             lines: list[str] = []
             self._append_counter(lines, "events_created_total", "Total number of events created via StartEvent")
-            self._append_counter(lines, "events_finished_total", "Total number of events finished via Finish/FinishError")
+            self._append_counter(
+                lines, "events_finished_total", "Total number of events finished via Finish/FinishError"
+            )
             self._append_counter_vec(
                 lines,
                 "events_emitted_total",
@@ -167,7 +169,9 @@ class MetricsCollector:
         lines.append(f"# HELP {metric} {help_text}")
         lines.append(f"# TYPE {metric} counter")
         for label, value in sorted(self._counter_vecs.get(name, {}).items()):
-            lines.append(f"{metric}{_format_labels({'status' if name == 'events_emitted_total' else 'reason' if name == 'events_dropped_total' else 'attempt': label})} {value}")
+            lines.append(
+                f"{metric}{_format_labels({'status' if name == 'events_emitted_total' else 'reason' if name == 'events_dropped_total' else 'attempt': label})} {value}"
+            )
 
     def _append_gauge(self, lines: list[str], name: str, help_text: str) -> None:
         metric = self._metric_name(name)

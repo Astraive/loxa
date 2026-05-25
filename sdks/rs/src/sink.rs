@@ -49,7 +49,11 @@ pub fn sink_queue_size(sink: &SinkConfig) -> usize {
 
 pub fn sink_health(sink: &SinkConfig) -> bool {
     match sink {
-        SinkConfig::HttpBatch { endpoint, timeout_ms, .. } => {
+        SinkConfig::HttpBatch {
+            endpoint,
+            timeout_ms,
+            ..
+        } => {
             let url = format!("{}/healthz", endpoint.trim_end_matches('/'));
             let request = crate::core::client::HTTPRequest::new("GET", &url);
             crate::core::client::HTTPClient::with_timeout_ms(*timeout_ms)

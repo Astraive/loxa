@@ -46,7 +46,6 @@ pub use generated::spec_contract::{
 // Logger is intentionally NOT re-exported. Use loxa::default(),
 // loxa::create_loxa(), or loxa::alias() instead.
 use logger::Logger;
-pub(crate) use logger::Logger as LoxaLogger;
 pub use metrics::{MetricsCollector, MetricsSnapshot};
 pub use schema::{DefaultSchemaType, EventView, Schema, SchemaFunc};
 
@@ -678,7 +677,11 @@ pub fn Map(key: impl Into<String>, value: serde_json::Map<String, Value>) -> Att
     Attr::new(key.into(), Value::Object(value))
 }
 
-pub fn Enum<E: Into<String>>(key: impl Into<String>, value: impl Into<String>, _allowed: Vec<E>) -> Attr {
+pub fn Enum<E: Into<String>>(
+    key: impl Into<String>,
+    value: impl Into<String>,
+    _allowed: Vec<E>,
+) -> Attr {
     Attr::new(key.into(), Value::String(value.into()))
 }
 
@@ -732,14 +735,20 @@ pub fn HTTPReferer(referer: impl Into<String>) -> Attr {
 }
 
 pub fn HTTPRequest(method: impl Into<String>, path: impl Into<String>) -> Attr {
-    Attr::new("http.request", serde_json::json!({
-        "method": method.into(),
-        "path": path.into(),
-    }))
+    Attr::new(
+        "http.request",
+        serde_json::json!({
+            "method": method.into(),
+            "path": path.into(),
+        }),
+    )
 }
 
 pub fn HTTPResponse(status_code: u16) -> Attr {
-    Attr::new("http.response", serde_json::json!({ "status_code": status_code }))
+    Attr::new(
+        "http.response",
+        serde_json::json!({ "status_code": status_code }),
+    )
 }
 
 pub fn EmailHash(email: impl Into<String>) -> Attr {
@@ -968,7 +977,10 @@ pub fn RunEvent(params: Params, f: impl FnOnce(&mut EventContext)) -> Result<Str
     logger.emit(&ctx)
 }
 
-pub fn Run(event: &mut EventContext, f: impl FnOnce(&mut EventContext)) -> Result<String, LoxaError> {
+pub fn Run(
+    event: &mut EventContext,
+    f: impl FnOnce(&mut EventContext),
+) -> Result<String, LoxaError> {
     let logger = default_logger();
     f(event);
     let _ = logger.finish(event, "success");
@@ -979,7 +991,10 @@ pub fn run_event(params: Params, f: impl FnOnce(&mut EventContext)) -> Result<St
     RunEvent(params, f)
 }
 
-pub fn run(event: &mut EventContext, f: impl FnOnce(&mut EventContext)) -> Result<String, LoxaError> {
+pub fn run(
+    event: &mut EventContext,
+    f: impl FnOnce(&mut EventContext),
+) -> Result<String, LoxaError> {
     Run(event, f)
 }
 
@@ -1014,7 +1029,10 @@ pub fn from_request(
 
 /// Returns a SecurityConfig with max field bytes set.
 pub fn MaxAttrLength(length: usize) -> SecurityConfig {
-    SecurityConfig { max_field_bytes: length, ..Default::default() }
+    SecurityConfig {
+        max_field_bytes: length,
+        ..Default::default()
+    }
 }
 
 /// Lowercase alias for MaxAttrLength.
@@ -1024,7 +1042,10 @@ pub fn max_attr_length(length: usize) -> SecurityConfig {
 
 /// Returns a SecurityConfig with max attr count set.
 pub fn MaxAttrs(count: usize) -> SecurityConfig {
-    SecurityConfig { max_attr_count: count, ..Default::default() }
+    SecurityConfig {
+        max_attr_count: count,
+        ..Default::default()
+    }
 }
 
 /// Lowercase alias for MaxAttrs.
@@ -1033,12 +1054,16 @@ pub fn max_attrs(count: usize) -> SecurityConfig {
 }
 
 /// Configure cardinality policy. Returns the policy map unchanged.
-pub fn CardinalityPolicy(policy: std::collections::HashMap<String, serde_json::Value>) -> std::collections::HashMap<String, serde_json::Value> {
+pub fn CardinalityPolicy(
+    policy: std::collections::HashMap<String, serde_json::Value>,
+) -> std::collections::HashMap<String, serde_json::Value> {
     policy
 }
 
 /// Lowercase alias for CardinalityPolicy.
-pub fn cardinality_policy(policy: std::collections::HashMap<String, serde_json::Value>) -> std::collections::HashMap<String, serde_json::Value> {
+pub fn cardinality_policy(
+    policy: std::collections::HashMap<String, serde_json::Value>,
+) -> std::collections::HashMap<String, serde_json::Value> {
     CardinalityPolicy(policy)
 }
 
@@ -1394,7 +1419,11 @@ pub fn ValidateEvent(event: &Value) -> Result<(), Vec<String>> {
     } else {
         errors.push("event must be a JSON object".into());
     }
-    if errors.is_empty() { Ok(()) } else { Err(errors) }
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors)
+    }
 }
 
 pub fn validate_event(event: &Value) -> Result<(), Vec<String>> {
@@ -1623,7 +1652,7 @@ pub fn HTTPBatchSink(endpoint: impl Into<String>) -> SinkConfig {
     CollectorSinkWithEndpoint(endpoint)
 }
 
-pub fn KafkaSink(endpoint: impl Into<String>, topic: impl Into<String>) -> SinkConfig {
+pub fn KafkaSink(endpoint: impl Into<String>, _topic: impl Into<String>) -> SinkConfig {
     SinkConfig::HttpBatch {
         endpoint: endpoint.into(),
         api_key: None,
@@ -2428,7 +2457,11 @@ pub fn map(key: impl Into<String>, value: serde_json::Map<String, Value>) -> Att
     Map(key, value)
 }
 
-pub fn enum_<E: Into<String>>(key: impl Into<String>, value: impl Into<String>, allowed: Vec<E>) -> Attr {
+pub fn enum_<E: Into<String>>(
+    key: impl Into<String>,
+    value: impl Into<String>,
+    allowed: Vec<E>,
+) -> Attr {
     Enum(key, value, allowed)
 }
 

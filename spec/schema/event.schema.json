@@ -133,6 +133,14 @@
       "type": "integer",
       "minimum": 0
     },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "partial": {
       "type": "boolean"
     },
@@ -169,6 +177,9 @@
       "type": "string"
     },
     "span_id": {
+      "type": "string"
+    },
+    "incident_id": {
       "type": "string"
     },
     "method": {

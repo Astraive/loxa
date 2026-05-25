@@ -49,7 +49,11 @@ def _parse_collector_response_body(raw: bytes) -> tuple[dict, CollectorResponse]
 
 
 def _collector_response_summary(response: CollectorResponse) -> str:
-    return response.error or response.reason or f"accepted={response.accepted} rejected={response.rejected} invalid={response.invalid}"
+    return (
+        response.error
+        or response.reason
+        or f"accepted={response.accepted} rejected={response.rejected} invalid={response.invalid}"
+    )
 
 
 def _collector_response_outcome(status: int, response: CollectorResponse) -> tuple[str, str]:
@@ -178,6 +182,7 @@ class CollectorClient:
     def _base_url(self) -> str:
         """Extract host:port base URL from the endpoint."""
         from urllib.parse import urlparse
+
         parsed = urlparse(self.endpoint)
         return f"{parsed.scheme}://{parsed.netloc}"
 
@@ -270,8 +275,12 @@ def NewRoundTripper(base=None):
 
 # ── CollectorClient API extensions ──────────────────────────────────────────
 
+
 def _collector_request(
-    client: CollectorClient, method: str, path: str, body: Any = None,
+    client: CollectorClient,
+    method: str,
+    path: str,
+    body: Any = None,
     params: dict[str, str] | None = None,
 ) -> dict:
     from urllib.parse import urlencode
@@ -292,10 +301,22 @@ def _collector_request(
         return json.loads(raw.decode("utf-8")) if raw else {}
 
 
-def _collector_validate(self, payload): return _collector_request(self, "POST", "/validate", payload)
-def _collector_ingest(self, encoded_events): return self.send_batch(encoded_events)
-def _collector_query(self, **params): return _collector_request(self, "POST", "/query", body=params)
-def _collector_tail(self, **params): return _collector_request(self, "GET", "/tail", params=params)
+def _collector_validate(self, payload):
+    return _collector_request(self, "POST", "/validate", payload)
+
+
+def _collector_ingest(self, encoded_events):
+    return self.send_batch(encoded_events)
+
+
+def _collector_query(self, **params):
+    return _collector_request(self, "POST", "/query", body=params)
+
+
+def _collector_tail(self, **params):
+    return _collector_request(self, "GET", "/tail", params=params)
+
+
 def _collector_delete(self, **params):
     event_id = params.get("event_id") or params.get("id")
     if event_id:
@@ -308,19 +329,59 @@ def _collector_delete(self, **params):
         return _collector_request(self, "DELETE", f"/events/by-user/{user_id}")
     raise ValueError("delete requires one of: event_id/id, tenant_id, user_id")
 
-def _collector_replay(self, **params): return _collector_request(self, "POST", "/replay", body=params)
-def _collector_dlq_list(self, **params): return _collector_request(self, "GET", "/dlq", params=params)
-def _collector_dlq_read(self, dlq_id): return _collector_request(self, "GET", f"/dlq/{dlq_id}")
-def _collector_dlq_replay(self, dlq_id): return _collector_request(self, "POST", f"/dlq/{dlq_id}/replay")
-def _collector_keys_create(self, **params): return _collector_request(self, "POST", "/keys", body=params)
-def _collector_keys_revoke(self, key_id): return _collector_request(self, "DELETE", f"/keys/{key_id}")
-def _collector_keys_rotate(self, key_id): return _collector_request(self, "POST", f"/keys/{key_id}/rotate")
-def _collector_sinks_list(self): return _collector_request(self, "GET", "/sinks")
-def _collector_sinks_test(self, name): return _collector_request(self, "POST", f"/sinks/{name}/test")
-def _collector_policy_validate(self, policy): return _collector_request(self, "POST", "/policy/validate", policy)
-def _collector_schema_check(self, event): return _collector_request(self, "POST", "/schema/check", event)
-def _collector_schema_publish(self, schema): return _collector_request(self, "POST", "/schema/publish", schema)
-def _collector_retention_apply(self, policy=None): return _collector_request(self, "POST", "/retention/apply", body=policy or {})
+
+def _collector_replay(self, **params):
+    return _collector_request(self, "POST", "/replay", body=params)
+
+
+def _collector_dlq_list(self, **params):
+    return _collector_request(self, "GET", "/dlq", params=params)
+
+
+def _collector_dlq_read(self, dlq_id):
+    return _collector_request(self, "GET", f"/dlq/{dlq_id}")
+
+
+def _collector_dlq_replay(self, dlq_id):
+    return _collector_request(self, "POST", f"/dlq/{dlq_id}/replay")
+
+
+def _collector_keys_create(self, **params):
+    return _collector_request(self, "POST", "/keys", body=params)
+
+
+def _collector_keys_revoke(self, key_id):
+    return _collector_request(self, "DELETE", f"/keys/{key_id}")
+
+
+def _collector_keys_rotate(self, key_id):
+    return _collector_request(self, "POST", f"/keys/{key_id}/rotate")
+
+
+def _collector_sinks_list(self):
+    return _collector_request(self, "GET", "/sinks")
+
+
+def _collector_sinks_test(self, name):
+    return _collector_request(self, "POST", f"/sinks/{name}/test")
+
+
+def _collector_policy_validate(self, policy):
+    return _collector_request(self, "POST", "/policy/validate", policy)
+
+
+def _collector_schema_check(self, event):
+    return _collector_request(self, "POST", "/schema/check", event)
+
+
+def _collector_schema_publish(self, schema):
+    return _collector_request(self, "POST", "/schema/publish", schema)
+
+
+def _collector_retention_apply(self, policy=None):
+    return _collector_request(self, "POST", "/retention/apply", body=policy or {})
+
+
 CollectorClient.validate = _collector_validate
 CollectorClient.ingest = _collector_ingest
 CollectorClient.query = _collector_query

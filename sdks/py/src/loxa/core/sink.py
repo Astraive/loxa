@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+
 class Sink(Protocol):
     def write(self, encoded: str) -> None: ...
     def flush(self) -> None: ...

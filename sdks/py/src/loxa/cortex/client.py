@@ -156,30 +156,39 @@ class CortexClient:
 
     def record_remediation(self, remediation: Remediation) -> None:
         """Record a remediation action taken for an incident."""
-        self._post("/feedback/remediation", {
-            "incident_id": remediation.incident_id,
-            "action": remediation.action,
-            "operator": remediation.operator,
-            "attributes": remediation.attributes,
-        })
+        self._post(
+            "/feedback/remediation",
+            {
+                "incident_id": remediation.incident_id,
+                "action": remediation.action,
+                "operator": remediation.operator,
+                "attributes": remediation.attributes,
+            },
+        )
 
     def record_feedback(self, feedback: RemediationFeedback) -> None:
         """Record feedback on whether a remediation was successful."""
-        self._post("/feedback/incident", {
-            "remediation_id": feedback.remediation_id,
-            "incident_id": feedback.incident_id,
-            "outcome": feedback.outcome,
-            "time_to_resolve_seconds": feedback.time_to_resolve_seconds,
-            "notes": feedback.notes,
-        })
+        self._post(
+            "/feedback/incident",
+            {
+                "remediation_id": feedback.remediation_id,
+                "incident_id": feedback.incident_id,
+                "outcome": feedback.outcome,
+                "time_to_resolve_seconds": feedback.time_to_resolve_seconds,
+                "notes": feedback.notes,
+            },
+        )
 
     def similar_incidents(self, incident_id: str, limit: int = 10) -> list[dict]:
         """Find incidents similar to the given one."""
-        resp = self._post("/reconstruct", {
-            "incident_id": incident_id,
-            "mode": "fast",
-            "limit": limit,
-        })
+        resp = self._post(
+            "/reconstruct",
+            {
+                "incident_id": incident_id,
+                "mode": "fast",
+                "limit": limit,
+            },
+        )
         results = resp.get("similar_incidents", [])
         return results[:limit] if limit > 0 else results
 

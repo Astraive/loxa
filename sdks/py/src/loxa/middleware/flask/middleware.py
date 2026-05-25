@@ -14,13 +14,17 @@ class Middleware:
         self.service = service
 
     def wrap_scope(self, environ: dict) -> object:
-        return StartHTTPEvent(None, Params(
-            event="http.request", kind="http",
-            method=environ.get("REQUEST_METHOD", ""),
-            path=environ.get("PATH_INFO", ""),
-            route=environ.get("PATH_INFO", ""),
-            service=self.service,
-        ))
+        return StartHTTPEvent(
+            None,
+            Params(
+                event="http.request",
+                kind="http",
+                method=environ.get("REQUEST_METHOD", ""),
+                path=environ.get("PATH_INFO", ""),
+                route=environ.get("PATH_INFO", ""),
+                service=self.service,
+            ),
+        )
 
     def __call__(self, environ: dict, start_response: Callable) -> Iterable[bytes]:
         if self.app is None:
@@ -36,7 +40,8 @@ class Middleware:
             return start_response(status, response_headers, exc_info)
 
         try:
-            Enrich(ctx,
+            Enrich(
+                ctx,
                 String("http.user_agent", environ.get("HTTP_USER_AGENT", "")),
                 String("http.remote_ip", environ.get("REMOTE_ADDR", "")),
             )
@@ -49,7 +54,9 @@ class Middleware:
                     chunk = chunk.encode("utf-8")
                     response_bytes += len(chunk)
                 chunks.append(chunk)
-            Finish(ctx, "error" if status_code >= 500 else "success",
+            Finish(
+                ctx,
+                "error" if status_code >= 500 else "success",
                 Int("status_code", status_code),
                 Int("response_bytes", response_bytes),
                 Int("duration_ms", int((time.perf_counter() - started) * 1000)),

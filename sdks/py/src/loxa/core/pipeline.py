@@ -12,13 +12,11 @@ from typing import Callable, Iterable, Protocol
 
 
 class WritableSink(Protocol):
-    def write(self, encoded: str) -> None:
-        ...
+    def write(self, encoded: str) -> None: ...
 
 
 class BatchWritableSink(Protocol):
-    def write_batch(self, encoded_events: list[str]) -> None:
-        ...
+    def write_batch(self, encoded_events: list[str]) -> None: ...
 
 
 @dataclass(slots=True)

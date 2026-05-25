@@ -32,8 +32,10 @@
     "event_id",
     "event_state",
     "event_version",
+    "finished_at",
     "groups",
     "http",
+    "incident_id",
     "kind",
     "level",
     "links",
@@ -57,6 +59,7 @@
     "service",
     "source",
     "span_id",
+    "started_at",
     "status_code",
     "tenant",
     "timers",
@@ -81,8 +84,10 @@
     "event_id",
     "event_state",
     "event_version",
+    "finished_at",
     "groups",
     "http",
+    "incident_id",
     "kind",
     "level",
     "links",
@@ -106,6 +111,7 @@
     "service",
     "source",
     "span_id",
+    "started_at",
     "status_code",
     "tenant",
     "timers",
@@ -194,7 +200,8 @@
   "collector_ack_statuses": [
     "accepted",
     "rejected",
-    "invalid"
+    "invalid",
+    "quarantined"
   ],
   "aliases": {
     "event_type": "event"

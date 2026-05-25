@@ -77,8 +77,7 @@ def _lookup_path(data: dict[str, Any], key: str) -> Any:
 
 
 class Schema(Protocol):
-    def encode(self, event: EventView) -> dict[str, Any]:
-        ...
+    def encode(self, event: EventView) -> dict[str, Any]: ...
 
 
 SchemaFunc = Callable[[EventView], dict[str, Any]]

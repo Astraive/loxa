@@ -4,8 +4,7 @@
 // Run: cargo test --test collector_e2e -- --test-threads=1
 
 use loxa::{
-    CollectorSinkWithEndpoint, Config, HTTPClient, HTTPRequest, New, Params,
-    WithCollectorEndpoint,
+    CollectorSinkWithEndpoint, Config, HTTPClient, HTTPRequest, New, Params, WithCollectorEndpoint,
 };
 use serde_json::Value;
 
@@ -341,8 +340,7 @@ fn full_sdk_flow_emit_to_collector() {
     assert!(collector_health());
 
     // 1. Init logger with collector endpoint (auto-wires HttpBatchSink)
-    let logger =
-        New(Config::production("e2e_full_flow").with_collector_endpoint(COLLECTOR_URL));
+    let logger = New(Config::production("e2e_full_flow").with_collector_endpoint(COLLECTOR_URL));
 
     // 2. Start an event
     let mut ctx = logger.start_event(

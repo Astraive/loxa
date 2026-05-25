@@ -91,7 +91,7 @@
           },
           "status": {
             "type": "string",
-            "enum": ["accepted", "rejected", "invalid"]
+            "enum": ["accepted", "rejected", "invalid", "quarantined"]
           },
           "reason": {
             "type": "string"

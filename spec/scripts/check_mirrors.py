@@ -3,16 +3,17 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Iterable
 
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+    sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+
 
 MIRROR_PAIRS: tuple[tuple[str, str], ...] = (
-    ("spec/schemas/json/event.schema.json", "schema/event.schema.json"),
-    ("spec/schemas/json/event.strict.schema.json", "schema/event.strict.schema.json"),
-    ("spec/schemas/json/event.loose.schema.json", "schema/event.loose.schema.json"),
-    ("spec/schemas/json/ingest-envelope.schema.json", "schema/ingest.schema.json"),
-    ("spec/schemas/json/collector-response.schema.json", "schema/collector-response.schema.json"),
+    # No active mirror pairs — releases/v1/schemas/ are frozen snapshots, not mirrors.
 )
 
 

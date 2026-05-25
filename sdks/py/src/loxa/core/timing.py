@@ -1,4 +1,5 @@
 """Timing primitives: Process, Timer, Group, Stopwatch."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -193,6 +194,7 @@ class StopwatchHandle:
 
 
 # --- Timing helper methods (added to EventContext at runtime) ---
+
 
 def with_process(ctx: Any, name: str, *attrs: Attr, **fields: Any) -> ProcessHandle:
     return ctx.start_process(name, **fields)

@@ -16,13 +16,17 @@ class Middleware:
 
     def wrap_scope(self, scope: dict) -> object:
         route = self.route_resolver(scope) if self.route_resolver else scope.get("path", "")
-        return StartHTTPEvent(None, Params(
-            event="http.request", kind="http",
-            method=scope.get("method", ""),
-            path=scope.get("path", ""),
-            route=route,
-            service=self.service,
-        ))
+        return StartHTTPEvent(
+            None,
+            Params(
+                event="http.request",
+                kind="http",
+                method=scope.get("method", ""),
+                path=scope.get("path", ""),
+                route=route,
+                service=self.service,
+            ),
+        )
 
     async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
         if self.app is None:
@@ -44,12 +48,15 @@ class Middleware:
             await send(message)
 
         try:
-            Enrich(ctx,
+            Enrich(
+                ctx,
                 String("http.user_agent", _header(scope, b"user-agent")),
                 String("http.remote_ip", _remote_ip(scope)),
             )
             await self.app(scope, receive, capture_send)
-            Finish(ctx, "error" if status_code >= 500 else "success",
+            Finish(
+                ctx,
+                "error" if status_code >= 500 else "success",
                 Int("status_code", status_code),
                 Int("response_bytes", response_bytes),
                 Int("duration_ms", int((time.perf_counter() - started) * 1000)),

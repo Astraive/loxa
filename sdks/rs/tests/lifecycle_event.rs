@@ -2,7 +2,10 @@ use serde_json::Map;
 
 #[test]
 fn lifecycle_event_helpers_work() {
-    let mut ctx = loxa::start_event(None, loxa::Params::new("checkout.request").with_kind("http"));
+    let mut ctx = loxa::start_event(
+        None,
+        loxa::Params::new("checkout.request").with_kind("http"),
+    );
     loxa::append(&mut ctx, loxa::user_id("u_123"));
     loxa::enrich(&mut ctx, vec![loxa::tenant_id("t_123")]);
     loxa::set(&mut ctx, "payment.provider", "stripe");
@@ -26,7 +29,11 @@ fn lifecycle_event_helpers_work() {
 
     loxa::delete(&mut ctx, "payment.provider");
     loxa::checkpoint(&mut ctx, "validated");
-    loxa::checkpoint_with_attrs(&mut ctx, "payment_started", &[loxa::string("stage", "payment")]);
+    loxa::checkpoint_with_attrs(
+        &mut ctx,
+        "payment_started",
+        &[loxa::string("stage", "payment")],
+    );
 
     let cloned = loxa::clone_event(&ctx);
     assert_eq!(cloned.event_id, ctx.event_id);

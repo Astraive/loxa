@@ -58,10 +58,16 @@ func TestBaggageAttrsHandlesNilAndTrimmedAllowlist(t *testing.T) {
 	if len(attrs) != 2 {
 		t.Fatalf("expected 2 baggage attrs, got %d", len(attrs))
 	}
-	if attrs[0].Key != "baggage.tenant" || attrs[0].Value != "acme" {
-		t.Fatalf("unexpected tenant baggage attr: %+v", attrs[0])
+	found := map[string]string{}
+	for _, a := range attrs {
+		if v, ok := a.Value.(string); ok {
+			found[a.Key] = v
+		}
 	}
-	if attrs[1].Key != "baggage.role" || attrs[1].Value != "admin" {
-		t.Fatalf("unexpected role baggage attr: %+v", attrs[1])
+	if found["baggage.tenant"] != "acme" {
+		t.Fatalf("missing or wrong tenant baggage attr: %v", found)
+	}
+	if found["baggage.role"] != "admin" {
+		t.Fatalf("missing or wrong role baggage attr: %v", found)
 	}
 }

@@ -39,6 +39,7 @@ CONTRACT = {
   "event_id",
   "event_state",
   "event_version",
+  "finished_at",
   "groups",
   "http",
   "incident_id",
@@ -65,6 +66,7 @@ CONTRACT = {
   "service",
   "source",
   "span_id",
+  "started_at",
   "status_code",
   "tenant",
   "timers",
@@ -89,6 +91,7 @@ CONTRACT = {
   "event_id",
   "event_state",
   "event_version",
+  "finished_at",
   "groups",
   "http",
   "incident_id",
@@ -115,6 +118,7 @@ CONTRACT = {
   "service",
   "source",
   "span_id",
+  "started_at",
   "status_code",
   "tenant",
   "timers",
@@ -203,7 +207,8 @@ CONTRACT = {
   "collector_ack_statuses": [
   "accepted",
   "rejected",
-  "invalid"
+  "invalid",
+  "quarantined"
 ],
   "aliases": {
   "event_type": "event"

@@ -74,9 +74,7 @@ except Exception:
             raise ImportError(
                 "Cannot import loxa contract. Install loxa-spec as a dependency or ensure it's available at spec/generated/python/"
             ) from e
-        loader = importlib.machinery.SourceFileLoader(
-            "loxa_generated_spec_contract_backup", str(backup_path)
-        )
+        loader = importlib.machinery.SourceFileLoader("loxa_generated_spec_contract_backup", str(backup_path))
         spec = importlib.util.spec_from_loader(loader.name, loader)
         if spec is None:
             raise ImportError(f"Cannot load fallback contract module from {backup_path}") from e
@@ -103,7 +101,9 @@ except Exception:
         normalize_event_aliases = backup.normalize_event_aliases
         build_ingest_envelope = backup.build_ingest_envelope
         validate_event_payload = backup.validate_event_payload
-        validate_event_payload_detailed = getattr(backup, "validate_event_payload_detailed", backup.validate_event_payload)
+        validate_event_payload_detailed = getattr(
+            backup, "validate_event_payload_detailed", backup.validate_event_payload
+        )
         validate_flexible_json_bytes = getattr(backup, "validate_flexible_json_bytes", None)
         ValidationError = getattr(backup, "ValidationError", ValueError)
         ValidationErrors = getattr(backup, "ValidationErrors", list)
