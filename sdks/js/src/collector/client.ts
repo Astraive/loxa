@@ -66,7 +66,7 @@ export class CollectorClient {
 
   /** Send a batch of events to the collector. */
   async sendBatch(events: Record<string, any>[]): Promise<CollectorResponse> {
-    const envelope = buildIngestEnvelope('loxa-js', '0.0.2', '', events);
+    const envelope = buildIngestEnvelope('loxa-js', '0.2.0', '', events);
     let body = Buffer.from(JSON.stringify(envelope), 'utf-8');
 
     const headers: Record<string, string> = {

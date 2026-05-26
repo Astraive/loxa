@@ -488,6 +488,35 @@ func applyEnvOverrides(fc *fileConfig) error {
 	setString("CORTEX_BRIDGE_HEADER", &fc.CortexBridge.Header)
 	setString("CORTEX_BRIDGE_API_KEY", &fc.CortexBridge.APIKey)
 
+	// Eventbus env overrides
+	setStringLower("LOXA_EVENTBUS", &fc.EventBus.Type)
+	setString("LOXA_EVENTBUS_TOPIC", &fc.EventBus.Topic)
+	setString("LOXA_EVENTBUS_DLQ_TOPIC", &fc.EventBus.DLQTopic)
+	setString("LOXA_EVENTBUS_GROUP", &fc.EventBus.ConsumerGroup)
+	if err := setInt("LOXA_EVENTBUS_MEMORY_BUFFER", &fc.EventBus.Memory.BufferSize); err != nil {
+		return err
+	}
+	setString("LOXA_EVENTBUS_REDIS_ADDR", &fc.EventBus.Redis.Addr)
+	setString("LOXA_EVENTBUS_REDIS_PASSWORD", &fc.EventBus.Redis.Password)
+	if err := setInt("LOXA_EVENTBUS_REDIS_DB", &fc.EventBus.Redis.DB); err != nil {
+		return err
+	}
+	setString("LOXA_EVENTBUS_REDIS_STREAM", &fc.EventBus.Redis.Stream)
+	setString("LOXA_EVENTBUS_REDIS_GROUP", &fc.EventBus.Redis.Group)
+	if err := setInt64("LOXA_EVENTBUS_REDIS_MAX_LEN", &fc.EventBus.Redis.MaxLen); err != nil {
+		return err
+	}
+	setString("LOXA_EVENTBUS_NATS_URL", &fc.EventBus.NATS.URL)
+	setString("LOXA_EVENTBUS_NATS_STREAM", &fc.EventBus.NATS.Stream)
+	setString("LOXA_EVENTBUS_NATS_SUBJECT", &fc.EventBus.NATS.Subject)
+	setString("LOXA_EVENTBUS_NATS_DURABLE", &fc.EventBus.NATS.Durable)
+	setCSV("LOXA_EVENTBUS_KAFKA_BROKERS", &fc.EventBus.Kafka.Brokers)
+	setString("LOXA_EVENTBUS_KAFKA_TOPIC", &fc.EventBus.Kafka.Topic)
+	setString("LOXA_EVENTBUS_KAFKA_GROUP", &fc.EventBus.Kafka.ConsumerGroup)
+	setCSV("LOXA_KAFKA_BROKERS", &fc.EventBus.Kafka.Brokers)
+	setString("LOXA_KAFKA_TOPIC", &fc.EventBus.Kafka.Topic)
+	setString("LOXA_KAFKA_GROUP", &fc.EventBus.Kafka.ConsumerGroup)
+
 	if fc.Auth.Value == "" && fc.Auth.ValueEnv != "" {
 		fc.Auth.Value = strings.TrimSpace(os.Getenv(fc.Auth.ValueEnv))
 		if fc.Auth.Value != "" {
@@ -1080,6 +1109,28 @@ func runtimeConfigFromFile(fc fileConfig) collectorConfig {
 		cortexBridgeQueueSize:   fc.CortexBridge.QueueSize,
 		cortexBridgeHeader:      strings.TrimSpace(fc.CortexBridge.Header),
 		cortexBridgeAPIKey:      fc.CortexBridge.APIKey,
+		eventBusType:            strings.ToLower(strings.TrimSpace(fc.EventBus.Type)),
+		eventBusTopic:           strings.TrimSpace(fc.EventBus.Topic),
+		eventBusDLQTopic:        strings.TrimSpace(fc.EventBus.DLQTopic),
+		eventBusConsumerGroup:   strings.TrimSpace(fc.EventBus.ConsumerGroup),
+		eventBusMemoryBuffer:    fc.EventBus.Memory.BufferSize,
+		eventBusRedisAddr:       strings.TrimSpace(fc.EventBus.Redis.Addr),
+		eventBusRedisPassword:   fc.EventBus.Redis.Password,
+		eventBusRedisDB:         fc.EventBus.Redis.DB,
+		eventBusRedisStream:     strings.TrimSpace(fc.EventBus.Redis.Stream),
+		eventBusRedisGroup:      strings.TrimSpace(fc.EventBus.Redis.Group),
+		eventBusRedisMaxLen:     fc.EventBus.Redis.MaxLen,
+		eventBusNATSURL:         strings.TrimSpace(fc.EventBus.NATS.URL),
+		eventBusNATSStream:      strings.TrimSpace(fc.EventBus.NATS.Stream),
+		eventBusNATSSubject:     strings.TrimSpace(fc.EventBus.NATS.Subject),
+		eventBusNATSDurable:     strings.TrimSpace(fc.EventBus.NATS.Durable),
+		eventBusKafkaBrokers:    append([]string(nil), fc.EventBus.Kafka.Brokers...),
+		eventBusKafkaTopic:      strings.TrimSpace(fc.EventBus.Kafka.Topic),
+		eventBusKafkaGroup:      strings.TrimSpace(fc.EventBus.Kafka.ConsumerGroup),
+		eventBusKafkaAcks:       strings.ToLower(strings.TrimSpace(fc.EventBus.Kafka.Acks)),
+		eventBusKafkaIdempotent: fc.EventBus.Kafka.EnableIdempotence,
+		eventBusKafkaMaxRetries: fc.EventBus.Kafka.MaxRetries,
+		eventBusKafkaCompress:   strings.ToLower(strings.TrimSpace(fc.EventBus.Kafka.Compression)),
 	}
 }
 

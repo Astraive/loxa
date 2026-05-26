@@ -17,6 +17,7 @@ import (
 
 	"github.com/astraive/loxa-collector/internal/auth"
 	collectorevent "github.com/astraive/loxa-collector/internal/event"
+	"github.com/astraive/loxa-collector/internal/eventbus"
 	processing "github.com/astraive/loxa-collector/internal/processing"
 	serverruntime "github.com/astraive/loxa-collector/internal/server"
 	"github.com/astraive/loxa-collector/internal/sinks/duckdb"
@@ -39,26 +40,53 @@ func runCollector(cfg collectorConfig) error {
 		schedulersStop  chan struct{}
 		schedWG         sync.WaitGroup
 		errCh           = make(chan error, 4)
+		bus             eventbus.Bus
 	)
 
 	if cfg.reliabilityMode == "queue" {
-		sink, err = kafkasink.New(kafkasink.Config{
-			Brokers:           cfg.kafkaBrokers,
-			Topic:             cfg.kafkaTopic,
-			Acks:              cfg.kafkaAcks,
-			RequestTimeout:    cfg.kafkaRequestTimeout,
-			EnableIdempotence: cfg.kafkaIdempotence,
-			MaxRetries:        cfg.kafkaMaxRetries,
-			RetryBackoff:      cfg.kafkaRetryBackoff,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to create kafka sink: %w", err)
+		// Eventbus-based queue mode (pluggable: memory, redis, nats, kafka)
+		busType := cfg.eventBusType
+		if busType == "" {
+			busType = "kafka" // backward compat: if no eventbus type, use kafka directly
 		}
-		logJSON("info", "kafka_sink_initialized", map[string]any{
-			"brokers":     cfg.kafkaBrokers,
-			"topic":       cfg.kafkaTopic,
-			"reliability": "at-least-once (configure broker/producer for exactly-once)",
-		})
+
+		if busType == "kafka" && len(cfg.eventBusKafkaBrokers) == 0 && len(cfg.kafkaBrokers) > 0 {
+			// Backward compat: legacy kafka config with no eventbus config
+			sink, err = kafkasink.New(kafkasink.Config{
+				Brokers:           cfg.kafkaBrokers,
+				Topic:             cfg.kafkaTopic,
+				Acks:              cfg.kafkaAcks,
+				RequestTimeout:    cfg.kafkaRequestTimeout,
+				EnableIdempotence: cfg.kafkaIdempotence,
+				MaxRetries:        cfg.kafkaMaxRetries,
+				RetryBackoff:      cfg.kafkaRetryBackoff,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to create kafka sink: %w", err)
+			}
+			logJSON("info", "kafka_sink_initialized", map[string]any{
+				"brokers":     cfg.kafkaBrokers,
+				"topic":       cfg.kafkaTopic,
+				"reliability": "at-least-once (configure broker/producer for exactly-once)",
+			})
+		} else {
+			// New eventbus path
+			busCfg := cfg.buildEventBusConfig()
+			bus, err = eventbus.New(context.Background(), busCfg)
+			if err != nil {
+				return fmt.Errorf("failed to create eventbus: %w", err)
+			}
+			topic := busCfg.Topic
+			if topic == "" {
+				topic = "loxa.events.raw"
+			}
+			sink = eventbus.NewSinkAdapter(bus, topic)
+			logJSON("info", "eventbus_initialized", map[string]any{
+				"type":        busType,
+				"topic":       topic,
+				"reliability": "at-least-once",
+			})
+		}
 	} else {
 		db, err = sql.Open(cfg.duckDBDriver, cfg.duckDBPath)
 		if err != nil {
@@ -150,6 +178,7 @@ func runCollector(cfg collectorConfig) error {
 		dedupeSeenAt:    make(map[string]time.Time),
 		dedupeStore:     dedupeStore,
 		queryDB:         db,
+		eventBus:        bus,
 	}
 	state.ready.Store(true)
 	state.sinkHealthy.Store(true)
@@ -237,10 +266,30 @@ func runCollector(cfg collectorConfig) error {
 
 	auxServers := make([]serverruntime.Server, 0, 2)
 	if cfg.serverConfig.GRPC.Enabled {
-		auxServers = append(auxServers, serverruntime.NewGRPCServer(cfg.serverConfig.GRPC, state))
+		grpcSrv := serverruntime.NewGRPCServer(cfg.serverConfig.GRPC, state)
+		if cfg.authEnabled {
+			serverSecret := []byte(cfg.storageEncryptionKey)
+			if len(serverSecret) == 0 {
+				serverSecret = []byte("loxa-default-secret")
+			}
+			store := newMemoryKeyStoreFromConfig(cfg, serverSecret)
+			cache := auth.NewMemoryKeyCache(60*time.Second, 10*time.Second)
+			grpcSrv.WithAuth(store, cache, serverSecret)
+		}
+		auxServers = append(auxServers, grpcSrv)
 	}
 	if cfg.serverConfig.GraphQL.Enabled {
-		auxServers = append(auxServers, serverruntime.NewGraphQLServer(cfg.serverConfig.GraphQL, state))
+		graphqlSrv := serverruntime.NewGraphQLServer(cfg.serverConfig.GraphQL, state)
+		if cfg.authEnabled {
+			serverSecret := []byte(cfg.storageEncryptionKey)
+			if len(serverSecret) == 0 {
+				serverSecret = []byte("loxa-default-secret")
+			}
+			store := newMemoryKeyStoreFromConfig(cfg, serverSecret)
+			cache := auth.NewMemoryKeyCache(60*time.Second, 10*time.Second)
+			graphqlSrv.WithAuth(store, cache, serverSecret)
+		}
+		auxServers = append(auxServers, graphqlSrv)
 	}
 	for _, srv := range auxServers {
 		srv := srv
@@ -340,6 +389,9 @@ func shutdownCollector(server *http.Server, auxServers []serverruntime.Server, s
 	}
 	if state.retentionStop != nil {
 		close(state.retentionStop)
+	}
+	if state.eventBus != nil {
+		_ = state.eventBus.Close(context.Background())
 	}
 	logJSON("info", "collector_shutdown_complete", nil)
 }

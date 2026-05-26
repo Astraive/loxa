@@ -2,7 +2,7 @@
 
 ## Versioning
 
-Cortex follows semantic versioning. The current stable release is **v0.0.2**.
+Cortex follows semantic versioning. The current stable release is **v0.2.0**.
 
 ## Pre-release Checklist
 
@@ -48,16 +48,16 @@ go build -o cortex.exe ./cmd/server
 ## Tagging
 
 ```bash
-git tag -a cortex/v0.0.2 -m "cortex v0.0.2"
-git push origin cortex/v0.0.2
+git tag -a cortex/v0.2.0 -m "cortex v0.2.0"
+git push origin cortex/v0.2.0
 ```
 
 ## Docker Release
 
 ```bash
 cd cortex/configs
-docker build -t ghcr.io/astraive/loxa-cortex:0.0.2 ..
-docker push ghcr.io/astraive/loxa-cortex:0.0.2
+docker build -t ghcr.io/astraive/loxa-cortex:0.2.0 ..
+docker push ghcr.io/astraive/loxa-cortex:0.2.0
 ```
 
 ## Kubernetes Deployment

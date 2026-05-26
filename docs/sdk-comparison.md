@@ -1,6 +1,6 @@
 # SDK Comparison
 
-v0.0.2 standardizes the same product shape in every SDK: default `loxa` client, cross-language factory, immutable same-config aliases, and first-class lifecycle primitives (`checkpoint`, `process`, `group`, `timer`, `stopwatch`). See [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md) for the canonical catalog.
+v0.2.0 standardizes the same product shape in every SDK: default `loxa` client, cross-language factory, immutable same-config aliases, and first-class lifecycle primitives (`checkpoint`, `process`, `group`, `timer`, `stopwatch`). See [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md) for the canonical catalog.
 
 ## Feature Matrix
 
@@ -37,7 +37,7 @@ Each SDK maintains a parity manifest tracking feature implementation status:
 - Rust: `sdks/rs/docs/parity.md`
 - JavaScript: `sdks/js/docs/parity.md`
 
-v0.0.2 updates the parity target from stable-v1 parity to the full product-parity method family.
+v0.2.0 updates the parity target from stable-v1 parity to the full product-parity method family.
 
 ## Common Patterns
 

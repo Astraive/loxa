@@ -194,7 +194,7 @@ export class HTTPBatchSink implements Sink {
     this.apiKey = opts.apiKey || '';
     this.authHeader = opts.authHeader || 'Authorization';
     this.sdkName = opts.sdkName || 'loxa-js';
-    this.sdkVersion = opts.sdkVersion || '0.0.2';
+    this.sdkVersion = opts.sdkVersion || '0.2.0';
     this.service = opts.service || '';
     this.timeout = opts.timeout || 2000;
     this.retries = opts.retries ?? 3;

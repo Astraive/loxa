@@ -83,6 +83,17 @@ func ApplyEnvOverrides(cfg *Config) error {
 		"COLLECTOR_KAFKA_BROKERS": csvSetter(&cfg.Kafka.Brokers),
 		"COLLECTOR_KAFKA_TOPIC":   func(v string) error { cfg.Kafka.Topic = v; return nil },
 
+		"LOXA_EVENTBUS":        func(v string) error { cfg.EventBus.Type = v; return nil },
+		"LOXA_EVENTBUS_TOPIC":  func(v string) error { cfg.EventBus.Topic = v; return nil },
+		"LOXA_EVENTBUS_GROUP":  func(v string) error { cfg.EventBus.ConsumerGroup = v; return nil },
+		"LOXA_EVENTBUS_DLQ":    func(v string) error { cfg.EventBus.DLQTopic = v; return nil },
+		"LOXA_EVENTBUS_NATS_URL":     func(v string) error { cfg.EventBus.NATS.URL = v; return nil },
+		"LOXA_EVENTBUS_NATS_STREAM":  func(v string) error { cfg.EventBus.NATS.Stream = v; return nil },
+		"LOXA_EVENTBUS_REDIS_ADDR":   func(v string) error { cfg.EventBus.Redis.Addr = v; return nil },
+		"LOXA_KAFKA_BROKERS":         csvSetter(&cfg.EventBus.Kafka.Brokers),
+		"LOXA_KAFKA_TOPIC":           func(v string) error { cfg.EventBus.Kafka.Topic = v; return nil },
+		"LOXA_KAFKA_GROUP":           func(v string) error { cfg.EventBus.Kafka.ConsumerGroup = v; return nil },
+
 		"LOXA_WORKER_CONSUMER_GROUP": func(v string) error { cfg.Worker.ConsumerGroup = v; return nil },
 		"LOXA_WORKER_POLL_TIMEOUT":   durationSetter(&cfg.Worker.PollTimeout),
 

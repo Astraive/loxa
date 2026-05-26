@@ -148,21 +148,21 @@ go install github.com/astraive/loxa/cli/cmd/loxa@v0.0.1
 
 ### From Docker
 ```bash
-docker pull astraive/loxa:0.0.2
-docker pull astraive/loxa-cli:0.0.2
+docker pull astraive/loxa:0.2.0
+docker pull astraive/loxa-cli:0.2.0
 ```
 
 ### From Helm (Kubernetes)
 ```bash
 helm repo add loxa https://charts.loxa.dev
-helm install loxa loxa/loxa --version 0.0.2
+helm install loxa loxa/loxa --version 0.2.0
 ```
 
 ## SDK Versions
 
 - **Go**: `github.com/astraive/loxa/sdks/go v0.0.1`
-- **Python**: `loxa==0.0.2` (PyPI)
-- **Rust**: `loxa = "0.0.2"` (Crates.io)
+- **Python**: `loxa==0.2.0` (PyPI)
+- **Rust**: `loxa = "0.2.0"` (Crates.io)
 
 ## Changelog
 
@@ -207,6 +207,6 @@ LOXA is distributed under the MIT License. See [LICENSE](../LICENSE) for details
 
 ---
 
-**Version**: 0.0.2  
+**Version**: 0.2.0  
 **Release Date**: 2026-05-14  
 **Status**: Stable (Production Ready)

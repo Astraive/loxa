@@ -54,7 +54,7 @@ func EmitCommand(cfg config.Config, args []string) error {
 	if err != nil {
 		return err
 	}
-	compactRaw, err := speccontract.MarshalIngestEnvelope("loxa-cli", "0.0.2", *service, []json.RawMessage{eventRaw})
+	compactRaw, err := speccontract.MarshalIngestEnvelope("loxa-cli", "0.2.0", *service, []json.RawMessage{eventRaw})
 	if err != nil {
 		return err
 	}

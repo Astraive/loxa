@@ -24,7 +24,7 @@ class _CollectorHandler(BaseHTTPRequestHandler):
             self._write(200, {"status": "ready"})
             return
         if self.path.startswith("/version"):
-            self._write(200, {"version": "0.0.2"})
+            self._write(200, {"version": "0.2.0"})
             return
         if self.path.startswith("/status"):
             self._write(200, {"status": "ok"})
@@ -115,7 +115,7 @@ def test_collector_client_family():
         }
         assert cc.health() is True
         assert cc.ready() is True
-        assert cc.version()["version"] == "0.0.2"
+        assert cc.version()["version"] == "0.2.0"
         assert cc.status()["status"] == "ok"
         assert cc.validate({"event": "verification"})["valid"] is True
         assert cc.ingest([json.dumps(valid_event)]).accepted >= 1

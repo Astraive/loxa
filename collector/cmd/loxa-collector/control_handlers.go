@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const collectorVersion = "1.0.0"
+const collectorVersion = "0.2.0"
 
 func (s *collectorState) handleVersion(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{

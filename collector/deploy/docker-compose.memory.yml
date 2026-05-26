@@ -1,0 +1,30 @@
+# Loxa Collector — memory eventbus (default, for local dev/testing)
+# Usage: docker compose -f docker-compose.memory.yml up
+services:
+  collector:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.collector
+    command: ["./loxa-collector", "run", "-c", "/app/build/loxa-collector.yaml"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../:/app
+    environment:
+      LOXA_EVENTBUS: memory
+      COLLECTOR_RELIABILITY_MODE: direct
+
+  sample-app:
+    image: curlimages/curl:8.12.1
+    depends_on:
+      - collector
+    volumes:
+      - ../build:/payload
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        sleep 3
+        curl -sS -X POST http://collector:9090/ingest \
+          --data-binary @/payload/sample-events.ndjson \
+          -H "Content-Type: application/x-ndjson"

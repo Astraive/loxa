@@ -1,0 +1,68 @@
+# Loxa Collector — Redis Streams eventbus (simple self-hosted)
+# Usage: docker compose -f docker-compose.redis.yml up
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  collector:
+    build:
+      context: ../..
+      dockerfile: collector/deploy/Dockerfile.collector
+    command: ["./loxa-collector", "run", "-c", "/app/build/loxa-collector.yaml"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../../:/app
+    environment:
+      LOXA_EVENTBUS: redis
+      LOXA_EVENTBUS_TOPIC: loxa.events.raw
+      LOXA_EVENTBUS_GROUP: loxa-worker
+      LOXA_EVENTBUS_REDIS_ADDR: redis:6379
+      COLLECTOR_RELIABILITY_MODE: queue
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: collector/deploy/Dockerfile.collector
+    command: ["./loxa-worker", "run", "-c", "/app/build/loxa-collector.yaml"]
+    volumes:
+      - ../../:/app
+    environment:
+      LOXA_EVENTBUS: redis
+      LOXA_EVENTBUS_TOPIC: loxa.events.raw
+      LOXA_EVENTBUS_GROUP: loxa-worker
+      LOXA_EVENTBUS_REDIS_ADDR: redis:6379
+      COLLECTOR_RELIABILITY_MODE: queue
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  sample-app:
+    image: curlimages/curl:8.12.1
+    depends_on:
+      - collector
+    volumes:
+      - ../build:/payload
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        sleep 5
+        curl -sS -X POST http://collector:9090/ingest \
+          --data-binary @/payload/sample-events.ndjson \
+          -H "Content-Type: application/x-ndjson"
+
+volumes:
+  redis-data:

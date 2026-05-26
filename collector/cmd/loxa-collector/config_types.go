@@ -12,6 +12,7 @@ import (
 
 	collectorconfig "github.com/astraive/loxa-collector/internal/config"
 	collectorevent "github.com/astraive/loxa-collector/internal/event"
+	"github.com/astraive/loxa-collector/internal/eventbus"
 	processing "github.com/astraive/loxa-collector/internal/processing"
 	serverconfig "github.com/astraive/loxa-collector/internal/server"
 	"golang.org/x/time/rate"
@@ -164,6 +165,28 @@ type collectorConfig struct {
 	cortexBridgeHeader      string
 	cortexBridgeAPIKey      string
 	cortexSchemaEnabled     bool
+	eventBusType            string
+	eventBusTopic           string
+	eventBusDLQTopic        string
+	eventBusConsumerGroup   string
+	eventBusMemoryBuffer    int
+	eventBusRedisAddr       string
+	eventBusRedisPassword   string
+	eventBusRedisDB         int
+	eventBusRedisStream     string
+	eventBusRedisGroup      string
+	eventBusRedisMaxLen     int64
+	eventBusNATSURL         string
+	eventBusNATSStream      string
+	eventBusNATSSubject     string
+	eventBusNATSDurable     string
+	eventBusKafkaBrokers    []string
+	eventBusKafkaTopic      string
+	eventBusKafkaGroup      string
+	eventBusKafkaAcks       string
+	eventBusKafkaIdempotent bool
+	eventBusKafkaMaxRetries int
+	eventBusKafkaCompress   string
 }
 
 type collectorMetrics struct {
@@ -222,6 +245,49 @@ type collectorState struct {
 	reliabilityCancel context.CancelFunc
 	retentionStop     chan struct{}
 	closeOnce         sync.Once
+	eventBus          eventbus.Bus
+}
+
+func (c *collectorConfig) buildEventBusConfig() eventbus.Config {
+	cfg := eventbus.Config{
+		Type:          c.eventBusType,
+		Topic:         c.eventBusTopic,
+		DLQTopic:      c.eventBusDLQTopic,
+		ConsumerGroup: c.eventBusConsumerGroup,
+		Memory: eventbus.MemoryConfig{
+			BufferSize: c.eventBusMemoryBuffer,
+		},
+		Redis: eventbus.RedisConfig{
+			Addr:     c.eventBusRedisAddr,
+			Password: c.eventBusRedisPassword,
+			DB:       c.eventBusRedisDB,
+			Stream:   c.eventBusRedisStream,
+			Group:    c.eventBusRedisGroup,
+			MaxLen:   c.eventBusRedisMaxLen,
+		},
+		NATS: eventbus.NATSConfig{
+			URL:     c.eventBusNATSURL,
+			Stream:  c.eventBusNATSStream,
+			Subject: c.eventBusNATSSubject,
+			Durable: c.eventBusNATSDurable,
+		},
+		Kafka: eventbus.KafkaConfig{
+			Brokers:           c.eventBusKafkaBrokers,
+			Topic:             c.eventBusKafkaTopic,
+			ConsumerGroup:     c.eventBusKafkaGroup,
+			Acks:              c.eventBusKafkaAcks,
+			EnableIdempotence: c.eventBusKafkaIdempotent,
+			MaxRetries:        c.eventBusKafkaMaxRetries,
+			Compression:       c.eventBusKafkaCompress,
+		},
+	}
+	if cfg.Topic == "" {
+		cfg.Topic = "loxa.events.raw"
+	}
+	if cfg.ConsumerGroup == "" {
+		cfg.ConsumerGroup = "loxa-worker"
+	}
+	return cfg
 }
 
 func (s *collectorState) GetMetrics() serverconfig.Metrics {

@@ -1,9 +1,9 @@
 # Getting Started with LOXA
 
-![Version](https://img.shields.io/badge/version-0.0.2-blue)
+![Version](https://img.shields.io/badge/version-0.2.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-> v0.0.2 makes the lifecycle primitives first class across every SDK. For the canonical product plan and full method catalog, see [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md) and [business-instrumentation.md](./business-instrumentation.md).
+> v0.2.0 makes the lifecycle primitives first class across every SDK. For the canonical product plan and full method catalog, see [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md) and [business-instrumentation.md](./business-instrumentation.md).
 
 ## Table of Contents
 

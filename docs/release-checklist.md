@@ -221,5 +221,5 @@
 ---
 
 **Release Date**: May 14, 2026  
-**Version**: 0.0.2  
+**Version**: 0.2.0  
 **Status**: ✅ **APPROVED FOR PRODUCTION**

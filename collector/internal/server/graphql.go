@@ -8,14 +8,19 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/astraive/loxa-collector/internal/auth"
 	"github.com/graphql-go/graphql"
 )
 
 type GraphQLServer struct {
-	cfg    GraphQLConfig
-	state  State
-	ready  atomic.Bool
-	server *http.Server
+	cfg          GraphQLConfig
+	state        State
+	ready        atomic.Bool
+	server       *http.Server
+	authEnabled  bool
+	keyStore     auth.KeyStore
+	keyCache     *auth.MemoryKeyCache
+	serverSecret []byte
 }
 
 func NewGraphQLServer(cfg GraphQLConfig, state State) *GraphQLServer {
@@ -23,6 +28,16 @@ func NewGraphQLServer(cfg GraphQLConfig, state State) *GraphQLServer {
 		cfg:   cfg,
 		state: state,
 	}
+}
+
+// WithAuth configures API key authentication for the GraphQL server.
+// When set, all requests to the GraphQL endpoint are authenticated.
+func (s *GraphQLServer) WithAuth(store auth.KeyStore, cache *auth.MemoryKeyCache, serverSecret []byte) *GraphQLServer {
+	s.authEnabled = true
+	s.keyStore = store
+	s.keyCache = cache
+	s.serverSecret = serverSecret
+	return s
 }
 
 func (s *GraphQLServer) Name() string { return "graphql" }
@@ -112,9 +127,15 @@ func (s *GraphQLServer) Start(ctx context.Context) error {
 		_ = json.NewEncoder(w).Encode(result)
 	})
 
+	var handler http.Handler = mux
+	if s.authEnabled {
+		authMW := auth.Middleware(s.keyStore, s.keyCache, s.serverSecret)
+		handler = authMW(handler)
+	}
+
 	s.server = &http.Server{
 		Addr:    s.cfg.Port,
-		Handler: mux,
+		Handler: handler,
 	}
 
 	go func() {

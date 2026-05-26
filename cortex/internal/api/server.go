@@ -146,24 +146,34 @@ func (s *Server) Router() http.Handler {
 		r.Use(s.rateLimit.Middleware)
 	}
 
-	registerAPIRoutes := func(router chi.Router) {
-		router.Post("/events", s.IngestEvent)
-		router.Post("/events/batch", s.IngestBatch)
-		router.Post("/events/jsonl", s.IngestJSONL)
-
-		router.Post("/reconstruct", s.Reconstruct)
-		router.Post("/incidents/{incident_id}/reconstruct", s.ReconstructIncident)
-
-		router.Post("/feedback/remediation", s.RecordRemediation)
-		router.Post("/feedback/incident", s.RecordIncidentFeedback)
-
-		router.Get("/graph/service/{service}", s.ServiceGraph)
-		router.Get("/graph/incident/{incident_id}", s.IncidentGraph)
+	// Per-route role checks (pass-through when auth is nil)
+	requireWriter := func(next http.Handler) http.Handler { return next }
+	requireReader := func(next http.Handler) http.Handler { return next }
+	if s.auth != nil {
+		requireWriter = s.auth.RequireRole("writer")
+		requireReader = s.auth.RequireRole("reader")
 	}
-	registerAPIRoutes(r)
 
-	r.Handle("/graphql", s.graphql.Handler())
-	r.Handle("/ws", s.WebSocketHandler())
+	// Ingest endpoints: writer role required
+	r.With(requireWriter).Post("/events", s.IngestEvent)
+	r.With(requireWriter).Post("/events/batch", s.IngestBatch)
+	r.With(requireWriter).Post("/events/jsonl", s.IngestJSONL)
+
+	// Reconstruct endpoints: reader role required
+	r.With(requireReader).Post("/reconstruct", s.Reconstruct)
+	r.With(requireReader).Post("/incidents/{incident_id}/reconstruct", s.ReconstructIncident)
+
+	// Feedback endpoints: writer role required
+	r.With(requireWriter).Post("/feedback/remediation", s.RecordRemediation)
+	r.With(requireWriter).Post("/feedback/incident", s.RecordIncidentFeedback)
+
+	// Graph endpoints: reader role required
+	r.With(requireReader).Get("/graph/service/{service}", s.ServiceGraph)
+	r.With(requireReader).Get("/graph/incident/{incident_id}", s.IncidentGraph)
+
+	// GraphQL and WebSocket: reader role required
+	r.With(requireReader).Handle("/graphql", s.graphql.Handler())
+	r.With(requireReader).Handle("/ws", s.WebSocketHandler())
 
 	return r
 }

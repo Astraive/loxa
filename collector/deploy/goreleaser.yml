@@ -1,5 +1,5 @@
 project_name: loxa
-version: 0.0.2
+version: 0.2.0
 archives:
   - format: tar.gz
 builds:

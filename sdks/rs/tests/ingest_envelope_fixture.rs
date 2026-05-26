@@ -83,7 +83,7 @@ fn collector_http_client_rejects_invalid_envelope() {
     let client = CollectorHttpClient::new("http://collector.example/events");
     let invalid = serde_json::json!({
         "api_version": "v1",
-        "source": { "sdk": "loxa-rs", "version": "0.0.2", "service": "checkout" },
+        "source": { "sdk": "loxa-rs", "version": "0.2.0", "service": "checkout" },
         "events": []
     });
     assert!(client.validate_envelope(&invalid).is_err());

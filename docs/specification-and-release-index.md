@@ -1,8 +1,8 @@
-# LOXA v0.0.2 Specification & Release Index
+# LOXA v0.2.0 Specification & Release Index
 
 **Status**: ✅ **PRODUCTION READY**  
 **Release Date**: May 15, 2026  
-**Version**: 0.0.2
+**Version**: 0.2.0
 
 ---
 
@@ -73,7 +73,7 @@ All 7 P0 items from the release roadmap have been implemented:
 ### 5. Python/Rust Stable Labels ✅
 - **Status**: All 4 SDKs marked as STABLE in README files
 - **Location**: `sdks/py/README.md`, `sdks/rs/README.md`, `sdks/go/README.md`, `sdks/js/README.md`
-- **Message**: "STABLE (v0.0.2) - Production-ready, full feature conformance"
+- **Message**: "STABLE (v0.2.0) - Production-ready, full feature conformance"
 - **Impact**: All SDKs production-ready
 
 ### 6. CLI Command Maturity Labels ✅
@@ -128,9 +128,9 @@ loxa/
 │   │   └── internal/core/
 │   │       └── metrics.go (already has OnEmit delivery metrics)
 │   ├── py/
-│   │   └── README.md                      ✅ STABLE (v0.0.2)
+│   │   └── README.md                      ✅ STABLE (v0.2.0)
 │   ├── rs/
-│   │   └── README.md                      ✅ STABLE (v0.0.2)
+│   │   └── README.md                      ✅ STABLE (v0.2.0)
 │   └── js/
 │       └── README.md
 └── cli/
@@ -214,7 +214,7 @@ loxa/
 
 ## What's Next? (P1 Roadmap)
 
-After v0.0.2 P0 release, P1 focuses on **production-credible collector**:
+After v0.2.0 P0 release, P1 focuses on **production-credible collector**:
 
 1. Durable spool crash recovery tests
 2. Retry + DLQ end-to-end tests
@@ -261,7 +261,7 @@ See [MVP_CUT.md](spec/docs/MVP_CUT.md) for full v1.0 contract.
 
 ---
 
-**Version**: 0.0.2  
+**Version**: 0.2.0  
 **Released**: May 15, 2026  
 **Status**: ✅ Production Ready  
 **P0 Roadmap**: ✅ Complete

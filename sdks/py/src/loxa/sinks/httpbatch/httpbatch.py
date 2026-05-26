@@ -35,7 +35,7 @@ class HTTPBatchSink:
     api_key: str = ""
     auth_header: str = "Authorization"
     sdk_name: str = "loxa-py"
-    sdk_version: str = "0.0.2"
+    sdk_version: str = "0.2.0"
     service: str = ""
     timeout: float = 2.0
     retries: int = 2

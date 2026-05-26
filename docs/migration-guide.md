@@ -62,7 +62,7 @@ auth:
 go get github.com/astraive/loxa/sdks/go@v0.0.1
 
 # Python
-pip install --upgrade loxa==0.0.2
+pip install --upgrade loxa==0.2.0
 
 # Rust
 cargo update loxa --allow-prerelease
@@ -104,7 +104,7 @@ curl http://localhost:8080/status
 
 ```bash
 # Emit test event
-loxa emit --event upgrade.test --key version --value 0.0.2
+loxa emit --event upgrade.test --key version --value 0.2.0
 
 # Query events
 loxa query --sql "SELECT * FROM events WHERE event_type = 'upgrade.test'"

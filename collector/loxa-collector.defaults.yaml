@@ -119,6 +119,33 @@ kafka:
   max_retries: 10
   retry_backoff: 100ms
 
+eventbus:
+  type: memory
+  topic: loxa.events.raw
+  dlq_topic: loxa.events.dlq
+  consumer_group: loxa-worker
+  memory:
+    buffer_size: 10000
+  redis:
+    addr: 127.0.0.1:6379
+    stream: loxa.events.raw
+    group: loxa-worker
+    max_len: 1000000
+  nats:
+    url: nats://127.0.0.1:4222
+    stream: LOXA
+    subject: loxa.events.raw
+    durable: loxa-worker
+  kafka:
+    brokers:
+      - 127.0.0.1:9092
+    topic: loxa.events.raw
+    consumer_group: loxa-worker
+    acks: all
+    enable_idempotence: true
+    max_retries: 3
+    compression: zstd
+
 worker:
   consumer_group: loxa-worker
   poll_timeout: 2s

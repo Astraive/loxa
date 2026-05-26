@@ -95,7 +95,7 @@ func TestPublicAPISurfaceCoreFlow(t *testing.T) {
 		loxa.Country("IN"),
 		loxa.Device("desktop"),
 		loxa.Platform("web"),
-		loxa.AppVersion("0.0.2"),
+		loxa.AppVersion("0.2.0"),
 		loxa.ErrorType("ValidationError"),
 		loxa.ErrorCode("INVALID_INPUT"),
 		loxa.ErrorMessage("validation failed"),

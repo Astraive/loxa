@@ -1,0 +1,72 @@
+# Loxa Collector — NATS JetStream eventbus (recommended production default)
+# Usage: docker compose -f docker-compose.nats.yml up
+services:
+  nats:
+    image: nats:2.11-alpine
+    command: ["--jetstream", "--store_dir", "/data", "-m", "8222"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - nats-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  collector:
+    build:
+      context: ../..
+      dockerfile: collector/deploy/Dockerfile.collector
+    command: ["./loxa-collector", "run", "-c", "/app/build/loxa-collector.yaml"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../../:/app
+    environment:
+      LOXA_EVENTBUS: nats
+      LOXA_EVENTBUS_TOPIC: loxa.events.raw
+      LOXA_EVENTBUS_GROUP: loxa-worker
+      LOXA_EVENTBUS_NATS_URL: nats://nats:4222
+      LOXA_EVENTBUS_NATS_STREAM: LOXA
+      COLLECTOR_RELIABILITY_MODE: queue
+    depends_on:
+      nats:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: collector/deploy/Dockerfile.collector
+    command: ["./loxa-worker", "run", "-c", "/app/build/loxa-collector.yaml"]
+    volumes:
+      - ../../:/app
+    environment:
+      LOXA_EVENTBUS: nats
+      LOXA_EVENTBUS_TOPIC: loxa.events.raw
+      LOXA_EVENTBUS_GROUP: loxa-worker
+      LOXA_EVENTBUS_NATS_URL: nats://nats:4222
+      LOXA_EVENTBUS_NATS_STREAM: LOXA
+      COLLECTOR_RELIABILITY_MODE: queue
+    depends_on:
+      nats:
+        condition: service_healthy
+
+  sample-app:
+    image: curlimages/curl:8.12.1
+    depends_on:
+      - collector
+    volumes:
+      - ../build:/payload
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        sleep 5
+        curl -sS -X POST http://collector:9090/ingest \
+          --data-binary @/payload/sample-events.ndjson \
+          -H "Content-Type: application/x-ndjson"
+
+volumes:
+  nats-data:

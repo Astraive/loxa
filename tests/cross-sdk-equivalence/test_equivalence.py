@@ -159,9 +159,9 @@ def main():
         print(f"  Got:      {json.dumps({k: found.get(k) for k in ['service','event','kind','outcome']})}")
         sys.exit(1)
 
-    # ── v0.0.2: Release field equivalence ──────────────────────────────────
+    # ── v0.2.0: Release field equivalence ──────────────────────────────────
     print()
-    print("=== v0.0.2 Extended Equivalence Checks ===")
+    print("=== v0.2.0 Extended Equivalence Checks ===")
     print()
 
     # 1. Release field equivalence
@@ -242,7 +242,7 @@ def main():
         print("  WARN: Domain event emit failed")
 
     print()
-    print("=== v0.0.2 Extended Checks Complete ===")
+    print("=== v0.2.0 Extended Checks Complete ===")
     print()
     print("=== Equivalence Test PASSED ===")
 

@@ -133,7 +133,7 @@ fn raw_envelope_accepted_by_collector() {
 
     let envelope = serde_json::json!({
         "api_version": "v1",
-        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "e2e_raw"},
+        "source": {"sdk": "loxa-rs", "version": "0.2.0", "service": "e2e_raw"},
         "events": [{
             "event_id": "evt_e2e_raw_001",
             "event": "e2e.raw_envelope",
@@ -177,7 +177,7 @@ fn batch_envelope_accepted_by_collector() {
 
     let envelope = serde_json::json!({
         "api_version": "v1",
-        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "e2e_batch"},
+        "source": {"sdk": "loxa-rs", "version": "0.2.0", "service": "e2e_batch"},
         "events": events
     });
 
@@ -226,7 +226,7 @@ fn http_event_with_trace_context_accepted() {
 
     let envelope = serde_json::json!({
         "api_version": "v1",
-        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "e2e_http"},
+        "source": {"sdk": "loxa-rs", "version": "0.2.0", "service": "e2e_http"},
         "events": [{
             "event_id": "evt_e2e_http_001",
             "event": "GET /api/users",
@@ -255,7 +255,7 @@ fn error_event_with_error_details_accepted() {
 
     let envelope = serde_json::json!({
         "api_version": "v1",
-        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "e2e_error"},
+        "source": {"sdk": "loxa-rs", "version": "0.2.0", "service": "e2e_error"},
         "events": [{
             "event_id": "evt_e2e_error_001",
             "event": "e2e.error_event",
@@ -281,7 +281,7 @@ fn enriched_event_with_attrs_accepted() {
 
     let envelope = serde_json::json!({
         "api_version": "v1",
-        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "e2e_attrs"},
+        "source": {"sdk": "loxa-rs", "version": "0.2.0", "service": "e2e_attrs"},
         "events": [{
             "event_id": "evt_e2e_attrs_001",
             "event": "e2e.enriched",
@@ -307,7 +307,7 @@ fn collector_rejects_invalid_envelope() {
     assert!(collector_health());
 
     let bad_envelope = serde_json::json!({
-        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "test"},
+        "source": {"sdk": "loxa-rs", "version": "0.2.0", "service": "test"},
         "events": [{"event_id": "x", "event": "test", "kind": "event", "timestamp": "2026-05-20T12:00:00Z", "service": "test"}]
     });
 
@@ -322,7 +322,7 @@ fn collector_rejects_empty_events() {
 
     let bad_envelope = serde_json::json!({
         "api_version": "v1",
-        "source": {"sdk": "loxa-rs", "version": "0.0.2", "service": "test"},
+        "source": {"sdk": "loxa-rs", "version": "0.2.0", "service": "test"},
         "events": []
     });
 

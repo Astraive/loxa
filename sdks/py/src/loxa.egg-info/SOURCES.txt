@@ -38,6 +38,7 @@ src/loxa/core/http_client.py
 src/loxa/core/http_context.py
 src/loxa/core/level.py
 src/loxa/core/logger.py
+src/loxa/core/lql.py
 src/loxa/core/metric.py
 src/loxa/core/options.py
 src/loxa/core/params.py

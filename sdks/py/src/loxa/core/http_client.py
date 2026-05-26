@@ -124,7 +124,7 @@ class CollectorClient:
         timeout: float = 2.0,
         retries: int = 2,
         sdk_name: str = "loxa-py",
-        sdk_version: str = "0.0.2",
+        sdk_version: str = "0.2.0",
         service: str = "",
     ) -> None:
         self.endpoint = endpoint

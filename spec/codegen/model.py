@@ -104,6 +104,7 @@ def build_contract(spec_root: Path) -> dict[str, Any]:
     allowed_top_level_fields = sorted(props.keys())
 
     return {
+        "product_version": "0.2.0",
         "spec_version": props["schema_version"]["enum"][0],
         "api_version": ingest_schema["properties"]["api_version"]["enum"][0],
         "event_version": props["event_version"]["enum"][0],

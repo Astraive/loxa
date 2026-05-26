@@ -168,24 +168,24 @@ Use `loxa maturity` to view current command stability levels:
 
 | Command | Maturity | Notes |
 |---------|----------|-------|
-| init | stable | v0.0.2: Core initialization working reliably |
-| dev | stable | v0.0.2: Development server fully tested |
-| config | stable | v0.0.2: Configuration management solid |
-| schema | stable | v0.0.2: Schema validation complete |
-| collector | stable | v0.0.2: Collector CLI fully functional |
-| emit | stable | v0.0.2: Event emission tested |
-| query | stable | v0.0.2: SQL query support production-ready |
-| tail | stable | v0.0.2: Log tail functionality complete |
-| bench | stable | v0.0.2: Load generation validated |
-| worker | beta | v0.0.2: Worker mode working, may refine distribution |
-| dlq | beta | v0.0.2: DLQ replay available, refinements planned |
-| replay | beta | v0.0.2: DLQ/spool replay working |
-| delete | beta | v0.0.2: GDPR deletion available, SLOs TBD |
-| audit | beta | v0.0.2: Audit/PII discovery available |
-| deploy | beta | v0.0.2: Docker/Helm/K8s support, multi-cloud TBD |
-| export | experimental | v0.0.2: Format support may change |
-| doctor | experimental | v0.0.2: Environment checks in progress |
-| dashboard | experimental | v0.0.2: Web UI under active development |
+| init | stable | v0.2.0: Core initialization working reliably |
+| dev | stable | v0.2.0: Development server fully tested |
+| config | stable | v0.2.0: Configuration management solid |
+| schema | stable | v0.2.0: Schema validation complete |
+| collector | stable | v0.2.0: Collector CLI fully functional |
+| emit | stable | v0.2.0: Event emission tested |
+| query | stable | v0.2.0: SQL query support production-ready |
+| tail | stable | v0.2.0: Log tail functionality complete |
+| bench | stable | v0.2.0: Load generation validated |
+| worker | beta | v0.2.0: Worker mode working, may refine distribution |
+| dlq | beta | v0.2.0: DLQ replay available, refinements planned |
+| replay | beta | v0.2.0: DLQ/spool replay working |
+| delete | beta | v0.2.0: GDPR deletion available, SLOs TBD |
+| audit | beta | v0.2.0: Audit/PII discovery available |
+| deploy | beta | v0.2.0: Docker/Helm/K8s support, multi-cloud TBD |
+| export | experimental | v0.2.0: Format support may change |
+| doctor | experimental | v0.2.0: Environment checks in progress |
+| dashboard | experimental | v0.2.0: Web UI under active development |
 
 **Stability Definitions**:
 - **stable**: Production-ready, covered by release tests, API stable until major version

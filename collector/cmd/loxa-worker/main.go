@@ -14,6 +14,7 @@ import (
 	"time"
 
 	collectorevent "github.com/astraive/loxa-collector/internal/event"
+	"github.com/astraive/loxa-collector/internal/eventbus"
 	processing "github.com/astraive/loxa-collector/internal/processing"
 	"github.com/astraive/loxa-collector/internal/sinks/duckdb"
 	_ "github.com/marcboeker/go-duckdb"
@@ -115,7 +116,7 @@ type workerState struct {
 	processor *processing.Processor
 }
 
-var version = "0.0.2"
+var version = "0.2.0"
 
 func main() {
 	if err := executeWorkerCLI(os.Args[1:]); err != nil {
@@ -220,9 +221,32 @@ func runWorker(cfg workerConfig) error {
 	}
 	defer func() { _ = processor.Close() }()
 
-	reader, err := newKafkaQueueReader(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to create kafka reader: %w", err)
+	var reader queueReader
+	busType := cfg.eventBusType
+	if busType != "" {
+		// New eventbus path
+		busCfg := cfg.buildEventBusConfig()
+		bus, busErr := eventbus.New(context.Background(), busCfg)
+		if busErr != nil {
+			return fmt.Errorf("failed to create eventbus: %w", busErr)
+		}
+		topic := busCfg.Topic
+		if topic == "" {
+			topic = "loxa.events.raw"
+		}
+		reader = newEventbusQueueReader(bus, topic, cfg.workerConsumerGroup)
+		logJSON("info", "worker_eventbus_initialized", map[string]any{
+			"type":  busType,
+			"topic": topic,
+			"group": cfg.workerConsumerGroup,
+		})
+	} else {
+		// Legacy Kafka path
+		var kErr error
+		reader, kErr = newKafkaQueueReader(cfg)
+		if kErr != nil {
+			return fmt.Errorf("failed to create kafka reader: %w", kErr)
+		}
 	}
 	defer func() { _ = reader.Close() }()
 
@@ -240,6 +264,7 @@ func runWorker(cfg workerConfig) error {
 	}()
 
 	logJSON("info", "worker_start", map[string]any{
+		"eventbus_type":  busType,
 		"kafka_topic":    cfg.kafkaTopic,
 		"consumer_group": cfg.workerConsumerGroup,
 		"duckdb_path":    cfg.duckDBPath,

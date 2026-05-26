@@ -2,7 +2,7 @@
 
 ## Versioning
 
-The CLI follows semantic versioning, aligned with the collector and cortex releases. The current stable release is **v0.0.2**.
+The CLI follows semantic versioning, aligned with the collector and cortex releases. The current stable release is **v0.2.0**.
 
 ## Pre-release Checklist
 
@@ -42,8 +42,8 @@ go build -o loxa.exe ./cmd/loxa
 ## Tagging
 
 ```bash
-git tag -a cli/v0.0.2 -m "cli v0.0.2"
-git push origin cli/v0.0.2
+git tag -a cli/v0.2.0 -m "cli v0.2.0"
+git push origin cli/v0.2.0
 ```
 
 ## Distribution

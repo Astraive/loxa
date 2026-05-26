@@ -179,7 +179,7 @@ def test_schema_version_set() -> None:
     payload = logger.emit(ctx)
 
     event = json.loads(payload)
-    # Schema version should be canonical (0.0.2)
+    # Schema version should be canonical (0.2.0)
     assert "schema_version" in event
 
 

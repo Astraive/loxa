@@ -16,7 +16,7 @@ it('covers collector and cortex client families', async () => {
       res.end(JSON.stringify(obj));
     };
     if (path === '/health' || path === '/ready') return writeJson(200, { status: 'ok' });
-    if (path === '/version') return writeJson(200, { version: '0.0.2', ingest_api_version: 'v1', schema_version: 'v1', event_version: 'v1' });
+    if (path === '/version') return writeJson(200, { version: '0.2.0', ingest_api_version: 'v1', schema_version: 'v1', event_version: 'v1' });
     if (path === '/validate') return writeJson(200, { valid: true });
     if (path === '/events' && method === 'POST') return writeJson(200, { accepted: 1, rejected: 0, invalid: 0 });
     if (path === '/query') return writeJson(200, { rows: [] });
@@ -43,7 +43,7 @@ it('covers collector and cortex client families', async () => {
 
   assert.equal(await collector.health(), true);
   assert.equal(await collector.ready(), true);
-  assert.equal((await collector.version()).version, '0.0.2');
+  assert.equal((await collector.version()).version, '0.2.0');
   assert.equal((await collector.validate({ event: 'catalog.validate' })).valid, true);
   await collector.ingest([{ event_id: 'evt_1', event: 'catalog.ingest' }]);
   await collector.query({ query: 'select 1' });

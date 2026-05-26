@@ -57,3 +57,21 @@ bench/results/
 *.err.log
 collector/*.log
 collector/*.err.log
+
+# Agent/generated files
+.agents/
+skills-lock.json
+# Binary/build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.bin
+*.out
+*.test
+*.prof
+
+
+# Local/experimental app
+loxana/

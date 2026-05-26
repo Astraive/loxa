@@ -1,6 +1,6 @@
 # Loxa Business Instrumentation
 
-Loxa v0.0.2 treats business instrumentation as a lifecycle, not a log line. Applications describe the full story of a checkout, payment, login, job, webhook, AI agent run, or RAG pipeline, while OpenTelemetry continues to describe distributed trace movement.
+Loxa v0.2.0 treats business instrumentation as a lifecycle, not a log line. Applications describe the full story of a checkout, payment, login, job, webhook, AI agent run, or RAG pipeline, while OpenTelemetry continues to describe distributed trace movement.
 
 The canonical lifecycle is:
 
@@ -51,4 +51,4 @@ const audit = loxa.alias("audit");
 | `logger.info()` | `logger.info()` | `logger.Info(ctx)` | `logger.info()` |
 | `event.process()` | `event.process()` | `event.Process()` | `event.process()` |
 
-For the full v0.0.2 product and SDK method catalog, see [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md).
+For the full v0.2.0 product and SDK method catalog, see [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md).

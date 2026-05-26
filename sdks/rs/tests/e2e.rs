@@ -168,7 +168,7 @@ fn test_schema_version_set() {
     let payload = logger.emit(&ctx).unwrap();
 
     let event: Value = serde_json::from_str(&payload).unwrap();
-    // Schema version should be canonical (0.0.2)
+    // Schema version should be canonical (0.2.0)
     assert!(event.get("schema_version").is_some());
 }
 

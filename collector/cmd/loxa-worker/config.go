@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	collectorconfig "github.com/astraive/loxa-collector/internal/config"
+	"github.com/astraive/loxa-collector/internal/eventbus"
 )
 
 var (
@@ -63,6 +65,70 @@ type workerConfig struct {
 	dedupeRedisPassword     string
 	dedupeRedisDB           int
 	dedupeRedisPrefix       string
+	eventBusType            string
+	eventBusTopic           string
+	eventBusDLQTopic        string
+	eventBusConsumerGroup   string
+	eventBusMemoryBuffer    int
+	eventBusRedisAddr       string
+	eventBusRedisPassword   string
+	eventBusRedisDB         int
+	eventBusRedisStream     string
+	eventBusRedisGroup      string
+	eventBusRedisMaxLen     int64
+	eventBusNATSURL         string
+	eventBusNATSStream      string
+	eventBusNATSSubject     string
+	eventBusNATSDurable     string
+	eventBusKafkaBrokers    []string
+	eventBusKafkaTopic      string
+	eventBusKafkaGroup      string
+	eventBusKafkaAcks       string
+	eventBusKafkaIdempotent bool
+	eventBusKafkaMaxRetries int
+	eventBusKafkaCompress   string
+}
+
+func (c *workerConfig) buildEventBusConfig() eventbus.Config {
+	cfg := eventbus.Config{
+		Type:          c.eventBusType,
+		Topic:         c.eventBusTopic,
+		DLQTopic:      c.eventBusDLQTopic,
+		ConsumerGroup: c.eventBusConsumerGroup,
+		Memory: eventbus.MemoryConfig{
+			BufferSize: c.eventBusMemoryBuffer,
+		},
+		Redis: eventbus.RedisConfig{
+			Addr:     c.eventBusRedisAddr,
+			Password: c.eventBusRedisPassword,
+			DB:       c.eventBusRedisDB,
+			Stream:   c.eventBusRedisStream,
+			Group:    c.eventBusRedisGroup,
+			MaxLen:   c.eventBusRedisMaxLen,
+		},
+		NATS: eventbus.NATSConfig{
+			URL:     c.eventBusNATSURL,
+			Stream:  c.eventBusNATSStream,
+			Subject: c.eventBusNATSSubject,
+			Durable: c.eventBusNATSDurable,
+		},
+		Kafka: eventbus.KafkaConfig{
+			Brokers:           c.eventBusKafkaBrokers,
+			Topic:             c.eventBusKafkaTopic,
+			ConsumerGroup:     c.eventBusKafkaGroup,
+			Acks:              c.eventBusKafkaAcks,
+			EnableIdempotence: c.eventBusKafkaIdempotent,
+			MaxRetries:        c.eventBusKafkaMaxRetries,
+			Compression:       c.eventBusKafkaCompress,
+		},
+	}
+	if cfg.Topic == "" {
+		cfg.Topic = "loxa.events.raw"
+	}
+	if cfg.ConsumerGroup == "" {
+		cfg.ConsumerGroup = "loxa-worker"
+	}
+	return cfg
 }
 
 func loadWorkerConfigFromArgs(args []string) (workerConfig, error) {
@@ -135,6 +201,35 @@ func applyWorkerEnvOverrides(fc *workerFileConfig) error {
 		}
 		*dst = out
 	}
+	setInt := func(key string, dst *int) error {
+		v, ok := get(key)
+		if !ok {
+			return nil
+		}
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			return fmt.Errorf("%s: invalid int %q", key, v)
+		}
+		*dst = n
+		return nil
+	}
+	setInt64 := func(key string, dst *int64) error {
+		v, ok := get(key)
+		if !ok {
+			return nil
+		}
+		n, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return fmt.Errorf("%s: invalid int64 %q", key, v)
+		}
+		*dst = n
+		return nil
+	}
+	setStringLower := func(key string, dst *string) {
+		if v, ok := get(key); ok {
+			*dst = strings.ToLower(v)
+		}
+	}
 
 	setString("DUCKDB_PATH", &fc.DuckDB.Path)
 	setCSV("COLLECTOR_KAFKA_BROKERS", &fc.Kafka.Brokers)
@@ -145,16 +240,48 @@ func applyWorkerEnvOverrides(fc *workerFileConfig) error {
 	if err := setDuration("LOXA_WORKER_POLL_TIMEOUT", &fc.Worker.PollTimeout); err != nil {
 		return err
 	}
+	// Eventbus env overrides
+	setStringLower("LOXA_EVENTBUS", &fc.EventBus.Type)
+	setString("LOXA_EVENTBUS_TOPIC", &fc.EventBus.Topic)
+	setString("LOXA_EVENTBUS_DLQ_TOPIC", &fc.EventBus.DLQTopic)
+	setString("LOXA_EVENTBUS_GROUP", &fc.EventBus.ConsumerGroup)
+	if err := setInt("LOXA_EVENTBUS_MEMORY_BUFFER", &fc.EventBus.Memory.BufferSize); err != nil {
+		return err
+	}
+	setString("LOXA_EVENTBUS_REDIS_ADDR", &fc.EventBus.Redis.Addr)
+	setString("LOXA_EVENTBUS_REDIS_PASSWORD", &fc.EventBus.Redis.Password)
+	if err := setInt("LOXA_EVENTBUS_REDIS_DB", &fc.EventBus.Redis.DB); err != nil {
+		return err
+	}
+	setString("LOXA_EVENTBUS_REDIS_STREAM", &fc.EventBus.Redis.Stream)
+	setString("LOXA_EVENTBUS_REDIS_GROUP", &fc.EventBus.Redis.Group)
+	if err := setInt64("LOXA_EVENTBUS_REDIS_MAX_LEN", &fc.EventBus.Redis.MaxLen); err != nil {
+		return err
+	}
+	setString("LOXA_EVENTBUS_NATS_URL", &fc.EventBus.NATS.URL)
+	setString("LOXA_EVENTBUS_NATS_STREAM", &fc.EventBus.NATS.Stream)
+	setString("LOXA_EVENTBUS_NATS_SUBJECT", &fc.EventBus.NATS.Subject)
+	setString("LOXA_EVENTBUS_NATS_DURABLE", &fc.EventBus.NATS.Durable)
+	setCSV("LOXA_EVENTBUS_KAFKA_BROKERS", &fc.EventBus.Kafka.Brokers)
+	setString("LOXA_EVENTBUS_KAFKA_TOPIC", &fc.EventBus.Kafka.Topic)
+	setString("LOXA_EVENTBUS_KAFKA_GROUP", &fc.EventBus.Kafka.ConsumerGroup)
+	setCSV("LOXA_KAFKA_BROKERS", &fc.EventBus.Kafka.Brokers)
+	setString("LOXA_KAFKA_TOPIC", &fc.EventBus.Kafka.Topic)
+	setString("LOXA_KAFKA_GROUP", &fc.EventBus.Kafka.ConsumerGroup)
 	return nil
 }
 
 func validateWorkerConfig(fc workerFileConfig) error {
-	if len(fc.Kafka.Brokers) == 0 {
-		return errors.New("kafka.brokers must include at least one broker")
-	}
-	for i, broker := range fc.Kafka.Brokers {
-		if strings.TrimSpace(broker) == "" {
-			return fmt.Errorf("kafka.brokers[%d] must not be empty", i)
+	// Skip kafka.brokers validation when eventbus is configured
+	busType := strings.ToLower(strings.TrimSpace(fc.EventBus.Type))
+	if busType == "" {
+		if len(fc.Kafka.Brokers) == 0 {
+			return errors.New("kafka.brokers must include at least one broker")
+		}
+		for i, broker := range fc.Kafka.Brokers {
+			if strings.TrimSpace(broker) == "" {
+				return fmt.Errorf("kafka.brokers[%d] must not be empty", i)
+			}
 		}
 	}
 	if strings.TrimSpace(fc.Kafka.Topic) == "" {
@@ -249,6 +376,28 @@ func workerRuntimeConfig(fc workerFileConfig) workerConfig {
 		dedupeRedisPassword:     fc.Dedupe.RedisPassword,
 		dedupeRedisDB:           fc.Dedupe.RedisDB,
 		dedupeRedisPrefix:       strings.TrimSpace(fc.Dedupe.RedisPrefix),
+		eventBusType:            strings.ToLower(strings.TrimSpace(fc.EventBus.Type)),
+		eventBusTopic:           strings.TrimSpace(fc.EventBus.Topic),
+		eventBusDLQTopic:        strings.TrimSpace(fc.EventBus.DLQTopic),
+		eventBusConsumerGroup:   strings.TrimSpace(fc.EventBus.ConsumerGroup),
+		eventBusMemoryBuffer:    fc.EventBus.Memory.BufferSize,
+		eventBusRedisAddr:       strings.TrimSpace(fc.EventBus.Redis.Addr),
+		eventBusRedisPassword:   fc.EventBus.Redis.Password,
+		eventBusRedisDB:         fc.EventBus.Redis.DB,
+		eventBusRedisStream:     strings.TrimSpace(fc.EventBus.Redis.Stream),
+		eventBusRedisGroup:      strings.TrimSpace(fc.EventBus.Redis.Group),
+		eventBusRedisMaxLen:     fc.EventBus.Redis.MaxLen,
+		eventBusNATSURL:         strings.TrimSpace(fc.EventBus.NATS.URL),
+		eventBusNATSStream:      strings.TrimSpace(fc.EventBus.NATS.Stream),
+		eventBusNATSSubject:     strings.TrimSpace(fc.EventBus.NATS.Subject),
+		eventBusNATSDurable:     strings.TrimSpace(fc.EventBus.NATS.Durable),
+		eventBusKafkaBrokers:    append([]string(nil), fc.EventBus.Kafka.Brokers...),
+		eventBusKafkaTopic:      strings.TrimSpace(fc.EventBus.Kafka.Topic),
+		eventBusKafkaGroup:      strings.TrimSpace(fc.EventBus.Kafka.ConsumerGroup),
+		eventBusKafkaAcks:       strings.ToLower(strings.TrimSpace(fc.EventBus.Kafka.Acks)),
+		eventBusKafkaIdempotent: fc.EventBus.Kafka.EnableIdempotence,
+		eventBusKafkaMaxRetries: fc.EventBus.Kafka.MaxRetries,
+		eventBusKafkaCompress:   strings.ToLower(strings.TrimSpace(fc.EventBus.Kafka.Compression)),
 	}
 }
 

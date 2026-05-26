@@ -428,7 +428,7 @@ def check_wire_format() -> MainCheck:
 
     def c07(sc):
         env = spec_contract.build_ingest_envelope(
-            [{"event": "t"}], "loxa-py", "0.0.2", "test-svc"
+            [{"event": "t"}], "loxa-py", "0.2.0", "test-svc"
         )
         assert env["api_version"] == "v1", f"expected v1, got {env.get('api_version')}"
         assert env["source"]["sdk"] == "loxa-py", f"expected loxa-py, got {env['source'].get('sdk')}"
@@ -436,7 +436,7 @@ def check_wire_format() -> MainCheck:
 
     def c08(sc):
         env = spec_contract.build_ingest_envelope(
-            [{"event": "t"}], "loxa-py", "0.0.2", "test-svc"
+            [{"event": "t"}], "loxa-py", "0.2.0", "test-svc"
         )
         assert "api_version" in env, "missing api_version"
         assert "source" in env, "missing source"

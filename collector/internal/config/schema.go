@@ -33,6 +33,7 @@ type Config struct {
 	Dedupe      DedupeConfig            `yaml:"dedupe"`
 	Schema      SchemaGovernanceConfig  `yaml:"schema_governance"`
 	CortexBridge CortexBridgeConfig     `yaml:"cortex_bridge"`
+	EventBus    EventBusConfig          `yaml:"eventbus"`
 }
 
 type CollectorConfig struct {
@@ -392,6 +393,49 @@ type CortexBridgeConfig struct {
 	QueueSize     int           `yaml:"queue_size"`
 	Header        string        `yaml:"header"`
 	APIKey        string        `yaml:"api_key"`
+}
+
+type EventBusConfig struct {
+	Type          string           `yaml:"type"`
+	Topic         string           `yaml:"topic"`
+	DLQTopic      string           `yaml:"dlq_topic"`
+	ConsumerGroup string           `yaml:"consumer_group"`
+	Memory        EBMemoryConfig   `yaml:"memory"`
+	Redis         EBRedisConfig    `yaml:"redis"`
+	NATS          EBNATSConfig     `yaml:"nats"`
+	Kafka         EBKafkaConfig    `yaml:"kafka"`
+}
+
+type EBMemoryConfig struct {
+	BufferSize int `yaml:"buffer_size"`
+}
+
+type EBRedisConfig struct {
+	Addr     string `yaml:"addr"`
+	Password string `yaml:"password"`
+	DB       int    `yaml:"db"`
+	Stream   string `yaml:"stream"`
+	Group    string `yaml:"group"`
+	MaxLen   int64  `yaml:"max_len"`
+}
+
+type EBNATSConfig struct {
+	URL      string `yaml:"url"`
+	Stream   string `yaml:"stream"`
+	Subject  string `yaml:"subject"`
+	Durable  string `yaml:"durable"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
+
+type EBKafkaConfig struct {
+	Brokers           []string `yaml:"brokers"`
+	Topic             string   `yaml:"topic"`
+	ConsumerGroup     string   `yaml:"consumer_group"`
+	Acks              string   `yaml:"acks"`
+	EnableIdempotence bool     `yaml:"enable_idempotence"`
+	MaxRetries        int      `yaml:"max_retries"`
+	Compression       string   `yaml:"compression"`
 }
 
 func Default() Config {

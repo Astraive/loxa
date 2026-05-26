@@ -22,16 +22,16 @@ Edit `package.json` to set the new version:
 
 ```json
 {
-  "version": "0.0.2"
+  "version": "0.2.0"
 }
 ```
 
 Or use npm version:
 
 ```bash
-npm version patch  # 0.0.2 -> 1.0.1
-npm version minor  # 0.0.2 -> 1.1.0
-npm version major  # 0.0.2 -> 1.1.0
+npm version patch  # 0.2.0 -> 1.0.1
+npm version minor  # 0.2.0 -> 1.1.0
+npm version major  # 0.2.0 -> 1.1.0
 ```
 
 ### 3. Verify the Build
@@ -60,14 +60,14 @@ npm publish --access public
 Create a Git tag following the `js/vX.Y.Z` convention:
 
 ```bash
-git tag -a js/v0.0.2 -m "loxa-js v0.0.2"
-git push origin js/v0.0.2
+git tag -a js/v0.2.0 -m "loxa-js v0.2.0"
+git push origin js/v0.2.0
 ```
 
 ### 6. Create a GitHub Release
 
 ```bash
-gh release create js/v0.0.2 --title "loxa-js v0.0.2" --notes-file release-notes.md
+gh release create js/v0.2.0 --title "loxa-js v0.2.0" --notes-file release-notes.md
 ```
 
 ## Version Policy

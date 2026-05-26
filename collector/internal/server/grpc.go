@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/astraive/loxa-collector/internal/auth"
 	"github.com/astraive/loxa-collector/internal/otlpconv"
 	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
 	collectorlogsv1 "go.opentelemetry.io/proto/otlp/collector/logs/v1"
@@ -20,11 +21,15 @@ import (
 )
 
 type GRPCServer struct {
-	cfg   GRPCConfig
-	state State
-	ready atomic.Bool
-	lis   net.Listener
-	srv   *grpc.Server
+	cfg          GRPCConfig
+	state        State
+	ready        atomic.Bool
+	lis          net.Listener
+	srv          *grpc.Server
+	authEnabled  bool
+	keyStore     auth.KeyStore
+	keyCache     *auth.MemoryKeyCache
+	serverSecret []byte
 }
 
 func NewGRPCServer(cfg GRPCConfig, state State) *GRPCServer {
@@ -32,6 +37,16 @@ func NewGRPCServer(cfg GRPCConfig, state State) *GRPCServer {
 		cfg:   cfg,
 		state: state,
 	}
+}
+
+// WithAuth configures API key authentication for the gRPC server.
+// When set, UnaryAuthInterceptor and StreamAuthInterceptor are added as server options.
+func (s *GRPCServer) WithAuth(store auth.KeyStore, cache *auth.MemoryKeyCache, serverSecret []byte) *GRPCServer {
+	s.authEnabled = true
+	s.keyStore = store
+	s.keyCache = cache
+	s.serverSecret = serverSecret
+	return s
 }
 
 func (s *GRPCServer) Name() string { return "grpc" }
@@ -72,6 +87,13 @@ func (s *GRPCServer) Start(ctx context.Context) error {
 			return fmt.Errorf("failed to load TLS certs: %w", err)
 		}
 		opts = append(opts, grpc.Creds(creds))
+	}
+
+	if s.authEnabled {
+		opts = append(opts,
+			grpc.ChainUnaryInterceptor(auth.UnaryAuthInterceptor(s.keyStore, s.keyCache, s.serverSecret)),
+			grpc.ChainStreamInterceptor(auth.StreamAuthInterceptor(s.keyStore, s.keyCache, s.serverSecret)),
+		)
 	}
 
 	s.srv = grpc.NewServer(opts...)
@@ -319,7 +341,7 @@ func (s *collectorIngestServer) IngestStream(stream loxav1.CollectorIngest_Inges
 func (s *collectorIngestServer) Ping(ctx context.Context, req *loxav1.PingRequest) (*loxav1.PingResponse, error) {
 	return &loxav1.PingResponse{
 		Status:  "ok",
-		Version: "0.0.2",
+		Version: "0.2.0",
 	}, nil
 }
 

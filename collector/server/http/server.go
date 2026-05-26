@@ -30,6 +30,7 @@ type PublicHandlerSet interface {
 	HandleBlueprintPublish(http.ResponseWriter, *http.Request)
 	HandleBlueprintList(http.ResponseWriter, *http.Request)
 	HandleQuery(http.ResponseWriter, *http.Request)
+	HandleLQLQuery(http.ResponseWriter, *http.Request)
 	HandlePIIAudit(http.ResponseWriter, *http.Request)
 	HandlePolicyValidate(http.ResponseWriter, *http.Request)
 	HandleRetentionApply(http.ResponseWriter, *http.Request)
@@ -95,6 +96,7 @@ func BuildMux(ingestPath, healthPath, readyPath, metricsPath string, metricsEnab
 	route("POST", "/schema/check", handlers.HandleSchemaCheck, "schema:read")
 	route("POST", "/schema/diff", handlers.HandleSchemaDiff, "schema:read")
 	route("POST", "/query", handlers.HandleQuery, "events:read")
+	route("POST", "/lql/query", handlers.HandleLQLQuery, "events:read")
 	route("GET", "/schema/blueprint", handlers.HandleBlueprintList, "schema:read")
 
 	// ── Tail (events:read) ───────────────────────────────────────────────

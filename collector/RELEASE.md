@@ -2,7 +2,7 @@
 
 ## Versioning
 
-The collector follows semantic versioning. The current stable release is **v0.0.2**.
+The collector follows semantic versioning. The current stable release is **v0.2.0**.
 
 ## Pre-release Checklist
 
@@ -48,8 +48,8 @@ go build -o loxa-loadgen.exe ./cmd/loxa-loadgen
 ## Tagging
 
 ```bash
-git tag -a collector/v0.0.2 -m "collector v0.0.2"
-git push origin collector/v0.0.2
+git tag -a collector/v0.2.0 -m "collector v0.2.0"
+git push origin collector/v0.2.0
 ```
 
 ## Docker Release
@@ -58,12 +58,12 @@ The Dockerfile expects the build context to be the **repo root** (not `collector
 
 ```bash
 # Build from repo root (required for proto file access)
-docker build -t ghcr.io/astraive/loxa:0.0.2 -f collector/Dockerfile .
+docker build -t ghcr.io/astraive/loxa:0.2.0 -f collector/Dockerfile .
 
 # Or via docker-compose (already sets context correctly)
 docker compose -f collector/deploy/docker-compose.yml build
 
-docker push ghcr.io/astraive/loxa:0.0.2
+docker push ghcr.io/astraive/loxa:0.2.0
 ```
 
 ## Kubernetes Deployment
