@@ -5,6 +5,12 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	// Register eventbus backends
+	_ "github.com/astraive/loxa-collector/internal/eventbus/kafka"
+	_ "github.com/astraive/loxa-collector/internal/eventbus/memory"
+	_ "github.com/astraive/loxa-collector/internal/eventbus/nats"
+	_ "github.com/astraive/loxa-collector/internal/eventbus/redis"
 )
 
 var version = "0.2.0"
