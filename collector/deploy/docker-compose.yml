@@ -1,8 +1,8 @@
 services:
   collector:
     build:
-      context: ..
-      dockerfile: deploy/Dockerfile.collector
+      context: ../..
+      dockerfile: collector/deploy/Dockerfile.collector
     command: ["./loxa-collector", "run", "-c", "/app/build/loxa-collector.yaml"]
     ports:
       - "9090:9090"
@@ -64,7 +64,7 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:?Set GF_ADMIN_PASSWORD environment variable}
     volumes:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:

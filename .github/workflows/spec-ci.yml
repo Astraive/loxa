@@ -11,6 +11,9 @@ on:
     paths:
       - "spec/**"
 
+permissions:
+  contents: read
+
 jobs:
   generation-check:
     name: Verify generated artifacts are up-to-date

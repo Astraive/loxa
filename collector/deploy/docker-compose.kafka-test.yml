@@ -1,0 +1,16 @@
+# Kafka for QA testing - KRaft mode with custom config
+services:
+  kafka:
+    image: apache/kafka:3.9.0
+    ports:
+      - "9092:9092"
+    volumes:
+      - ./kafka-server.properties:/opt/kafka/config/kraft/server.properties:ro
+    environment:
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s

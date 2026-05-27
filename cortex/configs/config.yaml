@@ -9,16 +9,18 @@ grpc:
 
 storage:
   backend: "postgres"
-  postgres:
+  postgresql:
     host: "localhost"
     port: 5432
     database: "cortex"
     user: "cortex"
     password: ""
+    # SECURITY: Disable in production; set to "require" or "verify-full"
     ssl_mode: "disable"
     max_connections: 50
 
 authentication:
+  # SECURITY: Disabled for local dev only. Production MUST enable.
   enabled: false
   api_keys: []
 

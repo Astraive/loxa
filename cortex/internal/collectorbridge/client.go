@@ -232,12 +232,9 @@ func (c *Client) FindByService(ctx context.Context, service, from, to string, li
 		return nil, err
 	}
 	conds := []string{fmt.Sprintf("json_extract_string(%s, '$.service') = %s", rawCol, quoteSQLString(service))}
-	if strings.TrimSpace(from) != "" {
-		conds = append(conds, fmt.Sprintf("%s >= TIMESTAMP %s", tsCol, quoteSQLString(from)))
-	}
-	if strings.TrimSpace(to) != "" {
-		conds = append(conds, fmt.Sprintf("%s <= TIMESTAMP %s", tsCol, quoteSQLString(to)))
-	}
+	fromT, _ := time.Parse(time.RFC3339, strings.TrimSpace(from))
+	toT, _ := time.Parse(time.RFC3339, strings.TrimSpace(to))
+	conds = appendTimeRangeConds(conds, tsCol, fromT, toT)
 	query := fmt.Sprintf("SELECT %s FROM %s WHERE %s ORDER BY %s ASC LIMIT %d", rawCol, table, strings.Join(conds, " AND "), tsCol, limit)
 	return c.queryEvents(ctx, query, limit)
 }
@@ -399,6 +396,17 @@ func quoteSQLString(v string) string {
 	return "'" + strings.ReplaceAll(v, "'", "''") + "'"
 }
 
+// appendTimeRangeConds adds optional from/to timestamp conditions to the WHERE clause.
+func appendTimeRangeConds(conds []string, tsCol string, from, to time.Time) []string {
+	if !from.IsZero() {
+		conds = append(conds, fmt.Sprintf("%s >= TIMESTAMP %s", tsCol, quoteSQLString(from.UTC().Format(time.RFC3339))))
+	}
+	if !to.IsZero() {
+		conds = append(conds, fmt.Sprintf("%s <= TIMESTAMP %s", tsCol, quoteSQLString(to.UTC().Format(time.RFC3339))))
+	}
+	return conds
+}
+
 func (c *Client) FindByEventName(ctx context.Context, eventName string, limit int) ([]*models.Event, error) {
 	query, err := c.buildJSONFieldQuery("event", eventName, limit)
 	if err != nil {
@@ -478,13 +486,10 @@ func (c *Client) CountByOutcome(ctx context.Context, service string, from, to ti
 	if err != nil {
 		return nil, err
 	}
-	conds := []string{fmt.Sprintf("json_extract_string(%s, '$.service') = %s", rawCol, quoteSQLString(service))}
-	if !from.IsZero() {
-		conds = append(conds, fmt.Sprintf("%s >= TIMESTAMP %s", tsCol, quoteSQLString(from.UTC().Format(time.RFC3339))))
-	}
-	if !to.IsZero() {
-		conds = append(conds, fmt.Sprintf("%s <= TIMESTAMP %s", tsCol, quoteSQLString(to.UTC().Format(time.RFC3339))))
-	}
+	conds := appendTimeRangeConds(
+		[]string{fmt.Sprintf("json_extract_string(%s, '$.service') = %s", rawCol, quoteSQLString(service))},
+		tsCol, from, to,
+	)
 	query := fmt.Sprintf(
 		"SELECT coalesce(json_extract_string(%s, '$.outcome'), '') AS outcome, COUNT(*) AS cnt FROM %s WHERE %s GROUP BY outcome",
 		rawCol, table, strings.Join(conds, " AND "),
@@ -507,13 +512,10 @@ func (c *Client) CountByEventName(ctx context.Context, service string, from, to 
 	if err != nil {
 		return nil, err
 	}
-	conds := []string{fmt.Sprintf("json_extract_string(%s, '$.service') = %s", rawCol, quoteSQLString(service))}
-	if !from.IsZero() {
-		conds = append(conds, fmt.Sprintf("%s >= TIMESTAMP %s", tsCol, quoteSQLString(from.UTC().Format(time.RFC3339))))
-	}
-	if !to.IsZero() {
-		conds = append(conds, fmt.Sprintf("%s <= TIMESTAMP %s", tsCol, quoteSQLString(to.UTC().Format(time.RFC3339))))
-	}
+	conds := appendTimeRangeConds(
+		[]string{fmt.Sprintf("json_extract_string(%s, '$.service') = %s", rawCol, quoteSQLString(service))},
+		tsCol, from, to,
+	)
 	query := fmt.Sprintf(
 		"SELECT json_extract_string(%s, '$.event') AS evname, COUNT(*) AS cnt FROM %s WHERE %s GROUP BY evname",
 		rawCol, table, strings.Join(conds, " AND "),
@@ -536,13 +538,10 @@ func (c *Client) AverageDuration(ctx context.Context, eventName string, from, to
 	if err != nil {
 		return 0, err
 	}
-	conds := []string{fmt.Sprintf("json_extract_string(%s, '$.event') = %s", rawCol, quoteSQLString(eventName))}
-	if !from.IsZero() {
-		conds = append(conds, fmt.Sprintf("%s >= TIMESTAMP %s", tsCol, quoteSQLString(from.UTC().Format(time.RFC3339))))
-	}
-	if !to.IsZero() {
-		conds = append(conds, fmt.Sprintf("%s <= TIMESTAMP %s", tsCol, quoteSQLString(to.UTC().Format(time.RFC3339))))
-	}
+	conds := appendTimeRangeConds(
+		[]string{fmt.Sprintf("json_extract_string(%s, '$.event') = %s", rawCol, quoteSQLString(eventName))},
+		tsCol, from, to,
+	)
 	query := fmt.Sprintf(
 		"SELECT AVG(CAST(json_extract_string(%s, '$.duration_ms') AS DOUBLE)) AS avg_dur FROM %s WHERE %s",
 		rawCol, table, strings.Join(conds, " AND "),
@@ -563,13 +562,10 @@ func (c *Client) PercentileDuration(ctx context.Context, eventName string, perce
 	if err != nil {
 		return 0, err
 	}
-	conds := []string{fmt.Sprintf("json_extract_string(%s, '$.event') = %s", rawCol, quoteSQLString(eventName))}
-	if !from.IsZero() {
-		conds = append(conds, fmt.Sprintf("%s >= TIMESTAMP %s", tsCol, quoteSQLString(from.UTC().Format(time.RFC3339))))
-	}
-	if !to.IsZero() {
-		conds = append(conds, fmt.Sprintf("%s <= TIMESTAMP %s", tsCol, quoteSQLString(to.UTC().Format(time.RFC3339))))
-	}
+	conds := appendTimeRangeConds(
+		[]string{fmt.Sprintf("json_extract_string(%s, '$.event') = %s", rawCol, quoteSQLString(eventName))},
+		tsCol, from, to,
+	)
 	query := fmt.Sprintf(
 		"SELECT quantile(CAST(json_extract_string(%s, '$.duration_ms') AS DOUBLE), %f) AS p_dur FROM %s WHERE %s",
 		rawCol, percentile/100.0, table, strings.Join(conds, " AND "),

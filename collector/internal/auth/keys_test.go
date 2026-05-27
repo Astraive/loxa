@@ -5,7 +5,8 @@ import (
 )
 
 func TestParseKey_SecretKey(t *testing.T) {
-	pk, err := ParseKey("lx_sec_live_k_2M9aQp_7QmVxN8pT4zRbK1sYw")
+	// Real format: keyID is "k" + base64 token (no underscore), e.g. "k2M9aQpXy"
+	pk, err := ParseKey("lx_sec_live_k2M9aQpXy_7QmVxN8pT4zRbK1sYw")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -15,11 +16,11 @@ func TestParseKey_SecretKey(t *testing.T) {
 	if pk.Env != "live" {
 		t.Errorf("env = %q, want %q", pk.Env, "live")
 	}
-	if pk.KeyID != "k" {
-		t.Errorf("keyID = %q, want %q", pk.KeyID, "k")
+	if pk.KeyID != "k2M9aQpXy" {
+		t.Errorf("keyID = %q, want %q", pk.KeyID, "k2M9aQpXy")
 	}
-	if pk.Secret != "2M9aQp_7QmVxN8pT4zRbK1sYw" {
-		t.Errorf("secret = %q, want %q", pk.Secret, "2M9aQp_7QmVxN8pT4zRbK1sYw")
+	if pk.Secret != "7QmVxN8pT4zRbK1sYw" {
+		t.Errorf("secret = %q, want %q", pk.Secret, "7QmVxN8pT4zRbK1sYw")
 	}
 }
 
@@ -56,12 +57,15 @@ func TestParseKey_LocalKey(t *testing.T) {
 }
 
 func TestParseKey_TestEnv(t *testing.T) {
-	pk, err := ParseKey("lx_sec_test_k_test123_secretvalue")
+	pk, err := ParseKey("lx_sec_test_ktest123ab_secretvalue")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if pk.Env != "test" {
 		t.Errorf("env = %q, want %q", pk.Env, "test")
+	}
+	if pk.KeyID != "ktest123ab" {
+		t.Errorf("keyID = %q, want %q", pk.KeyID, "ktest123ab")
 	}
 }
 
@@ -94,25 +98,24 @@ func TestParseKey_EmptyString(t *testing.T) {
 }
 
 func TestParseKey_MissingSecret(t *testing.T) {
-	// "lx_sec_live_k_xxx" has 5 parts: lx, sec, live, k, xxx
-	// This is valid (keyID=k, secret=xxx). Only < 5 parts is an error.
-	_, err := ParseKey("lx_sec_live_k")
+	// "lx_sec_live_kxxx" has 4 parts: lx, sec, live, kxxx
+	// This is < 5 parts, so it should fail (missing secret).
+	_, err := ParseKey("lx_sec_live_kxxx")
 	if err == nil {
 		t.Fatal("expected error for missing key_id and secret")
 	}
 }
 
 func TestParseKey_TrimmedWhitespace(t *testing.T) {
-	pk, err := ParseKey("  lx_sec_live_k_xxx_yyy  ")
+	pk, err := ParseKey("  lx_sec_live_kXxXyYy_secrettoken  ")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// keyID = "k", secret = "xxx_yyy" (joined from remaining parts)
-	if pk.Secret != "xxx_yyy" {
-		t.Errorf("secret = %q, want %q", pk.Secret, "xxx_yyy")
+	if pk.KeyID != "kXxXyYy" {
+		t.Errorf("keyID = %q, want %q", pk.KeyID, "kXxXyYy")
 	}
-	if pk.KeyID != "k" {
-		t.Errorf("keyID = %q, want %q", pk.KeyID, "k")
+	if pk.Secret != "secrettoken" {
+		t.Errorf("secret = %q, want %q", pk.Secret, "secrettoken")
 	}
 }
 

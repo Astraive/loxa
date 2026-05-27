@@ -96,7 +96,7 @@ pub extern "C" fn shape_hash_ffi(
         Err(_) => return CString::new("").unwrap().into_raw(),
     };
 
-    let hash = crate::compute_shape_hash(&sig.symptom_classes, &sig.temporal_sequence);
+    let hash = crate::compute_shape_hash(&sig);
     CString::new(hash).unwrap().into_raw()
 }
 

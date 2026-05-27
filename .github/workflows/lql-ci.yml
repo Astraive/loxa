@@ -6,6 +6,8 @@ on:
   pull_request:
     paths: ["lql/**"]
 
+permissions:
+  contents: read
 env:
   CARGO_TERM_COLOR: always
 

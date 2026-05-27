@@ -380,10 +380,12 @@ impl Config {
         file_cfg.apply(Self::base())
     }
 
-    pub fn validate(&self) {
-        if let Err(err) = self.validate_result() {
-            panic!("{err}");
-        }
+    /// Validate the configuration, returning an error on failure.
+    ///
+    /// # Errors
+    /// Returns `LoxaError::Validation` if any configuration field is invalid.
+    pub fn validate(&self) -> Result<(), crate::errors::LoxaError> {
+        self.validate_result()
     }
 
     pub fn validate_result(&self) -> Result<(), crate::errors::LoxaError> {

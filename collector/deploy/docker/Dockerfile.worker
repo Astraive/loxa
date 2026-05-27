@@ -35,5 +35,8 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 9090
 
+RUN useradd -r -s /bin/false -u 10001 loxa && chown -R loxa:loxa /app
+USER loxa
+
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["loxa-worker"]

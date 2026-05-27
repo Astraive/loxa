@@ -2,6 +2,7 @@ package auth
 
 import (
 	"sync"
+	"time"
 
 	"golang.org/x/time/rate"
 )
@@ -11,14 +12,36 @@ import (
 type KeyRateLimiter struct {
 	requestLimiters map[string]*rate.Limiter
 	eventLimiters   map[string]*rate.Limiter
+	lastSeen        map[string]time.Time
 	mu              sync.RWMutex
 }
 
 // NewKeyRateLimiter creates a new per-key rate limiter.
 func NewKeyRateLimiter() *KeyRateLimiter {
-	return &KeyRateLimiter{
+	rl := &KeyRateLimiter{
 		requestLimiters: make(map[string]*rate.Limiter),
 		eventLimiters:   make(map[string]*rate.Limiter),
+		lastSeen:        make(map[string]time.Time),
+	}
+	go rl.cleanupLoop()
+	return rl
+}
+
+// cleanupLoop evicts entries not seen in the last 30 minutes.
+func (rl *KeyRateLimiter) cleanupLoop() {
+	ticker := time.NewTicker(10 * time.Minute)
+	defer ticker.Stop()
+	for range ticker.C {
+		rl.mu.Lock()
+		cutoff := time.Now().Add(-30 * time.Minute)
+		for k, t := range rl.lastSeen {
+			if t.Before(cutoff) {
+				delete(rl.requestLimiters, k)
+				delete(rl.eventLimiters, k)
+				delete(rl.lastSeen, k)
+			}
+		}
+		rl.mu.Unlock()
 	}
 }
 
@@ -30,18 +53,41 @@ func (rl *KeyRateLimiter) AllowRequest(keyID string, rpm int) bool {
 	}
 
 	limiter := rl.getOrCreateRequestLimiter(keyID, rpm)
+	rl.touchLastSeen(keyID)
 	return limiter.Allow()
 }
 
 // AllowEvents checks if the given number of events is allowed for the key.
-// epm is the max events per minute.
-func (rl *KeyRateLimiter) AllowEvents(keyID string, epm int) bool {
+// epm is the max events per minute. count is the number of events in this request.
+// Uses ReserveN for atomic batch check — no partial token consumption on rejection.
+func (rl *KeyRateLimiter) AllowEvents(keyID string, epm int, count int) bool {
 	if epm <= 0 {
 		return true // no limit
 	}
+	if count <= 0 {
+		count = 1
+	}
 
 	limiter := rl.getOrCreateEventLimiter(keyID, epm)
-	return limiter.Allow()
+	rl.touchLastSeen(keyID)
+
+	// Atomic reservation: either all tokens are available or none are consumed.
+	r := limiter.ReserveN(time.Now(), count)
+	if !r.OK() {
+		return false
+	}
+	if d := r.Delay(); d > 0 {
+		r.Cancel() // Cancel the reservation since we're rejecting
+		return false
+	}
+	return true
+}
+
+// touchLastSeen updates the last-access time for a key.
+func (rl *KeyRateLimiter) touchLastSeen(keyID string) {
+	rl.mu.Lock()
+	rl.lastSeen[keyID] = time.Now()
+	rl.mu.Unlock()
 }
 
 func (rl *KeyRateLimiter) getOrCreateRequestLimiter(keyID string, rpm int) *rate.Limiter {
@@ -64,6 +110,7 @@ func (rl *KeyRateLimiter) getOrCreateRequestLimiter(keyID string, rpm int) *rate
 	rps := rate.Limit(float64(rpm) / 60.0)
 	limiter = rate.NewLimiter(rps, rpm/10+1) // burst = 10% of rpm + 1
 	rl.requestLimiters[keyID] = limiter
+	rl.lastSeen[keyID] = time.Now()
 	return limiter
 }
 
@@ -85,5 +132,6 @@ func (rl *KeyRateLimiter) getOrCreateEventLimiter(keyID string, epm int) *rate.L
 	eps := rate.Limit(float64(epm) / 60.0)
 	limiter = rate.NewLimiter(eps, epm/10+1)
 	rl.eventLimiters[keyID] = limiter
+	rl.lastSeen[keyID] = time.Now()
 	return limiter
 }

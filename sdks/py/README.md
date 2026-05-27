@@ -1,6 +1,6 @@
 # LOXA Python SDK
 
-**Status**: STABLE (v0.0.1) - Production-ready, full feature conformance
+**Status**: STABLE (v0.2.3) - Production-ready, full feature conformance
 
 Full API conformance with specification is complete. See [SDK_CONFORMANCE_CONTRACT.md](../../spec/docs/SDK_CONFORMANCE_CONTRACT.md) for detailed guarantees.
 
@@ -24,7 +24,7 @@ loxa.configure(
 )
 
 # Lifecycle
-ctx = loxa.start_http_event(event="checkout.request", method="POST", path="/checkout")
+ctx = loxa.start_event(loxa.Params(event="checkout.request", kind="http", method="POST", path="/checkout"))
 loxa.enrich(ctx, loxa.UserID("u_123"), loxa.String("payment.provider", "stripe"))
 loxa.finish(ctx, "success", loxa.Int("status_code", 200))
 loxa.emit(ctx)
@@ -448,18 +448,18 @@ if loxa.HasEvent(ctx):
 ## Testing
 
 ```python
-from loxa.testkit.helpers import test_logger, capture, assert_event, assert_redacted, assert_has_checkpoint, CapturingLogger
+from loxa.testkit.helpers import TestLogger, Capture, AssertEvent, AssertRedacted, AssertHasCheckpoint, CapturingLogger
 
 # Test logger with memory sink
-logger, store = test_logger("test")
+logger, store = TestLogger("test")
 
 # Capture events
-events = capture(lambda: some_function())
+events = Capture(lambda: some_function())
 
 # Assert
-assert_event(events[0], "user.id", "u_123")
-assert_redacted(events[0], "password")
-assert_has_checkpoint(events[0], "payment_started")
+AssertEvent(events[0], user__id="u_123")
+AssertRedacted(events[0], "password")
+AssertHasCheckpoint(events[0], "payment_started")
 
 # Context manager
 with CapturingLogger("test") as (logger, store):

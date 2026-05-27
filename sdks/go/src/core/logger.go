@@ -209,9 +209,11 @@ func (l *Logger) StartEvent(ctx context.Context, params Params) context.Context 
 	cfg := l.cfg
 	l.mu.RUnlock()
 
-	// Extract trace context from context if not provided in params
+	// Extract trace context from context if not provided in params.
+	// Skip OTel extraction when OTel bridge is not configured to avoid
+	// the ~50-100ns context.Value lookup on every StartEvent.
 	// Requirements: 39.2, 39.8
-	if params.TraceID == "" || params.SpanID == "" {
+	if cfg.OTelBridge && (params.TraceID == "" || params.SpanID == "") {
 		otelTraceID, otelSpanID := TraceFromOTel(ctx)
 		if params.TraceID == "" && otelTraceID != "" {
 			params.TraceID = otelTraceID
@@ -573,6 +575,9 @@ func (l *Logger) EmitEventWithContext(ctx context.Context, ev *Event) error {
 		notifyDrop("already_closed")
 		return err
 	}
+
+	// Generate trace/span IDs after sampling so sampled-out events skip PRNG cost.
+	ev.ensureTraceContext()
 
 	deliverEv := ev
 	if cfg.Redactor != nil || cfg.Security.MaxAttrCount > 0 || cfg.Security.MaxFieldBytes > 0 || (cfg.Security.RedactByDefault && !cfg.Security.AllowPII) {

@@ -1,0 +1,12 @@
+{
+  "name": "loxa-quickstart-js",
+  "version": "0.2.3",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --loader ts-node/esm src/main.ts"
+  },
+  "dependencies": {
+    "loxa-js": "workspace:*"
+  }
+}

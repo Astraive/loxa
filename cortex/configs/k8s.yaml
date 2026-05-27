@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: cortex
-        image: astraive/loxa-cortex:latest
+        image: astraive/loxa-cortex:0.2.3
         ports:
         - containerPort: 8080
           name: http

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,6 +26,7 @@ import (
 	storagepath "github.com/astraive/loxa-collector/internal/storage"
 	publichttp "github.com/astraive/loxa-collector/server/http"
 	_ "github.com/marcboeker/go-duckdb"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/time/rate"
 )
 
@@ -247,13 +249,14 @@ func runCollector(cfg collectorConfig) error {
 	}
 
 	mux := buildMux(state)
-	muxWithCompression := withResponseCompression(mux)
+	muxWithSecurity := withSecurityHeaders(mux)
+	muxWithCompression := withResponseCompression(muxWithSecurity)
 
 	server := &http.Server{
 		Addr:              cfg.addr,
 		Handler:           muxWithCompression,
 		ReadHeaderTimeout: cfg.readHeaderTimeout,
-		ReadTimeout:       cfg.readHeaderTimeout,
+		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       cfg.serverConfig.HTTP.IdleTimeout,
 	}
@@ -270,11 +273,12 @@ func runCollector(cfg collectorConfig) error {
 		if cfg.authEnabled {
 			serverSecret := []byte(cfg.storageEncryptionKey)
 			if len(serverSecret) == 0 {
-				serverSecret = []byte("loxa-default-secret")
+				log.Fatal().Msg("auth.enabled requires storageEncryptionKey to be set. Configure encryption_key or encryption_key_env in your config file.")
 			}
 			store := newMemoryKeyStoreFromConfig(cfg, serverSecret)
 			cache := auth.NewMemoryKeyCache(60*time.Second, 10*time.Second)
 			grpcSrv.WithAuth(store, cache, serverSecret)
+			grpcSrv.WithAllowLocalDevKeys(cfg.authAllowLocalDevKeys)
 		}
 		auxServers = append(auxServers, grpcSrv)
 	}
@@ -283,11 +287,12 @@ func runCollector(cfg collectorConfig) error {
 		if cfg.authEnabled {
 			serverSecret := []byte(cfg.storageEncryptionKey)
 			if len(serverSecret) == 0 {
-				serverSecret = []byte("loxa-default-secret")
+				log.Fatal().Msg("auth.enabled requires storageEncryptionKey to be set. Configure encryption_key or encryption_key_env in your config file.")
 			}
 			store := newMemoryKeyStoreFromConfig(cfg, serverSecret)
 			cache := auth.NewMemoryKeyCache(60*time.Second, 10*time.Second)
 			graphqlSrv.WithAuth(store, cache, serverSecret)
+			graphqlSrv.WithAllowLocalDevKeys(cfg.authAllowLocalDevKeys)
 		}
 		auxServers = append(auxServers, graphqlSrv)
 	}
@@ -446,15 +451,36 @@ func buildMux(state *collectorState) *http.ServeMux {
 	if state.cfg.authEnabled {
 		serverSecret := []byte(state.cfg.storageEncryptionKey)
 		if len(serverSecret) == 0 {
-			serverSecret = []byte("loxa-default-secret")
+			log.Fatal().Msg("auth.enabled requires storageEncryptionKey to be set. Configure encryption_key or encryption_key_env in your config file.")
 		}
+		state.serverSecret = serverSecret
 
 		// Create key store from config (backward compat: single apiKey → one KeyRecord)
 		store := newMemoryKeyStoreFromConfig(state.cfg, serverSecret)
+		state.keyStore = store
 		cache := auth.NewMemoryKeyCache(60*time.Second, 10*time.Second)
+		state.keyCache = cache
+
+		// Create shared key rate limiter for middleware and handler event limiting
+		keyRL := auth.NewKeyRateLimiter()
+		state.keyRateLimiter = keyRL
+
+		// Parse trusted proxy CIDRs
+		var trustedCIDRs []*net.IPNet
+		for _, cidr := range state.cfg.trustedProxies {
+			_, ipNet, err := net.ParseCIDR(cidr)
+			if err != nil {
+				log.Fatal().Err(err).Msgf("invalid trusted_proxies CIDR %q", cidr)
+			}
+			trustedCIDRs = append(trustedCIDRs, ipNet)
+		}
 
 		// Create middleware chain
-		authMW := auth.Middleware(store, cache, serverSecret)
+		authMW := auth.Middleware(store, cache, serverSecret,
+			auth.WithAllowLocalDevKeys(state.cfg.authAllowLocalDevKeys),
+			auth.WithTrustedProxies(trustedCIDRs),
+			auth.WithRateLimiter(keyRL),
+		)
 
 		// Wrap: auth middleware → then per-route permission check
 		protector = func(next http.Handler, perm string) http.Handler {
@@ -468,11 +494,44 @@ func buildMux(state *collectorState) *http.ServeMux {
 // memoryKeyStore is a simple in-memory KeyStore for backward compatibility
 // with the single-key auth config (auth.value / COLLECTOR_API_KEY).
 type memoryKeyStore struct {
+	mu   sync.RWMutex
 	keys map[string]*auth.KeyRecord
 }
 
 func (s *memoryKeyStore) FindByKeyID(_ context.Context, keyID string) (*auth.KeyRecord, error) {
-	return s.keys[keyID], nil
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	rec := s.keys[keyID]
+	if rec == nil {
+		return nil, nil
+	}
+	// Return a copy to prevent data races with concurrent RevokeKey mutations
+	cp := *rec
+	return &cp, nil
+}
+
+// CreateKey stores a new key record.
+func (s *memoryKeyStore) CreateKey(rec *auth.KeyRecord) error {
+	if rec == nil || rec.KeyID == "" {
+		return fmt.Errorf("invalid key record")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.keys[rec.KeyID] = rec
+	return nil
+}
+
+// RevokeKey marks a key as revoked by setting RevokedAt to the current time.
+func (s *memoryKeyStore) RevokeKey(keyID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rec, ok := s.keys[keyID]
+	if !ok {
+		return fmt.Errorf("key %q not found", keyID)
+	}
+	now := time.Now()
+	rec.RevokedAt = &now
+	return nil
 }
 
 // newMemoryKeyStoreFromConfig creates a KeyStore from the collector config.
@@ -571,6 +630,10 @@ func autoMigrateBlueprintColumns(db *sql.DB, cfg collectorConfig) error {
 		existing[col] = true
 	}
 
+	tableIdent, err := quoteSQLIdent(cfg.duckDBTable)
+	if err != nil {
+		return err
+	}
 	for col, path := range cfg.duckDBSchema {
 		if existing[col] {
 			continue
@@ -583,7 +646,7 @@ func autoMigrateBlueprintColumns(db *sql.DB, cfg collectorConfig) error {
 		if t, ok := cfg.duckDBColumnTypes[path]; ok {
 			typ = t
 		}
-		query := fmt.Sprintf("ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s %s", cfg.duckDBTable, colIdent, typ)
+		query := fmt.Sprintf("ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s %s", tableIdent, colIdent, typ)
 		if _, err := db.Exec(query); err != nil {
 			return err
 		}

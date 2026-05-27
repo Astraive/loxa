@@ -405,6 +405,17 @@ func (s *collectorState) applyBlueprint(bp Blueprint) error {
 		defer db.Close()
 	}
 
+	allowedDuckDBTypes := map[string]bool{
+		"TEXT": true, "VARCHAR": true, "STRING": true,
+		"INTEGER": true, "INT": true, "BIGINT": true, "SMALLINT": true, "TINYINT": true, "HUGEINT": true,
+		"DOUBLE": true, "FLOAT": true, "REAL": true,
+		"BOOLEAN": true, "BOOL": true,
+		"TIMESTAMP": true, "DATE": true, "TIME": true, "INTERVAL": true,
+		"BLOB": true, "BYTEA": true,
+		"JSON": true, "UUID": true, "BIT": true, "NULL": true,
+		"DECIMAL": true, "NUMERIC": true,
+	}
+
 	for colName, colDef := range bp.Columns {
 		colIdent, err := quoteSQLIdent(colName)
 		if err != nil {
@@ -413,6 +424,14 @@ func (s *collectorState) applyBlueprint(bp Blueprint) error {
 		typ := colDef.DuckDBType
 		if typ == "" {
 			typ = "TEXT"
+		}
+		// Validate DuckDB type against allowlist
+		baseType := strings.ToUpper(typ)
+		if idx := strings.Index(baseType, "("); idx > 0 {
+			baseType = baseType[:idx]
+		}
+		if !allowedDuckDBTypes[baseType] {
+			return fmt.Errorf("unsupported DuckDB type %q for column %q", colDef.DuckDBType, colName)
 		}
 		query := fmt.Sprintf("ALTER TABLE events ADD COLUMN IF NOT EXISTS %s %s", colIdent, typ)
 		if _, err := db.Exec(query); err != nil {

@@ -15,7 +15,7 @@ collector:
 
   image:
     repository: loxa-collector
-    tag: latest
+    tag: "0.2.3"
     pullPolicy: IfNotPresent
 
   service:
@@ -103,7 +103,7 @@ worker:
 
   image:
     repository: loxa-worker
-    tag: latest
+    tag: "0.2.3"
     pullPolicy: IfNotPresent
 
   podAnnotations: {}

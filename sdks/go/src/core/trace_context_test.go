@@ -22,8 +22,8 @@ func TestTraceContextPropagation(t *testing.T) {
 		})
 		ctx := trace.ContextWithSpanContext(context.Background(), sc)
 
-		// Create logger and start event without explicit trace IDs
-		logger, err := New(Test())
+		// Create logger with OTelBridge enabled and start event without explicit trace IDs
+		logger, err := New(Test().WithOTelBridge(true))
 		if err != nil {
 			t.Fatalf("failed to create logger: %v", err)
 		}
@@ -47,48 +47,81 @@ func TestTraceContextPropagation(t *testing.T) {
 			t.Errorf("expected parent_span_id=%q, got %q", expectedParentSpanID, ev.ParentID)
 		}
 
-		// Verify a new span_id is generated (not the same as parent)
-		if ev.SpanID == "" {
-			t.Error("expected span_id to be generated")
+		// Verify span_id is deferred to ensureTraceContext (runs during Emit).
+		// After StartEvent, span_id should be empty since it's generated lazily.
+		if ev.SpanID != "" {
+			t.Errorf("expected empty span_id before emit (deferred), got %q", ev.SpanID)
 		}
-		if ev.SpanID == expectedParentSpanID {
+
+		// After emit, span_id should be generated
+		sink, store := MemorySink()
+		logger2, _ := New(Test().WithSink(sink).WithOTelBridge(true))
+		defer func() { _ = logger2.Shutdown(context.Background()) }()
+		ctx2 := logger2.StartEvent(ctx, Params{Event: "test.event"})
+		_ = logger2.Finish(ctx2, "success")
+		_ = logger2.Emit(ctx2)
+		_ = logger2.Flush(context.Background())
+		events := store.Events()
+		if len(events) == 1 && events[0].SpanID == expectedParentSpanID {
 			t.Error("expected span_id to be different from parent_span_id")
 		}
 	})
 
 	t.Run("generates new trace_id when none provided", func(t *testing.T) {
 		// Create logger and start event without any trace context
-		logger, err := New(Test())
+		sink, store := MemorySink()
+		logger, err := New(Test().WithSink(sink))
 		if err != nil {
 			t.Fatalf("failed to create logger: %v", err)
 		}
 		defer func() { _ = logger.Shutdown(context.Background()) }()
 
 		ctx := logger.StartEvent(context.Background(), Params{Event: "test.event"})
+
+		// Trace/span IDs are deferred to ensureTraceContext() which runs during Emit.
+		// After StartEvent, IDs should be empty.
 		ev, ok := FromContext(ctx)
 		if !ok {
 			t.Fatal("expected event in context")
 		}
+		if ev.TraceID != "" {
+			t.Errorf("expected empty trace_id before emit, got %q", ev.TraceID)
+		}
+		if ev.SpanID != "" {
+			t.Errorf("expected empty span_id before emit, got %q", ev.SpanID)
+		}
 
-		// Verify trace_id is generated (Requirement 39.6)
-		if ev.TraceID == "" {
+		// Finish and emit - this triggers ensureTraceContext()
+		if err := logger.Finish(ctx, "success"); err != nil {
+			t.Fatalf("failed to finish: %v", err)
+		}
+		if err := logger.Emit(ctx); err != nil {
+			t.Fatalf("failed to emit: %v", err)
+		}
+		if err := logger.Flush(context.Background()); err != nil {
+			t.Fatalf("failed to flush: %v", err)
+		}
+
+		// Verify trace_id was generated during emit (Requirement 39.6)
+		events := store.Events()
+		if len(events) != 1 {
+			t.Fatalf("expected 1 event, got %d", len(events))
+		}
+		emitted := events[0]
+		if emitted.TraceID == "" {
 			t.Error("expected trace_id to be generated")
 		}
-		if !IsValidTraceID(ev.TraceID) {
-			t.Errorf("expected valid trace_id, got %q", ev.TraceID)
+		if !IsValidTraceID(emitted.TraceID) {
+			t.Errorf("expected valid trace_id, got %q", emitted.TraceID)
 		}
-
-		// Verify span_id is generated
-		if ev.SpanID == "" {
+		if emitted.SpanID == "" {
 			t.Error("expected span_id to be generated")
 		}
-		if !IsValidSpanID(ev.SpanID) {
-			t.Errorf("expected valid span_id, got %q", ev.SpanID)
+		if !IsValidSpanID(emitted.SpanID) {
+			t.Errorf("expected valid span_id, got %q", emitted.SpanID)
 		}
-
-		// Verify parent_span_id is empty when no parent exists
-		if ev.ParentID != "" {
-			t.Errorf("expected empty parent_span_id, got %q", ev.ParentID)
+		if emitted.ParentID != "" {
+			t.Errorf("expected empty parent_span_id, got %q", emitted.ParentID)
 		}
 	})
 
@@ -146,11 +179,12 @@ func TestTraceContextPropagation(t *testing.T) {
 		}
 		defer func() { _ = logger.Shutdown(context.Background()) }()
 
-		// Create event with trace context
-		ctx := logger.StartEvent(context.Background(), Params{Event: "test.event"})
-		ev, _ := FromContext(ctx)
-		traceID := ev.TraceID
-		spanID := ev.SpanID
+		// Create event with explicit trace context
+		ctx := logger.StartEvent(context.Background(), Params{
+			Event:   "test.event",
+			TraceID: "0af7651916cd43dd8448eb211c80319c",
+			SpanID:  "00f067aa0ba902b7",
+		})
 
 		// Finish and emit
 		if err := logger.Finish(ctx, "success"); err != nil {
@@ -170,11 +204,11 @@ func TestTraceContextPropagation(t *testing.T) {
 		}
 
 		emittedEvent := events[0]
-		if emittedEvent.TraceID != traceID {
-			t.Errorf("expected trace_id=%q in emitted event, got %q", traceID, emittedEvent.TraceID)
+		if emittedEvent.TraceID != "0af7651916cd43dd8448eb211c80319c" {
+			t.Errorf("expected trace_id=%q in emitted event, got %q", "0af7651916cd43dd8448eb211c80319c", emittedEvent.TraceID)
 		}
-		if emittedEvent.SpanID != spanID {
-			t.Errorf("expected span_id=%q in emitted event, got %q", spanID, emittedEvent.SpanID)
+		if emittedEvent.SpanID != "00f067aa0ba902b7" {
+			t.Errorf("expected span_id=%q in emitted event, got %q", "00f067aa0ba902b7", emittedEvent.SpanID)
 		}
 	})
 }

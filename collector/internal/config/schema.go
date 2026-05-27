@@ -96,10 +96,11 @@ type GraphQLConfig struct {
 }
 
 type AuthConfig struct {
-	Enabled  bool   `yaml:"enabled"`
-	Header   string `yaml:"header"`
-	ValueEnv string `yaml:"value_env"`
-	Value    string `yaml:"-"`
+	Enabled           bool   `yaml:"enabled"`
+	Header            string `yaml:"header"`
+	ValueEnv          string `yaml:"value_env"`
+	Value             string `yaml:"-"`
+	AllowLocalDevKeys bool   `yaml:"allow_local_dev_keys"`
 }
 
 type RateLimitConfig struct {
@@ -211,16 +212,21 @@ type LimitsConfig struct {
 }
 
 type IdentityConfig struct {
-	Mode                  string `yaml:"mode"`
-	AuthIdentityWins      bool   `yaml:"auth_identity_wins"`
-	AllowPayloadIdentity  bool   `yaml:"allow_payload_identity"`
-	ServiceName           string `yaml:"service_name"`
-	ServiceVersion        string `yaml:"service_version"`
-	DeploymentEnvironment string `yaml:"deployment_environment"`
-	DeploymentRegion      string `yaml:"deployment_region"`
-	TenantID              string `yaml:"tenant_id"`
-	WorkspaceID           string `yaml:"workspace_id"`
-	OrganizationID        string `yaml:"organization_id"`
+	Mode                  string   `yaml:"mode"`
+	AuthIdentityWins      bool     `yaml:"auth_identity_wins"`
+	AllowPayloadIdentity  bool     `yaml:"allow_payload_identity"`
+	ServiceName           string   `yaml:"service_name"`
+	ServiceVersion        string   `yaml:"service_version"`
+	DeploymentEnvironment string   `yaml:"deployment_environment"`
+	DeploymentRegion      string   `yaml:"deployment_region"`
+	TenantID              string   `yaml:"tenant_id"`
+	WorkspaceID           string   `yaml:"workspace_id"`
+	OrganizationID        string   `yaml:"organization_id"`
+	MTLSAllowedCNs        []string `yaml:"mtls_allowed_cns"`
+	MTLSAllowedDNS        []string `yaml:"mtls_allowed_dns"`
+	MTLSAllowedEmails     []string `yaml:"mtls_allowed_emails"`
+	AllowedOrigins        []string `yaml:"allowed_origins"`
+	TrustedProxies        []string `yaml:"trusted_proxies"`
 }
 
 type PrivacyConfig struct {

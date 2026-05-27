@@ -11,12 +11,30 @@ import (
 	"strings"
 	"time"
 
+	"github.com/astraive/loxa-collector/internal/auth"
 	"github.com/astraive/loxa-collector/internal/ingest"
 	processing "github.com/astraive/loxa-collector/internal/processing"
 	serverruntime "github.com/astraive/loxa-collector/internal/server"
 	"github.com/astraive/loxa-collector/internal/validation"
 	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
+
+// ingestRejectResponse builds a standard single-event rejection response.
+func ingestRejectResponse(requestID, code, message string, retryable bool) ingest.Response {
+	return ingest.Response{
+		RequestID: requestID,
+		Status:    ingest.StatusRejected,
+		Rejected:  1,
+		Error:     code,
+		Reason:    code,
+		Errors: []ingest.EventError{{
+			Index:     0,
+			Code:      code,
+			Message:   message,
+			Retryable: retryable,
+		}},
+	}
+}
 
 func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 	s.metrics.requestsTotal.Add(1)
@@ -25,20 +43,9 @@ func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 	if s.cfg.rateLimitEnabled && !s.rateLimiter.Allow() {
 		s.metrics.requestsLimited.Add(1)
 		s.metrics.eventsRejected.Add(1)
-		writeJSON(w, http.StatusTooManyRequests, ingest.Response{
-			RequestID:    requestID,
-			Status:       ingest.StatusRejected,
-			Rejected:     1,
-			RetryAfterMS: s.cfg.retryAfterMS(),
-			Reason:       "rate_limited",
-			Error:        "rate_limited",
-			Errors: []ingest.EventError{{
-				Index:     0,
-				Code:      "rate_limited",
-				Message:   "collector rate limit exceeded",
-				Retryable: true,
-			}},
-		})
+		resp := ingestRejectResponse(requestID, "rate_limited", "collector rate limit exceeded", true)
+		resp.RetryAfterMS = s.cfg.retryAfterMS()
+		writeJSON(w, http.StatusTooManyRequests, resp)
 		return
 	}
 
@@ -47,19 +54,10 @@ func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 
 	if !isSupportedIngestContentType(r.Header.Get("Content-Type")) {
 		s.metrics.eventsRejected.Add(1)
-		writeJSON(w, http.StatusUnsupportedMediaType, ingest.Response{
-			RequestID: requestID,
-			Status:    ingest.StatusRejected,
-			Rejected:  1,
-			Error:     "unsupported_content_type",
-			Reason:    "unsupported_content_type",
-			Errors: []ingest.EventError{{
-				Index:     0,
-				Code:      "unsupported_content_type",
-				Message:   "content type must be application/json, application/x-ndjson, or application/ndjson",
-				Retryable: false,
-			}},
-		})
+		writeJSON(w, http.StatusUnsupportedMediaType, ingestRejectResponse(requestID,
+			"unsupported_content_type",
+			"content type must be application/json, application/x-ndjson, or application/ndjson",
+			false))
 		return
 	}
 
@@ -72,55 +70,34 @@ func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 			status = http.StatusRequestEntityTooLarge
 			code = "payload_too_large"
 		}
-		writeJSON(w, status, ingest.Response{
-			RequestID: requestID,
-			Status:    ingest.StatusRejected,
-			Rejected:  1,
-			Error:     code,
-			Reason:    code,
-			Errors: []ingest.EventError{{
-				Index:     0,
-				Code:      code,
-				Message:   err.Error(),
-				Retryable: false,
-			}},
-		})
+		writeJSON(w, status, ingestRejectResponse(requestID, code, err.Error(), false))
 		return
 	}
 
 	if len(rawEvents) == 0 {
-		writeJSON(w, http.StatusBadRequest, ingest.Response{
-			RequestID: requestID,
-			Status:    ingest.StatusInvalid,
-			Rejected:  1,
-			Error:     "empty_event_payload",
-			Reason:    "empty_event_payload",
-			Errors: []ingest.EventError{{
-				Index:     0,
-				Code:      "empty_event_payload",
-				Message:   "empty event payload",
-				Retryable: false,
-			}},
-		})
+		writeJSON(w, http.StatusBadRequest, ingestRejectResponse(requestID, "empty_event_payload", "empty event payload", false))
 		return
 	}
 
 	if len(rawEvents) > s.cfg.maxEventsPerRequest {
 		s.metrics.eventsRejected.Add(int64(len(rawEvents)))
-		writeJSON(w, http.StatusRequestEntityTooLarge, ingest.Response{
-			RequestID: requestID,
-			Status:    ingest.StatusRejected,
-			Rejected:  len(rawEvents),
-			Error:     "max_events_exceeded",
-			Reason:    "max_events_exceeded",
-			Errors: []ingest.EventError{{
-				Index:     0,
-				Code:      "max_events_exceeded",
-				Message:   "max events per request exceeded",
-				Retryable: false,
-			}},
-		})
+		writeJSON(w, http.StatusRequestEntityTooLarge, ingestRejectResponse(requestID, "max_events_exceeded", "max events per request exceeded", false))
 		return
+	}
+
+	// Enforce per-key event rate limit (MaxEventsPerMinute)
+	if s.keyRateLimiter != nil {
+		ac := auth.GetAuthContext(r.Context())
+		if ac != nil && ac.MaxEventsPerMinute > 0 {
+			if !s.keyRateLimiter.AllowEvents(ac.APIKeyID, ac.MaxEventsPerMinute, len(rawEvents)) {
+				s.metrics.requestsLimited.Add(1)
+				s.metrics.eventsRejected.Add(int64(len(rawEvents)))
+				resp := ingestRejectResponse(requestID, "event_rate_limited", "event rate limit exceeded", true)
+				resp.RetryAfterMS = s.cfg.retryAfterMS()
+				writeJSON(w, http.StatusTooManyRequests, resp)
+				return
+			}
+		}
 	}
 
 	totalBytes := int64(0)
@@ -130,20 +107,10 @@ func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 	if gerr, release := s.acquireIngestCapacity(len(rawEvents), totalBytes); gerr != nil {
 		s.metrics.requestsThrottled.Add(1)
 		s.metrics.eventsRejected.Add(int64(len(rawEvents)))
-		writeJSON(w, http.StatusTooManyRequests, ingest.Response{
-			RequestID:    requestID,
-			Status:       ingest.StatusRejected,
-			Rejected:     len(rawEvents),
-			RetryAfterMS: s.cfg.retryAfterMS(),
-			Reason:       gerr.Code,
-			Error:        gerr.Code,
-			Errors: []ingest.EventError{{
-				Index:     0,
-				Code:      gerr.Code,
-				Message:   gerr.Message,
-				Retryable: gerr.Retryable,
-			}},
-		})
+		resp := ingestRejectResponse(requestID, gerr.Code, gerr.Message, gerr.Retryable)
+		resp.Rejected = len(rawEvents)
+		resp.RetryAfterMS = s.cfg.retryAfterMS()
+		writeJSON(w, http.StatusTooManyRequests, resp)
 		return
 	} else {
 		defer release()
@@ -324,12 +291,9 @@ func (s *collectorState) validateEventContract(raw []byte, expectedSchemaVersion
 	return "", false
 }
 
+// isDiskFullErr delegates to processing.IsDiskFullErr to avoid duplication.
 func isDiskFullErr(err error) bool {
-	if err == nil {
-		return false
-	}
-	s := strings.ToLower(err.Error())
-	return strings.Contains(s, "no space left") || strings.Contains(s, "disk full")
+	return processing.IsDiskFullErr(err)
 }
 
 func newIngestRequestID() string {
@@ -426,6 +390,17 @@ func (s *collectorState) handleTail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *collectorState) handleIngestBatch(ctx context.Context, rawEvents [][]byte) (int, error) {
+	// Per-key event rate limiting (only when auth context is available from HTTP middleware)
+	if s.keyRateLimiter != nil {
+		ac := auth.GetAuthContext(ctx)
+		if ac != nil && ac.MaxEventsPerMinute > 0 {
+			if !s.keyRateLimiter.AllowEvents(ac.APIKeyID, ac.MaxEventsPerMinute, len(rawEvents)) {
+				s.metrics.requestsLimited.Add(1)
+				return 0, fmt.Errorf("rate_limited: key event rate limit exceeded")
+			}
+		}
+	}
+
 	accepted := 0
 	acceptedForCortex := make([][]byte, 0, len(rawEvents))
 	totalBytes := int64(0)
@@ -556,12 +531,19 @@ func (s *collectorState) removeTailSubscriber(ch chan []byte) {
 
 func (s *collectorState) broadcastTail(raw []byte) {
 	s.tailMu.Lock()
-	defer s.tailMu.Unlock()
 	if len(s.tailSubscribers) == 0 {
+		s.tailMu.Unlock()
 		return
 	}
-	cp := append([]byte(nil), raw...)
+	// Copy subscriber list under lock, then release before fanning out.
+	subs := make([]chan []byte, 0, len(s.tailSubscribers))
 	for ch := range s.tailSubscribers {
+		subs = append(subs, ch)
+	}
+	s.tailMu.Unlock()
+
+	cp := append([]byte(nil), raw...)
+	for _, ch := range subs {
 		select {
 		case ch <- cp:
 		default:

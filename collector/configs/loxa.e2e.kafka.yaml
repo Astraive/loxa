@@ -1,0 +1,16 @@
+collector:
+  addr: ":9090"
+eventbus:
+  type: kafka
+  topic: loxa-events
+  consumer_group: loxa-e2e-test
+  kafka:
+    brokers:
+      - "127.0.0.1:9092"
+    topic: loxa-events
+    acks: "all"
+    enable_idempotence: true
+reliability:
+  mode: "queue"
+dedupe:
+  enabled: false

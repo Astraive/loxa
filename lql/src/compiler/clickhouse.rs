@@ -11,6 +11,7 @@ pub fn compile(pipeline: &Pipeline, schema: &Schema) -> Result<String, LqlError>
     let mut group_by = Vec::new();
     let mut order_by = None;
     let mut limit = None;
+    let mut extended_columns: Vec<String> = Vec::new();
 
     for stmt in &pipeline.statements {
         match stmt {
@@ -18,7 +19,7 @@ pub fn compile(pipeline: &Pipeline, schema: &Schema) -> Result<String, LqlError>
                 table = source.table_name().to_string();
             }
             Statement::Where(expr) => {
-                where_clauses.push(compile_expr(expr, schema)?);
+                where_clauses.push(compile_expr_with_aliases(expr, schema, &extended_columns)?);
             }
             Statement::Summarize { aggregations, by } => {
                 group_by = by
@@ -45,9 +46,10 @@ pub fn compile(pipeline: &Pipeline, schema: &Schema) -> Result<String, LqlError>
             Statement::Extend { name, expr } => {
                 select_cols.push(format!(
                     "{} AS {}",
-                    compile_expr(expr, schema)?,
+                    compile_expr_with_aliases(expr, schema, &extended_columns)?,
                     escape_ident(name)
                 ));
+                extended_columns.push(name.clone());
             }
             Statement::Top { count, by, order } => {
                 let by_cols = by
@@ -89,9 +91,15 @@ pub fn compile(pipeline: &Pipeline, schema: &Schema) -> Result<String, LqlError>
 }
 
 fn compile_expr(expr: &Expr, schema: &Schema) -> Result<String, LqlError> {
+    compile_expr_with_aliases(expr, schema, &[])
+}
+
+fn compile_expr_with_aliases(expr: &Expr, schema: &Schema, aliases: &[String]) -> Result<String, LqlError> {
     match expr {
         Expr::Column(name) => {
-            if schema.has_field(name) {
+            if schema.has_field(name)
+                || aliases.iter().any(|a| a == name)
+            {
                 Ok(escape_ident(name))
             } else {
                 Ok(format!("JSONExtractString(raw, '{}')", name))
@@ -99,8 +107,8 @@ fn compile_expr(expr: &Expr, schema: &Schema) -> Result<String, LqlError> {
         }
         Expr::Literal(lit) => compile_literal(lit),
         Expr::BinaryOp { left, op, right } => {
-            let l = compile_expr(left, schema)?;
-            let r = compile_expr(right, schema)?;
+            let l = compile_expr_with_aliases(left, schema, aliases)?;
+            let r = compile_expr_with_aliases(right, schema, aliases)?;
             match op {
                 BinOp::Like => Ok(format!("{} LIKE {}", l, r)),
                 BinOp::NotLike => Ok(format!("{} NOT LIKE {}", l, r)),
@@ -111,7 +119,7 @@ fn compile_expr(expr: &Expr, schema: &Schema) -> Result<String, LqlError> {
             }
         }
         Expr::UnaryOp { op, expr } => {
-            let inner = compile_expr(expr, schema)?;
+            let inner = compile_expr_with_aliases(expr, schema, aliases)?;
             match op {
                 UnaryOp::Not => Ok(format!("NOT ({})", inner)),
                 UnaryOp::Neg => Ok(format!("(-({}))", inner)),
@@ -119,10 +127,10 @@ fn compile_expr(expr: &Expr, schema: &Schema) -> Result<String, LqlError> {
         }
         Expr::Function { name, args } => compile_function(name, args, schema),
         Expr::InList { expr, values } => {
-            let col = compile_expr(expr, schema)?;
+            let col = compile_expr_with_aliases(expr, schema, aliases)?;
             let vals: Vec<String> = values
                 .iter()
-                .map(|v| compile_expr(v, schema))
+                .map(|v| compile_expr_with_aliases(v, schema, aliases))
                 .collect::<Result<Vec<_>, _>>()?;
             Ok(format!("{} IN ({})", col, vals.join(", ")))
         }
@@ -150,35 +158,39 @@ fn compile_agg(agg: &AggExpr, schema: &Schema) -> Result<String, LqlError> {
                 "count(*)".to_string()
             }
         }
-        AggFunction::Sum => format!("sum({})", compile_expr(agg.arg.as_ref().unwrap(), schema)?),
-        AggFunction::Avg => format!("avg({})", compile_expr(agg.arg.as_ref().unwrap(), schema)?),
-        AggFunction::Min => format!("min({})", compile_expr(agg.arg.as_ref().unwrap(), schema)?),
-        AggFunction::Max => format!("max({})", compile_expr(agg.arg.as_ref().unwrap(), schema)?),
-        AggFunction::P50 => format!(
-            "quantile(0.5)({})",
-            compile_expr(agg.arg.as_ref().unwrap(), schema)?
-        ),
-        AggFunction::P95 => format!(
-            "quantile(0.95)({})",
-            compile_expr(agg.arg.as_ref().unwrap(), schema)?
-        ),
-        AggFunction::P99 => format!(
-            "quantile(0.99)({})",
-            compile_expr(agg.arg.as_ref().unwrap(), schema)?
-        ),
-        AggFunction::Percentile(p) => format!(
-            "quantile({})({})",
-            p / 100.0,
-            compile_expr(agg.arg.as_ref().unwrap(), schema)?
-        ),
-        AggFunction::DCount => {
-            format!("uniq({})", compile_expr(agg.arg.as_ref().unwrap(), schema)?)
+        AggFunction::Sum | AggFunction::Avg | AggFunction::Min | AggFunction::Max
+        | AggFunction::DCount | AggFunction::First | AggFunction::Last => {
+            let arg = agg.arg.as_ref().ok_or_else(|| LqlError::Compile {
+                message: format!("{:?} requires an argument", agg.function),
+                span: None,
+            })?;
+            let compiled = compile_expr(arg, schema)?;
+            match &agg.function {
+                AggFunction::Sum => format!("sum({})", compiled),
+                AggFunction::Avg => format!("avg({})", compiled),
+                AggFunction::Min => format!("min({})", compiled),
+                AggFunction::Max => format!("max({})", compiled),
+                AggFunction::DCount => format!("uniq({})", compiled),
+                AggFunction::First => format!("any({})", compiled),
+                AggFunction::Last => format!("anyLast({})", compiled),
+                _ => unreachable!(),
+            }
         }
-        AggFunction::First => format!("any({})", compile_expr(agg.arg.as_ref().unwrap(), schema)?),
-        AggFunction::Last => format!(
-            "anyLast({})",
-            compile_expr(agg.arg.as_ref().unwrap(), schema)?
-        ),
+        AggFunction::P50 | AggFunction::P95 | AggFunction::P99 | AggFunction::Percentile(_) => {
+            let arg = agg.arg.as_ref().ok_or_else(|| LqlError::Compile {
+                message: "percentile aggregation requires an argument".to_string(),
+                span: None,
+            })?;
+            let compiled = compile_expr(arg, schema)?;
+            let pct = match &agg.function {
+                AggFunction::P50 => 0.5,
+                AggFunction::P95 => 0.95,
+                AggFunction::P99 => 0.99,
+                AggFunction::Percentile(p) => p / 100.0,
+                _ => unreachable!(),
+            };
+            format!("quantile({})({})", pct, compiled)
+        }
     };
     if let Some(alias) = &agg.alias {
         Ok(format!("{} AS {}", func_str, escape_ident(alias)))

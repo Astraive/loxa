@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/astraive/loxa-collector/internal/eventbus"
+	"github.com/rs/zerolog/log"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
@@ -173,12 +174,21 @@ func (b *kafkaBus) Subscribe(ctx context.Context, topic string, group string, ha
 		consumerGroup = b.cfg.ConsumerGroup
 	}
 
+	ready := make(chan struct{})
+	var once sync.Once
+
 	consumer, err := kgo.NewClient(
 		kgo.SeedBrokers(b.cfg.Brokers...),
 		kgo.ConsumeTopics(consumeTopic),
 		kgo.ConsumerGroup(consumerGroup),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
 		kgo.DisableAutoCommit(),
+		kgo.SessionTimeout(45*time.Second),
+		kgo.OnPartitionsAssigned(func(_ context.Context, _ *kgo.Client, _ map[string][]int32) {
+			once.Do(func() { close(ready) })
+		}),
+		kgo.OnPartitionsRevoked(func(_ context.Context, _ *kgo.Client, _ map[string][]int32) {}),
+		kgo.OnPartitionsLost(func(_ context.Context, _ *kgo.Client, _ map[string][]int32) {}),
 	)
 	if err != nil {
 		return fmt.Errorf("eventbus/kafka: consumer: %w", err)
@@ -212,13 +222,29 @@ func (b *kafkaBus) Subscribe(ctx context.Context, topic string, group string, ha
 					rec:      rec,
 				}
 				if err := handler(subCtx, msg); err != nil {
+					// Route to DLQ
+					if dlqErr := b.PublishDLQ(subCtx, env, err); dlqErr != nil {
+						log.Error().Err(dlqErr).Str("topic", rec.Topic).Msg("failed to publish to DLQ, message will be redelivered")
+					}
 					return
 				}
 				consumer.CommitRecords(subCtx, rec)
 			})
 		}
 	}()
-	return nil
+
+	// Wait for the consumer group to join and partitions to be assigned.
+	// This callback fires inside PollFetches during the group join protocol.
+	select {
+	case <-ready:
+		return nil
+	case <-time.After(30 * time.Second):
+		cancel()
+		return fmt.Errorf("eventbus/kafka: subscribe timeout: consumer group did not become ready within 30s")
+	case <-ctx.Done():
+		cancel()
+		return ctx.Err()
+	}
 }
 
 func (b *kafkaBus) Close(_ context.Context) error {
@@ -234,10 +260,17 @@ func (b *kafkaBus) Close(_ context.Context) error {
 	return nil
 }
 
-func (b *kafkaBus) Health(_ context.Context) eventbus.Health {
+func (b *kafkaBus) Health(ctx context.Context) eventbus.Health {
 	if b.closed.Load() {
 		return eventbus.Health{OK: false, Detail: "closed"}
 	}
+	// Verify broker connectivity by requesting metadata
+	adm := kadm.NewClient(b.client)
+	topics, err := adm.ListTopics(ctx)
+	if err != nil {
+		return eventbus.Health{OK: false, Detail: fmt.Sprintf("broker unreachable: %v", err)}
+	}
+	_ = topics
 	return eventbus.Health{OK: true}
 }
 

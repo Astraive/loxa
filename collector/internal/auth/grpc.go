@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -11,39 +12,59 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// GRPCAuthOption configures gRPC auth interceptors.
+type GRPCAuthOption func(*grpcAuthConfig)
+
+type grpcAuthConfig struct {
+	allowLocalDevKeys bool
+}
+
+// GRPCWithAllowLocalDevKeys controls whether lx_local_dev_* keys are accepted.
+func GRPCWithAllowLocalDevKeys(v bool) GRPCAuthOption {
+	return func(c *grpcAuthConfig) { c.allowLocalDevKeys = v }
+}
+
 // UnaryAuthInterceptor returns a gRPC unary server interceptor that validates
 // API keys from the "authorization" metadata.
-func UnaryAuthInterceptor(store KeyStore, cache *MemoryKeyCache, serverSecret []byte) grpc.UnaryServerInterceptor {
+func UnaryAuthInterceptor(store KeyStore, cache *MemoryKeyCache, serverSecret []byte, opts ...GRPCAuthOption) grpc.UnaryServerInterceptor {
+	var ac grpcAuthConfig
+	for _, o := range opts {
+		o(&ac)
+	}
 	rateLimiter := NewKeyRateLimiter()
 
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		ac, err := grpcAuthenticate(ctx, store, cache, serverSecret, rateLimiter)
+		authCtx, err := grpcAuthenticate(ctx, store, cache, serverSecret, rateLimiter, ac.allowLocalDevKeys)
 		if err != nil {
 			return nil, err
 		}
 
-		ctx = WithAuthContext(ctx, ac)
+		ctx = WithAuthContext(ctx, authCtx)
 		return handler(ctx, req)
 	}
 }
 
 // StreamAuthInterceptor returns a gRPC stream server interceptor that validates
 // API keys from the "authorization" metadata.
-func StreamAuthInterceptor(store KeyStore, cache *MemoryKeyCache, serverSecret []byte) grpc.StreamServerInterceptor {
+func StreamAuthInterceptor(store KeyStore, cache *MemoryKeyCache, serverSecret []byte, opts ...GRPCAuthOption) grpc.StreamServerInterceptor {
+	var ac grpcAuthConfig
+	for _, o := range opts {
+		o(&ac)
+	}
 	rateLimiter := NewKeyRateLimiter()
 
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		ac, err := grpcAuthenticate(ss.Context(), store, cache, serverSecret, rateLimiter)
+		authCtx, err := grpcAuthenticate(ss.Context(), store, cache, serverSecret, rateLimiter, ac.allowLocalDevKeys)
 		if err != nil {
 			return err
 		}
 
-		wrapped := &authStream{ServerStream: ss, ctx: WithAuthContext(ss.Context(), ac)}
+		wrapped := &authStream{ServerStream: ss, ctx: WithAuthContext(ss.Context(), authCtx)}
 		return handler(srv, wrapped)
 	}
 }
 
-func grpcAuthenticate(ctx context.Context, store KeyStore, cache *MemoryKeyCache, serverSecret []byte, rateLimiter *KeyRateLimiter) (*AuthContext, error) {
+func grpcAuthenticate(ctx context.Context, store KeyStore, cache *MemoryKeyCache, serverSecret []byte, rateLimiter *KeyRateLimiter, allowLocalDevKeys bool) (*AuthContext, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.Unauthenticated, "missing metadata")
@@ -74,6 +95,10 @@ func grpcAuthenticate(ctx context.Context, store KeyStore, cache *MemoryKeyCache
 
 	// Local dev keys
 	if parsed.Kind == KeyKindLocal {
+		if !allowLocalDevKeys {
+			slog.Warn("local dev key rejected (allow_local_dev_keys=false)", "key", parsed.Raw[:min(len(parsed.Raw), 20)]+"...")
+			return nil, status.Error(codes.PermissionDenied, "local dev keys are not allowed in production mode")
+		}
 		return &AuthContext{
 			KeyKind:     KeyKindLocal,
 			Permissions: ExpandRoles([]Role{RoleIngestServer}),

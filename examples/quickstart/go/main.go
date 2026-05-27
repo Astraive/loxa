@@ -11,7 +11,10 @@ func main() {
 	ctx := context.Background()
 
 	// Default API — configure once, use everywhere
-	loxa.Configure(loxa.Production("quickstart-demo").WithCollectorEndpoint("http://localhost:9090"))
+	loxa.Configure(loxa.ApplyConfig(loxa.Production(),
+		loxa.WithService("quickstart-demo"),
+		loxa.WithCollectorEndpoint("http://localhost:9090"),
+	))
 	defer loxa.Shutdown(ctx)
 
 	loxa.Info("server started")
@@ -27,10 +30,13 @@ func main() {
 	fmt.Println("Event emitted successfully")
 
 	// Custom instance
-	logger, _ := loxa.New(loxa.Config{Service: "checkout-api", CollectorURL: "http://localhost:9090"})
-	logger.Info(ctx, "custom instance ready")
+	logger, _ := loxa.New(loxa.ApplyConfig(loxa.Config{},
+		loxa.WithService("checkout-api"),
+		loxa.WithCollectorEndpoint("http://localhost:9090"),
+	))
+	logger.Info("custom instance ready")
 
 	// Alias — same config, different service name
 	audit, _ := loxa.Alias("audit-service")
-	audit.Info(ctx, "audit trail started")
+	audit.Info("audit trail started")
 }

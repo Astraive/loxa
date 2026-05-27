@@ -2,11 +2,22 @@ package auth
 
 import (
 	"context"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
+
+// parsedCIDRNet holds a pre-parsed CIDR to avoid repeated net.ParseCIDR calls.
+type parsedCIDRNet struct {
+	ipNet *net.IPNet
+	err   error
+}
+
+// cidrCache caches parsed CIDRs so they are only parsed once per unique string.
+var cidrCache sync.Map // map[string]*parsedCIDRNet
 
 // KeyRecord holds the stored metadata for an API key.
 type KeyRecord struct {
@@ -36,6 +47,32 @@ type KeyStore interface {
 	FindByKeyID(ctx context.Context, keyID string) (*KeyRecord, error)
 }
 
+// MiddlewareOption configures the auth middleware.
+type MiddlewareOption func(*middlewareConfig)
+
+type middlewareConfig struct {
+	allowLocalDevKeys bool
+	trustedProxies    []*net.IPNet
+	rateLimiter       *KeyRateLimiter
+}
+
+// WithAllowLocalDevKeys controls whether lx_local_dev_* keys are accepted.
+// Default is false (local dev keys rejected), which is safe for production.
+func WithAllowLocalDevKeys(v bool) MiddlewareOption {
+	return func(c *middlewareConfig) { c.allowLocalDevKeys = v }
+}
+
+// WithTrustedProxies sets the list of trusted proxy CIDRs.
+// X-Forwarded-For is only trusted from these IPs.
+func WithTrustedProxies(proxies []*net.IPNet) MiddlewareOption {
+	return func(c *middlewareConfig) { c.trustedProxies = proxies }
+}
+
+// WithRateLimiter sets an external rate limiter to be shared with handlers.
+func WithRateLimiter(rl *KeyRateLimiter) MiddlewareOption {
+	return func(c *middlewareConfig) { c.rateLimiter = rl }
+}
+
 // Middleware returns an http.Handler middleware that validates API keys
 // and attaches an AuthContext to the request. It does NOT check permissions
 // — that's done per-route via RequirePermission.
@@ -56,12 +93,19 @@ type KeyStore interface {
 //  13. Apply per-key rate limit
 //  14. Attach AuthContext to request context
 //  15. Call next handler
-func Middleware(store KeyStore, cache *MemoryKeyCache, serverSecret []byte) func(http.Handler) http.Handler {
-	rateLimiter := NewKeyRateLimiter()
+func Middleware(store KeyStore, cache *MemoryKeyCache, serverSecret []byte, opts ...MiddlewareOption) func(http.Handler) http.Handler {
+	var mc middlewareConfig
+	for _, o := range opts {
+		o(&mc)
+	}
+	rateLimiter := mc.rateLimiter
+	if rateLimiter == nil {
+		rateLimiter = NewKeyRateLimiter()
+	}
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ac, errCode, errReason := authenticate(r, store, cache, serverSecret, rateLimiter)
+			ac, errCode, errReason := authenticate(r, store, cache, serverSecret, rateLimiter, mc.allowLocalDevKeys, mc.trustedProxies)
 			if ac == nil {
 				w.Header().Set("X-Auth-Failure-Reason", errReason)
 				w.Header().Set("X-Auth-Failure-Code", errCode)
@@ -80,8 +124,6 @@ func Middleware(store KeyStore, cache *MemoryKeyCache, serverSecret []byte) func
 	}
 }
 
-// RequirePermission wraps a handler with a permission check.
-// Returns 403 Forbidden if the auth context lacks the required permission.
 // RequirePermission wraps a handler with a permission check.
 // Returns 403 Forbidden if the auth context lacks the required permission.
 func RequirePermission(next http.Handler, perm Permission) http.Handler {
@@ -103,7 +145,7 @@ func MakeRouteProtector() func(next http.Handler, perm string) http.Handler {
 	}
 }
 
-func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, serverSecret []byte, rateLimiter *KeyRateLimiter) (*AuthContext, string, string) {
+func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, serverSecret []byte, rateLimiter *KeyRateLimiter, allowLocalDevKeys bool, trustedProxies []*net.IPNet) (*AuthContext, string, string) {
 	// 1. Parse Authorization header
 	raw := extractBearerToken(r)
 	if raw == "" {
@@ -118,6 +160,10 @@ func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, server
 
 	// Handle local dev keys
 	if parsed.Kind == KeyKindLocal {
+		if !allowLocalDevKeys {
+			slog.Warn("local dev key rejected (allow_local_dev_keys=false)", "key", parsed.Raw[:min(len(parsed.Raw), 20)]+"...")
+			return nil, "local_dev_disabled", "local dev keys are not allowed in production mode"
+		}
 		return &AuthContext{
 			KeyKind:     KeyKindLocal,
 			Permissions: ExpandRoles([]Role{RoleIngestServer}),
@@ -220,7 +266,7 @@ func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, server
 
 	// 12. Check IP restriction
 	if len(ac.AllowedIPs) > 0 {
-		remoteIP := extractIP(r)
+		remoteIP := extractIP(r, trustedProxies)
 		if !ipAllowed(remoteIP, ac.AllowedIPs) {
 			return nil, "ip_not_allowed", "ip address not permitted"
 		}
@@ -245,22 +291,42 @@ func extractBearerToken(r *http.Request) string {
 	return strings.TrimSpace(r.Header.Get("X-API-Key"))
 }
 
-func extractIP(r *http.Request) string {
-	// X-Forwarded-For takes precedence
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		parts := strings.Split(xff, ",")
-		return strings.TrimSpace(parts[0])
-	}
-	// X-Real-IP
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return strings.TrimSpace(xri)
-	}
-	// RemoteAddr
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
+func extractIP(r *http.Request, trustedProxies []*net.IPNet) string {
+	remoteAddr := r.RemoteAddr
+	host, _, err := net.SplitHostPort(remoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		host = remoteAddr
+	}
+	remoteIP := net.ParseIP(host)
+
+	// Only trust X-Forwarded-For if the direct client is a trusted proxy
+	if remoteIP != nil && isTrustedProxy(remoteIP, trustedProxies) {
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			parts := strings.Split(xff, ",")
+			for _, part := range parts {
+				ip := net.ParseIP(strings.TrimSpace(part))
+				if ip != nil && !isTrustedProxy(ip, trustedProxies) {
+					return ip.String()
+				}
+			}
+		}
+		if xri := r.Header.Get("X-Real-IP"); xri != "" {
+			return strings.TrimSpace(xri)
+		}
 	}
 	return host
+}
+
+func isTrustedProxy(ip net.IP, trustedProxies []*net.IPNet) bool {
+	if len(trustedProxies) == 0 {
+		return false
+	}
+	for _, cidr := range trustedProxies {
+		if cidr.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 func contains(ss []string, s string) bool {
@@ -272,15 +338,22 @@ func contains(ss []string, s string) bool {
 	return false
 }
 
+// ipAllowed checks if ip is in the allowed list (exact match or CIDR).
+// CIDRs are parsed once and cached to avoid per-request parsing overhead.
 func ipAllowed(ip string, allowed []string) bool {
+	parsedIP := net.ParseIP(ip)
 	for _, a := range allowed {
 		if a == ip {
 			return true
 		}
-		// Check CIDR
 		if strings.Contains(a, "/") {
-			_, cidr, err := net.ParseCIDR(a)
-			if err == nil && cidr.Contains(net.ParseIP(ip)) {
+			cached, ok := cidrCache.Load(a)
+			if !ok {
+				_, cidr, parseErr := net.ParseCIDR(a)
+				cached, _ = cidrCache.LoadOrStore(a, &parsedCIDRNet{ipNet: cidr, err: parseErr})
+			}
+			parsed := cached.(*parsedCIDRNet)
+			if parsed.err == nil && parsed.ipNet.Contains(parsedIP) {
 				return true
 			}
 		}

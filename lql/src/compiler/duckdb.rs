@@ -14,7 +14,7 @@ pub fn compile(pipeline: &Pipeline, schema: &Schema) -> Result<String, LqlError>
                 ctx.table = source.table_name().to_string();
             }
             Statement::Where(expr) => {
-                ctx.where_clauses.push(compile_expr(expr, schema)?);
+                ctx.where_clauses.push(compile_expr_with_aliases(expr, schema, &ctx.extended_columns)?);
             }
             Statement::Summarize { aggregations, by } => {
                 ctx.group_by = by
@@ -41,9 +41,10 @@ pub fn compile(pipeline: &Pipeline, schema: &Schema) -> Result<String, LqlError>
             Statement::Extend { name, expr } => {
                 ctx.select_cols.push(format!(
                     "{} AS {}",
-                    compile_expr(expr, schema)?,
+                    compile_expr_with_aliases(expr, schema, &ctx.extended_columns)?,
                     escape_ident(name)
                 ));
+                ctx.extended_columns.push(name.clone());
             }
             Statement::Top { count, by, order } => {
                 let by_cols = by
@@ -106,6 +107,7 @@ struct CompileCtx {
     group_by: Vec<String>,
     order_by: Option<String>,
     limit: Option<usize>,
+    extended_columns: Vec<String>,
 }
 
 impl CompileCtx {
@@ -117,11 +119,16 @@ impl CompileCtx {
             group_by: Vec::new(),
             order_by: None,
             limit: None,
+            extended_columns: Vec::new(),
         }
     }
 }
 
 fn compile_expr(expr: &Expr, schema: &Schema) -> Result<String, LqlError> {
+    compile_expr_with_aliases(expr, schema, &[])
+}
+
+fn compile_expr_with_aliases(expr: &Expr, schema: &Schema, aliases: &[String]) -> Result<String, LqlError> {
     match expr {
         Expr::Column(name) => {
             // Map dot-paths to json_extract
@@ -134,6 +141,7 @@ fn compile_expr(expr: &Expr, schema: &Schema) -> Result<String, LqlError> {
                 || name == "count"
                 || name == "timestamp"
                 || name == "ts"
+                || aliases.iter().any(|a| a == name)
             {
                 Ok(escape_ident(name))
             } else {
@@ -145,8 +153,8 @@ fn compile_expr(expr: &Expr, schema: &Schema) -> Result<String, LqlError> {
         }
         Expr::Literal(lit) => compile_literal(lit),
         Expr::BinaryOp { left, op, right } => {
-            let l = compile_expr(left, schema)?;
-            let r = compile_expr(right, schema)?;
+            let l = compile_expr_with_aliases(left, schema, aliases)?;
+            let r = compile_expr_with_aliases(right, schema, aliases)?;
             match op {
                 BinOp::Like | BinOp::NotLike | BinOp::Contains | BinOp::Has => {
                     let op_str = match op {
@@ -167,7 +175,7 @@ fn compile_expr(expr: &Expr, schema: &Schema) -> Result<String, LqlError> {
             }
         }
         Expr::UnaryOp { op, expr } => {
-            let inner = compile_expr(expr, schema)?;
+            let inner = compile_expr_with_aliases(expr, schema, aliases)?;
             match op {
                 UnaryOp::Not => Ok(format!("NOT ({})", inner)),
                 UnaryOp::Neg => Ok(format!("(-({}))", inner)),
@@ -175,10 +183,10 @@ fn compile_expr(expr: &Expr, schema: &Schema) -> Result<String, LqlError> {
         }
         Expr::Function { name, args } => compile_function(name, args, schema),
         Expr::InList { expr, values } => {
-            let col = compile_expr(expr, schema)?;
+            let col = compile_expr_with_aliases(expr, schema, aliases)?;
             let vals: Vec<String> = values
                 .iter()
-                .map(|v| compile_expr(v, schema))
+                .map(|v| compile_expr_with_aliases(v, schema, aliases))
                 .collect::<Result<Vec<_>, _>>()?;
             Ok(format!("{} IN ({})", col, vals.join(", ")))
         }
@@ -193,7 +201,7 @@ fn compile_literal(lit: &Literal) -> Result<String, LqlError> {
         Literal::Float(n) => Ok(n.to_string()),
         Literal::Bool(b) => Ok(if *b { "TRUE" } else { "FALSE" }.to_string()),
         Literal::Null => Ok("NULL".to_string()),
-        Literal::Duration(d) => Ok(format!("CAST('{}' AS TIMESTAMP)", chrono_offset(d))),
+        Literal::Duration(d) => Ok(format!("NOW() - {}", chrono_offset(d))),
     }
 }
 
@@ -206,36 +214,42 @@ fn compile_agg(agg: &AggExpr, schema: &Schema) -> Result<String, LqlError> {
                 "COUNT(*)".to_string()
             }
         }
-        AggFunction::Sum => format!("SUM({})", compile_expr(agg.arg.as_ref().unwrap(), schema)?),
-        AggFunction::Avg => format!("AVG({})", compile_expr(agg.arg.as_ref().unwrap(), schema)?),
-        AggFunction::Min => format!("MIN({})", compile_expr(agg.arg.as_ref().unwrap(), schema)?),
-        AggFunction::Max => format!("MAX({})", compile_expr(agg.arg.as_ref().unwrap(), schema)?),
-        AggFunction::P50 => format!(
-            "PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY {})",
-            compile_expr(agg.arg.as_ref().unwrap(), schema)?
-        ),
-        AggFunction::P95 => format!(
-            "PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY {})",
-            compile_expr(agg.arg.as_ref().unwrap(), schema)?
-        ),
-        AggFunction::P99 => format!(
-            "PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY {})",
-            compile_expr(agg.arg.as_ref().unwrap(), schema)?
-        ),
-        AggFunction::Percentile(p) => format!(
-            "PERCENTILE_CONT({}) WITHIN GROUP (ORDER BY {})",
-            p / 100.0,
-            compile_expr(agg.arg.as_ref().unwrap(), schema)?
-        ),
-        AggFunction::DCount => format!(
-            "COUNT(DISTINCT {})",
-            compile_expr(agg.arg.as_ref().unwrap(), schema)?
-        ),
-        AggFunction::First => format!(
-            "FIRST({})",
-            compile_expr(agg.arg.as_ref().unwrap(), schema)?
-        ),
-        AggFunction::Last => format!("LAST({})", compile_expr(agg.arg.as_ref().unwrap(), schema)?),
+        AggFunction::Sum | AggFunction::Avg | AggFunction::Min | AggFunction::Max
+        | AggFunction::DCount | AggFunction::First | AggFunction::Last => {
+            let arg = agg.arg.as_ref().ok_or_else(|| LqlError::Compile {
+                message: format!("{:?} requires an argument", agg.function),
+                span: None,
+            })?;
+            let compiled = compile_expr(arg, schema)?;
+            match &agg.function {
+                AggFunction::Sum => format!("SUM({})", compiled),
+                AggFunction::Avg => format!("AVG({})", compiled),
+                AggFunction::Min => format!("MIN({})", compiled),
+                AggFunction::Max => format!("MAX({})", compiled),
+                AggFunction::DCount => format!("COUNT(DISTINCT {})", compiled),
+                AggFunction::First => format!("FIRST({})", compiled),
+                AggFunction::Last => format!("LAST({})", compiled),
+                _ => unreachable!(),
+            }
+        }
+        AggFunction::P50 | AggFunction::P95 | AggFunction::P99 | AggFunction::Percentile(_) => {
+            let arg = agg.arg.as_ref().ok_or_else(|| LqlError::Compile {
+                message: "percentile aggregation requires an argument".to_string(),
+                span: None,
+            })?;
+            let compiled = compile_expr(arg, schema)?;
+            let pct = match &agg.function {
+                AggFunction::P50 => 0.5,
+                AggFunction::P95 => 0.95,
+                AggFunction::P99 => 0.99,
+                AggFunction::Percentile(p) => p / 100.0,
+                _ => unreachable!(),
+            };
+            format!(
+                "PERCENTILE_CONT({}) WITHIN GROUP (ORDER BY {})",
+                pct, compiled
+            )
+        }
     };
 
     if let Some(alias) = &agg.alias {
@@ -355,8 +369,8 @@ fn strip_quotes(s: &str) -> String {
 }
 
 fn chrono_offset(d: &Duration) -> String {
-    // Return a relative timestamp string — DuckDB handles NOW() - INTERVAL
-    format!("{} {:?}", d.value, d.unit)
+    use crate::functions::duration_to_duckdb_interval;
+    duration_to_duckdb_interval(d)
 }
 
 fn interval_unit(d: &Duration) -> &'static str {

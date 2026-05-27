@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var version = "0.2.0"
+var version = "0.2.3"
 
 type Config struct {
 	URL       string

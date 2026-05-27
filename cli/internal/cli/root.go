@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/astraive/loxa-cli/internal/client"
 	"github.com/astraive/loxa-cli/internal/commands"
 	"github.com/astraive/loxa-cli/internal/config"
 	"github.com/astraive/loxa-cli/internal/output"
 )
 
-const version = "0.2.0"
+const version = "0.2.3"
 
 var CommandMaturity = map[string]string{
 	"init":        "stable",
@@ -102,6 +103,12 @@ func Run(args []string) error {
 	cfg, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("load cli config: %w", err)
+	}
+
+	// Seed the client package with the config-file API key so all HTTP
+	// calls can fall back to it when no env-var key is set.
+	if cfg.Cortex != nil && cfg.Cortex.APIKey != "" {
+		client.SetConfigAPIKey(cfg.Cortex.APIKey)
 	}
 
 	switch args[0] {

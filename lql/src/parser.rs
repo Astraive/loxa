@@ -311,6 +311,7 @@ impl Parser {
             Token::Gte => Some(BinOp::Gte),
             Token::Lte => Some(BinOp::Lte),
             Token::Like => Some(BinOp::Like),
+            Token::NotLike => Some(BinOp::NotLike),
             Token::Contains => Some(BinOp::Contains),
             Token::Has => Some(BinOp::Has),
             Token::StartsWith => Some(BinOp::StartsWith),
@@ -629,7 +630,7 @@ mod tests {
     #[test]
     fn nested_column_in_where() {
         let p = parse(r#"from events | where user.id = "u123""#);
-        if let Statement::Where(Expr::BinaryOp { left, .. }) = &p.statements[1] {
+        if let Statement::Where(Expr::BinaryOp { .. }) = &p.statements[1] {
             // user.id is parsed as Column("user") Dot Column("id") — need dotted column support
             // For now, just verify it parses
         }

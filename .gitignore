@@ -1,67 +1,68 @@
-.openclaude
-.vscode
-.idea
+# =============================================================================
+# Editors / IDEs
+# =============================================================================
+.vscode/
+.idea/
 
-# Build artifacts
-*.exe
-*.dll
-*.so
-*.dylib
-dist/
-build/
+# Claude / AI local state
+.claude/
+**/.claude/
+.openclaude/
+**/.openclaude/
 
-# Database artifacts
-*.db
-*.db.wal
+# Agent / generated local state
+.agents/
+.nstack/
+**/.nstack/
+.kiro/
+skills-lock.json
 
-# Go
-*.test
-*.out
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.egg-info/
-.eggs/
-
-# JavaScript/TypeScript
-node_modules/
-
-# Rust
-target/
-
-# Go cache
-.gocache/
-
-# Temp directories
-tmp_*/
-
-# Environment
+# =============================================================================
+# Environment / local config
+# =============================================================================
 .env
-.env.local
+.env.*
+!.env.example
+!**/.env.example
 
-# OS
+*.local
+*.local.*
+
+.loxa/
+**/.loxa/
+.loxa-cli.yaml
+**/.loxa-cli.yaml
+
+# =============================================================================
+# OS files
+# =============================================================================
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Generated protobuf Go code
-gen/go/
-*.pb.go
-
-# Benchmark results
-bench/results/
-# local/dev generated files
-.kiro/
+# =============================================================================
+# Logs / temporary files
+# =============================================================================
 *.log
 *.err.log
+*.tmp
+*.temp
+
+tmp/
+temp/
+tmp_*/
+
 collector/*.log
 collector/*.err.log
 
-# Agent/generated files
-.agents/
-skills-lock.json
-# Binary/build artifacts
+# =============================================================================
+# Build artifacts / binaries
+# =============================================================================
+dist/
+build/
+out/
+coverage/
+
 *.exe
 *.exe~
 *.dll
@@ -72,6 +73,65 @@ skills-lock.json
 *.test
 *.prof
 
+# =============================================================================
+# Database artifacts
+# =============================================================================
+*.db
+*.db.wal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
 
-# Local/experimental app
+# =============================================================================
+# Go
+# =============================================================================
+.gocache/
+vendor/
+
+# Go benchmark / test output
+bench/results/
+*.bench
+*.cover
+coverage.out
+
+# =============================================================================
+# Python
+# =============================================================================
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+
+# =============================================================================
+# JavaScript / TypeScript
+# =============================================================================
+node_modules/
+.pnpm-store/
+.yarn/
+.next/
+.nuxt/
+.svelte-kit/
+vite.config.ts.timestamp-*
+vite.config.js.timestamp-*
+
+# =============================================================================
+# Rust
+# =============================================================================
+target/
+
+# =============================================================================
+# Generated protobuf / generated code
+# =============================================================================
+gen/
+gen/go/
+*.pb.go
+
+# =============================================================================
+# Local / experimental app
+# =============================================================================
 loxana/

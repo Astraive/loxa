@@ -13,14 +13,15 @@ import (
 )
 
 type GraphQLServer struct {
-	cfg          GraphQLConfig
-	state        State
-	ready        atomic.Bool
-	server       *http.Server
-	authEnabled  bool
-	keyStore     auth.KeyStore
-	keyCache     *auth.MemoryKeyCache
-	serverSecret []byte
+	cfg               GraphQLConfig
+	state             State
+	ready             atomic.Bool
+	server            *http.Server
+	authEnabled       bool
+	allowLocalDevKeys bool
+	keyStore          auth.KeyStore
+	keyCache          *auth.MemoryKeyCache
+	serverSecret      []byte
 }
 
 func NewGraphQLServer(cfg GraphQLConfig, state State) *GraphQLServer {
@@ -37,6 +38,12 @@ func (s *GraphQLServer) WithAuth(store auth.KeyStore, cache *auth.MemoryKeyCache
 	s.keyStore = store
 	s.keyCache = cache
 	s.serverSecret = serverSecret
+	return s
+}
+
+// WithAllowLocalDevKeys enables lx_local_dev_* key acceptance on this server.
+func (s *GraphQLServer) WithAllowLocalDevKeys(v bool) *GraphQLServer {
+	s.allowLocalDevKeys = v
 	return s
 }
 
@@ -116,6 +123,13 @@ func (s *GraphQLServer) Start(ctx context.Context) error {
 			return
 		}
 
+		if isIntrospectionQuery(req.Query) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": "introspection_disabled"})
+			return
+		}
+
 		result := graphql.Do(graphql.Params{
 			Schema:         schema,
 			RequestString:  req.Query,
@@ -129,7 +143,7 @@ func (s *GraphQLServer) Start(ctx context.Context) error {
 
 	var handler http.Handler = mux
 	if s.authEnabled {
-		authMW := auth.Middleware(s.keyStore, s.keyCache, s.serverSecret)
+		authMW := auth.Middleware(s.keyStore, s.keyCache, s.serverSecret, auth.WithAllowLocalDevKeys(s.allowLocalDevKeys))
 		handler = authMW(handler)
 	}
 
@@ -160,4 +174,29 @@ func (s *GraphQLServer) Stop(ctx context.Context) error {
 		return nil
 	}
 	return s.server.Shutdown(ctx)
+}
+
+// isIntrospectionQuery checks if the query attempts GraphQL introspection.
+func isIntrospectionQuery(query string) bool {
+	return containsWord(query, "__schema") ||
+		containsWord(query, "__type") ||
+		containsWord(query, "__typename")
+}
+
+func containsWord(s, word string) bool {
+	for i := 0; i <= len(s)-len(word); i++ {
+		if i > 0 && isAlpha(rune(s[i-1])) {
+			continue
+		}
+		if i+len(word) <= len(s) && !isAlpha(rune(s[i+len(word)])) {
+			if s[i:i+len(word)] == word {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func isAlpha(r rune) bool {
+	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '_'
 }

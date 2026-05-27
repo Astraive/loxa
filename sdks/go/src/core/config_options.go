@@ -1,6 +1,10 @@
 package core
 
-import "time"
+import (
+	"time"
+
+	"github.com/astraive/loxa/spec/dsn"
+)
 
 // ConfigOption mutates and returns a Config.
 type ConfigOption func(Config) Config
@@ -282,6 +286,36 @@ func WithLogger(l *Logger) ConfigOption {
 			cfg = l.cfg
 			l.mu.RUnlock()
 		}
+		return cfg
+	}
+}
+
+// WithDSN parses a loxa:// connection URI and applies the resolved values
+// to the config. It sets CollectorURL, Environment, Service (if present in
+// the DSN), and Insecure (derived from TLS setting).
+//
+// Individual config options or env vars applied after WithDSN will override
+// the DSN-derived values.
+//
+// Example:
+//
+//	config.NewClient(config.Production(),
+//	    config.WithDSN("loxa://localhost:8080/demo?env=dev&tls=false"),
+//	)
+func WithDSN(raw string) ConfigOption {
+	return func(cfg Config) Config {
+		d, err := dsn.Parse(raw)
+		if err != nil {
+			// Store the parse error; it will surface during NewClient validation.
+			cfg.CollectorURL = "" // signal invalid state
+			return cfg
+		}
+		cfg.CollectorURL = d.BaseURL
+		cfg.Environment = d.Env
+		if d.Service != "" {
+			cfg.Service = d.Service
+		}
+		cfg.Insecure = !d.TLS
 		return cfg
 	}
 }

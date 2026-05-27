@@ -116,7 +116,7 @@ type workerState struct {
 	processor *processing.Processor
 }
 
-var version = "0.2.0"
+var version = "0.2.3"
 
 func main() {
 	if err := executeWorkerCLI(os.Args[1:]); err != nil {

@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: loxa
-Version: 0.0.2
+Version: 0.2.0
 Summary: Python LOXA wide-event SDK
 Author: Astraive
 Requires-Python: >=3.10

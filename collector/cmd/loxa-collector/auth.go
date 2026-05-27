@@ -93,12 +93,53 @@ func (s *collectorState) authorizeMTLS(r *http.Request) bool {
 		s.logAuthFailure(r, "mtls_missing_client_certificate")
 		return false
 	}
+	hasCNAllowlist := len(s.cfg.mtlsAllowedCNs) > 0
+	hasDNSAllowlist := len(s.cfg.mtlsAllowedDNS) > 0
+	hasEmailAllowlist := len(s.cfg.mtlsAllowedEmails) > 0
+	hasAnyAllowlist := hasCNAllowlist || hasDNSAllowlist || hasEmailAllowlist
+
 	for _, cert := range r.TLS.PeerCertificates {
-		if cert != nil {
-			return true
+		if cert == nil {
+			continue
+		}
+		cn := cert.Subject.CommonName
+		// If no allowlists configured, accept any cert with non-empty CN (backward compat)
+		if !hasAnyAllowlist {
+			if cn != "" {
+				return true
+			}
+			continue
+		}
+		// Check CN against allowlist
+		if hasCNAllowlist && cn != "" {
+			for _, allowed := range s.cfg.mtlsAllowedCNs {
+				if cn == allowed {
+					return true
+				}
+			}
+		}
+		// Check DNS names against allowlist
+		if hasDNSAllowlist {
+			for _, dns := range cert.DNSNames {
+				for _, allowed := range s.cfg.mtlsAllowedDNS {
+					if dns == allowed {
+						return true
+					}
+				}
+			}
+		}
+		// Check email addresses against allowlist
+		if hasEmailAllowlist {
+			for _, email := range cert.EmailAddresses {
+				for _, allowed := range s.cfg.mtlsAllowedEmails {
+					if email == allowed {
+						return true
+					}
+				}
+			}
 		}
 	}
-	s.logAuthFailure(r, "mtls_invalid_client_certificate")
+	s.logAuthFailure(r, "mtls_no_matching_identity")
 	return false
 }
 
@@ -124,6 +165,17 @@ func jwtVerificationKey(raw string) any {
 	return key
 }
 
+// extractCryptoKey returns the key if it's an RSA or ECDSA public key, nil otherwise.
+func extractCryptoKey(key any) any {
+	switch k := key.(type) {
+	case *rsa.PublicKey:
+		return k
+	case *ecdsa.PublicKey:
+		return k
+	}
+	return nil
+}
+
 func parseJWTVerificationKey(raw string) any {
 	block, _ := pem.Decode([]byte(raw))
 	if block == nil {
@@ -131,27 +183,18 @@ func parseJWTVerificationKey(raw string) any {
 	}
 
 	if cert, err := x509.ParseCertificate(block.Bytes); err == nil {
-		switch pk := cert.PublicKey.(type) {
-		case *rsa.PublicKey:
-			return pk
-		case *ecdsa.PublicKey:
-			return pk
+		if k := extractCryptoKey(cert.PublicKey); k != nil {
+			return k
 		}
 	}
 	if pub, err := x509.ParsePKIXPublicKey(block.Bytes); err == nil {
-		switch typed := pub.(type) {
-		case *rsa.PublicKey:
-			return typed
-		case *ecdsa.PublicKey:
-			return typed
+		if k := extractCryptoKey(pub); k != nil {
+			return k
 		}
 	}
 	if certs, err := x509.ParseCertificates(block.Bytes); err == nil && len(certs) > 0 {
-		switch pk := certs[0].PublicKey.(type) {
-		case *rsa.PublicKey:
-			return pk
-		case *ecdsa.PublicKey:
-			return pk
+		if k := extractCryptoKey(certs[0].PublicKey); k != nil {
+			return k
 		}
 	}
 	return []byte(raw)

@@ -27,6 +27,15 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// cortexVersion is the current version of the cortex service.
+const cortexVersion = "0.2.3"
+
+// maxGraphDepth caps the depth parameter for graph queries to prevent abuse.
+const maxGraphDepth = 100
+
+// defaultMaxBodyBytes is the fallback body size limit when config.MaxBodyBytes is 0.
+const defaultMaxBodyBytes = 10 * 1024 * 1024 // 10MB
+
 type Server struct {
 	config      *config.Config
 	processor   *processor.EventProcessor
@@ -38,6 +47,7 @@ type Server struct {
 	remediation *learner.Learner
 	recon       *reconstructor.IncidentReconstructor
 	graphql     *GraphQLServer
+	storage     storage.Storage
 	incidents   storage.IncidentStore
 	signatures  storage.SignatureStore
 	auth        *middleware.AuthMiddleware
@@ -112,6 +122,7 @@ func NewServer(cfg *config.Config, stor storage.Storage) *Server {
 		remediation: remediation,
 		recon:       recon,
 		graphql:     graphqlServer,
+		storage:     stor,
 		incidents:   stor.Incidents(),
 		signatures:  stor.Signatures(),
 		auth:        authMiddleware,
@@ -125,55 +136,64 @@ func NewServer(cfg *config.Config, stor storage.Storage) *Server {
 func (s *Server) Router() http.Handler {
 	r := chi.NewRouter()
 
+	r.Use(middleware.SecurityHeaders)
 	r.Use(httpmiddleware.RequestID)
 	r.Use(httpmiddleware.RealIP)
 	r.Use(httpmiddleware.Logger)
 	r.Use(httpmiddleware.Recoverer)
 
-	if s.config.Server.MaxBodyBytes > 0 {
-		r.Use(bodySizeLimit(s.config.Server.MaxBodyBytes))
+	bodyLimit := s.config.Server.MaxBodyBytes
+	if bodyLimit <= 0 {
+		bodyLimit = defaultMaxBodyBytes
 	}
+	r.Use(bodySizeLimit(bodyLimit))
 
+	// Public endpoints (no auth) -- registered directly on the router before
+	// any auth middleware so they are never blocked by authentication.
 	r.Get("/healthz", s.Healthz)
 	r.Get("/readyz", s.Readyz)
+	r.Get("/version", s.Version)
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
-	if s.config.Authentication.Enabled {
-		r.Use(s.auth.Middleware)
-	}
+	// All protected routes live in a group with auth + rate-limit middleware.
+	r.Group(func(rg chi.Router) {
+		if s.config.Authentication.Enabled {
+			rg.Use(s.auth.Middleware)
+		}
 
-	if s.rateLimit != nil {
-		r.Use(s.rateLimit.Middleware)
-	}
+		if s.rateLimit != nil {
+			rg.Use(s.rateLimit.Middleware)
+		}
 
-	// Per-route role checks (pass-through when auth is nil)
-	requireWriter := func(next http.Handler) http.Handler { return next }
-	requireReader := func(next http.Handler) http.Handler { return next }
-	if s.auth != nil {
-		requireWriter = s.auth.RequireRole("writer")
-		requireReader = s.auth.RequireRole("reader")
-	}
+		// Per-route role checks (pass-through when auth is nil)
+		requireWriter := func(next http.Handler) http.Handler { return next }
+		requireReader := func(next http.Handler) http.Handler { return next }
+		if s.auth != nil {
+			requireWriter = s.auth.RequireRole("writer")
+			requireReader = s.auth.RequireRole("reader")
+		}
 
-	// Ingest endpoints: writer role required
-	r.With(requireWriter).Post("/events", s.IngestEvent)
-	r.With(requireWriter).Post("/events/batch", s.IngestBatch)
-	r.With(requireWriter).Post("/events/jsonl", s.IngestJSONL)
+		// Ingest endpoints: writer role required
+		rg.With(requireWriter).Post("/events", s.IngestEvent)
+		rg.With(requireWriter).Post("/events/batch", s.IngestBatch)
+		rg.With(requireWriter).Post("/events/jsonl", s.IngestJSONL)
 
-	// Reconstruct endpoints: reader role required
-	r.With(requireReader).Post("/reconstruct", s.Reconstruct)
-	r.With(requireReader).Post("/incidents/{incident_id}/reconstruct", s.ReconstructIncident)
+		// Reconstruct endpoints: reader role required
+		rg.With(requireReader).Post("/reconstruct", s.Reconstruct)
+		rg.With(requireReader).Post("/incidents/{incident_id}/reconstruct", s.ReconstructIncident)
 
-	// Feedback endpoints: writer role required
-	r.With(requireWriter).Post("/feedback/remediation", s.RecordRemediation)
-	r.With(requireWriter).Post("/feedback/incident", s.RecordIncidentFeedback)
+		// Feedback endpoints: writer role required
+		rg.With(requireWriter).Post("/feedback/remediation", s.RecordRemediation)
+		rg.With(requireWriter).Post("/feedback/incident", s.RecordIncidentFeedback)
 
-	// Graph endpoints: reader role required
-	r.With(requireReader).Get("/graph/service/{service}", s.ServiceGraph)
-	r.With(requireReader).Get("/graph/incident/{incident_id}", s.IncidentGraph)
+		// Graph endpoints: reader role required
+		rg.With(requireReader).Get("/graph/service/{service}", s.ServiceGraph)
+		rg.With(requireReader).Get("/graph/incident/{incident_id}", s.IncidentGraph)
 
-	// GraphQL and WebSocket: reader role required
-	r.With(requireReader).Handle("/graphql", s.graphql.Handler())
-	r.With(requireReader).Handle("/ws", s.WebSocketHandler())
+		// GraphQL and WebSocket: reader role required
+		rg.With(requireReader).Handle("/graphql", s.graphql.Handler())
+		rg.With(requireReader).Handle("/ws", s.WebSocketHandler())
+	})
 
 	return r
 }
@@ -186,16 +206,55 @@ func (s *Server) Healthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) Readyz(w http.ResponseWriter, r *http.Request) {
-	if s.ready {
-		w.WriteHeader(http.StatusOK)
-		if _, err := w.Write([]byte("OK")); err != nil {
-			log.Warn().Err(err).Msg("failed to write readyz response")
-		}
+	ready := true
+	checks := map[string]string{}
+
+	// Check if graph engine is initialized
+	if s.graph == nil {
+		ready = false
+		checks["graph"] = "not initialized"
+	}
+
+	// Check if processor is initialized
+	if s.processor == nil {
+		ready = false
+		checks["processor"] = "not initialized"
+	}
+
+	// Verify storage is responsive with a lightweight query.
+	if s.incidents == nil {
+		ready = false
+		checks["storage"] = "not initialized"
 	} else {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		if _, err := w.Write([]byte("NOT READY")); err != nil {
-			log.Warn().Err(err).Msg("failed to write not ready response")
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if _, err := s.incidents.List(ctx, 1, 0); err != nil {
+			ready = false
+			checks["storage"] = err.Error()
 		}
+	}
+
+	status := "ready"
+	code := http.StatusOK
+	if !ready {
+		status = "not_ready"
+		code = http.StatusServiceUnavailable
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	if err := json.NewEncoder(w).Encode(map[string]any{
+		"status": status,
+		"checks": checks,
+	}); err != nil {
+		log.Warn().Err(err).Msg("failed to write readyz response")
+	}
+}
+
+func (s *Server) Version(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(map[string]string{"version": cortexVersion}); err != nil {
+		log.Warn().Err(err).Msg("failed to write version response")
 	}
 }
 
@@ -207,7 +266,8 @@ func (s *Server) IngestEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.processor.ProcessEvent(r.Context(), &event); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Warn().Err(err).Msg("event ingestion failed")
+		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
 
@@ -232,7 +292,8 @@ func (s *Server) IngestBatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.processor.ProcessBatch(r.Context(), events); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Msg("batch ingestion failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -244,7 +305,8 @@ func (s *Server) IngestBatch(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) IngestJSONL(w http.ResponseWriter, r *http.Request) {
 	if err := s.processor.ProcessJSONL(r.Context(), r.Body); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Msg("JSONL ingestion failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -276,7 +338,8 @@ func (s *Server) Reconstruct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		log.Warn().Err(err).Msg("reconstruct failed")
+		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
@@ -300,7 +363,8 @@ func (s *Server) ReconstructIncident(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		log.Warn().Err(err).Str("incident_id", incidentID).Msg("reconstruct incident failed")
+		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
@@ -318,7 +382,8 @@ func (s *Server) RecordRemediation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.remediation.RecordRemediation(r.Context(), &remediation); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Msg("record remediation failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -336,7 +401,8 @@ func (s *Server) RecordIncidentFeedback(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := s.remediation.RecordFeedback(r.Context(), &feedback); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Msg("record incident feedback failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -354,10 +420,14 @@ func (s *Server) ServiceGraph(w http.ResponseWriter, r *http.Request) {
 			depth = parsed
 		}
 	}
+	if depth > maxGraphDepth {
+		depth = maxGraphDepth
+	}
 
 	graphView, err := s.graph.GetServiceGraph(r.Context(), service, depth)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		log.Warn().Err(err).Str("service", service).Msg("service graph lookup failed")
+		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
@@ -375,10 +445,14 @@ func (s *Server) IncidentGraph(w http.ResponseWriter, r *http.Request) {
 			depth = parsed
 		}
 	}
+	if depth > maxGraphDepth {
+		depth = maxGraphDepth
+	}
 
 	graphView, err := s.graph.GetIncidentGraph(r.Context(), incidentID, depth)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		log.Warn().Err(err).Str("incident_id", incidentID).Msg("incident graph lookup failed")
+		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 

@@ -11,18 +11,14 @@ import (
 
 func withResponseCompression(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(strings.ToLower(r.Header.Get("Accept-Encoding")), "gzip") &&
-			!strings.Contains(strings.ToLower(r.Header.Get("Accept-Encoding")), "zstd") {
-			next.ServeHTTP(w, r)
-			return
-		}
+		acceptEncoding := strings.ToLower(r.Header.Get("Accept-Encoding"))
 
 		var (
 			writer io.WriteCloser
 			header = w.Header()
 		)
 		switch {
-		case strings.Contains(strings.ToLower(r.Header.Get("Accept-Encoding")), "zstd"):
+		case strings.Contains(acceptEncoding, "zstd"):
 			encoder, err := zstd.NewWriter(w)
 			if err != nil {
 				next.ServeHTTP(w, r)
@@ -30,12 +26,10 @@ func withResponseCompression(next http.Handler) http.Handler {
 			}
 			writer = encoder
 			header.Set("Content-Encoding", "zstd")
-		case strings.Contains(strings.ToLower(r.Header.Get("Accept-Encoding")), "gzip"):
-			encoder := gzip.NewWriter(w)
-			writer = encoder
+		case strings.Contains(acceptEncoding, "gzip"):
+			writer = gzip.NewWriter(w)
 			header.Set("Content-Encoding", "gzip")
-		}
-		if writer == nil {
+		default:
 			next.ServeHTTP(w, r)
 			return
 		}

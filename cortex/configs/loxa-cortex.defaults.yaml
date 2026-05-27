@@ -16,6 +16,7 @@ storage:
     database: "cortex"
     user: "cortex"
     password: ""
+    # SECURITY: Disable in production; set to "require" or "verify-full"
     ssl_mode: "disable"
     max_connections: 50
     max_idle_conns: 10
@@ -45,6 +46,7 @@ matcher:
     slow_threshold_ms: 300000
 
 authentication:
+  # SECURITY: Disabled for local dev only. Production MUST enable.
   enabled: false
   api_keys: []
 

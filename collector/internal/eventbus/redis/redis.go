@@ -123,6 +123,14 @@ func (b *redisBus) Subscribe(ctx context.Context, topic string, group string, ha
 
 	consumerName := fmt.Sprintf("consumer-%d", time.Now().UnixNano())
 
+	// Create consumer group if it doesn't exist (MkStream creates the stream too)
+	if err := b.client.XGroupCreateMkStream(ctx, stream, consumerGroup, "0").Err(); err != nil {
+		// BUSYGROUP means the group already exists, which is fine
+		if !isBusyGroupErr(err) {
+			return fmt.Errorf("eventbus/redis: create group: %w", err)
+		}
+	}
+
 	subCtx, cancel := context.WithCancel(ctx)
 	b.mu.Lock()
 	b.subs = append(b.subs, cancel)
@@ -130,6 +138,11 @@ func (b *redisBus) Subscribe(ctx context.Context, topic string, group string, ha
 
 	go b.consume(subCtx, stream, consumerGroup, consumerName, handler)
 	return nil
+}
+
+func isBusyGroupErr(err error) bool {
+	return err != nil && (err.Error() == "BUSYGROUP Consumer Group name already exists" ||
+		(len(err.Error()) > 20 && err.Error()[:20] == "BUSYGROUP Consumer G"))
 }
 
 func (b *redisBus) consume(ctx context.Context, stream, group, consumer string, handler eventbus.Handler) {

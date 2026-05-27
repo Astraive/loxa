@@ -1,12 +1,12 @@
 import loxa
 
 # Default API — configure once, use everywhere
-loxa.configure(loxa.Production("quickstart-demo").with_collector_endpoint("http://localhost:9090"))
+loxa.configure(loxa.production("quickstart-demo").with_collector_endpoint("http://localhost:9090"))
 
 loxa.info("server started")
 
-ctx = loxa.start_event(event="user.signup", kind="http")
-loxa.enrich(ctx, user__email="demo@example.com", user__plan="pro")
+ctx = loxa.start_event(loxa.Params(event="user.signup", kind="http"))
+loxa.enrich(ctx, loxa.String("user.email", "demo@example.com"), loxa.String("user.plan", "pro"))
 loxa.finish(ctx, "success")
 result = loxa.emit(ctx)
 print(f"Event emitted: {result}")

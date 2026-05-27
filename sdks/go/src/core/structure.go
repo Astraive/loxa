@@ -1,6 +1,9 @@
 package core
 
 func partitionStructuredAttrs(attrs map[string]any) (http map[string]any, user map[string]any, tenant map[string]any, resource map[string]any, extra map[string]any) {
+	if len(attrs) == 0 {
+		return nil, nil, nil, nil, nil
+	}
 	extra = cloneAnyMap(attrs)
 	if extra == nil {
 		extra = map[string]any{}

@@ -42,6 +42,9 @@ func WithAsync(enabled bool) ConfigOption { return core.WithAsync(enabled) }
 // WithCollectorURL sets the collector endpoint URL.
 func WithCollectorURL(url string) ConfigOption { return core.WithCollectorURL(url) }
 
+// WithDSN parses a loxa:// connection URI and applies the resolved values.
+func WithDSN(raw string) ConfigOption { return core.WithDSN(raw) }
+
 // WithBatchSize sets the batch size for async processing.
 func WithBatchSize(size int) ConfigOption { return core.WithBatchSize(size) }
 

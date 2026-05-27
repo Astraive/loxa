@@ -30,11 +30,47 @@ type TailState interface {
 	RemoveTailSubscriber(chan []byte)
 }
 
+// NewWebSocketUpgrader creates a websocket upgrader with origin allowlist checking.
+// If allowedOrigins is empty, only localhost and non-browser clients are permitted.
+func NewWebSocketUpgrader(allowedOrigins []string) websocket.Upgrader {
+	return websocket.Upgrader{
+		ReadBufferSize:  16 * 1024,
+		WriteBufferSize: 16 * 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				return true // Non-browser clients (no Origin header)
+			}
+			// Check configured allowlist
+			for _, allowed := range allowedOrigins {
+				if origin == allowed {
+					return true
+				}
+			}
+			// Allow localhost for development (exact host match, not suffix)
+			if origin == "http://localhost" || strings.HasPrefix(origin, "http://localhost:") ||
+				origin == "http://127.0.0.1" || strings.HasPrefix(origin, "http://127.0.0.1:") {
+				return true
+			}
+			return false
+		},
+	}
+}
+
 var websocketUpgrader = websocket.Upgrader{
 	ReadBufferSize:  16 * 1024,
 	WriteBufferSize: 16 * 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		return true
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true // Non-browser clients (no Origin header)
+		}
+		// Allow localhost for development (exact host match, not suffix)
+		if origin == "http://localhost" || strings.HasPrefix(origin, "http://localhost:") ||
+			origin == "http://127.0.0.1" || strings.HasPrefix(origin, "http://127.0.0.1:") {
+			return true
+		}
+		return false
 	},
 }
 
@@ -67,6 +103,7 @@ func ParseTailFilters(r *http.Request) (TailFilters, error) {
 }
 
 func NewTailWebSocketHandler(cfg HTTPConfig, state TailState) http.Handler {
+	upgrader := NewWebSocketUpgrader(cfg.AllowedOrigins)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if cfg.AuthEnabled {
 			if subtle.ConstantTimeCompare([]byte(r.Header.Get(cfg.AuthHeader)), []byte(cfg.AuthValue)) != 1 {
@@ -80,11 +117,12 @@ func NewTailWebSocketHandler(cfg HTTPConfig, state TailState) http.Handler {
 			return
 		}
 
-		conn, err := websocketUpgrader.Upgrade(w, r, nil)
+		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return
 		}
 		defer conn.Close()
+		conn.SetReadLimit(1 * 1024 * 1024) // 1MB max frame
 
 		history, err := state.TailHistory(r.Context(), filters)
 		if err != nil {

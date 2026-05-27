@@ -33,6 +33,7 @@ pub enum Token {
     Not,
     In,
     Like,
+    NotLike,
     Contains,
     Has,
     StartsWith,
@@ -111,8 +112,13 @@ impl Lexer {
             let ch = self.input[self.pos];
             match ch {
                 '|' => {
-                    tokens.push(Token::Pipe);
-                    self.pos += 1;
+                    if self.peek_ahead(1) == Some('|') {
+                        tokens.push(Token::Or);
+                        self.pos += 2;
+                    } else {
+                        tokens.push(Token::Pipe);
+                        self.pos += 1;
+                    }
                 }
                 '(' => {
                     tokens.push(Token::LParen);
@@ -165,9 +171,9 @@ impl Lexer {
                         tokens.push(Token::Neq);
                         self.pos += 2;
                     } else if self.peek_ahead(1) == Some('~') {
-                        // !~ not-like operator: we'll handle via Not + Like in parser
-                        tokens.push(Token::Not);
-                        self.pos += 1;
+                        // !~ not-like operator
+                        tokens.push(Token::NotLike);
+                        self.pos += 2;
                     } else {
                         return Err(LqlError::UnexpectedChar {
                             char: ch,
@@ -195,6 +201,10 @@ impl Lexer {
                 }
                 '"' | '\'' => {
                     tokens.push(Token::StringLit(self.read_string()?));
+                }
+                '&' if self.peek_ahead(1) == Some('&') => {
+                    tokens.push(Token::And);
+                    self.pos += 2;
                 }
                 '#' => {
                     // Line comment — skip to end
@@ -365,7 +375,7 @@ impl Lexer {
         match lower.as_str() {
             "from" => Ok(Token::From),
             "where" => Ok(Token::Where),
-            "summarize" | "sum" => Ok(Token::Summarize),
+            "summarize" => Ok(Token::Summarize),
             "by" => Ok(Token::By),
             "sort" | "order" => Ok(Token::Sort),
             "limit" | "take" => Ok(Token::Limit),
@@ -376,8 +386,8 @@ impl Lexer {
             "as" => Ok(Token::As),
             "asc" | "ascending" => Ok(Token::Asc),
             "desc" | "descending" => Ok(Token::Desc),
-            "and" | "&&" => Ok(Token::And),
-            "or" | "||" => Ok(Token::Or),
+            "and" => Ok(Token::And),
+            "or" => Ok(Token::Or),
             "not" => Ok(Token::Not),
             "in" => Ok(Token::In),
             "like" => Ok(Token::Like),
@@ -387,6 +397,7 @@ impl Lexer {
             "endswith" | "ends_with" => Ok(Token::EndsWith),
             "ago" => Ok(Token::Ago),
             "count" => Ok(Token::Count),
+            "sum" => Ok(Token::Sum),
             "avg" | "average" => Ok(Token::Avg),
             "min" => Ok(Token::Min),
             "max" => Ok(Token::Max),

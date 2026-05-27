@@ -32,7 +32,12 @@ func debugEvent(ctx context.Context, cfg config.Config, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("usage: loxa debug event <event_id>")
 	}
-	eventID := strings.ReplaceAll(args[0], "'", "''")
+	eventID := args[0]
+	// Validate event_id is a safe identifier to prevent SQL injection
+	// Allow alphanumerics, underscores, hyphens, and colons (for UUID-style IDs)
+	if !isValidEventID(eventID) {
+		return fmt.Errorf("invalid event_id: must match [a-zA-Z0-9_:-]+")
+	}
 	sql := fmt.Sprintf("SELECT * FROM events WHERE event_id = '%s' LIMIT 1", eventID)
 	body, err := client.Query(cfg.CollectorURL, "duckdb", sql)
 	if err != nil {

@@ -17,10 +17,11 @@ func TestServerHealthAndReadiness(t *testing.T) {
 		t.Fatalf("expected healthz ok, got %d", rec.Code)
 	}
 
+	// With nil graph/processor/incidents, readyz should return not_ready
 	rec = httptest.NewRecorder()
 	srv.Readyz(rec, httptest.NewRequest(http.MethodGet, "/readyz", nil))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected readyz ok, got %d", rec.Code)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected not ready (nil deps), got %d", rec.Code)
 	}
 
 	srv.ready = false

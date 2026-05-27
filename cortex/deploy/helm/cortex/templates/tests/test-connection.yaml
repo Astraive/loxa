@@ -10,7 +10,7 @@ metadata:
 spec:
   containers:
     - name: health-check
-      image: curlimages/curl:latest
+      image: curlimages/curl:8.5.0
       command:
         - sh
         - -c

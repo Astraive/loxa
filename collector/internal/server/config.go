@@ -27,6 +27,8 @@ type HTTPConfig struct {
 	Enabled              bool
 	Addr                 string
 	ReadHeaderTimeout    time.Duration
+	ReadTimeout          time.Duration
+	WriteTimeout         time.Duration
 	MaxBodyBytes         int64
 	MaxHeaderBytes       int64
 	IdleTimeout          time.Duration
@@ -46,6 +48,7 @@ type HTTPConfig struct {
 	RateLimitEnabled     bool
 	RateLimitRPS         float64
 	RateLimitBurst       int
+	AllowedOrigins       []string
 }
 
 type GRPCConfig struct {

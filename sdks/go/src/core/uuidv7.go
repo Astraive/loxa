@@ -1,7 +1,7 @@
 package core
 
 import (
-	"crypto/rand"
+	cr "crypto/rand"
 	"encoding/hex"
 	"sync"
 	"time"
@@ -72,8 +72,16 @@ func (g *uuidV7Gen) newID() string {
 	b[6] = 0x70 | byte(seq>>8)&0x0F
 	b[7] = byte(seq)
 
-	// Bytes 8–15: variant bits + random
-	_, _ = rand.Read(b[8:])
+	// Bytes 8–15: variant bits + random (using fast PRNG, not crypto/rand)
+	traceRandMu.Lock()
+	if traceRand != nil {
+		for i := 8; i < 16; i++ {
+			b[i] = byte(traceRand.Uint32())
+		}
+	} else {
+		_, _ = cr.Read(b[8:])
+	}
+	traceRandMu.Unlock()
 	b[8] = (b[8] & 0x3F) | 0x80 // variant 10xx
 
 	return formatUUID(b)

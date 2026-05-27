@@ -168,6 +168,22 @@ func (p *EventProcessor) extractLifecycle(event *models.Event) *storage.Lifecycl
 	}
 }
 
+func (p *EventProcessor) createLinkEdges(ctx context.Context, event *models.Event) {
+	for _, link := range event.Links {
+		edge := &models.Edge{
+			ID:         fmt.Sprintf("%s->%s:%s", event.ID, link.Target, link.Type),
+			FromNodeID: event.ID,
+			ToNodeID:   link.Target,
+			Type:       models.EdgeType(link.Type),
+			Weight:     1.0,
+			CreatedAt:  time.Now(),
+		}
+		if saveErr := p.graph.SaveEdge(ctx, edge); saveErr != nil {
+			log.Warn().Err(saveErr).Str("edge_id", edge.ID).Msg("failed to save link edge")
+		}
+	}
+}
+
 func (p *EventProcessor) createGraphNodes(ctx context.Context, event *models.Event) error {
 	canonicalService := event.Service
 
@@ -220,21 +236,8 @@ func (p *EventProcessor) createGraphNodes(ctx context.Context, event *models.Eve
 		}
 	}
 
-	// Create edges from event links if present
 	if event.Links != nil {
-		for _, link := range event.Links {
-			edge := &models.Edge{
-				ID:         fmt.Sprintf("%s->%s:%s", event.ID, link.Target, link.Type),
-				FromNodeID: event.ID,
-				ToNodeID:   link.Target,
-				Type:       models.EdgeType(link.Type),
-				Weight:     1.0,
-				CreatedAt:  time.Now(),
-			}
-			if saveErr := p.graph.SaveEdge(ctx, edge); saveErr != nil {
-				log.Warn().Err(saveErr).Str("edge_id", edge.ID).Msg("failed to save link edge")
-			}
-		}
+		p.createLinkEdges(ctx, event)
 	}
 
 	return nil
@@ -264,21 +267,8 @@ func (p *EventProcessor) createGraphNodesBatch(ctx context.Context, events []*mo
 			incidentGroups[event.IncidentID] = append(incidentGroups[event.IncidentID], event)
 		}
 
-		// Create edges from event links
 		if event.Links != nil {
-			for _, link := range event.Links {
-				edge := &models.Edge{
-					ID:         fmt.Sprintf("%s->%s:%s", event.ID, link.Target, link.Type),
-					FromNodeID: event.ID,
-					ToNodeID:   link.Target,
-					Type:       models.EdgeType(link.Type),
-					Weight:     1.0,
-					CreatedAt:  time.Now(),
-				}
-				if saveErr := p.graph.SaveEdge(ctx, edge); saveErr != nil {
-				log.Warn().Err(saveErr).Str("edge_id", edge.ID).Msg("failed to save link edge during batch")
-			}
-			}
+			p.createLinkEdges(ctx, event)
 		}
 	}
 

@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: collector
-          image: ghcr.io/astraive/loxa-collector:latest
+          image: ghcr.io/astraive/loxa-collector:0.2.3
           args:
             - run
             - -c

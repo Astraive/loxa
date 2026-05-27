@@ -32,6 +32,7 @@ collector:
       batch_limit: 10
 
 auth:
+  # SECURITY: Disabled for local dev only. Production MUST enable.
   enabled: false
   header: X-API-Key
   value_env: COLLECTOR_API_KEY
@@ -42,8 +43,8 @@ rate_limit:
   burst: 1000
 
 routes:
-  ingest: /ingest
-  health: /healthz
+  ingest: /events
+  health: /health
   ready: /readyz
   metrics: /metrics
 
@@ -178,6 +179,11 @@ identity:
   mode: payload
   auth_identity_wins: true
   allow_payload_identity: true
+  mtls_allowed_cns: []
+  mtls_allowed_dns: []
+  mtls_allowed_emails: []
+  allowed_origins: []
+  trusted_proxies: []
 
 privacy:
   mode: warn

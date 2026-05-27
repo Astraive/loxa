@@ -10,6 +10,9 @@ on:
     paths:
       - "proto/loxa/core/*.proto"
 
+permissions:
+  contents: read
+
 jobs:
   generate:
     runs-on: ubuntu-latest

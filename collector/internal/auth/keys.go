@@ -12,8 +12,8 @@ import (
 type KeyKind string
 
 const (
-	KeyKindPublic KeyKind = "pub"   // lx_pub_live_k_xxx_yyyy
-	KeyKindSecret KeyKind = "sec"   // lx_sec_live_k_xxx_yyyy
+	KeyKindPublic KeyKind = "pub"   // lx_pub_live_kxxx_yyyy
+	KeyKindSecret KeyKind = "sec"   // lx_sec_live_kxxx_yyyy
 	KeyKindLocal  KeyKind = "local" // lx_local_dev_yyyy (dev only)
 )
 
@@ -22,17 +22,18 @@ type ParsedKey struct {
 	Raw    string
 	Kind   KeyKind
 	Env    string // "live", "test", "dev"
-	KeyID  string // e.g. "k_2M9aQp"
+	KeyID  string // e.g. "k2M9aQpXy" (no underscore between prefix and token)
 	Secret string // e.g. "7QmVxN8pT4zRbK1sYw"
 }
 
 // ParseKey parses a LOXA API key into its components.
 //
 // Format: lx_{kind}_{env}_{key_id}_{secret}
+// key_id is "k" + base64 token (no underscore between k and token).
 // Examples:
 //
-//	lx_sec_live_k_2M9aQp_7QmVxN8pT4zRbK1sYw
-//	lx_pub_live_k_abc123_xxxxx
+//	lx_sec_live_k2M9aQpXy_7QmVxN8pT4zRbK1sYw
+//	lx_pub_live_kabc12345_xxxxx
 //	lx_local_dev_yyyy
 func ParseKey(raw string) (*ParsedKey, error) {
 	raw = strings.TrimSpace(raw)
@@ -81,7 +82,7 @@ func ParseKey(raw string) (*ParsedKey, error) {
 	}
 
 	// Public/secret keys: lx_{kind}_{env}_{key_id}_{secret}
-	// key_id is always a single segment (e.g., "k_abc123")
+	// key_id is always a single segment: "k" + base64 token (e.g., "k2M9aQpXy")
 	// secret is everything after key_id
 	if len(parts) < 5 {
 		return nil, fmt.Errorf("api key missing key_id or secret")

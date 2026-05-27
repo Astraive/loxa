@@ -13,7 +13,7 @@ import (
 	_ "github.com/astraive/loxa-collector/internal/eventbus/redis"
 )
 
-var version = "0.2.0"
+var version = "0.2.3"
 
 func main() {
 	if err := executeCollectorCLI(os.Args[1:], runCollector, configCommand); err != nil {

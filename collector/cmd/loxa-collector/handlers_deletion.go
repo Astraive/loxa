@@ -9,6 +9,14 @@ import (
 	"time"
 )
 
+// escapeLIKE escapes LIKE metacharacters to prevent wildcard injection.
+func escapeLIKE(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `%`, `\%`)
+	s = strings.ReplaceAll(s, `_`, `\_`)
+	return s
+}
+
 // DeletionRequest represents a request to delete data
 type DeletionRequest struct {
 	Reason string `json:"reason,omitempty"`
@@ -52,6 +60,13 @@ func (s *collectorState) handleDeleteEvents(w http.ResponseWriter, r *http.Reque
 			"error": "database_unavailable",
 		})
 		return
+	}
+
+	// Read the request body BEFORE executing the DELETE for audit logging.
+	var req DeletionRequest
+	bodyRead := false
+	if err := json.NewDecoder(r.Body).Decode(&req); err == nil {
+		bodyRead = true
 	}
 
 	// Get path parameters relative to the canonical /events prefix.
@@ -113,8 +128,7 @@ func (s *collectorState) handleDeleteEvents(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Log the deletion for audit trail
-	var req DeletionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err == nil && req.Reason != "" {
+	if bodyRead && req.Reason != "" {
 		logJSON("info", "deletion_executed", map[string]any{
 			"type":    deletionType,
 			"deleted": deletedCount,
@@ -156,7 +170,7 @@ func (s *collectorState) deleteEventsByUser(ctx context.Context, userID string) 
 	// Delete events by user_id field in the raw JSON or via schema projection
 	query := fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = ? OR raw LIKE ?`, s.cfg.duckDBTable)
 
-	result, err := s.queryDB.ExecContext(ctx, query, userID, fmt.Sprintf("%%\"user_id\":\"%s\"%%", escapeSQL(userID)))
+	result, err := s.queryDB.ExecContext(ctx, query, userID, fmt.Sprintf("%%\"user_id\":\"%s\"%%", escapeLIKE(escapeSQL(userID))))
 	if err != nil {
 		return 0, err
 	}

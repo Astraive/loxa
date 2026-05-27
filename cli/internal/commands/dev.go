@@ -3,10 +3,12 @@ package commands
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/astraive/loxa-cli/internal/config"
 )
@@ -43,6 +45,23 @@ func DevCommand(ctx context.Context, cfg config.Config, _ []string) error {
 			_, _ = collectorCmd.Process.Wait()
 		}
 	}()
+
+	// Wait for collector to be ready before starting cortex
+	collectorURL := "http://localhost:9090/health"
+	fmt.Println("Waiting for collector to be ready...")
+	for i := 0; i < 30; i++ {
+		time.Sleep(1 * time.Second)
+		resp, err := http.Get(collectorURL)
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				break
+			}
+		}
+		if i == 29 {
+			return fmt.Errorf("collector did not become ready within 30s")
+		}
+	}
 
 	fmt.Println("Starting cortex...")
 	cortexCmd := exec.CommandContext(ctx, "go", "run", cortexMain, "--config", filepath.Join(cfg.CortexRepoPath, "configs", "loxa-cortex.defaults.yaml"))

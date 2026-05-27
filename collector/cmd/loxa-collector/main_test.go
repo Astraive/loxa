@@ -126,6 +126,7 @@ func TestHandleIngestAuthFailure(t *testing.T) {
 	sink := &fakeSink{}
 	cfg := testCollectorConfig()
 	cfg.authEnabled = true
+	cfg.storageEncryptionKey = "test-encryption-key-for-e2e-32bytes!"
 	cfg.apiKey = "lx_sec_live_ktest_testsecret"
 	state := &collectorState{
 		cfg:         cfg,
@@ -350,6 +351,7 @@ func TestHandleIngestJWTAuthorization(t *testing.T) {
 	sink := &fakeSink{}
 	cfg := testCollectorConfig()
 	cfg.authEnabled = true
+	cfg.storageEncryptionKey = "test-encryption-key-for-e2e-32bytes!"
 	cfg.identityMode = "jwt"
 	cfg.apiKey = "0123456789abcdef0123456789abcdef"
 	state := &collectorState{
@@ -673,6 +675,7 @@ func TestHandleIngestAPIPass(t *testing.T) {
 	sink := &fakeSink{}
 	cfg := testCollectorConfig()
 	cfg.authEnabled = true
+	cfg.storageEncryptionKey = "test-encryption-key-for-e2e-32bytes!"
 	cfg.apiKey = "secret"
 	state := &collectorState{
 		cfg:         cfg,
@@ -1098,6 +1101,7 @@ func TestTailStreamsAcceptedEvents(t *testing.T) {
 func TestControlEndpointsRequireAPIKeyWhenAuthEnabled(t *testing.T) {
 	cfg := testCollectorConfig()
 	cfg.authEnabled = true
+	cfg.storageEncryptionKey = "test-encryption-key-for-e2e-32bytes!"
 	cfg.apiKey = "secret"
 	state := &collectorState{
 		cfg:         cfg,

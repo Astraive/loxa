@@ -141,8 +141,14 @@ func (s *PostgresStorage) Init(ctx context.Context) error {
 		temporal_pattern JSONB,
 		remediation JSONB,
 		feature_vector JSONB,
+		feature_weights JSONB,
 		occurrence_count INTEGER DEFAULT 0,
 		avg_resolution_time_seconds BIGINT DEFAULT 0,
+		version INTEGER DEFAULT 1,
+		parent_signature_id TEXT,
+		decay_factor DOUBLE PRECISION DEFAULT 1.0,
+		last_matched_at TIMESTAMP,
+		behavioral_hash TEXT,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);

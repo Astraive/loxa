@@ -12,9 +12,11 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
-const collectorVersion = "0.2.0"
+const collectorVersion = "0.2.3"
 
 func (s *collectorState) handleVersion(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -162,6 +164,7 @@ func (s *collectorState) handleQuery(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
 		return
 	}
+	requestID := fmt.Sprintf("q_%d", time.Now().UTC().UnixNano())
 	var req queryRequest
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_query_request", "message": err.Error()})
@@ -175,6 +178,10 @@ func (s *collectorState) handleQuery(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "query_must_be_read_only"})
 		return
 	}
+	if !isSafeQuery(query) {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "query_contains_blocked_operations"})
+		return
+	}
 	if req.Limit <= 0 || req.Limit > 1000 {
 		req.Limit = 1000
 	}
@@ -185,7 +192,8 @@ func (s *collectorState) handleQuery(w http.ResponseWriter, r *http.Request) {
 		var err error
 		db, err = sql.Open(s.cfg.duckDBDriver, s.cfg.duckDBPath)
 		if err != nil {
-			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_db_open_failed", "message": err.Error()})
+			log.Error().Err(err).Str("request_id", requestID).Msg("query db open failed")
+			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_unavailable", "request_id": requestID})
 			return
 		}
 		closeDB = func() { _ = db.Close() }
@@ -196,16 +204,27 @@ func (s *collectorState) handleQuery(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
+
+	// Disable external access to block read_csv, read_json, etc.
+	// Reject the query if this fails — proceeding without the safety guard is unsafe.
+	if _, err := db.ExecContext(ctx, "SET enable_external_access=false"); err != nil {
+		log.Error().Err(err).Str("request_id", requestID).Msg("failed to disable external access in DuckDB")
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_safety_check_failed", "request_id": requestID})
+		return
+	}
+
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "query_failed", "message": err.Error()})
+		log.Error().Err(err).Str("request_id", requestID).Msg("query failed")
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "query_failed", "request_id": requestID})
 		return
 	}
 	defer rows.Close()
 
 	columns, err := rows.Columns()
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "query_columns_failed", "message": err.Error()})
+		log.Error().Err(err).Str("request_id", requestID).Msg("query columns failed")
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "query_failed", "request_id": requestID})
 		return
 	}
 	result := make([]map[string]any, 0)
@@ -216,7 +235,8 @@ func (s *collectorState) handleQuery(w http.ResponseWriter, r *http.Request) {
 			ptrs[i] = &values[i]
 		}
 		if err := rows.Scan(ptrs...); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "query_scan_failed", "message": err.Error()})
+			log.Error().Err(err).Str("request_id", requestID).Msg("query scan failed")
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "query_failed", "request_id": requestID})
 			return
 		}
 		row := make(map[string]any, len(columns))
@@ -234,7 +254,8 @@ func (s *collectorState) handleQuery(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := rows.Err(); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "query_rows_failed", "message": err.Error()})
+		log.Error().Err(err).Str("request_id", requestID).Msg("query rows iteration failed")
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "query_failed", "request_id": requestID})
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"columns": columns, "rows": result, "row_count": len(result)})
@@ -459,12 +480,36 @@ func isReadOnlyQuery(query string) bool {
 	if lower == "" {
 		return false
 	}
-	for _, prefix := range []string{"select", "with", "show", "describe", "pragma table_info"} {
+	for _, prefix := range []string{"select", "with", "show", "describe", "pragma table_info", "pragma database_list"} {
 		if strings.HasPrefix(lower, prefix) {
 			return !strings.Contains(lower, ";")
 		}
 	}
 	return false
+}
+
+// isSafeQuery performs a deeper check beyond isReadOnlyQuery, blocking dangerous
+// DuckDB functions and DML operations that can be hidden inside CTEs or subqueries.
+func isSafeQuery(query string) bool {
+	lower := strings.ToLower(strings.TrimSpace(query))
+	// Block dangerous DuckDB functions and DDL/DML keywords
+	dangerous := []string{
+		"chr(", "unicode(",
+		"read_csv_auto", "read_ndjson", "read_csv", "read_json", "read_parquet", "read_blob",
+		"glob(", "iceberg_scan", "delta_scan",
+		"install", "load ", "attach", "copy ", "export",
+		"call ", "prepare", "execute",
+		"query(", "printf(", "format(",
+		"create ", "drop ", "alter ", "truncate",
+		"insert ", "update ", "delete ", "merge ",
+		"grant ", "revoke",
+	}
+	for _, d := range dangerous {
+		if strings.Contains(lower, d) {
+			return false
+		}
+	}
+	return true
 }
 
 func deliveryQueueDepth(ch chan []byte) int {

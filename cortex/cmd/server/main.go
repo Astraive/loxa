@@ -23,7 +23,10 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+var grpcServer *grpc.Server
+
 var (
+	version    = "0.2.3"
 	configPath = flag.String("config", "", "Path to configuration file")
 	logLevel   = flag.String("log-level", "info", "Log level (debug, info, warn, error)")
 	logFormat  = flag.String("log-format", "json", "Log format (json, console)")
@@ -90,6 +93,21 @@ func main() {
 	<-sigChan
 	log.Info().Msg("Shutting down server...")
 
+	if grpcServer != nil {
+		stopped := make(chan struct{})
+		go func() {
+			grpcServer.GracefulStop()
+			close(stopped)
+		}()
+		select {
+		case <-stopped:
+			log.Info().Msg("gRPC server stopped")
+		case <-time.After(10 * time.Second):
+			log.Warn().Msg("gRPC graceful stop timed out, forcing")
+			grpcServer.Stop()
+		}
+	}
+
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	if err := httpSrv.Shutdown(shutdownCtx); err != nil {
@@ -119,6 +137,7 @@ func startGRPCServer(cfg *config.Config, stor storage.Storage) {
 	}
 
 	server := grpc.NewServer(opts...)
+	grpcServer = server
 	grpcSvc := grpcserver.New(cfg, stor)
 	grpcSvc.RegisterServer(server)
 

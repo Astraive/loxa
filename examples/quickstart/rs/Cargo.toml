@@ -1,0 +1,8 @@
+[package]
+name = "loxa-quickstart-rs"
+version = "0.2.3"
+edition = "2021"
+
+[dependencies]
+loxa = { path = "../../../sdks/rs" }
+tokio = { version = "1", features = ["full"] }

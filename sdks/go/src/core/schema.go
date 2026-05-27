@@ -642,7 +642,10 @@ func attrsToTagString(attrs map[string]any) string {
 }
 
 func attrsToMap(attrs []Attr, expandDot bool) map[string]any {
-	out := make(map[string]any)
+	if len(attrs) == 0 {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
 	for _, a := range attrs {
 		if a.Key == "" {
 			continue

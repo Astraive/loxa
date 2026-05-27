@@ -21,15 +21,16 @@ import (
 )
 
 type GRPCServer struct {
-	cfg          GRPCConfig
-	state        State
-	ready        atomic.Bool
-	lis          net.Listener
-	srv          *grpc.Server
-	authEnabled  bool
-	keyStore     auth.KeyStore
-	keyCache     *auth.MemoryKeyCache
-	serverSecret []byte
+	cfg               GRPCConfig
+	state             State
+	ready             atomic.Bool
+	lis               net.Listener
+	srv               *grpc.Server
+	authEnabled       bool
+	allowLocalDevKeys bool
+	keyStore          auth.KeyStore
+	keyCache          *auth.MemoryKeyCache
+	serverSecret      []byte
 }
 
 func NewGRPCServer(cfg GRPCConfig, state State) *GRPCServer {
@@ -46,6 +47,12 @@ func (s *GRPCServer) WithAuth(store auth.KeyStore, cache *auth.MemoryKeyCache, s
 	s.keyStore = store
 	s.keyCache = cache
 	s.serverSecret = serverSecret
+	return s
+}
+
+// WithAllowLocalDevKeys enables lx_local_dev_* key acceptance on this server.
+func (s *GRPCServer) WithAllowLocalDevKeys(v bool) *GRPCServer {
+	s.allowLocalDevKeys = v
 	return s
 }
 
@@ -90,9 +97,10 @@ func (s *GRPCServer) Start(ctx context.Context) error {
 	}
 
 	if s.authEnabled {
+		grpcOpts := []auth.GRPCAuthOption{auth.GRPCWithAllowLocalDevKeys(s.allowLocalDevKeys)}
 		opts = append(opts,
-			grpc.ChainUnaryInterceptor(auth.UnaryAuthInterceptor(s.keyStore, s.keyCache, s.serverSecret)),
-			grpc.ChainStreamInterceptor(auth.StreamAuthInterceptor(s.keyStore, s.keyCache, s.serverSecret)),
+			grpc.ChainUnaryInterceptor(auth.UnaryAuthInterceptor(s.keyStore, s.keyCache, s.serverSecret, grpcOpts...)),
+			grpc.ChainStreamInterceptor(auth.StreamAuthInterceptor(s.keyStore, s.keyCache, s.serverSecret, grpcOpts...)),
 		)
 	}
 
@@ -341,7 +349,7 @@ func (s *collectorIngestServer) IngestStream(stream loxav1.CollectorIngest_Inges
 func (s *collectorIngestServer) Ping(ctx context.Context, req *loxav1.PingRequest) (*loxav1.PingResponse, error) {
 	return &loxav1.PingResponse{
 		Status:  "ok",
-		Version: "0.2.0",
+		Version: "0.2.3",
 	}, nil
 }
 

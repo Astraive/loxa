@@ -74,6 +74,7 @@ type ServerConfig struct {
 	WriteTimeout    time.Duration `yaml:"write_timeout"`
 	ShutdownTimeout time.Duration `yaml:"shutdown_timeout"`
 	MaxBodyBytes    int64         `yaml:"max_body_bytes"`
+	AllowedOrigins  []string      `yaml:"allowed_origins"`
 }
 
 // GRPCConfig contains gRPC server settings
@@ -317,6 +318,12 @@ func applyEnvOverrides(cfg *Config) {
 			cfg.Server.Port = port
 		}
 	}
+	if v := os.Getenv("CORTEX_SERVER_ALLOWED_ORIGINS"); v != "" {
+		cfg.Server.AllowedOrigins = strings.Split(v, ",")
+		for i := range cfg.Server.AllowedOrigins {
+			cfg.Server.AllowedOrigins[i] = strings.TrimSpace(cfg.Server.AllowedOrigins[i])
+		}
+	}
 
 	// Storage overrides
 	if v := os.Getenv("CORTEX_STORAGE_BACKEND"); v != "" {
@@ -346,6 +353,14 @@ func applyEnvOverrides(cfg *Config) {
 	// Authentication overrides
 	if v := os.Getenv("CORTEX_AUTH_ENABLED"); v != "" {
 		cfg.Authentication.Enabled = strings.ToLower(v) == "true"
+	}
+	// CORTEX_API_KEYS: comma-separated list of name:key:role triples
+	// e.g. "my-service:sk_abc123:writer,read-only:sk_def456:reader"
+	if v := os.Getenv("CORTEX_API_KEYS"); v != "" {
+		keys := parseAPIKeys(v)
+		if len(keys) > 0 {
+			cfg.Authentication.APIKeys = keys
+		}
 	}
 
 	// Matcher overrides
@@ -464,6 +479,30 @@ func applyEnvOverrides(cfg *Config) {
 	if v := os.Getenv("CORTEX_COLLECTOR_CURSOR_PATH"); v != "" {
 		cfg.Collector.CursorPath = v
 	}
+}
+
+// parseAPIKeys parses a comma-separated list of name:key:role triples.
+// Example: "my-service:sk_abc123:writer,read-only:sk_def456:reader"
+func parseAPIKeys(raw string) []APIKey {
+	var keys []APIKey
+	for _, entry := range strings.Split(raw, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		parts := strings.SplitN(entry, ":", 3)
+		if len(parts) != 3 {
+			continue
+		}
+		name := strings.TrimSpace(parts[0])
+		key := strings.TrimSpace(parts[1])
+		role := strings.TrimSpace(parts[2])
+		if name == "" || key == "" || role == "" {
+			continue
+		}
+		keys = append(keys, APIKey{Name: name, Key: key, Role: role})
+	}
+	return keys
 }
 
 // Validate validates the configuration

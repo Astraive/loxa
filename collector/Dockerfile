@@ -32,7 +32,11 @@ COPY --from=builder /out/loxa-collector /usr/local/bin/loxa-collector
 COPY collector/deploy/docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 COPY collector/loxa-collector.defaults.yaml /app/config.yaml
 
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
+    useradd -r -s /bin/false -u 10001 loxa && \
+    chown -R loxa:loxa /app
+
+USER loxa
 
 EXPOSE 9090 9092
 

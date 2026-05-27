@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -41,14 +42,20 @@ func TestKafkaBusContract(t *testing.T) {
 		t.Skip("skipping kafka integration test in short mode")
 	}
 	ctx := context.Background()
+
+	// Use unique topic and consumer group per test run to avoid stale group state
+	uniqueID := fmt.Sprintf("%d", time.Now().UnixNano())
+	topic := "loxa.test.contract." + uniqueID
+	group := "loxa-test-group." + uniqueID
+
 	bus, err := New(ctx, eventbus.Config{
 		Type:          "kafka",
-		Topic:         "loxa.test.contract",
-		ConsumerGroup: "loxa-test-group",
+		Topic:         topic,
+		ConsumerGroup: group,
 		Kafka: eventbus.KafkaConfig{
 			Brokers:       []string{"127.0.0.1:9092"},
-			Topic:         "loxa.test.contract",
-			ConsumerGroup: "loxa-test-group",
+			Topic:         topic,
+			ConsumerGroup: group,
 			Acks:          "all",
 		},
 	})
@@ -63,14 +70,14 @@ func TestKafkaBusContract(t *testing.T) {
 		return msg.Ack(ctx)
 	}
 
-	if err := bus.Subscribe(ctx, "loxa.test.contract", "loxa-test-group", handler); err != nil {
+	if err := bus.Subscribe(ctx, topic, group, handler); err != nil {
 		t.Fatalf("subscribe: %v", err)
 	}
 
 	envelopes := []eventbus.Envelope{
 		{ID: "kafka-1", Event: "test.event", Timestamp: time.Now(), Body: []byte(`{"x":1}`)},
 	}
-	if err := bus.Publish(ctx, "loxa.test.contract", envelopes); err != nil {
+	if err := bus.Publish(ctx, topic, envelopes); err != nil {
 		t.Fatalf("publish: %v", err)
 	}
 

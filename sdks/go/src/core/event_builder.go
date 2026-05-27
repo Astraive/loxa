@@ -30,20 +30,10 @@ func buildEvent(params Params, cfg *Config) *Event {
 	}
 	
 	// Trace context propagation (Requirements: 39.3, 39.4, 39.5, 39.6)
-	// If trace_id is provided, use it; otherwise generate a new one
-	if params.TraceID != "" {
-		ev.TraceID = params.TraceID
-	} else {
-		// Generate a new trace_id if none provided (Requirement 39.6)
-		ev.TraceID = GenerateTraceID()
-	}
-	
-	// If span_id is provided, use it; otherwise generate a new one
-	if params.SpanID != "" {
-		ev.SpanID = params.SpanID
-	} else {
-		ev.SpanID = GenerateSpanID()
-	}
+	// Store caller-provided values; defer generation to ensureTraceContext()
+	// which runs after sampling, so sampled-out events skip the PRNG cost.
+	ev.TraceID = params.TraceID
+	ev.SpanID = params.SpanID
 	
 	// Parent span ID is optional and only set if provided (Requirement 39.5)
 	ev.ParentID = params.ParentID

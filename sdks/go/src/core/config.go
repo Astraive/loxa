@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/astraive/loxa/spec/dsn"
 )
 
 // ── Field naming ──────────────────────────────────────────────────────────────
@@ -185,6 +187,9 @@ type Config struct {
 	DuplicateFieldPolicy DuplicateFieldPolicy
 	Checkpoints          CheckpointConfig
 	PanicRecovery        bool
+	// OTelBridge enables OpenTelemetry trace context extraction from context.
+	// When false (default), TraceFromOTel is skipped to avoid the ~50-100ns context.Value lookup.
+	OTelBridge           bool
 	Security             SecurityConfig
 	// Strict enables stronger runtime validation for event shape and attrs.
 	Strict bool
@@ -386,6 +391,14 @@ func (c Config) WithIncludeHost(includeHost bool) Config {
 // WithPanicRecovery controls whether lifecycle helpers recover panics.
 func (c Config) WithPanicRecovery(panicRecovery bool) Config {
 	c.PanicRecovery = panicRecovery
+	return c
+}
+
+// WithOTelBridge enables OpenTelemetry trace context extraction from context.
+// When enabled, StartEvent extracts trace_id and span_id from OTel span context.
+// When disabled (default), the OTel context.Value lookup is skipped for performance.
+func (c Config) WithOTelBridge(enabled bool) Config {
+	c.OTelBridge = enabled
 	return c
 }
 
@@ -725,8 +738,13 @@ func envOr(key, def string) string {
 // to the provided config. Environment variables take precedence over the base config
 // but are overridden by explicit code configuration.
 //
+// When LOXA_DSN is set, it is parsed first and sets CollectorURL, Environment,
+// Service, and Insecure. Individual env vars (LOXA_COLLECTOR_URL, etc.) override
+// DSN-derived values when both are present.
+//
 // Supported environment variables:
-//   - LOXA_COLLECTOR_URL: Collector endpoint URL
+//   - LOXA_DSN: loxa:// connection URI (sets CollectorURL, Environment, Service, Insecure)
+//   - LOXA_COLLECTOR_URL: Collector endpoint URL (overrides DSN)
 //   - LOXA_SERVICE_NAME: Service name
 //   - LOXA_SERVICE_VERSION: Service version
 //   - LOXA_ENVIRONMENT: Deployment environment
@@ -742,7 +760,21 @@ func envOr(key, def string) string {
 func LoadFromEnv(base Config) Config {
 	cfg := base
 
-	// Load collector URL
+	// Load DSN first (sets CollectorURL, Environment, Service, Insecure).
+	// Individual env vars below can override DSN-derived values.
+	if rawDSN := os.Getenv("LOXA_DSN"); rawDSN != "" {
+		if d, err := dsn.Parse(rawDSN); err == nil {
+			cfg.CollectorURL = d.BaseURL
+			cfg.Environment = d.Env
+			if d.Service != "" {
+				cfg.Service = d.Service
+			}
+			cfg.Insecure = !d.TLS
+		}
+		// If DSN parsing fails, fall through to individual env vars.
+	}
+
+	// Load collector URL (overrides DSN-derived value if both are set)
 	if url := os.Getenv("LOXA_COLLECTOR_URL"); url != "" {
 		cfg.CollectorURL = url
 	}
@@ -921,7 +953,7 @@ func NewClient(cfg Config) (*Logger, error) {
 		}
 
 		batchSink, err := HTTPBatchSink(HTTPBatchSinkConfig{
-			Endpoint:      strings.TrimRight(merged.CollectorURL, "/") + "/ingest",
+			Endpoint:      strings.TrimRight(merged.CollectorURL, "/") + "/events",
 			Headers:       headers,
 			BatchSize:     merged.BatchSize,
 			FlushInterval: merged.Async.FlushInterval,

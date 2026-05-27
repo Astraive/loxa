@@ -67,24 +67,27 @@ func BuildMux(ingestPath, healthPath, readyPath, metricsPath string, metricsEnab
 	}
 
 	// ── Ingest (events:write) ────────────────────────────────────────────
-	if ingestPath != "" {
+	if ingestPath != "" && ingestPath != "/events" && ingestPath != "/ingest" {
 		route("POST", ingestPath, handlers.HandleIngest, "events:write")
 	}
 	route("POST", "/events", handlers.HandleIngest, "events:write")
+	route("POST", "/ingest", handlers.HandleIngest, "events:write")
 	route("POST", "/events/batch", handlers.HandleIngest, "events:write")
 	route("POST", "/events/ndjson", handlers.HandleIngest, "events:write")
 	route("POST", "/validate", handlers.HandleValidate, "schema:read")
 	route("POST", "/otlp/logs", handlers.HandleOTLPLogs, "logs:write")
 
 	// ── Public (no auth) ─────────────────────────────────────────────────
-	if healthPath != "" {
+	if healthPath != "" && healthPath != "/health" && healthPath != "/healthz" {
 		mux.HandleFunc("GET "+healthPath, handlers.HandleHealth)
 	}
 	mux.HandleFunc("GET /health", handlers.HandleHealth)
-	if readyPath != "" {
+	mux.HandleFunc("GET /healthz", handlers.HandleHealth)
+	if readyPath != "" && readyPath != "/ready" && readyPath != "/readyz" {
 		mux.HandleFunc("GET "+readyPath, handlers.HandleReady)
 	}
 	mux.HandleFunc("GET /ready", handlers.HandleReady)
+	mux.HandleFunc("GET /readyz", handlers.HandleReady)
 	mux.HandleFunc("GET /version", handlers.HandleVersion)
 	mux.HandleFunc("GET /status", handlers.HandleStatus)
 

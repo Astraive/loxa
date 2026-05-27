@@ -20,6 +20,7 @@ import (
 
 var ErrInvalidEvent = errors.New("invalid event payload: expected JSON object")
 var ErrDedupeUnavailable = errors.New("dedupe backend unavailable")
+var compiledPatternCache sync.Map
 
 type Config struct {
 	DeliveryPolicy          string
@@ -405,18 +406,31 @@ func (p *Processor) writeQuarantine(raw []byte, err error) {
 		fmt.Fprintf(os.Stderr, "[FATAL] quarantine marshal failed: %v, raw event lost: %s\n", mErr, string(raw))
 		return
 	}
-	p.quarantineMu.Lock()
-	defer p.quarantineMu.Unlock()
 
+	// Copy data under the lock, then release before sleeping on retry.
+	data := make([]byte, len(b)+1)
+	copy(data, b)
+	data[len(b)] = '\n'
+
+	p.quarantineMu.Lock()
+	_, writeErr := p.quarantineFile.Write(data)
+	p.quarantineMu.Unlock()
+
+	if writeErr == nil {
+		return
+	}
+
+	// Retry without holding the lock so concurrent writers are not blocked.
 	const maxRetries = 3
 	var lastWriteErr error
-	for attempt := 0; attempt < maxRetries; attempt++ {
-		_, writeErr := p.quarantineFile.Write(append(b, '\n'))
-		if writeErr == nil {
+	for attempt := 1; attempt < maxRetries; attempt++ {
+		time.Sleep(10 * time.Millisecond * time.Duration(attempt+1))
+		p.quarantineMu.Lock()
+		_, lastWriteErr = p.quarantineFile.Write(data)
+		p.quarantineMu.Unlock()
+		if lastWriteErr == nil {
 			return
 		}
-		lastWriteErr = writeErr
-		time.Sleep(10 * time.Millisecond * time.Duration(attempt+1))
 	}
 
 	fmt.Fprintf(os.Stderr, "[FATAL] quarantine write failed after %d attempts: %v, event: %s\n", maxRetries, lastWriteErr, string(raw))
@@ -600,23 +614,37 @@ func (p *Processor) writeDLQ(raw []byte, err error) {
 		fmt.Fprintf(os.Stderr, "[FATAL] DLQ marshal failed: %v, raw event lost: %s\n", mErr, string(raw))
 		return
 	}
-	p.dlqMu.Lock()
-	defer p.dlqMu.Unlock()
 
-	// Retry logic for DLQ writes
+	// Copy data under the lock, then release before sleeping on retry.
+	data := make([]byte, len(b)+1)
+	copy(data, b)
+	data[len(b)] = '\n'
+
+	p.dlqMu.Lock()
+	_, writeErr := p.dlqFile.Write(data)
+	p.dlqMu.Unlock()
+
+	if writeErr == nil {
+		if p.cfg.OnDLQWrite != nil {
+			p.cfg.OnDLQWrite(1)
+		}
+		return
+	}
+
+	// Retry without holding the lock so concurrent writers are not blocked.
 	const maxRetries = 3
 	var lastWriteErr error
-	for attempt := 0; attempt < maxRetries; attempt++ {
-		_, writeErr := p.dlqFile.Write(append(b, '\n'))
-		if writeErr == nil {
+	for attempt := 1; attempt < maxRetries; attempt++ {
+		time.Sleep(10 * time.Millisecond * time.Duration(attempt+1))
+		p.dlqMu.Lock()
+		_, lastWriteErr = p.dlqFile.Write(data)
+		p.dlqMu.Unlock()
+		if lastWriteErr == nil {
 			if p.cfg.OnDLQWrite != nil {
 				p.cfg.OnDLQWrite(1)
 			}
 			return
 		}
-		lastWriteErr = writeErr
-		// Brief backoff before retry
-		time.Sleep(10 * time.Millisecond * time.Duration(attempt+1))
 	}
 
 	// All retries failed - this is a critical failure
@@ -625,6 +653,9 @@ func (p *Processor) writeDLQ(raw []byte, err error) {
 		p.cfg.OnDLQWriteFail(1)
 	}
 }
+
+// maxDedupeEntries caps the in-memory dedupe map to prevent unbounded growth.
+const maxDedupeEntries = 100_000
 
 func (p *Processor) isDuplicate(value string) (bool, error) {
 	if strings.TrimSpace(value) == "" {
@@ -652,6 +683,17 @@ func (p *Processor) isDuplicate(value string) (bool, error) {
 	if ts, ok := p.dedupeSeenAt[value]; ok && now.Sub(ts) <= p.cfg.DedupeWindow {
 		return true, nil
 	}
+	// Evict oldest half if the map exceeds the cap.
+	if len(p.dedupeSeenAt) >= maxDedupeEntries {
+		count := 0
+		for k := range p.dedupeSeenAt {
+			delete(p.dedupeSeenAt, k)
+			count++
+			if count >= maxDedupeEntries/2 {
+				break
+			}
+		}
+	}
 	p.dedupeSeenAt[value] = now
 	return false, nil
 }
@@ -669,6 +711,8 @@ func (p *Processor) WriteDLQ(raw []byte, err error) {
 	p.writeDLQ(raw, dlqErr)
 }
 
+// isDiskFullErr checks whether an error indicates a full disk.
+// Also used by the collector main package via a thin wrapper.
 func isDiskFullErr(err error) bool {
 	if err == nil {
 		return false
@@ -676,6 +720,9 @@ func isDiskFullErr(err error) bool {
 	s := strings.ToLower(err.Error())
 	return strings.Contains(s, "no space left") || strings.Contains(s, "disk full")
 }
+
+// IsDiskFullErr is the exported version for use outside this package.
+func IsDiskFullErr(err error) bool { return isDiskFullErr(err) }
 
 // redactPII applies privacy redaction to a JSON event
 func (p *Processor) redactPII(raw []byte) ([]byte, error) {
@@ -790,7 +837,15 @@ func (p *Processor) matchesPattern(fieldPath, keyLower, pattern string) bool {
 	// Wildcard match (e.g., "user.*" matches "user.email")
 	if strings.Contains(patternLower, "*") {
 		wildcardRegex := strings.ReplaceAll(patternLower, "*", ".*")
-		if match := regexp.MustCompile("^" + wildcardRegex + "$").MatchString(fieldPath); match {
+		patternKey := "^" + wildcardRegex + "$"
+		var re *regexp.Regexp
+		if cached, ok := compiledPatternCache.Load(patternKey); ok {
+			re = cached.(*regexp.Regexp)
+		} else {
+			re = regexp.MustCompile(patternKey)
+			compiledPatternCache.Store(patternKey, re)
+		}
+		if match := re.MatchString(fieldPath); match {
 			return true
 		}
 	}

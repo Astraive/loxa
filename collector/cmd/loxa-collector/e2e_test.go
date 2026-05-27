@@ -29,6 +29,7 @@ func TestCollectorE2ERawPreservation(t *testing.T) {
 
 	cfg := testCollectorConfig()
 	cfg.authEnabled = true
+	cfg.storageEncryptionKey = "test-encryption-key-for-e2e-32bytes!"
 	cfg.apiKey = "lx_sec_live_ktest_testsecret"
 	cfg.duckDBPath = dbPath
 	cfg.duckDBBatchSize = 10
@@ -63,7 +64,7 @@ func TestCollectorE2ERawPreservation(t *testing.T) {
 	defer srv.Close()
 
 	body := `[{"event_id":"evt-1","event":"checkout.request","service":"checkout","http":{"status":200},"duration_ms":12.5,"timestamp":"2026-05-11T00:00:00Z"},123]`
-	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/ingest", strings.NewReader(body))
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/events", strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+state.cfg.apiKey)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -125,7 +126,7 @@ func TestCollectorE2EEndpointsAndGzip(t *testing.T) {
 	srv := httptest.NewServer(buildMux(state))
 	defer srv.Close()
 
-	res, err := http.Get(srv.URL + "/healthz")
+	res, err := http.Get(srv.URL + "/health")
 	if err != nil {
 		t.Fatalf("healthz request: %v", err)
 	}
@@ -144,7 +145,7 @@ func TestCollectorE2EEndpointsAndGzip(t *testing.T) {
 	}
 
 	gzPayload := mustGzip(t, []byte(`{"event":"gzip.event"}`))
-	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/ingest", bytes.NewReader(gzPayload))
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/events", bytes.NewReader(gzPayload))
 	req.Header.Set("Content-Encoding", "gzip")
 	res, err = http.DefaultClient.Do(req)
 	if err != nil {

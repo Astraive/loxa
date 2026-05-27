@@ -3,8 +3,8 @@
   "workspace_root": "E:\\astraive\\loxa",
   "manifest": {
     "path": "E:\\astraive\\loxa\\spec\\docs\\sdk-parity-manifest.json",
-    "version": "0.2.0",
-    "stability": "product-parity-v0.2.0"
+    "version": "0.2.3",
+    "stability": "product-parity-v0.2.3"
   },
   "results": [
     {

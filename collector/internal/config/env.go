@@ -89,7 +89,16 @@ func ApplyEnvOverrides(cfg *Config) error {
 		"LOXA_EVENTBUS_DLQ":    func(v string) error { cfg.EventBus.DLQTopic = v; return nil },
 		"LOXA_EVENTBUS_NATS_URL":     func(v string) error { cfg.EventBus.NATS.URL = v; return nil },
 		"LOXA_EVENTBUS_NATS_STREAM":  func(v string) error { cfg.EventBus.NATS.Stream = v; return nil },
-		"LOXA_EVENTBUS_REDIS_ADDR":   func(v string) error { cfg.EventBus.Redis.Addr = v; return nil },
+		"LOXA_EVENTBUS_REDIS_ADDR":     func(v string) error { cfg.EventBus.Redis.Addr = v; return nil },
+		"LOXA_EVENTBUS_REDIS_PASSWORD": func(v string) error { cfg.EventBus.Redis.Password = v; return nil },
+		"LOXA_EVENTBUS_REDIS_DB": func(v string) error {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				return fmt.Errorf("invalid int: %w", err)
+			}
+			cfg.EventBus.Redis.DB = n
+			return nil
+		},
 		"LOXA_KAFKA_BROKERS":         csvSetter(&cfg.EventBus.Kafka.Brokers),
 		"LOXA_KAFKA_TOPIC":           func(v string) error { cfg.EventBus.Kafka.Topic = v; return nil },
 		"LOXA_KAFKA_GROUP":           func(v string) error { cfg.EventBus.Kafka.ConsumerGroup = v; return nil },
@@ -140,6 +149,57 @@ func ApplyEnvOverrides(cfg *Config) error {
 		"COLLECTOR_DEDUPE_REDIS_PASSWORD": func(v string) error { cfg.Dedupe.RedisPassword = v; return nil },
 		"COLLECTOR_DEDUPE_REDIS_DB":       intSetter(&cfg.Dedupe.RedisDB),
 		"COLLECTOR_DEDUPE_REDIS_PREFIX":   func(v string) error { cfg.Dedupe.RedisPrefix = v; return nil },
+
+		// Fanout sink secrets — applied to ALL outputs of matching type
+		// (FanoutConfig.Outputs is an array; these iterate over all outputs)
+		"COLLECTOR_FANOUT_CLICKHOUSE_PASSWORD": func(v string) error {
+			for i := range cfg.Fanout.Outputs {
+				if cfg.Fanout.Outputs[i].Type == "clickhouse" || len(cfg.Fanout.Outputs[i].ClickHouse.Addrs) > 0 {
+					cfg.Fanout.Outputs[i].ClickHouse.Password = v
+				}
+			}
+			return nil
+		},
+		"COLLECTOR_FANOUT_S3_ACCESS_KEY": func(v string) error {
+			for i := range cfg.Fanout.Outputs {
+				if cfg.Fanout.Outputs[i].Type == "s3" || cfg.Fanout.Outputs[i].S3.Bucket != "" {
+					cfg.Fanout.Outputs[i].S3.AccessKey = v
+				}
+			}
+			return nil
+		},
+		"COLLECTOR_FANOUT_S3_SECRET_KEY": func(v string) error {
+			for i := range cfg.Fanout.Outputs {
+				if cfg.Fanout.Outputs[i].Type == "s3" || cfg.Fanout.Outputs[i].S3.Bucket != "" {
+					cfg.Fanout.Outputs[i].S3.SecretKey = v
+				}
+			}
+			return nil
+		},
+		"COLLECTOR_FANOUT_POSTGRES_DSN": func(v string) error {
+			for i := range cfg.Fanout.Outputs {
+				if cfg.Fanout.Outputs[i].Type == "postgres" || cfg.Fanout.Outputs[i].Postgres.DSN != "" {
+					cfg.Fanout.Outputs[i].Postgres.DSN = v
+				}
+			}
+			return nil
+		},
+
+		"COLLECTOR_ALLOW_LOCAL_DEV_KEYS": boolSetter(&cfg.Auth.AllowLocalDevKeys),
+
+		// Cortex bridge API key
+		"COLLECTOR_CORTEX_BRIDGE_API_KEY": func(v string) error { cfg.CortexBridge.APIKey = v; return nil },
+
+		// mTLS allowlists
+		"COLLECTOR_MTLS_ALLOWED_CNS":    csvSetter(&cfg.Identity.MTLSAllowedCNs),
+		"COLLECTOR_MTLS_ALLOWED_DNS":    csvSetter(&cfg.Identity.MTLSAllowedDNS),
+		"COLLECTOR_MTLS_ALLOWED_EMAILS": csvSetter(&cfg.Identity.MTLSAllowedEmails),
+		"COLLECTOR_ALLOWED_ORIGINS":     csvSetter(&cfg.Identity.AllowedOrigins),
+		"COLLECTOR_TRUSTED_PROXIES":     csvSetter(&cfg.Identity.TrustedProxies),
+
+		// EventBus NATS credentials
+		"LOXA_EVENTBUS_NATS_USERNAME": func(v string) error { cfg.EventBus.NATS.Username = v; return nil },
+		"LOXA_EVENTBUS_NATS_PASSWORD": func(v string) error { cfg.EventBus.NATS.Password = v; return nil },
 	}
 
 	for key, setter := range setters {

@@ -23,6 +23,9 @@ func ExportCommand(cfg config.Config, args []string) error {
 	if safeTable == "" {
 		safeTable = "events"
 	}
+	if !isValidIdentifier(safeTable) {
+		return fmt.Errorf("invalid table name: must start with letter/underscore, contain only alphanumeric/underscore")
+	}
 	query := fmt.Sprintf("SELECT * FROM %s", safeTable)
 
 	result, err := client.Query(cfg.CollectorURL, *engine, query)

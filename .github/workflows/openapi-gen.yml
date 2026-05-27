@@ -3,6 +3,9 @@ name: OpenAPI generation
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   generate:
     runs-on: ubuntu-latest

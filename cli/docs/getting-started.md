@@ -35,7 +35,7 @@ export LOXA_API_KEY=lx_sec_live_k_xxx_yyyy
 
 ### Authentication
 
-The CLI authenticates with the collector using `Authorization: Bearer <key>`. Set `LOXA_API_KEY` env var or pass `--api-key` flag.
+The CLI authenticates with the collector using `Authorization: Bearer <key>`. Set the `LOXA_API_KEY` environment variable.
 
 | Env Var | Description |
 |---|---|
@@ -87,12 +87,12 @@ Executes a SQL query against the collector's DuckDB storage.
 loxa tail --service payment-service
 ```
 
-Streams events in real time from the collector. Use `--filter` to narrow by event type, service, or attribute values.
+Streams events in real time from the collector. Use `--kind`, `--service`, or `--level` to narrow by event kind, service name, or severity level.
 
 ### Emit a Test Event
 
 ```bash
-loxa emit --service my-service --type http_request --attr status_code=200 --attr path=/api/test
+loxa emit sample --kind http_request --outcome success --level info --attrs status_code=200,path=/api/test
 ```
 
 Sends a single test event to the collector for validation.

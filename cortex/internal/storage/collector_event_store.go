@@ -7,6 +7,7 @@ import (
 	"github.com/astraive/loxa/loxa-cortex/internal/collectorbridge"
 	"github.com/astraive/loxa/loxa-cortex/internal/config"
 	"github.com/astraive/loxa/loxa-cortex/internal/models"
+	"github.com/rs/zerolog/log"
 )
 
 type collectorBackedEventStore struct {
@@ -19,11 +20,13 @@ func newCollectorBackedEventStore(cfg config.CollectorConfig) EventStore {
 
 func (s *collectorBackedEventStore) Save(ctx context.Context, event *models.Event, lifecycle *LifecycleData) error {
 	// Collector-backed: events are stored in collector, not in cortex
+	log.Warn().Str("event_id", event.ID).Msg("Save called on collector-backed event store; event discarded (should be routed to collector)")
 	return nil
 }
 
 func (s *collectorBackedEventStore) SaveBatch(ctx context.Context, events []*models.Event, lifecycles []*LifecycleData) error {
 	// Collector-backed: events are stored in collector, not in cortex
+	log.Warn().Int("count", len(events)).Msg("SaveBatch called on collector-backed event store; events discarded (should be routed to collector)")
 	return nil
 }
 

@@ -30,7 +30,7 @@ func run(args []string) error {
 }
 
 func printUsage() {
-	fmt.Println("LOXA CLI v0.2.0")
+	fmt.Println("LOXA CLI v0.2.3")
 	fmt.Println("\nCommands:")
 	fmt.Println("  init         Initialize LOXA config")
 	fmt.Println("  dev          Start development server (collector + cortex)")

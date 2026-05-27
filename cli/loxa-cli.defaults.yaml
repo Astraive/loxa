@@ -1,6 +1,6 @@
-collector_repo_path: ../loxa-collector
-cortex_repo_path: ../loxa-cortex
-spec_repo_path: ../loxa-spec
+collector_repo_path: ./collector
+cortex_repo_path: ./cortex
+spec_repo_path: ./spec
 collector_url: http://127.0.0.1:9090
 duckdb_path: loxa.db
 spool_dir: loxa-spool

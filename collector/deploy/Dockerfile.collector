@@ -10,7 +10,10 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36 && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5
 
 # Copy module files and download dependencies
+# spec/ and gen/go/ are required because go.mod has replace directives
 COPY collector/go.mod collector/go.sum ./collector/
+COPY spec/go.mod ./spec/go.mod
+COPY gen/go/go.mod ./gen/go/go.mod
 RUN cd collector && go mod download
 
 # Copy the entire repo (proto/ and gen/ are needed for proto generation)
@@ -35,6 +38,9 @@ COPY collector/loxa-collector.defaults.yaml /app/config.yaml
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 9090 9092
+
+RUN useradd -r -s /bin/false -u 10001 loxa && chown -R loxa:loxa /app
+USER loxa
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["loxa-collector", "run", "-c", "/app/config.yaml"]

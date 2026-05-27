@@ -1,15 +1,24 @@
+# WARNING: This file is for LOCAL DEVELOPMENT ONLY.
+# Production deployments MUST:
+#   1. Set POSTGRES_PASSWORD to a strong secret (not "changeme")
+#   2. Enable TLS on all services (set CORTEX_TLS_ENABLED=true)
+#   3. Use a secrets manager (Vault, AWS Secrets Manager, etc.)
+#   4. Remove port bindings to host network
+#   5. Enable authentication (set CORTEX_AUTH_ENABLED=true)
+#   6. Set a strong CORTEX_STORAGE_ENCRYPTION_KEY
+
 services:
   postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: cortex
       POSTGRES_USER: cortex
-      POSTGRES_PASSWORD: cortex
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD environment variable}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./configs/sql:/docker-entrypoint-initdb.d
-    ports:
-      - "5432:5432"
+    # ports:
+    #   - "5432:5432"  # SECURITY: Do not expose database port in production
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cortex"]
       interval: 10s
@@ -29,7 +38,7 @@ services:
       CORTEX_POSTGRES_PORT: 5432
       CORTEX_POSTGRES_DATABASE: cortex
       CORTEX_POSTGRES_USER: cortex
-      CORTEX_POSTGRES_PASSWORD: cortex
+      CORTEX_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD environment variable}
       CORTEX_AUTH_ENABLED: "false"
       CORTEX_LOG_LEVEL: info
     depends_on:
@@ -40,7 +49,7 @@ services:
 
   cortex-cli:
     profiles: ["cli"]
-    image: astraive/loxa-cli:latest
+    image: astraive/loxa-cli:0.2.3
     environment:
       LOXA_CORTEX_URL: http://cortex:8080
     depends_on:

@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/astraive/loxa-collector/internal/auth"
 	collectorconfig "github.com/astraive/loxa-collector/internal/config"
 	collectorevent "github.com/astraive/loxa-collector/internal/event"
 	"github.com/astraive/loxa-collector/internal/eventbus"
@@ -34,6 +35,7 @@ type collectorConfig struct {
 	maxEventsPerRequest     int
 	serverConfig            serverConfig
 	authEnabled             bool
+	authAllowLocalDevKeys   bool
 	apiKeyHeader            string
 	apiKey                  string
 	rateLimitEnabled        bool
@@ -84,6 +86,11 @@ type collectorConfig struct {
 	maxAttrCount            int
 	maxAttrDepth            int
 	maxStringLength         int
+	mtlsAllowedCNs          []string
+	mtlsAllowedDNS          []string
+	mtlsAllowedEmails       []string
+	allowedOrigins          []string
+	trustedProxies          []string
 	identityMode            string
 	authIdentityWins        bool
 	allowPayloadIdentity    bool
@@ -246,6 +253,10 @@ type collectorState struct {
 	retentionStop     chan struct{}
 	closeOnce         sync.Once
 	eventBus          eventbus.Bus
+	keyStore          *memoryKeyStore
+	keyCache          *auth.MemoryKeyCache
+	keyRateLimiter    *auth.KeyRateLimiter
+	serverSecret      []byte
 }
 
 func (c *collectorConfig) buildEventBusConfig() eventbus.Config {

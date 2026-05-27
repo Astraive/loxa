@@ -1,0 +1,11 @@
+{
+  "suite": "collector-conformance",
+  "component": "collector",
+  "timestamp": "20260527T145952Z",
+  "results": [],
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0
+  }
+}

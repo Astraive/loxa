@@ -19,7 +19,11 @@ func KeysCommand(ctx context.Context, cfg config.Config, args []string) error {
 	case "create":
 		payload := []byte(`{}`)
 		if len(args) > 1 {
-			payload = []byte(args[1])
+			raw := []byte(args[1])
+			if !json.Valid(raw) {
+				return fmt.Errorf("invalid JSON payload: %s", args[1])
+			}
+			payload = raw
 		}
 		body, err := client.CreateAPIKey(ctx, cfg.CollectorURL, payload)
 		if err != nil {

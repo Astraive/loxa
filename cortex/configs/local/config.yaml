@@ -1,0 +1,71 @@
+server:
+  host: "0.0.0.0"
+  port: 9100
+
+storage:
+  backend: "duckdb"
+  duckdb:
+    path: "./cortex-stress.db"
+
+authentication:
+  enabled: false
+  api_keys: []
+
+rate_limit:
+  enabled: false
+
+tls:
+  enabled: false
+
+pii_redaction:
+  enabled: false
+
+logging:
+  level: "info"
+  format: "json"
+
+collector:
+  mode: "pull"
+  url: "http://localhost:9090"
+  source_of_truth: true
+  api_key: ""
+  poll_interval: 30s
+  batch_size: 1000
+  query_table: "events"
+  raw_column: "raw"
+  timestamp_column: "timestamp"
+
+ingestion:
+  async_workers: 4
+  channel_size: 8192
+  micro_batch_size: 256
+
+correlation:
+  enabled: false
+
+matcher:
+  mode: "go"
+
+reconstructor:
+  fast:
+    max_depth: 3
+    max_events: 20
+    time_window: 30m
+  deep:
+    max_depth: 10
+    max_events: 200
+    time_window: 2h
+  confidence:
+    base: 0.5
+    causal_chain_bonus: 0.1
+    symptom_bonus: 0.1
+    similarity_weight: 0.1
+    remediation_weight: 0.1
+    max_confidence: 1.0
+    min_confidence: 0.0
+  graph:
+    default_max_depth: 3
+
+eventbus:
+  type: memory
+  subscriber_buffer_size: 128

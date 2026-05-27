@@ -61,12 +61,23 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 		maxHeaderBytes = int(s.cfg.MaxHeaderBytes)
 	}
 
+	readTimeout := 30 * time.Second
+	if s.cfg.ReadTimeout > 0 {
+		readTimeout = s.cfg.ReadTimeout
+	}
+	writeTimeout := 60 * time.Second
+	if s.cfg.WriteTimeout > 0 {
+		writeTimeout = s.cfg.WriteTimeout
+	}
+
 	s.server = &http.Server{
 		Addr:              s.cfg.Addr,
 		Handler:           mux,
 		ReadHeaderTimeout: s.cfg.ReadHeaderTimeout,
-		MaxHeaderBytes:   maxHeaderBytes,
-		IdleTimeout:      s.cfg.IdleTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		MaxHeaderBytes:    maxHeaderBytes,
+		IdleTimeout:       s.cfg.IdleTimeout,
 	}
 
 	go func() {

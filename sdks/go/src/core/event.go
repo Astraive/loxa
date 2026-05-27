@@ -153,6 +153,21 @@ func (e *Event) ensureMutableLocked() error {
 	}
 }
 
+// ensureTraceContext generates trace/span IDs if not already set.
+// Called after sampling, so sampled-out events skip the PRNG cost.
+func (e *Event) ensureTraceContext() {
+	if e.TraceID != "" && e.SpanID != "" {
+		return // Already set by caller
+	}
+	tc := GenerateTraceContext()
+	if e.TraceID == "" {
+		e.TraceID = tc.TraceID
+	}
+	if e.SpanID == "" {
+		e.SpanID = tc.SpanID
+	}
+}
+
 // beginEmit validates and transitions the event to emitting state.
 // Requirements: 1.5, 1.9
 func (e *Event) beginEmit() error {

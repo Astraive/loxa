@@ -137,21 +137,27 @@ func (e *JSONEventEncoder) EncodeEvent(dst []byte, ev *Event) ([]byte, error) {
 	}
 
 	attrs := attrsToMap(ev.Attrs, e.ExpandDotKeys)
-	httpGroup, userGroup, tenantGroup, resourceGroup, extraAttrs := partitionStructuredAttrs(attrs)
-	if httpPayload := mergeHTTPPayload(httpGroup, ev.Method, ev.Path, ev.Route, ev.StatusCode); len(httpPayload) > 0 {
-		e.appendMapField(w, "http", httpPayload)
-	}
-	if isNonEmptyMap(userGroup) {
-		e.appendMapField(w, "user", userGroup)
-	}
-	if isNonEmptyMap(tenantGroup) {
-		e.appendMapField(w, "tenant", tenantGroup)
-	}
-	if isNonEmptyMap(resourceGroup) {
-		e.appendMapField(w, "resource", resourceGroup)
-	}
-	if isNonEmptyMap(extraAttrs) {
-		e.appendMapField(w, "attrs", extraAttrs)
+	if attrs != nil {
+		httpGroup, userGroup, tenantGroup, resourceGroup, extraAttrs := partitionStructuredAttrs(attrs)
+		if httpPayload := mergeHTTPPayload(httpGroup, ev.Method, ev.Path, ev.Route, ev.StatusCode); len(httpPayload) > 0 {
+			e.appendMapField(w, "http", httpPayload)
+		}
+		if isNonEmptyMap(userGroup) {
+			e.appendMapField(w, "user", userGroup)
+		}
+		if isNonEmptyMap(tenantGroup) {
+			e.appendMapField(w, "tenant", tenantGroup)
+		}
+		if isNonEmptyMap(resourceGroup) {
+			e.appendMapField(w, "resource", resourceGroup)
+		}
+		if isNonEmptyMap(extraAttrs) {
+			e.appendMapField(w, "attrs", extraAttrs)
+		}
+	} else if ev.Method != "" || ev.Path != "" || ev.Route != "" || ev.StatusCode != 0 {
+		if httpPayload := mergeHTTPPayload(nil, ev.Method, ev.Path, ev.Route, ev.StatusCode); len(httpPayload) > 0 {
+			e.appendMapField(w, "http", httpPayload)
+		}
 	}
 
 	// 15. error
@@ -275,24 +281,50 @@ func (e *JSONEventEncoder) EncodeEvent(dst []byte, ev *Event) ([]byte, error) {
 }
 
 func (e *JSONEventEncoder) appendMapField(w *jsonenc.Writer, key string, value map[string]any) {
-	raw, err := json.Marshal(value)
-	if err != nil {
-		w.AppendStringField(key, fmt.Sprintf("<marshal error: %v>", err))
+	if len(value) == 0 {
 		return
 	}
 	w.AppendKey(key)
-	w.AppendRaw(raw)
+	w.BeginObject()
+	for k, v := range value {
+		e.appendValueField(w, k, v)
+	}
+	w.EndObject()
+}
+
+// appendValueField writes a key:value pair using direct type assertions
+// instead of json.Marshal reflection, which is 5-10x faster for simple types.
+func (e *JSONEventEncoder) appendValueField(w *jsonenc.Writer, key string, val any) {
+	switch v := val.(type) {
+	case string:
+		w.AppendStringField(key, v)
+	case int:
+		w.AppendInt64Field(key, int64(v))
+	case int64:
+		w.AppendInt64Field(key, v)
+	case float64:
+		w.AppendFloat64Field(key, v)
+	case bool:
+		w.AppendBoolField(key, v)
+	case map[string]any:
+		e.appendMapField(w, key, v)
+	case nil:
+		w.AppendNullField(key)
+	default:
+		// Fallback to json.Marshal for complex types
+		raw, err := json.Marshal(v)
+		if err != nil {
+			w.AppendStringField(key, fmt.Sprintf("<marshal error: %v>", err))
+			return
+		}
+		w.AppendKey(key)
+		w.AppendRaw(raw)
+	}
 }
 
 func (e *JSONEventEncoder) appendMapEntries(w *jsonenc.Writer, value map[string]any) {
 	for key, field := range value {
-		raw, err := json.Marshal(field)
-		if err != nil {
-			w.AppendStringField(key, fmt.Sprintf("<marshal error: %v>", err))
-			continue
-		}
-		w.AppendKey(key)
-		w.AppendRaw(raw)
+		e.appendValueField(w, key, field)
 	}
 }
 

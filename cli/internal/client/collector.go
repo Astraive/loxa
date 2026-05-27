@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -312,9 +313,14 @@ func RotateAPIKey(ctx context.Context, baseURL, id string) ([]byte, error) {
 func WatchStream(ctx context.Context, baseURL string, filters map[string]string) (io.ReadCloser, error) {
 	base := strings.TrimRight(baseURL, "/") + "/tail"
 	if len(filters) > 0 {
-		params := []string{}
-		for k, v := range filters {
-			params = append(params, k+"="+v)
+		keys := make([]string, 0, len(filters))
+		for k := range filters {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		params := make([]string, 0, len(keys))
+		for _, k := range keys {
+			params = append(params, k+"="+filters[k])
 		}
 		base += "?" + strings.Join(params, "&")
 	}
@@ -554,6 +560,15 @@ func applyAPIKeyAuth(req *http.Request) {
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 }
 
+// cfgAPIKey is an optional package-level API key set from loaded config.
+// When non-empty, getConfiguredAPIKey uses it as a final fallback after env vars.
+var cfgAPIKey string
+
+// SetConfigAPIKey stores the API key from config so client functions can use it.
+func SetConfigAPIKey(key string) {
+	cfgAPIKey = strings.TrimSpace(key)
+}
+
 func getConfiguredAPIKey(host string) string {
 	// Primary: LOXA_API_KEY (works for all services)
 	if apiKey := strings.TrimSpace(os.Getenv("LOXA_API_KEY")); apiKey != "" {
@@ -562,9 +577,15 @@ func getConfiguredAPIKey(host string) string {
 	// Fallback: service-specific keys
 	host = strings.ToLower(strings.TrimSpace(host))
 	if strings.Contains(host, "cortex") {
-		return strings.TrimSpace(os.Getenv("LOXA_CORTEX_API_KEY"))
+		if apiKey := strings.TrimSpace(os.Getenv("LOXA_CORTEX_API_KEY")); apiKey != "" {
+			return apiKey
+		}
+		return cfgAPIKey
 	}
-	return strings.TrimSpace(os.Getenv("LOXA_COLLECTOR_API_KEY"))
+	if apiKey := strings.TrimSpace(os.Getenv("LOXA_COLLECTOR_API_KEY")); apiKey != "" {
+		return apiKey
+	}
+	return cfgAPIKey
 }
 
 func runGoCommand(ctx context.Context, repoPath, packagePath string, args []string) error {

@@ -4,10 +4,12 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 
+	"github.com/astraive/loxa-collector/internal/auth"
 	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
 
@@ -84,17 +86,57 @@ func (s *collectorState) handleKeyCreate(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
-	env := strings.TrimSpace(asString(req["env"]))
-	if env == "" {
-		env = "live"
-	}
 	kind := strings.TrimSpace(asString(req["kind"]))
 	if kind == "" {
 		kind = "sec"
 	}
-	keyID := "k_" + randomToken(8)
-	secret := randomToken(24)
+	if kind != "sec" && kind != "pub" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_kind", "message": "kind must be 'sec' or 'pub'"})
+		return
+	}
+	env := strings.TrimSpace(asString(req["env"]))
+	if env == "" {
+		env = "live"
+	}
+	if env != "live" && env != "test" && env != "dev" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_env", "message": "env must be 'live', 'test', or 'dev'"})
+		return
+	}
+	token8, err := randomToken(8)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "token_generation_failed"})
+		return
+	}
+	token24, err := randomToken(24)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "token_generation_failed"})
+		return
+	}
+	keyID := "k" + token8
+	secret := token24
 	key := "lx_" + kind + "_" + env + "_" + keyID + "_" + secret
+
+	// Store the new key in the key store so it can authenticate requests
+	if s.keyStore != nil {
+		secretHash := auth.HashSecret(secret, s.serverSecret)
+		keyKind := auth.KeyKindSecret
+		if kind == "pub" {
+			keyKind = auth.KeyKindPublic
+		}
+		newKey := &auth.KeyRecord{
+			ID:           keyID,
+			KeyID:        keyID,
+			SecretHash:   secretHash,
+			Kind:         keyKind,
+			Roles:        []auth.Role{auth.RoleIngestServer},
+			AllowedEnvs:  []string{env},
+		}
+		if err := s.keyStore.CreateKey(newKey); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "key_store_error"})
+			return
+		}
+	}
+
 	writeJSON(w, http.StatusCreated, map[string]any{
 		"id":     keyID,
 		"key_id": keyID,
@@ -110,7 +152,19 @@ func (s *collectorState) handleKeyRevoke(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"id": r.PathValue("id"), "revoked": true})
+	keyID := r.PathValue("id")
+	if s.keyStore == nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "key_store_not_configured"})
+		return
+	}
+	if err := s.keyStore.RevokeKey(keyID); err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]any{"error": "key_not_found", "id": keyID})
+		return
+	}
+	if s.keyCache != nil {
+		s.keyCache.Invalidate(keyID)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"id": keyID, "revoked": true})
 }
 
 func (s *collectorState) handleKeyRotate(w http.ResponseWriter, r *http.Request) {
@@ -118,16 +172,68 @@ func (s *collectorState) handleKeyRotate(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
 		return
 	}
-	keyID := r.PathValue("id")
-	if strings.TrimSpace(keyID) == "" {
-		keyID = "k_" + randomToken(8)
+	oldKeyID := r.PathValue("id")
+	if strings.TrimSpace(oldKeyID) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "missing_key_id"})
+		return
 	}
-	secret := randomToken(24)
+	if s.keyStore == nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "key_store_not_configured"})
+		return
+	}
+
+	// Look up old key to preserve kind/env
+	oldRecord, err := s.keyStore.FindByKeyID(r.Context(), oldKeyID)
+	if err != nil || oldRecord == nil {
+		writeJSON(w, http.StatusNotFound, map[string]any{"error": "key_not_found", "id": oldKeyID})
+		return
+	}
+	kind := string(oldRecord.Kind)
+	env := "live"
+	if len(oldRecord.AllowedEnvs) > 0 {
+		env = oldRecord.AllowedEnvs[0]
+	}
+
+	// Generate a NEW keyID for the rotated key
+	token8, err := randomToken(8)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "token_generation_failed"})
+		return
+	}
+	newKeyID := "k" + token8
+	newSecret, err := randomToken(24)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "token_generation_failed"})
+		return
+	}
+	// Store the NEW key FIRST, then revoke old (order matters: never leave zero keys)
+	secretHash := auth.HashSecret(newSecret, s.serverSecret)
+	newKey := &auth.KeyRecord{
+		ID:           newKeyID,
+		KeyID:        newKeyID,
+		SecretHash:   secretHash,
+		Kind:         oldRecord.Kind,
+		Roles:        []auth.Role{auth.RoleIngestServer},
+		AllowedEnvs:  []string{env},
+	}
+	if err := s.keyStore.CreateKey(newKey); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "key_store_error"})
+		return
+	}
+	// Revoke old key AFTER new key is stored
+	_ = s.keyStore.RevokeKey(oldKeyID)
+
+	// Invalidate cache for old key
+	if s.keyCache != nil {
+		s.keyCache.Invalidate(oldKeyID)
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
-		"id":      keyID,
-		"key_id":  keyID,
-		"key":     "lx_sec_live_" + keyID + "_" + secret,
-		"rotated": true,
+		"id":         newKeyID,
+		"key_id":     newKeyID,
+		"key":        "lx_" + kind + "_" + env + "_" + newKeyID + "_" + newSecret,
+		"rotated":    true,
+		"old_key_id": oldKeyID,
 	})
 }
 
@@ -188,10 +294,12 @@ func asString(value any) string {
 	return ""
 }
 
-func randomToken(size int) string {
+func randomToken(size int) (string, error) {
 	buf := make([]byte, size)
 	if _, err := rand.Read(buf); err != nil {
-		return "local"
+		return "", fmt.Errorf("crypto/rand.Read failed: %w", err)
 	}
-	return strings.TrimRight(base64.RawURLEncoding.EncodeToString(buf), "=")
+	// Use base64 RawStdEncoding (uses + and /, not _) to avoid
+	// conflicts with the _ separator in the key format lx_{kind}_{env}_{keyID}_{secret}.
+	return strings.TrimRight(base64.RawStdEncoding.EncodeToString(buf), "="), nil
 }

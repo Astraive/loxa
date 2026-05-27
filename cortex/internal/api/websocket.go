@@ -4,27 +4,51 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/astraive/loxa/loxa-cortex/internal/middleware"
 	transportcontracts "github.com/astraive/loxa/spec/transport/contracts"
 	"github.com/astraive/loxa/loxa-cortex/internal/eventconv"
 	"github.com/gorilla/websocket"
 )
 
-var cortexWSUpgrader = websocket.Upgrader{
-	ReadBufferSize:  16 * 1024,
-	WriteBufferSize: 16 * 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+// newCortexWSUpgrader creates a websocket upgrader with origin allowlist.
+func newCortexWSUpgrader(allowedOrigins []string) websocket.Upgrader {
+	return websocket.Upgrader{
+		ReadBufferSize:  16 * 1024,
+		WriteBufferSize: 16 * 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				return true // Non-browser clients (curl, SDKs)
+			}
+			// Check configured allowlist
+			for _, allowed := range allowedOrigins {
+				if origin == allowed {
+					return true
+				}
+			}
+			// Allow localhost for development (exact match with port, not prefix)
+			if origin == "http://localhost" || strings.HasPrefix(origin, "http://localhost:") ||
+				origin == "http://127.0.0.1" || strings.HasPrefix(origin, "http://127.0.0.1:") {
+				return true
+			}
+			return false
+		},
+	}
 }
 
 func (s *Server) WebSocketHandler() http.Handler {
+	upgrader := newCortexWSUpgrader(s.config.Server.AllowedOrigins)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		conn, err := cortexWSUpgrader.Upgrade(w, r, nil)
+		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return
 		}
 		defer conn.Close()
+
+		// Limit maximum frame size to prevent memory exhaustion
+		conn.SetReadLimit(1 * 1024 * 1024) // 1MB max frame
 
 		for {
 			var req transportcontracts.WebSocketRequest
@@ -42,6 +66,13 @@ func (s *Server) WebSocketHandler() http.Handler {
 }
 
 func (s *Server) executeWebSocketAction(ctx context.Context, req transportcontracts.WebSocketRequest) (any, error) {
+	// Write operations require writer role (defense-in-depth; HTTP middleware is primary gate)
+	if req.Action == "ingest_event" || req.Action == "ingest_batch" {
+		if !wsHasWriterRole(ctx) {
+			return nil, fmt.Errorf("writer role required for ingest operations")
+		}
+	}
+
 	switch req.Action {
 	case "healthz":
 		return map[string]any{"status": "OK", "ready": s.ready}, nil
@@ -64,11 +95,17 @@ func (s *Server) executeWebSocketAction(ctx context.Context, req transportcontra
 		if depth <= 0 {
 			depth = 3
 		}
+		if depth > 100 {
+			depth = 100
+		}
 		return s.graph.GetServiceGraph(ctx, req.Service, depth)
 	case "incident_graph":
 		depth := req.Depth
 		if depth <= 0 {
 			depth = 3
+		}
+		if depth > 100 {
+			depth = 100
 		}
 		return s.graph.GetIncidentGraph(ctx, req.IncidentID, depth)
 	case "graphql":
@@ -83,4 +120,20 @@ func (s *Server) executeWebSocketAction(ctx context.Context, req transportcontra
 	default:
 		return nil, fmt.Errorf("unknown websocket action %q", req.Action)
 	}
+}
+
+// wsHasWriterRole checks the auth context for writer-level permission.
+func wsHasWriterRole(ctx context.Context) bool {
+	result := middleware.GetAuthResult(ctx)
+	if result == nil {
+		// No auth context means auth is disabled; allow (matches HTTP middleware behavior)
+		return true
+	}
+	roleHierarchy := map[string]int{
+		"reader": 1,
+		"writer": 2,
+		"admin":  3,
+	}
+	currentLevel := roleHierarchy[result.Role]
+	return currentLevel >= roleHierarchy["writer"]
 }

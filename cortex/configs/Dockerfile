@@ -51,4 +51,7 @@ ENV CORTEX_SERVER_PORT=8080
 ENV CORTEX_STORAGE_BACKEND=postgres
 ENV CORTEX_LOG_LEVEL=info
 
+RUN useradd -r -s /bin/false -u 10001 loxa && chown -R loxa:loxa /app
+USER loxa
+
 ENTRYPOINT ["/app/cortex"]

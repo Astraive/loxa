@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	defaultEndpoint   = "http://localhost:9100"
+	defaultEndpoint   = "http://localhost:8080"
 	defaultAuthHeader = "X-API-Key"
 	defaultTimeout    = 10 * time.Second
 )

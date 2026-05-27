@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 
 	transportcontracts "github.com/astraive/loxa/spec/transport/contracts"
 	"github.com/astraive/loxa/loxa-cortex/internal/config"
@@ -19,6 +20,11 @@ import (
 	"github.com/astraive/loxa/loxa-cortex/internal/topology"
 	"github.com/rs/zerolog/log"
 )
+
+const maxGraphQLDepth = 10
+
+// graphqlCommentRe matches single-line GraphQL comments (# to end of line).
+var graphqlCommentRe = regexp.MustCompile(`#[^\n]*`)
 
 type GraphQLServer struct {
 	config      *config.Config
@@ -67,7 +73,7 @@ func (s *GraphQLServer) handleGraphQL(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		req.Query = r.URL.Query().Get("query")
 	} else {
-		body, err := io.ReadAll(r.Body)
+		body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20)) // 1MB limit
 		if err != nil {
 			s.writeError(w, http.StatusBadRequest, "Failed to read request body")
 			return
@@ -78,6 +84,12 @@ func (s *GraphQLServer) handleGraphQL(w http.ResponseWriter, r *http.Request) {
 			s.writeError(w, http.StatusBadRequest, "Invalid JSON")
 			return
 		}
+	}
+
+	// Check query depth before executing
+	if queryDepth(req.Query) > maxGraphQLDepth {
+		s.writeError(w, http.StatusBadRequest, "query exceeds maximum depth")
+		return
 	}
 
 	ctx := r.Context()
@@ -103,8 +115,39 @@ func (s *GraphQLServer) writeError(w http.ResponseWriter, status int, message st
 	}
 }
 
+// queryDepth counts the maximum nesting depth of curly braces in a GraphQL query.
+func queryDepth(query string) int {
+	maxDepth := 0
+	depth := 0
+	for _, c := range query {
+		switch c {
+		case '{':
+			depth++
+			if depth > maxDepth {
+				maxDepth = depth
+			}
+		case '}':
+			depth--
+		}
+	}
+	return maxDepth
+}
+
+// isIntrospectionQuery checks if the query attempts GraphQL introspection.
+// Comments are stripped before checking to prevent bypass via # __schema.
+func isIntrospectionQuery(query string) bool {
+	cleaned := graphqlCommentRe.ReplaceAllString(query, "")
+	return containsWord(cleaned, "__schema") ||
+		containsWord(cleaned, "__type") ||
+		containsWord(cleaned, "__typename")
+}
+
 func (s *GraphQLServer) executeQuery(ctx context.Context, query string, vars map[string]interface{}) (interface{}, error) {
 	query = removeWhitespace(query)
+
+	if isIntrospectionQuery(query) {
+		return nil, fmt.Errorf("introspection is not allowed")
+	}
 
 	switch {
 	case containsOperation(query, "ingestEvent"):

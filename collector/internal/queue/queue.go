@@ -315,7 +315,7 @@ func (q *Queue) doFlush() error {
 	var flushErr error
 	err := q.cfg.Sink.WriteBatch(ctx, batch)
 	if err != nil {
-		flushErr = err
+		flushErr = fmt.Errorf("write batch failed: %w", err)
 		q.recordFailure()
 	}
 
@@ -336,14 +336,13 @@ func (q *Queue) doFlush() error {
 		q.state.Flushed += int64(len(events))
 		q.state.InFlight -= int64(len(events))
 	} else {
-		q.state.Failed += int64(len(events))
 		if q.cfg.RetryEnabled {
 			retryEvents = make([]Event, 0, len(events))
 			for _, e := range events {
 				e.Attempts++
 				if e.Attempts < q.cfg.RetryMaxAttempts {
 					retryEvents = append(retryEvents, e)
-					q.state.InFlight--
+					// Don't decrement InFlight — retried events stay in flight.
 					delete(q.inflight, e.ID)
 					q.state.Retried++
 				} else {
@@ -354,6 +353,7 @@ func (q *Queue) doFlush() error {
 			}
 		} else {
 			q.state.InFlight -= int64(len(events))
+			q.state.Failed += int64(len(events))
 		}
 	}
 
@@ -368,8 +368,11 @@ func (q *Queue) doFlush() error {
 		q.cond.Signal()
 	}
 
-	if err := q.cfg.Sink.Flush(ctx); err != nil {
-		return fmt.Errorf("sink flush: %w", err)
+	// Only flush if WriteBatch succeeded — don't mask the original error.
+	if flushErr == nil {
+		if err := q.cfg.Sink.Flush(ctx); err != nil {
+			return fmt.Errorf("flush failed: %w", err)
+		}
 	}
 	return flushErr
 }

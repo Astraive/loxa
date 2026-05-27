@@ -4,10 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 // LQLRequest is the body for POST /lql/query.
@@ -24,6 +27,7 @@ func (s *collectorState) HandleLQLQuery(w http.ResponseWriter, r *http.Request) 
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
 		return
 	}
+	requestID := fmt.Sprintf("lql_%d", time.Now().UTC().UnixNano())
 	var req LQLRequest
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_request", "message": err.Error()})
@@ -43,8 +47,12 @@ func (s *collectorState) HandleLQLQuery(w http.ResponseWriter, r *http.Request) 
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "query_must_be_read_only"})
 		return
 	}
+	if !isSafeQuery(sqlQuery) {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "query_contains_blocked_operations"})
+		return
+	}
 
-	if req.Limit <= 0 || req.Limit > 10000 {
+	if req.Limit <= 0 || req.Limit > 1000 {
 		req.Limit = 1000
 	}
 
@@ -54,7 +62,8 @@ func (s *collectorState) HandleLQLQuery(w http.ResponseWriter, r *http.Request) 
 		var err error
 		db, err = sql.Open(s.cfg.duckDBDriver, s.cfg.duckDBPath)
 		if err != nil {
-			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_db_open_failed", "message": err.Error()})
+			log.Error().Err(err).Str("request_id", requestID).Msg("lql query db open failed")
+			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_unavailable", "request_id": requestID})
 			return
 		}
 		closeDB = func() { _ = db.Close() }
@@ -63,13 +72,22 @@ func (s *collectorState) HandleLQLQuery(w http.ResponseWriter, r *http.Request) 
 		defer closeDB()
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
+
+	// Disable external access to block read_csv, read_json, etc.
+	// Reject the query if this fails — proceeding without the safety guard is unsafe.
+	if _, err := db.ExecContext(ctx, "SET enable_external_access=false"); err != nil {
+		log.Error().Err(err).Str("request_id", requestID).Msg("failed to disable external access in DuckDB")
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_safety_check_failed", "request_id": requestID})
+		return
+	}
 
 	start := time.Now()
 	rows, err := db.QueryContext(ctx, sqlQuery)
 	if err != nil {
-		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "query_error", "message": err.Error(), "sql": sqlQuery})
+		log.Error().Err(err).Str("request_id", requestID).Msg("lql query failed")
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "query_failed", "request_id": requestID})
 		return
 	}
 	defer rows.Close()
@@ -109,7 +127,6 @@ func (s *collectorState) HandleLQLQuery(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"columns":     columns,
 		"rows":        result,
-		"sql":         sqlQuery,
 		"duration_ms": duration,
 		"row_count":   len(result),
 	})

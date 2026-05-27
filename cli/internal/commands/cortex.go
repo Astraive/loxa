@@ -421,5 +421,5 @@ func RunCortexReplay(ctx context.Context, cfg config.Config, args []string) erro
 	}
 
 	fmt.Printf("Replaying events from %s since %s\n", collectorURL, since)
-	return nil
+	return fmt.Errorf("cortex replay is not yet implemented; use cortex ingest to replay events manually")
 }
