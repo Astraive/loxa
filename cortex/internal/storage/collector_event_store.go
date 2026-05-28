@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/collectorbridge"
-	"github.com/astraive/loxa/loxa-cortex/internal/config"
-	"github.com/astraive/loxa/loxa-cortex/internal/models"
+	"github.com/astraive/loxa/cortex/internal/collectorbridge"
+	"github.com/astraive/loxa/cortex/internal/config"
+	"github.com/astraive/loxa/cortex/internal/models"
 	"github.com/rs/zerolog/log"
 )
 

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/astraive/loxa-collector/internal/eventbus"
+	"github.com/astraive/loxa/collector/internal/eventbus"
 )
 
 func init() {

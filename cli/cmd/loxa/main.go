@@ -6,8 +6,8 @@ import (
 	"os"
 
 	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
-	"github.com/astraive/loxa-cli/internal/cli"
-	"github.com/astraive/loxa-cli/internal/version"
+	"github.com/astraive/loxa/cli/internal/cli"
+	"github.com/astraive/loxa/cli/internal/version"
 )
 
 func main() {

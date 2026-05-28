@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Astraive/loxa-spec/schema/ingest.schema.json",
+  "$id": "https://github.com/Astraive/loxa/schema/ingest.schema.json",
   "title": "LOXA Ingest Wrapper",
   "type": "object",
   "required": [

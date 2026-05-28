@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	serverruntime "github.com/astraive/loxa-collector/internal/server"
+	serverruntime "github.com/astraive/loxa/collector/internal/server"
 )
 
 func TestParseTailFilters(t *testing.T) {

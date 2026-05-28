@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astraive/loxa-cli/internal/config"
+	"github.com/astraive/loxa/cli/internal/config"
 )
 
 func DevCommand(ctx context.Context, cfg config.Config, _ []string) error {

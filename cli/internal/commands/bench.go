@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/astraive/loxa-cli/internal/config"
-	"github.com/astraive/loxa-cli/internal/loadgen"
-	"github.com/astraive/loxa-cli/internal/output"
+	"github.com/astraive/loxa/cli/internal/config"
+	"github.com/astraive/loxa/cli/internal/loadgen"
+	"github.com/astraive/loxa/cli/internal/output"
 )
 
 func BenchCommand(ctx context.Context, cfg config.Config, args []string) error {

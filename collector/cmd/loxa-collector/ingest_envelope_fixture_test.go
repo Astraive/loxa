@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/astraive/loxa-collector/internal/ingest"
+	"github.com/astraive/loxa/collector/internal/ingest"
 	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
 

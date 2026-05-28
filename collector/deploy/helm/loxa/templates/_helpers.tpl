@@ -66,7 +66,7 @@ Return the collector image
 {{- if .Values.collector.image.repository }}
 {{- .Values.global.imageRegistry }}/{{ .Values.collector.image.repository }}:{{ .Values.collector.image.tag | default "latest" }}
 {{- else }}
-{{- .Values.global.imageRegistry }}/loxa-collector:{{ .Values.collector.image.tag | default "latest" }}
+{{- .Values.global.imageRegistry }}/loxa:{{ .Values.collector.image.tag | default "latest" }}
 {{- end }}
 {{- end }}
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/models"
+	"github.com/astraive/loxa/cortex/internal/models"
 )
 
 // LifecycleData contains the extracted lifecycle primitives for indexing

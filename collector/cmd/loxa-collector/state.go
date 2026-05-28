@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	processing "github.com/astraive/loxa-collector/internal/processing"
+	processing "github.com/astraive/loxa/collector/internal/processing"
 )
 
 func (s *collectorState) isReady() bool {

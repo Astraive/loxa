@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astraive/loxa-cli/internal/client"
-	"github.com/astraive/loxa-cli/internal/config"
-	"github.com/astraive/loxa-cli/internal/output"
+	"github.com/astraive/loxa/cli/internal/client"
+	"github.com/astraive/loxa/cli/internal/config"
+	"github.com/astraive/loxa/cli/internal/output"
 )
 
 // CortexCommand handles loxa cortex subcommands

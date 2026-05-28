@@ -89,7 +89,7 @@ LOXA_RS_CONFIG=/etc/loxa/prod.yaml cargo run
 ```bash
 docker run -v /host/config.yaml:/etc/loxa/config.yaml \
   -e LOXA_COLLECTOR_CONFIG=/etc/loxa/config.yaml \
-  ghcr.io/astraive/loxa-collector:latest
+  ghcr.io/astraive/loxa:latest
 ```
 
 ### 3. Environment variables

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	collectorconfig "github.com/astraive/loxa-collector/internal/config"
+	collectorconfig "github.com/astraive/loxa/collector/internal/config"
 )
 
 type schemaEntryRequest struct {

@@ -157,7 +157,11 @@ pub fn parse(raw: &str) -> Result<LoxaDSN, DsnError> {
             "true" => tls = true,
             "false" => tls = false,
             "auto" => { /* keep computed default */ }
-            _ => return Err(DsnError(format!("tls must be true, false, or auto, got {v:?}"))),
+            _ => {
+                return Err(DsnError(format!(
+                    "tls must be true, false, or auto, got {v:?}"
+                )))
+            }
         }
     }
 

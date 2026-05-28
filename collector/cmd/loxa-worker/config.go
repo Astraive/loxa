@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	collectorconfig "github.com/astraive/loxa-collector/internal/config"
-	"github.com/astraive/loxa-collector/internal/eventbus"
+	collectorconfig "github.com/astraive/loxa/collector/internal/config"
+	"github.com/astraive/loxa/collector/internal/eventbus"
 )
 
 var (

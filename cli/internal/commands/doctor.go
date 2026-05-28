@@ -9,10 +9,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/astraive/loxa-cli/internal/client"
-	"github.com/astraive/loxa-cli/internal/config"
+	"github.com/astraive/loxa/cli/internal/client"
+	"github.com/astraive/loxa/cli/internal/config"
 	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
-	"github.com/astraive/loxa-cli/internal/version"
+	"github.com/astraive/loxa/cli/internal/version"
 	_ "github.com/marcboeker/go-duckdb"
 )
 

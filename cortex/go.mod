@@ -1,4 +1,4 @@
-module github.com/astraive/loxa/loxa-cortex
+module github.com/astraive/loxa/cortex
 
 go 1.25.0
 

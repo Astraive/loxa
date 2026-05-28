@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/models"
+	"github.com/astraive/loxa/cortex/internal/models"
 )
 
 func TestComputeSimilarityUsesNormalizedCosine(t *testing.T) {

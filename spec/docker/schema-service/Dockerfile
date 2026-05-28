@@ -5,11 +5,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app/spec
 
-COPY requirements-service.txt ./
-COPY services ./services
-COPY generated ./generated
-COPY spec ./spec
-COPY docker/schema-service/healthcheck.py ./docker/schema-service/healthcheck.py
+COPY spec/requirements-service.txt ./
+COPY spec/services ./services
+COPY spec/generated ./generated
+COPY spec/schema ./schema
+COPY spec/docker/schema-service/healthcheck.py ./docker/schema-service/healthcheck.py
 
 RUN pip install --no-cache-dir -r requirements-service.txt \
     && adduser --system --uid 10001 --group loxa \

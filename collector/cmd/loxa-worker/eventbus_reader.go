@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/astraive/loxa-collector/internal/eventbus"
+	"github.com/astraive/loxa/collector/internal/eventbus"
 )
 
 // eventbusQueueReader implements queueReader using the eventbus abstraction.

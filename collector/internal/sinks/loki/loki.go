@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	collectorevent "github.com/astraive/loxa-collector/internal/event"
+	collectorevent "github.com/astraive/loxa/collector/internal/event"
 )
 
 // Config controls Loki sink behavior.

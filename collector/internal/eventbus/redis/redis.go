@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/astraive/loxa-collector/internal/eventbus"
+	"github.com/astraive/loxa/collector/internal/eventbus"
 	"github.com/redis/go-redis/v9"
 )
 

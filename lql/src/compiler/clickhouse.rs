@@ -94,12 +94,14 @@ fn compile_expr(expr: &Expr, schema: &Schema) -> Result<String, LqlError> {
     compile_expr_with_aliases(expr, schema, &[])
 }
 
-fn compile_expr_with_aliases(expr: &Expr, schema: &Schema, aliases: &[String]) -> Result<String, LqlError> {
+fn compile_expr_with_aliases(
+    expr: &Expr,
+    schema: &Schema,
+    aliases: &[String],
+) -> Result<String, LqlError> {
     match expr {
         Expr::Column(name) => {
-            if schema.has_field(name)
-                || aliases.iter().any(|a| a == name)
-            {
+            if schema.has_field(name) || aliases.iter().any(|a| a == name) {
                 Ok(escape_ident(name))
             } else {
                 Ok(format!("JSONExtractString(raw, '{}')", name))
@@ -158,8 +160,13 @@ fn compile_agg(agg: &AggExpr, schema: &Schema) -> Result<String, LqlError> {
                 "count(*)".to_string()
             }
         }
-        AggFunction::Sum | AggFunction::Avg | AggFunction::Min | AggFunction::Max
-        | AggFunction::DCount | AggFunction::First | AggFunction::Last => {
+        AggFunction::Sum
+        | AggFunction::Avg
+        | AggFunction::Min
+        | AggFunction::Max
+        | AggFunction::DCount
+        | AggFunction::First
+        | AggFunction::Last => {
             let arg = agg.arg.as_ref().ok_or_else(|| LqlError::Compile {
                 message: format!("{:?} requires an argument", agg.function),
                 span: None,

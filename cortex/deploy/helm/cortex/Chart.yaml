@@ -11,7 +11,7 @@ keywords:
   - wide-events
 home: https://github.com/astraive/loxa
 sources:
-  - https://github.com/astraive/loxa/loxa-cortex
+  - https://github.com/astraive/loxa/cortex
 maintainers:
   - name: Loxa Team
     email: dev@loxa.io

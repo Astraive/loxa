@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	loxacli "github.com/astraive/loxa-cli"
-	"github.com/astraive/loxa-cli/internal/client"
-	"github.com/astraive/loxa-cli/internal/commands"
-	"github.com/astraive/loxa-cli/internal/config"
-	"github.com/astraive/loxa-cli/internal/output"
+	loxacli "github.com/astraive/loxa/cli"
+	"github.com/astraive/loxa/cli/internal/client"
+	"github.com/astraive/loxa/cli/internal/commands"
+	"github.com/astraive/loxa/cli/internal/config"
+	"github.com/astraive/loxa/cli/internal/output"
 )
 
 var version = loxacli.Version

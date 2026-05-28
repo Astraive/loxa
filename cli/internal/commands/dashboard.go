@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/astraive/loxa-cli/internal/client"
-	"github.com/astraive/loxa-cli/internal/config"
+	"github.com/astraive/loxa/cli/internal/client"
+	"github.com/astraive/loxa/cli/internal/config"
 )
 
 func DashboardCommand(cfg config.Config, args []string) error {

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/models"
+	"github.com/astraive/loxa/cortex/internal/models"
 	_ "github.com/marcboeker/go-duckdb"
 	"github.com/rs/zerolog/log"
 )

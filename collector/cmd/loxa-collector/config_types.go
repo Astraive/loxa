@@ -10,12 +10,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/astraive/loxa-collector/internal/auth"
-	collectorconfig "github.com/astraive/loxa-collector/internal/config"
-	collectorevent "github.com/astraive/loxa-collector/internal/event"
-	"github.com/astraive/loxa-collector/internal/eventbus"
-	processing "github.com/astraive/loxa-collector/internal/processing"
-	serverconfig "github.com/astraive/loxa-collector/internal/server"
+	"github.com/astraive/loxa/collector/internal/auth"
+	collectorconfig "github.com/astraive/loxa/collector/internal/config"
+	collectorevent "github.com/astraive/loxa/collector/internal/event"
+	"github.com/astraive/loxa/collector/internal/eventbus"
+	processing "github.com/astraive/loxa/collector/internal/processing"
+	serverconfig "github.com/astraive/loxa/collector/internal/server"
 	"golang.org/x/time/rate"
 )
 

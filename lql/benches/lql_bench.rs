@@ -223,8 +223,11 @@ fn bench_sql_compilation(c: &mut Criterion) {
     let schema = Schema::duckdb_default();
     c.bench_function("compile_only_duckdb", |b| {
         b.iter(|| {
-            let sql =
-                loxa_lql::compiler::compile(black_box(&pipeline), Target::DuckDB, black_box(&schema));
+            let sql = loxa_lql::compiler::compile(
+                black_box(&pipeline),
+                Target::DuckDB,
+                black_box(&schema),
+            );
             black_box(sql);
         })
     });
@@ -274,10 +277,7 @@ fn bench_large_query(c: &mut Criterion) {
     // Construct a very large query with many chained where clauses
     let mut large_where = String::from("from events");
     for i in 0..50 {
-        large_where.push_str(&format!(
-            r#" | where field_{} = "value_{}""#,
-            i % 10, i
-        ));
+        large_where.push_str(&format!(r#" | where field_{} = "value_{}""#, i % 10, i));
     }
     large_where.push_str(" | summarize count() by service | sort count desc | limit 100");
 

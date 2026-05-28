@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/collectorbridge"
-	"github.com/astraive/loxa/loxa-cortex/internal/config"
-	cortexmetrics "github.com/astraive/loxa/loxa-cortex/internal/metrics"
-	"github.com/astraive/loxa/loxa-cortex/internal/models"
+	"github.com/astraive/loxa/cortex/internal/collectorbridge"
+	"github.com/astraive/loxa/cortex/internal/config"
+	cortexmetrics "github.com/astraive/loxa/cortex/internal/metrics"
+	"github.com/astraive/loxa/cortex/internal/models"
 	"github.com/rs/zerolog/log"
 )
 

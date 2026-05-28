@@ -12,9 +12,9 @@ import (
 	"time"
 	"math/rand"
 
-	collectorevent "github.com/astraive/loxa-collector/internal/event"
-	"github.com/astraive/loxa-collector/internal/sinks/internal/atrest"
-	"github.com/astraive/loxa-collector/internal/sinks/internal/projection"
+	collectorevent "github.com/astraive/loxa/collector/internal/event"
+	"github.com/astraive/loxa/collector/internal/sinks/internal/atrest"
+	"github.com/astraive/loxa/collector/internal/sinks/internal/projection"
 	"github.com/marcboeker/go-duckdb"
 )
 

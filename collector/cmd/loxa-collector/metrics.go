@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	collectormetrics "github.com/astraive/loxa-collector/internal/metrics"
+	collectormetrics "github.com/astraive/loxa/collector/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

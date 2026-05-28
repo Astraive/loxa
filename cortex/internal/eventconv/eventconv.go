@@ -6,7 +6,7 @@ import (
 	"time"
 
 	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
-	"github.com/astraive/loxa/loxa-cortex/internal/models"
+	"github.com/astraive/loxa/cortex/internal/models"
 )
 
 func FromRawMap(raw map[string]any, defaultProvenance string) (*models.Event, error) {

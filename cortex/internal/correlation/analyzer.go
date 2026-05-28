@@ -6,8 +6,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/models"
-	"github.com/astraive/loxa/loxa-cortex/internal/storage"
+	"github.com/astraive/loxa/cortex/internal/models"
+	"github.com/astraive/loxa/cortex/internal/storage"
 	"github.com/rs/zerolog/log"
 )
 

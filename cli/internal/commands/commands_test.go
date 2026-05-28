@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/astraive/loxa-cli/internal/config"
-	"github.com/astraive/loxa-cli/internal/output"
+	"github.com/astraive/loxa/cli/internal/config"
+	"github.com/astraive/loxa/cli/internal/output"
 )
 
 func captureStdout(t *testing.T, run func() error) (string, error) {

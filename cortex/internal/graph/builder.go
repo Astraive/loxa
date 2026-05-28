@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/models"
-	"github.com/astraive/loxa/loxa-cortex/internal/storage"
+	"github.com/astraive/loxa/cortex/internal/models"
+	"github.com/astraive/loxa/cortex/internal/storage"
 )
 
 // AdjacencyCache preloads edges into memory for fast in-memory BFS.

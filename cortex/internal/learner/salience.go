@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/models"
-	"github.com/astraive/loxa/loxa-cortex/internal/storage"
+	"github.com/astraive/loxa/cortex/internal/models"
+	"github.com/astraive/loxa/cortex/internal/storage"
 )
 
 // SalienceTracker maintains per-event-type salience scores.

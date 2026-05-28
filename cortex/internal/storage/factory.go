@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/config"
+	"github.com/astraive/loxa/cortex/internal/config"
 )
 
 func NewStorage(cfg *config.Config) (Storage, error) {

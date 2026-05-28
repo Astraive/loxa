@@ -3,4 +3,4 @@ version: 0.2.5
 description: CLI tool for Loxa event management and debugging
 license: MIT
 repository: https://github.com/Astraive/loxa
-module: github.com/astraive/loxa-cli
+module: github.com/astraive/loxa/cli

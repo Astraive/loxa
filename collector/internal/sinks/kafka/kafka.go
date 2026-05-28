@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	collectorevent "github.com/astraive/loxa-collector/internal/event"
+	collectorevent "github.com/astraive/loxa/collector/internal/event"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 

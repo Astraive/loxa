@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	internalserver "github.com/astraive/loxa-collector/internal/server"
+	internalserver "github.com/astraive/loxa/collector/internal/server"
 )
 
 func New(cfg internalserver.HTTPConfig, state internalserver.State) *internalserver.HTTPServer {

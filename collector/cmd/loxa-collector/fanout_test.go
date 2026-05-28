@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	collectorevent "github.com/astraive/loxa-collector/internal/event"
+	collectorevent "github.com/astraive/loxa/collector/internal/event"
 	"golang.org/x/time/rate"
 )
 

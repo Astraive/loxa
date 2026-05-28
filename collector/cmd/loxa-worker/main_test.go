@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	collectorevent "github.com/astraive/loxa-collector/internal/event"
-	processing "github.com/astraive/loxa-collector/internal/processing"
+	collectorevent "github.com/astraive/loxa/collector/internal/event"
+	processing "github.com/astraive/loxa/collector/internal/processing"
 )
 
 type testSink struct {

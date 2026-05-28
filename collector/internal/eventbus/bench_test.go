@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa-collector/internal/eventbus"
-	_ "github.com/astraive/loxa-collector/internal/eventbus/memory"
+	"github.com/astraive/loxa/collector/internal/eventbus"
+	_ "github.com/astraive/loxa/collector/internal/eventbus/memory"
 )
 
 // ---------------------------------------------------------------------------

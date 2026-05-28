@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	loxacollector "github.com/astraive/loxa-collector"
+	loxacollector "github.com/astraive/loxa/collector"
 )
 
 var version = loxacollector.Version

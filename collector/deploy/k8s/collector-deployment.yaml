@@ -23,7 +23,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: collector
-          image: ghcr.io/astraive/loxa-collector:0.2.5
+          image: ghcr.io/astraive/loxa:0.2.5
           securityContext:
             capabilities:
               drop:

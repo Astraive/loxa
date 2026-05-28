@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/astraive/loxa-cli/internal/config"
+	"github.com/astraive/loxa/cli/internal/config"
 )
 
 func InitCommand(cfg config.Config, args []string) error {

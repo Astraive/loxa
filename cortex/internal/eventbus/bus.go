@@ -3,7 +3,7 @@ package eventbus
 import (
 	"sync"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/models"
+	"github.com/astraive/loxa/cortex/internal/models"
 	"github.com/rs/zerolog/log"
 )
 

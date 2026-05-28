@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astraive/loxa-collector/internal/auth"
-	"github.com/astraive/loxa-collector/internal/ingest"
-	processing "github.com/astraive/loxa-collector/internal/processing"
-	serverruntime "github.com/astraive/loxa-collector/internal/server"
-	"github.com/astraive/loxa-collector/internal/validation"
+	"github.com/astraive/loxa/collector/internal/auth"
+	"github.com/astraive/loxa/collector/internal/ingest"
+	processing "github.com/astraive/loxa/collector/internal/processing"
+	serverruntime "github.com/astraive/loxa/collector/internal/server"
+	"github.com/astraive/loxa/collector/internal/validation"
 	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
 

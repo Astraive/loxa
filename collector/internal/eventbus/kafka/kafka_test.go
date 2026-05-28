@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa-collector/internal/eventbus"
+	"github.com/astraive/loxa/collector/internal/eventbus"
 )
 
 func TestKafkaRequiresBrokers(t *testing.T) {

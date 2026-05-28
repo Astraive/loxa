@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/graph"
-	"github.com/astraive/loxa/loxa-cortex/internal/learner"
-	"github.com/astraive/loxa/loxa-cortex/internal/matcher"
-	"github.com/astraive/loxa/loxa-cortex/internal/models"
+	"github.com/astraive/loxa/cortex/internal/graph"
+	"github.com/astraive/loxa/cortex/internal/learner"
+	"github.com/astraive/loxa/cortex/internal/matcher"
+	"github.com/astraive/loxa/cortex/internal/models"
 )
 
 type fakeReconGraphStore struct {

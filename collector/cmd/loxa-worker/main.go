@@ -13,11 +13,11 @@ import (
 	"syscall"
 	"time"
 
-	loxacollector "github.com/astraive/loxa-collector"
-	collectorevent "github.com/astraive/loxa-collector/internal/event"
-	"github.com/astraive/loxa-collector/internal/eventbus"
-	processing "github.com/astraive/loxa-collector/internal/processing"
-	"github.com/astraive/loxa-collector/internal/sinks/duckdb"
+	loxacollector "github.com/astraive/loxa/collector"
+	collectorevent "github.com/astraive/loxa/collector/internal/event"
+	"github.com/astraive/loxa/collector/internal/eventbus"
+	processing "github.com/astraive/loxa/collector/internal/processing"
+	"github.com/astraive/loxa/collector/internal/sinks/duckdb"
 	_ "github.com/marcboeker/go-duckdb"
 	"github.com/twmb/franz-go/pkg/kgo"
 )

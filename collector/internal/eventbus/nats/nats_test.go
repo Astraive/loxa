@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa-collector/internal/eventbus"
+	"github.com/astraive/loxa/collector/internal/eventbus"
 )
 
 // Tests require a running NATS server. Use build tag for CI.

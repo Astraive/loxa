@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	serverruntime "github.com/astraive/loxa-collector/internal/server"
+	serverruntime "github.com/astraive/loxa/collector/internal/server"
 	transportcontracts "github.com/astraive/loxa/spec/transport/contracts"
 	"github.com/gorilla/websocket"
 )

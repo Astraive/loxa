@@ -14,7 +14,11 @@ pub fn compile(pipeline: &Pipeline, schema: &Schema) -> Result<String, LqlError>
                 ctx.table = source.table_name().to_string();
             }
             Statement::Where(expr) => {
-                ctx.where_clauses.push(compile_expr_with_aliases(expr, schema, &ctx.extended_columns)?);
+                ctx.where_clauses.push(compile_expr_with_aliases(
+                    expr,
+                    schema,
+                    &ctx.extended_columns,
+                )?);
             }
             Statement::Summarize { aggregations, by } => {
                 ctx.group_by = by
@@ -128,7 +132,11 @@ fn compile_expr(expr: &Expr, schema: &Schema) -> Result<String, LqlError> {
     compile_expr_with_aliases(expr, schema, &[])
 }
 
-fn compile_expr_with_aliases(expr: &Expr, schema: &Schema, aliases: &[String]) -> Result<String, LqlError> {
+fn compile_expr_with_aliases(
+    expr: &Expr,
+    schema: &Schema,
+    aliases: &[String],
+) -> Result<String, LqlError> {
     match expr {
         Expr::Column(name) => {
             // Map dot-paths to json_extract
@@ -214,8 +222,13 @@ fn compile_agg(agg: &AggExpr, schema: &Schema) -> Result<String, LqlError> {
                 "COUNT(*)".to_string()
             }
         }
-        AggFunction::Sum | AggFunction::Avg | AggFunction::Min | AggFunction::Max
-        | AggFunction::DCount | AggFunction::First | AggFunction::Last => {
+        AggFunction::Sum
+        | AggFunction::Avg
+        | AggFunction::Min
+        | AggFunction::Max
+        | AggFunction::DCount
+        | AggFunction::First
+        | AggFunction::Last => {
             let arg = agg.arg.as_ref().ok_or_else(|| LqlError::Compile {
                 message: format!("{:?} requires an argument", agg.function),
                 span: None,

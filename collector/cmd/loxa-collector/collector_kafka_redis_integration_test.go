@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	collectorevent "github.com/astraive/loxa-collector/internal/event"
-	"github.com/astraive/loxa-collector/internal/ingest"
+	collectorevent "github.com/astraive/loxa/collector/internal/event"
+	"github.com/astraive/loxa/collector/internal/ingest"
 	"golang.org/x/time/rate"
 )
 

@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"time"
 
-	collectorevent "github.com/astraive/loxa-collector/internal/event"
+	collectorevent "github.com/astraive/loxa/collector/internal/event"
 )
 
 // Bus is the core event bus interface. All adapters implement this.

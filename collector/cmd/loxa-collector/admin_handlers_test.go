@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/astraive/loxa-collector/internal/auth"
+	"github.com/astraive/loxa/collector/internal/auth"
 )
 
 func newTestCollectorState() *collectorState {

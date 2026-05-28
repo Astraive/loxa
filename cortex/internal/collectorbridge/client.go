@@ -16,9 +16,9 @@ import (
 	"time"
 
 	transportcontracts "github.com/astraive/loxa/spec/transport/contracts"
-	"github.com/astraive/loxa/loxa-cortex/internal/config"
-	"github.com/astraive/loxa/loxa-cortex/internal/eventconv"
-	"github.com/astraive/loxa/loxa-cortex/internal/models"
+	"github.com/astraive/loxa/cortex/internal/config"
+	"github.com/astraive/loxa/cortex/internal/eventconv"
+	"github.com/astraive/loxa/cortex/internal/models"
 	"github.com/gorilla/websocket"
 )
 

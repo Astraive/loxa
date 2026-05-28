@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	collectorconfig "github.com/astraive/loxa-collector/internal/config"
+	collectorconfig "github.com/astraive/loxa/collector/internal/config"
 )
 
 func TestLoadCollectorConfigFromArgsPrecedence(t *testing.T) {

@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	collectorconfig "github.com/astraive/loxa-collector/internal/config"
-	serverconfig "github.com/astraive/loxa-collector/internal/server"
+	collectorconfig "github.com/astraive/loxa/collector/internal/config"
+	serverconfig "github.com/astraive/loxa/collector/internal/server"
 	"gopkg.in/yaml.v3"
 )
 

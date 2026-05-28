@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	collectorconfig "github.com/astraive/loxa-collector/internal/config"
+	collectorconfig "github.com/astraive/loxa/collector/internal/config"
 )
 
 func loadSchemaRegistryFile(fc *fileConfig) error {

@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/config"
+	"github.com/astraive/loxa/cortex/internal/config"
 )
 
 func TestAuthMiddlewareDisabledPassesThrough(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa-collector/internal/auth"
+	"github.com/astraive/loxa/collector/internal/auth"
 )
 
 var benchServerSecret = []byte("bench-server-secret-key-32bytes-long!")

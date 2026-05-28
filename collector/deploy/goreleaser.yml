@@ -46,7 +46,7 @@ builds:
       - amd64
       - arm64
 dockers:
-  - image: astraive/loxa-collector
+  - image: astraive/loxa
     dockerfile: Dockerfile
     goos: linux
     goarch:

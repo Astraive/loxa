@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/astraive/loxa-collector/internal/otlpconv"
+	"github.com/astraive/loxa/collector/internal/otlpconv"
 	collectorlogsv1 "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"

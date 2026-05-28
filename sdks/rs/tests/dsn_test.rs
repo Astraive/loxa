@@ -28,7 +28,10 @@ fn assert_valid(
         dsn.transport, expect_transport,
         "transport mismatch for {input}"
     );
-    assert_eq!(dsn.base_url, expect_base_url, "base_url mismatch for {input}");
+    assert_eq!(
+        dsn.base_url, expect_base_url,
+        "base_url mismatch for {input}"
+    );
     if let Some(ev) = expect_events_url {
         assert_eq!(dsn.events_url, ev, "events_url mismatch for {input}");
     }

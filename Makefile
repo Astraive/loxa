@@ -10,6 +10,7 @@ GEN_FILES := $(patsubst $(PROTO_DIR)/loxa/core/%.proto,$(GEN_DIR)/loxa/core/%.pb
 # Generate Go protobuf code from proto/loxa/core/*.proto into gen/go/loxa/core/
 # Uses protoc directly (buf is optional, see proto/buf.gen.yaml for buf config)
 proto:
+	@mkdir -p $(GEN_DIR)/loxa/core
 	protoc -I $(PROTO_DIR) \
 		--go_out=$(GEN_DIR) --go_opt=paths=source_relative \
 		--go-grpc_out=$(GEN_DIR) --go-grpc_opt=paths=source_relative \

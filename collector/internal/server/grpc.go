@@ -9,9 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/astraive/loxa-collector/internal/auth"
-	"github.com/astraive/loxa-collector/internal/otlpconv"
-	"github.com/astraive/loxa-collector/internal/version"
+	"github.com/astraive/loxa/collector/internal/auth"
+	"github.com/astraive/loxa/collector/internal/otlpconv"
+	"github.com/astraive/loxa/collector/internal/version"
 	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
 	collectorlogsv1 "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	"google.golang.org/grpc"

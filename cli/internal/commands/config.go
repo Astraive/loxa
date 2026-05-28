@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/astraive/loxa-cli/internal/config"
+	"github.com/astraive/loxa/cli/internal/config"
 )
 
 func ConfigCommand(ctx context.Context, cfg config.Config, args []string) error {

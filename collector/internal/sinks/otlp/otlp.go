@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	collectorevent "github.com/astraive/loxa-collector/internal/event"
+	collectorevent "github.com/astraive/loxa/collector/internal/event"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"

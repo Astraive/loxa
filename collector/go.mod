@@ -1,4 +1,4 @@
-module github.com/astraive/loxa-collector
+module github.com/astraive/loxa/collector
 
 go 1.25.0
 

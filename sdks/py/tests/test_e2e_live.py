@@ -1,4 +1,30 @@
-"""End-to-end test: HTTPBatchSink → live loxa-collector pipeline."""
+"""End-to-end test: HTTPBatchSink -> live loxa-collector pipeline.
+
+Requires a running collector on 127.0.0.1:9308.
+Skipped automatically when the collector is not reachable.
+"""
+import socket
+
+import pytest
+
+
+def _collector_reachable(host: str = "127.0.0.1", port: int = 9308, timeout: float = 2.0) -> bool:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+    try:
+        sock.connect((host, port))
+        return True
+    except OSError:
+        return False
+    finally:
+        sock.close()
+
+
+pytestmark = pytest.mark.skipif(
+    not _collector_reachable(),
+    reason="loxa-collector not running on 127.0.0.1:9308",
+)
+
 import json
 import time
 import urllib.request

@@ -9,8 +9,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app/spec
 
-COPY requirements-service.txt ./
-COPY services ./services
+COPY spec/requirements-service.txt ./
+COPY spec/services ./services
 
 RUN pip install --no-cache-dir -r requirements-service.txt \
     && adduser --system --uid 10001 --group loxa \

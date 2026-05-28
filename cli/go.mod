@@ -1,4 +1,4 @@
-module github.com/astraive/loxa-cli
+module github.com/astraive/loxa/cli
 
 go 1.25.0
 

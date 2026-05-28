@@ -44,7 +44,7 @@ jobs:
         run: helm template loxa ./spec/charts/loxa --namespace loxa
 
       - name: Build schema-service image
-        run: docker build -f spec/docker/schema-service/Dockerfile -t loxa-schema-service:test spec
+        run: docker build -f spec/docker/schema-service/Dockerfile -t loxa-schema-service:test .
 
       - name: Build stager image
-        run: docker build -f spec/docker/stager/Dockerfile -t loxa-stager:test spec
+        run: docker build -f spec/docker/stager/Dockerfile -t loxa-stager:test .

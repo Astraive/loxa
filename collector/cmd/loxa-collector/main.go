@@ -6,12 +6,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/astraive/loxa-collector/internal/version"
+	"github.com/astraive/loxa/collector/internal/version"
 	// Register eventbus backends
-	_ "github.com/astraive/loxa-collector/internal/eventbus/kafka"
-	_ "github.com/astraive/loxa-collector/internal/eventbus/memory"
-	_ "github.com/astraive/loxa-collector/internal/eventbus/nats"
-	_ "github.com/astraive/loxa-collector/internal/eventbus/redis"
+	_ "github.com/astraive/loxa/collector/internal/eventbus/kafka"
+	_ "github.com/astraive/loxa/collector/internal/eventbus/memory"
+	_ "github.com/astraive/loxa/collector/internal/eventbus/nats"
+	_ "github.com/astraive/loxa/collector/internal/eventbus/redis"
 )
 
 var collectorVersion = version.CollectorVersion()

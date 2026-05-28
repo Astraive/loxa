@@ -10,9 +10,9 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 
-	collectorevent "github.com/astraive/loxa-collector/internal/event"
-	"github.com/astraive/loxa-collector/internal/sinks/internal/atrest"
-	"github.com/astraive/loxa-collector/internal/sinks/internal/projection"
+	collectorevent "github.com/astraive/loxa/collector/internal/event"
+	"github.com/astraive/loxa/collector/internal/sinks/internal/atrest"
+	"github.com/astraive/loxa/collector/internal/sinks/internal/projection"
 )
 
 // Config controls ClickHouse sink behavior.

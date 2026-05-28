@@ -14,7 +14,7 @@ collector:
   replicaCount: 2
 
   image:
-    repository: loxa-collector
+    repository: loxa
     tag: "0.2.5"
     pullPolicy: IfNotPresent
 

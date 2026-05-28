@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/middleware"
+	"github.com/astraive/loxa/cortex/internal/middleware"
 	transportcontracts "github.com/astraive/loxa/spec/transport/contracts"
-	"github.com/astraive/loxa/loxa-cortex/internal/eventconv"
+	"github.com/astraive/loxa/cortex/internal/eventconv"
 	"github.com/gorilla/websocket"
 )
 

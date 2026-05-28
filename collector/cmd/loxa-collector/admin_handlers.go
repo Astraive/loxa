@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/astraive/loxa-collector/internal/auth"
+	"github.com/astraive/loxa/collector/internal/auth"
 	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
 

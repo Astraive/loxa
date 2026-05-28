@@ -6,9 +6,9 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/astraive/loxa-cli/internal/client"
-	"github.com/astraive/loxa-cli/internal/config"
-	"github.com/astraive/loxa-cli/internal/output"
+	"github.com/astraive/loxa/cli/internal/client"
+	"github.com/astraive/loxa/cli/internal/config"
+	"github.com/astraive/loxa/cli/internal/output"
 )
 
 func SignaturesCommand(ctx context.Context, cfg config.Config, args []string) error {

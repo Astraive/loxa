@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/astraive/loxa/loxa-cortex/internal/models"
+	"github.com/astraive/loxa/cortex/internal/models"
 )
 
 type fakeRemediationStore struct {
