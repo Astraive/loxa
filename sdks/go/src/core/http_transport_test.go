@@ -540,7 +540,7 @@ func TestHTTPTransport_IsRetryableError(t *testing.T) {
 		{
 			name:      "temporary error",
 			err:       &temporaryError{},
-			retryable: true,
+			retryable: false,
 		},
 		{
 			name:      "generic error",

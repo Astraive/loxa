@@ -215,7 +215,7 @@ func TestStrictWithValidateEncodedTrue_RunsSpecContract(t *testing.T) {
 		t.Fatalf("new logger: %v", err)
 	}
 	ctx := l.StartEvent(context.Background(), Params{Event: "checkout.request"})
-	l.Enrich(ctx, String("user.id", "u-1"))
+	_ = l.Enrich(ctx, String("user.id", "u-1"))
 	if err := l.Emit(ctx); err != nil {
 		t.Fatalf("unexpected error with default ValidateEncoded: %v", err)
 	}
@@ -237,7 +237,7 @@ func TestStrictWithCustomSchemaAndValidateEncodedFalse(t *testing.T) {
 		t.Fatalf("new logger: %v", err)
 	}
 	ctx := l.StartEvent(context.Background(), Params{Event: "checkout.request"})
-	l.Enrich(ctx, String("user.id", "u-1"))
+	_ = l.Enrich(ctx, String("user.id", "u-1"))
 	if err := l.Emit(ctx); err != nil {
 		t.Fatalf("unexpected error with ECSchema + ValidateEncoded=false: %v", err)
 	}

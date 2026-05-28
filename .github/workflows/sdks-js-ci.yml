@@ -1,0 +1,46 @@
+name: JS SDK CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "sdks/js/**"
+      - "spec/**"
+  pull_request:
+    paths:
+      - "sdks/js/**"
+      - "spec/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/js
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npx tsc
+
+      - name: Tests
+        # Exclude e2e-collector tests (require a running collector)
+        run: node --test --experimental-strip-types $(ls tests/*.test.ts | grep -v e2e-collector)
