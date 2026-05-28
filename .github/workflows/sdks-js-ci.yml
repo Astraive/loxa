@@ -6,10 +6,13 @@ on:
     paths:
       - "sdks/js/**"
       - "spec/**"
+      - ".github/workflows/sdks-js-ci.yml"
   pull_request:
     paths:
       - "sdks/js/**"
       - "spec/**"
+      - ".github/workflows/sdks-js-ci.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -25,6 +25,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install jsonschema pytest
+          pip install -e sdks/py
 
       - name: Check generated spec artifacts
         run: |
