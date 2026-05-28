@@ -1,10 +1,25 @@
-import { describe, it } from 'node:test';
+import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { createLoxa, HTTPBatchSink, MemorySink, CollectorClient, String as AttrString, Int as AttrInt } from '../src/index.ts';
+import net from 'node:net';
 
 const COLLECTOR_URL = process.env.LOXA_TEST_COLLECTOR_URL ?? 'http://127.0.0.1:9308';
 
-describe('E2E: loxa-js → loxa-collector', () => {
+async function isCollectorReachable(): Promise<boolean> {
+  const url = new URL(COLLECTOR_URL);
+  const port = Number(url.port) || 9308;
+  const host = url.hostname;
+  return new Promise((resolve) => {
+    const sock = net.createConnection({ host, port, timeout: 2000 });
+    sock.on('connect', () => { sock.destroy(); resolve(true); });
+    sock.on('error', () => { sock.destroy(); resolve(false); });
+    sock.on('timeout', () => { sock.destroy(); resolve(false); });
+  });
+}
+
+const describeE2E = (await isCollectorReachable()) ? describe : describe.skip;
+
+describeE2E('E2E: loxa-js → loxa-collector', () => {
   it('collector health check', async () => {
     const client = new CollectorClient({ url: COLLECTOR_URL });
     const healthy = await client.health();
