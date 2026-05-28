@@ -22,16 +22,41 @@ warnings.filterwarnings(
 from jsonschema import Draft202012Validator, RefResolver
 
 
+_SCHEMA_DIR = Path(__file__).resolve().parents[1] / "schema"
+
+
 def _load_json(path: Path) -> object:
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
 
 
-def _build_validator(schema_path: Path, schema_override: dict[str, object] | None = None) -> Draft202012Validator:
+def _build_schema_store() -> dict[str, object]:
+    """Build a URI -> schema dict mapping every schema's $id to its content.
+
+    This lets RefResolver resolve $ref URLs locally instead of fetching
+    them over HTTP (the $id values are GitHub URLs that return 404).
+    """
+    store: dict[str, object] = {}
+    for schema_file in sorted(_SCHEMA_DIR.glob("*.json")):
+        schema = _load_json(schema_file)
+        if isinstance(schema, dict) and "$id" in schema:
+            store[str(schema["$id"])] = schema
+    return store
+
+
+def _build_validator(
+    schema_path: Path,
+    schema_override: dict[str, object] | None = None,
+    store: dict[str, object] | None = None,
+) -> Draft202012Validator:
     schema = _load_json(schema_path)
     if schema_override is not None:
         schema = schema_override
-    resolver = RefResolver(base_uri=schema_path.resolve().as_uri(), referrer=schema)
+    resolver = RefResolver(
+        base_uri=schema_path.resolve().as_uri(),
+        referrer=schema,
+        store=store or {},
+    )
     return Draft202012Validator(
         schema,
         resolver=resolver,
@@ -225,10 +250,12 @@ def main() -> int:
     strict_event_schema = dict(event_schema_payload)
     strict_event_schema["additionalProperties"] = False
 
-    loose_validator = _build_validator(event_schema)
-    strict_validator = _build_validator(event_schema, schema_override=strict_event_schema)
-    ingest_validator = _build_validator(ingest_schema)
-    collector_validator = _build_validator(collector_schema)
+    schema_store = _build_schema_store()
+
+    loose_validator = _build_validator(event_schema, store=schema_store)
+    strict_validator = _build_validator(event_schema, schema_override=strict_event_schema, store=schema_store)
+    ingest_validator = _build_validator(ingest_schema, store=schema_store)
+    collector_validator = _build_validator(collector_schema, store=schema_store)
 
     seen: set[str] = set()
     valid = _must_exist(manifest_dir, list(manifest.get("valid", [])), seen, "valid")

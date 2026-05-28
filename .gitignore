@@ -127,9 +127,9 @@ target/
 # =============================================================================
 # Generated protobuf / generated code
 # =============================================================================
-gen/
-gen/go/
+# Ignore generated .pb.go files but track go.mod/go.sum for CI
 *.pb.go
+*_grpc.pb.go
 
 # =============================================================================
 # Local / experimental app
