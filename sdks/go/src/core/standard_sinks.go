@@ -299,7 +299,7 @@ func CollectorSink(cfg CollectorSinkConfig) (Sink, error) {
 		cfg.SDKName = "loxa-go"
 	}
 	if cfg.SDKVersion == "" {
-		cfg.SDKVersion = "0.2.3"
+		cfg.SDKVersion = SDKVersion()
 	}
 	return &collectorSink{cfg: cfg}, nil
 }

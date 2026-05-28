@@ -10,7 +10,7 @@ import (
 func TestParseSimpleYAML(t *testing.T) {
 	content := `
 # LOXA SDK configuration
-collector_url: http://localhost:8080
+collector_url: http://localhost:9308
 service_name: my-service
 service_version: 1.2.3
 environment: production
@@ -29,8 +29,8 @@ enable_compression: true
 		t.Fatalf("parseSimpleYAML() error = %v", err)
 	}
 
-	if fc.CollectorURL != "http://localhost:8080" {
-		t.Errorf("CollectorURL = %q, want %q", fc.CollectorURL, "http://localhost:8080")
+	if fc.CollectorURL != "http://localhost:9308" {
+		t.Errorf("CollectorURL = %q, want %q", fc.CollectorURL, "http://localhost:9308")
 	}
 	if fc.ServiceName != "my-service" {
 		t.Errorf("ServiceName = %q, want %q", fc.ServiceName, "my-service")
@@ -83,15 +83,15 @@ func TestParseSimpleYAML_CompressionFalse(t *testing.T) {
 
 func TestParseSimpleYAML_QuotedValues(t *testing.T) {
 	content := `
-collector_url: "http://quoted:8080"
+collector_url: "http://quoted:9308"
 service_name: 'single-quoted'
 `
 	var fc FileConfig
 	if err := parseSimpleYAML(content, &fc); err != nil {
 		t.Fatalf("parseSimpleYAML() error = %v", err)
 	}
-	if fc.CollectorURL != "http://quoted:8080" {
-		t.Errorf("CollectorURL = %q, want %q", fc.CollectorURL, "http://quoted:8080")
+	if fc.CollectorURL != "http://quoted:9308" {
+		t.Errorf("CollectorURL = %q, want %q", fc.CollectorURL, "http://quoted:9308")
 	}
 	if fc.ServiceName != "single-quoted" {
 		t.Errorf("ServiceName = %q, want %q", fc.ServiceName, "single-quoted")
@@ -121,7 +121,7 @@ func TestLoadFromFile_ValidFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "loxa.yaml")
 	content := `
-collector_url: http://file-collector:8080
+collector_url: http://file-collector:9308
 service_name: file-service
 service_version: 2.0.0
 environment: staging
@@ -137,8 +137,8 @@ flush_interval: 3s
 		t.Fatalf("LoadFromFile() error = %v", err)
 	}
 
-	if fc.CollectorURL != "http://file-collector:8080" {
-		t.Errorf("CollectorURL = %q, want %q", fc.CollectorURL, "http://file-collector:8080")
+	if fc.CollectorURL != "http://file-collector:9308" {
+		t.Errorf("CollectorURL = %q, want %q", fc.CollectorURL, "http://file-collector:9308")
 	}
 	if fc.ServiceName != "file-service" {
 		t.Errorf("ServiceName = %q, want %q", fc.ServiceName, "file-service")
@@ -160,7 +160,7 @@ flush_interval: 3s
 func TestLoadDefaultsFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "loxa-go.defaults.yaml")
-	content := "collector_url: http://defaults:8080\nbatch_size: 123\n"
+	content := "collector_url: http://defaults:9308\nbatch_size: 123\n"
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
@@ -170,7 +170,7 @@ func TestLoadDefaultsFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadDefaultsFile() error = %v", err)
 	}
-	if fc.CollectorURL != "http://defaults:8080" {
+	if fc.CollectorURL != "http://defaults:9308" {
 		t.Fatalf("CollectorURL = %q, want defaults value", fc.CollectorURL)
 	}
 	if fc.BatchSize != 123 {
@@ -184,7 +184,7 @@ func TestMergeFileConfig(t *testing.T) {
 	}
 	enabled := true
 	fc := FileConfig{
-		CollectorURL:      "http://file:8080",
+		CollectorURL:      "http://file:9308",
 		ServiceName:       "file-svc",
 		ServiceVersion:    "0.2.0",
 		Environment:       "production",
@@ -201,8 +201,8 @@ func TestMergeFileConfig(t *testing.T) {
 
 	merged := mergeFileConfig(base, fc)
 
-	if merged.CollectorURL != "http://file:8080" {
-		t.Errorf("CollectorURL = %q, want %q", merged.CollectorURL, "http://file:8080")
+	if merged.CollectorURL != "http://file:9308" {
+		t.Errorf("CollectorURL = %q, want %q", merged.CollectorURL, "http://file:9308")
 	}
 	if merged.Service != "file-svc" {
 		t.Errorf("Service = %q, want %q", merged.Service, "file-svc")
@@ -245,13 +245,13 @@ func TestMergeFileConfig(t *testing.T) {
 func TestMergeFileConfig_DoesNotOverrideExisting(t *testing.T) {
 	// File config should NOT override already-set values
 	base := Config{
-		CollectorURL: "http://existing:8080",
+		CollectorURL: "http://existing:9308",
 		Service:      "existing-svc",
 		BatchSize:    200,
 	}
 	enabled := true
 	fc := FileConfig{
-		CollectorURL:      "http://file:8080",
+		CollectorURL:      "http://file:9308",
 		ServiceName:       "file-svc",
 		BatchSize:         50,
 		EnableCompression: &enabled,
@@ -259,8 +259,8 @@ func TestMergeFileConfig_DoesNotOverrideExisting(t *testing.T) {
 
 	merged := mergeFileConfig(base, fc)
 
-	if merged.CollectorURL != "http://existing:8080" {
-		t.Errorf("CollectorURL = %q, want existing value %q", merged.CollectorURL, "http://existing:8080")
+	if merged.CollectorURL != "http://existing:9308" {
+		t.Errorf("CollectorURL = %q, want existing value %q", merged.CollectorURL, "http://existing:9308")
 	}
 	if merged.Service != "existing-svc" {
 		t.Errorf("Service = %q, want existing value %q", merged.Service, "existing-svc")
@@ -294,7 +294,7 @@ func TestNewClient_RequiresServiceName(t *testing.T) {
 	os.Unsetenv("LOXA_SERVICE_NAME")
 
 	_, err := NewClient(Config{
-		CollectorURL: "http://localhost:8080",
+		CollectorURL: "http://localhost:9308",
 		// No Service
 	})
 	if err == nil {
@@ -308,7 +308,7 @@ func TestNewClient_ValidConfig(t *testing.T) {
 
 	sink, _ := MemorySink()
 	client, err := NewClient(Config{
-		CollectorURL: "http://localhost:8080",
+		CollectorURL: "http://localhost:9308",
 		Service:      "test-service",
 		Sinks:        []Sink{sink},
 	})
@@ -351,7 +351,7 @@ func TestNewClient_DefaultsToCollectorSinkWhenNoExplicitSink(t *testing.T) {
 	os.Unsetenv("LOXA_SERVICE_NAME")
 
 	client, err := NewClient(Config{
-		CollectorURL: "http://localhost:8080",
+		CollectorURL: "http://localhost:9308",
 		Service:      "test-service",
 	})
 	if err != nil {
@@ -373,7 +373,7 @@ func TestNewClient_PreservesExplicitSink(t *testing.T) {
 
 	memSink, _ := MemorySink()
 	client, err := NewClient(Config{
-		CollectorURL: "http://localhost:8080",
+		CollectorURL: "http://localhost:9308",
 		Service:      "test-service",
 		Sinks:        []Sink{memSink},
 	})
@@ -391,7 +391,7 @@ func TestNewClient_PreservesExplicitSink(t *testing.T) {
 }
 
 func TestNewClient_EnvOverridesDefaults(t *testing.T) {
-	os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:8080")
+	os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:9308")
 	os.Setenv("LOXA_SERVICE_NAME", "env-service")
 	os.Setenv("LOXA_SERVICE_VERSION", "3.0.0")
 	os.Setenv("LOXA_ENVIRONMENT", "staging")
@@ -411,7 +411,7 @@ func TestNewClient_EnvOverridesDefaults(t *testing.T) {
 	}
 
 	cfg := client.Config()
-	if cfg.CollectorURL != "http://env-collector:8080" {
+	if cfg.CollectorURL != "http://env-collector:9308" {
 		t.Errorf("CollectorURL = %q, want env value", cfg.CollectorURL)
 	}
 	if cfg.Service != "env-service" {
@@ -426,7 +426,7 @@ func TestNewClient_EnvOverridesDefaults(t *testing.T) {
 }
 
 func TestNewClient_CodeOverridesEnv(t *testing.T) {
-	os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:8080")
+	os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:9308")
 	os.Setenv("LOXA_SERVICE_NAME", "env-service")
 	defer func() {
 		os.Unsetenv("LOXA_COLLECTOR_URL")
@@ -435,7 +435,7 @@ func TestNewClient_CodeOverridesEnv(t *testing.T) {
 
 	sink, _ := MemorySink()
 	client, err := NewClient(Config{
-		CollectorURL: "http://code-collector:8080",
+		CollectorURL: "http://code-collector:9308",
 		Service:      "code-service",
 		Sinks:        []Sink{sink},
 	})
@@ -444,8 +444,8 @@ func TestNewClient_CodeOverridesEnv(t *testing.T) {
 	}
 
 	cfg := client.Config()
-	if cfg.CollectorURL != "http://code-collector:8080" {
-		t.Errorf("CollectorURL = %q, want code value %q", cfg.CollectorURL, "http://code-collector:8080")
+	if cfg.CollectorURL != "http://code-collector:9308" {
+		t.Errorf("CollectorURL = %q, want code value %q", cfg.CollectorURL, "http://code-collector:9308")
 	}
 	if cfg.Service != "code-service" {
 		t.Errorf("Service = %q, want code value %q", cfg.Service, "code-service")
@@ -456,7 +456,7 @@ func TestNewClient_FileConfigLoaded(t *testing.T) {
 	// Create a temp loxa.yaml and change to that directory
 	dir := t.TempDir()
 	content := `
-collector_url: http://file-collector:8080
+collector_url: http://file-collector:9308
 service_name: file-service
 service_version: 4.0.0
 environment: production
@@ -474,8 +474,8 @@ environment: production
 	if err != nil {
 		t.Fatalf("LoadFromFile() error = %v", err)
 	}
-	if fc.CollectorURL != "http://file-collector:8080" {
-		t.Errorf("CollectorURL = %q, want %q", fc.CollectorURL, "http://file-collector:8080")
+	if fc.CollectorURL != "http://file-collector:9308" {
+		t.Errorf("CollectorURL = %q, want %q", fc.CollectorURL, "http://file-collector:9308")
 	}
 	if fc.ServiceName != "file-service" {
 		t.Errorf("ServiceName = %q, want %q", fc.ServiceName, "file-service")

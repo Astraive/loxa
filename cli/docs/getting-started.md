@@ -49,7 +49,7 @@ export LOXA_API_KEY=lx_sec_live_k_xxx_yyyy
 loxa query "SELECT * FROM events LIMIT 10"
 
 # Local dev (no auth)
-export LOXA_COLLECTOR_URL=http://localhost:9090
+export LOXA_COLLECTOR_URL=http://localhost:9308
 loxa status
 ```
 

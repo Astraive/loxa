@@ -7,6 +7,8 @@ import { sampleAll, sampleNone } from '../sampling/sampler.ts';
 import type { Schema } from '../core/schema.ts';
 import { DefaultSchema } from '../core/schema.ts';
 import type { Level } from '../core/level.ts';
+import { loadFileConfig, mergeFileConfig } from './config-file.ts';
+import { parse as parseDSN } from './dsn.ts';
 
 /** Async delivery configuration. */
 export interface AsyncConfig {
@@ -64,10 +66,49 @@ export function disabled(): Config {
   return { ...defaultConfig(), sink: null, sampler: sampleNone() };
 }
 
-/** Load config from environment variables. */
+/**
+ * Load config using the 4-layer precedence:
+ *   1. Hardcoded defaults (defaultConfig)
+ *   2. YAML files (loxa-js.defaults.yaml + user override)
+ *   3. Environment variables (including LOXA_DSN)
+ *   4. Code-level config (via builder / withOptions)
+ *
+ * This function implements layers 1-3. Layer 4 is applied by the caller.
+ */
 export function fromEnv(): Config {
   const cfg = defaultConfig();
+
+  // Layer 2: YAML file config (defaults + user overlay)
+  try {
+    const fileRaw = loadFileConfig();
+    if (Object.keys(fileRaw).length > 0) {
+      const merged = mergeFileConfig(cfg, fileRaw);
+      Object.assign(cfg, merged);
+    }
+  } catch {
+    // File loading failed silently — continue with hardcoded defaults
+  }
+
+  // Layer 3: Environment variables
   if (typeof process !== 'undefined') {
+    // Parse LOXA_DSN first (sets collectorUrl, environment, service)
+    const dsnRaw = process.env.LOXA_DSN;
+    if (dsnRaw) {
+      try {
+        const dsn = parseDSN(dsnRaw);
+        cfg.collectorUrl = dsn.baseURL;
+        if (dsn.env && dsn.env !== 'default') {
+          cfg.environment = dsn.env;
+        }
+        if (dsn.service) {
+          cfg.service = dsn.service;
+        }
+      } catch {
+        // Invalid DSN — fall through to individual env vars
+      }
+    }
+
+    // Individual env vars override DSN-derived and file-derived values
     cfg.service = process.env.LOXA_SERVICE || process.env.SERVICE || cfg.service;
     cfg.version = process.env.LOXA_VERSION || process.env.VERSION || cfg.version;
     cfg.environment = process.env.LOXA_ENVIRONMENT || process.env.ENVIRONMENT || cfg.environment;

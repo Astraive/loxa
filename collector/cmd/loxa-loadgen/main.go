@@ -14,9 +14,11 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	loxacollector "github.com/astraive/loxa-collector"
 )
 
-var version = "0.2.3"
+var version = loxacollector.Version
 
 type Config struct {
 	URL       string
@@ -44,7 +46,7 @@ func main() {
 
 func run(args []string) error {
 	cfg := Config{
-		URL:       "http://localhost:9090/ingest",
+		URL:       "http://localhost:9308/ingest",
 		Events:    10000,
 		Workers:   4,
 		BatchSize: 100,

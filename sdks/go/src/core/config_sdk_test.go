@@ -19,7 +19,7 @@ func TestConfigValidation(t *testing.T) {
 				Service:           "test-service",
 				Version:           "1.0.0",
 				Environment:       "production",
-				CollectorURL:      "http://localhost:8080",
+				CollectorURL:      "http://localhost:9308",
 				TenantID:          "tenant-1",
 				BatchSize:         100,
 				FlushInterval:     5 * time.Second,
@@ -135,7 +135,7 @@ func TestLoadFromEnv(t *testing.T) {
 	}()
 
 	// Set test env vars
-	os.Setenv("LOXA_COLLECTOR_URL", "http://test-collector:8080")
+	os.Setenv("LOXA_COLLECTOR_URL", "http://test-collector:9308")
 	os.Setenv("LOXA_SERVICE_NAME", "env-service")
 	os.Setenv("LOXA_SERVICE_VERSION", "2.0.0")
 	os.Setenv("LOXA_ENVIRONMENT", "staging")
@@ -150,7 +150,7 @@ func TestLoadFromEnv(t *testing.T) {
 		Service:           "base-service",
 		Version:           "1.0.0",
 		Environment:       "development",
-		CollectorURL:      "http://base-collector:8080",
+		CollectorURL:      "http://base-collector:9308",
 		TenantID:          "tenant-base",
 		FlushInterval:     5 * time.Second,
 		MaxBackoff:        30 * time.Second,
@@ -162,8 +162,8 @@ func TestLoadFromEnv(t *testing.T) {
 	cfg := LoadFromEnv(base)
 
 	// Verify env vars override base config
-	if cfg.CollectorURL != "http://test-collector:8080" {
-		t.Errorf("CollectorURL = %v, want %v", cfg.CollectorURL, "http://test-collector:8080")
+	if cfg.CollectorURL != "http://test-collector:9308" {
+		t.Errorf("CollectorURL = %v, want %v", cfg.CollectorURL, "http://test-collector:9308")
 	}
 	if cfg.Service != "env-service" {
 		t.Errorf("Service = %v, want %v", cfg.Service, "env-service")
@@ -199,7 +199,7 @@ func TestConfigPrecedence(t *testing.T) {
 
 	// Set env vars
 	os.Setenv("LOXA_SERVICE_NAME", "env-service")
-	os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:8080")
+	os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:9308")
 	defer func() {
 		os.Unsetenv("LOXA_SERVICE_NAME")
 		os.Unsetenv("LOXA_COLLECTOR_URL")
@@ -215,22 +215,22 @@ func TestConfigPrecedence(t *testing.T) {
 	if cfg.Service != "env-service" {
 		t.Errorf("Service = %v, want %v (env should override defaults)", cfg.Service, "env-service")
 	}
-	if cfg.CollectorURL != "http://env-collector:8080" {
-		t.Errorf("CollectorURL = %v, want %v (env should override defaults)", cfg.CollectorURL, "http://env-collector:8080")
+	if cfg.CollectorURL != "http://env-collector:9308" {
+		t.Errorf("CollectorURL = %v, want %v (env should override defaults)", cfg.CollectorURL, "http://env-collector:9308")
 	}
 
 	// Apply code config (should override env)
 	cfg = ApplyConfig(cfg,
 		WithService("code-service"),
-		WithCollectorURL("http://code-collector:8080"),
+		WithCollectorURL("http://code-collector:9308"),
 	)
 
 	// Verify code config overrides env
 	if cfg.Service != "code-service" {
 		t.Errorf("Service = %v, want %v (code should override env)", cfg.Service, "code-service")
 	}
-	if cfg.CollectorURL != "http://code-collector:8080" {
-		t.Errorf("CollectorURL = %v, want %v (code should override env)", cfg.CollectorURL, "http://code-collector:8080")
+	if cfg.CollectorURL != "http://code-collector:9308" {
+		t.Errorf("CollectorURL = %v, want %v (code should override env)", cfg.CollectorURL, "http://code-collector:9308")
 	}
 }
 
@@ -238,7 +238,7 @@ func TestConfigOptions(t *testing.T) {
 	cfg := Config{}
 
 	cfg = ApplyConfig(cfg,
-		WithCollectorURL("http://localhost:8080"),
+		WithCollectorURL("http://localhost:9308"),
 		WithTenantID("tenant-123"),
 		WithBatchSize(200),
 		WithFlushInterval(10*time.Second),
@@ -250,8 +250,8 @@ func TestConfigOptions(t *testing.T) {
 		WithCompression(false),
 	)
 
-	if cfg.CollectorURL != "http://localhost:8080" {
-		t.Errorf("CollectorURL = %v, want %v", cfg.CollectorURL, "http://localhost:8080")
+	if cfg.CollectorURL != "http://localhost:9308" {
+		t.Errorf("CollectorURL = %v, want %v", cfg.CollectorURL, "http://localhost:9308")
 	}
 	if cfg.TenantID != "tenant-123" {
 		t.Errorf("TenantID = %v, want %v", cfg.TenantID, "tenant-123")

@@ -7,4 +7,4 @@ metadata:
     app.kubernetes.io/part-of: loxa
 data:
   SCHEMA_SERVICE_HOST: "0.0.0.0"
-  SCHEMA_SERVICE_PORT: "8080"
+  SCHEMA_SERVICE_PORT: "9315"

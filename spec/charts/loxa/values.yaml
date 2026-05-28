@@ -8,14 +8,14 @@ schemaService:
   replicaCount: 2
   image:
     repository: ghcr.io/astraive/loxa-schema-service
-    tag: "0.2.3"
+    tag: "0.2.5"
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
-    port: 8080
+    port: 9315
   config:
     SCHEMA_SERVICE_HOST: "0.0.0.0"
-    SCHEMA_SERVICE_PORT: "8080"
+    SCHEMA_SERVICE_PORT: "9315"
   secretRefs: []
   podSecurityContext: {}
   containerSecurityContext:
@@ -46,7 +46,7 @@ stager:
   replicaCount: 1
   image:
     repository: ghcr.io/astraive/loxa-stager
-    tag: "0.2.3"
+    tag: "0.2.5"
     pullPolicy: IfNotPresent
   config:
     STAGER_QUEUE_BACKEND: kafka

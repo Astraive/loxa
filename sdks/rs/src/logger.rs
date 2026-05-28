@@ -725,7 +725,10 @@ fn close_sinks(sinks: &[crate::SinkConfig]) -> Result<(), String> {
 
 fn install_default_collector_sink(config: &mut Config) {
     let endpoint = config.collector_endpoint.trim();
-    if endpoint.is_empty() || config.sinks.iter().any(is_http_batch_sink) {
+    if endpoint.is_empty()
+        || config.sinks.iter().any(is_http_batch_sink)
+        || config.environment == "test"
+    {
         return;
     }
 

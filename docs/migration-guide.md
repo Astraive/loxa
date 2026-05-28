@@ -24,7 +24,7 @@ systemctl stop loxa-collector
 **Before (v0.x)**:
 ```yaml
 collector:
-  port: 8080
+  port: 9308
 storage:
   backend: "duckdb"
   path: "/data/events.db"
@@ -33,7 +33,7 @@ storage:
 **After (v0.0.1)**:
 ```yaml
 collector:
-  http_listen: "0.0.0.0:8080"
+  http_listen: "0.0.0.0:9308"
 storage:
   type: "duckdb"
   path: "/data/events.db"
@@ -97,7 +97,7 @@ systemctl start loxa-collector
 
 # Verify upgrade
 loxa doctor
-curl http://localhost:8080/status
+curl http://localhost:9308/status
 ```
 
 #### 6. Verify Event Flow
@@ -110,7 +110,7 @@ loxa emit --event upgrade.test --key version --value 0.2.0
 loxa query --sql "SELECT * FROM events WHERE event_type = 'upgrade.test'"
 
 # Check metrics
-curl http://localhost:8080/metrics | grep collector_events_total
+curl http://localhost:9308/metrics | grep collector_events_total
 ```
 
 ### Breaking Changes
@@ -163,7 +163,7 @@ otlp:
   http_port: 4318
 
 collector:
-  http_listen: "0.0.0.0:8080"
+  http_listen: "0.0.0.0:9308"
   
 sinks:
   - name: "otel"
@@ -372,7 +372,7 @@ LIMIT 10
 **Solution**:
 ```bash
 # Check if auth is enabled
-curl http://localhost:8080/status
+curl http://localhost:9308/status
 
 # If auth is required, set API key
 export LOXA_API_KEY="sk_prod_xxx"
@@ -404,7 +404,7 @@ export LOXA_BUFFER_SIZE=10000
 systemctl restart loxa-collector
 
 # Monitor memory usage
-curl http://localhost:8080/metrics | grep memory
+curl http://localhost:9308/metrics | grep memory
 ```
 
 ### Issue: Slow Queries After Migration

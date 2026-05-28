@@ -5,6 +5,7 @@ pub mod event;
 pub mod metric;
 pub mod options;
 pub mod span;
+pub mod version;
 
 pub use crate::config::{Config, RedactorConfig, SamplerConfig, SchemaConfig, SinkConfig};
 pub use client::{
@@ -20,3 +21,4 @@ pub use event::{
 pub use metric::{MetricsCollector, MetricsSnapshot};
 pub use options::{apply, ConfigOption};
 pub use span::SpanContext;
+pub use version::sdk_version;

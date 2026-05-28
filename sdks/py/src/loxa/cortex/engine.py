@@ -21,12 +21,12 @@ class Engine:
 
         from loxa.cortex import Engine
 
-        engine = Engine("http://localhost:8080")
+        engine = Engine("http://localhost:9312")
         engine.ingest(events)
         ctx = engine.reconstruct_context({"incident_id": "INC-714"}, mode="fast")
     """
 
-    def __init__(self, cortex_url: str = "http://localhost:8080") -> None:
+    def __init__(self, cortex_url: str = "http://localhost:9312") -> None:
         self.cortex_url = cortex_url.rstrip("/")
 
     def ingest(self, events: Iterable[dict]) -> None:

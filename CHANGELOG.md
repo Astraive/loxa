@@ -4,6 +4,22 @@ All notable changes to the LOXA project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/0.2.0/).
 
+## [0.2.5] - 2026-05-28
+
+### Fixed
+- Security fixes for WebSocket origin validation, DuckDB connection pool safety, key cache invalidation
+- Version loaded from YAML metadata files instead of hardcoded constants
+- Bump all versions to 0.2.5
+
+## [0.2.4] - 2026-05-28
+
+### Fixed
+- Fix Cortex Dockerfile base image (trixie-slim -> bookworm-slim)
+- Update Cortex SECURITY.md image tag references to 0.2.5
+- Update SDK READMEs to v0.2.5 (Go, Python, JavaScript, Rust)
+- Add missing v0.2.4 CHANGELOG entries across all components
+- Bump all versions to 0.2.4
+
 ## [0.2.0] - 2026-05-20
 
 ### Collector

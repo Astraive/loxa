@@ -51,7 +51,7 @@ import loxa
 
 cfg = (
     loxa.production("checkout-service")
-    .with_sink(loxa.HTTPBatchSink("http://collector:9090/events"))
+    .with_sink(loxa.HTTPBatchSink("http://collector:9308/events"))
     .with_sampler(loxa.SampleErrors())
 )
 loxa.configure(cfg)

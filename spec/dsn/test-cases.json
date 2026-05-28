@@ -5,42 +5,42 @@
   "cases": [
     {
       "name": "localhost dev with explicit port",
-      "input": "loxa://localhost:8080/demo?tls=false",
+      "input": "loxa://localhost:9308/demo?tls=false",
       "valid": true,
       "expected": {
         "scheme": "loxa",
         "host": "localhost",
-        "port": 8080,
+        "port": 9308,
         "project": "demo",
         "env": "default",
         "service": "",
         "tls": false,
         "transport": "http",
-        "baseURL": "http://localhost:8080",
-        "eventsURL": "http://localhost:8080/events",
-        "batchURL": "http://localhost:8080/events/batch",
-        "otlpURL": "http://localhost:8080/otlp/logs",
-        "tailWSURL": "ws://localhost:8080/tail"
+        "baseURL": "http://localhost:9308",
+        "eventsURL": "http://localhost:9308/events",
+        "batchURL": "http://localhost:9308/events/batch",
+        "otlpURL": "http://localhost:9308/otlp/logs",
+        "tailWSURL": "ws://localhost:9308/tail"
       }
     },
     {
-      "name": "localhost default port 8080",
+      "name": "localhost default port 9308",
       "input": "loxa://localhost/demo?tls=false",
       "valid": true,
       "expected": {
         "scheme": "loxa",
         "host": "localhost",
-        "port": 8080,
+        "port": 9308,
         "project": "demo",
         "env": "default",
         "service": "",
         "tls": false,
         "transport": "http",
-        "baseURL": "http://localhost:8080",
-        "eventsURL": "http://localhost:8080/events",
-        "batchURL": "http://localhost:8080/events/batch",
-        "otlpURL": "http://localhost:8080/otlp/logs",
-        "tailWSURL": "ws://localhost:8080/tail"
+        "baseURL": "http://localhost:9308",
+        "eventsURL": "http://localhost:9308/events",
+        "batchURL": "http://localhost:9308/events/batch",
+        "otlpURL": "http://localhost:9308/otlp/logs",
+        "tailWSURL": "ws://localhost:9308/tail"
       }
     },
     {
@@ -119,13 +119,13 @@
       "expected": {
         "scheme": "loxa",
         "host": "127.0.0.1",
-        "port": 80,
+        "port": 9308,
         "project": "demo",
         "env": "default",
         "service": "",
         "tls": false,
         "transport": "http",
-        "baseURL": "http://127.0.0.1:80"
+        "baseURL": "http://127.0.0.1:9308"
       }
     },
     {
@@ -135,13 +135,13 @@
       "expected": {
         "scheme": "loxa",
         "host": "::1",
-        "port": 80,
+        "port": 9308,
         "project": "demo",
         "env": "default",
         "service": "",
         "tls": false,
         "transport": "http",
-        "baseURL": "http://[::1]:80"
+        "baseURL": "http://[::1]:9308"
       }
     },
     {
@@ -151,13 +151,13 @@
       "expected": {
         "scheme": "loxa",
         "host": "localhost",
-        "port": 8080,
+        "port": 9308,
         "project": "demo",
         "env": "default",
         "service": "",
         "tls": false,
         "transport": "http",
-        "baseURL": "http://localhost:8080"
+        "baseURL": "http://localhost:9308"
       }
     },
     {

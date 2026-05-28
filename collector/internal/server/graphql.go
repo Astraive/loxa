@@ -12,6 +12,8 @@ import (
 	"github.com/graphql-go/graphql"
 )
 
+const maxGraphQLDepth = 10
+
 type GraphQLServer struct {
 	cfg               GraphQLConfig
 	state             State
@@ -130,6 +132,13 @@ func (s *GraphQLServer) Start(ctx context.Context) error {
 			return
 		}
 
+		if queryDepth(req.Query) > maxGraphQLDepth {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": "query_exceeds_maximum_depth"})
+			return
+		}
+
 		result := graphql.Do(graphql.Params{
 			Schema:         schema,
 			RequestString:  req.Query,
@@ -199,4 +208,22 @@ func containsWord(s, word string) bool {
 
 func isAlpha(r rune) bool {
 	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '_'
+}
+
+// queryDepth counts the maximum nesting depth of curly braces in a GraphQL query.
+func queryDepth(query string) int {
+	maxDepth := 0
+	depth := 0
+	for _, c := range query {
+		switch c {
+		case '{':
+			depth++
+			if depth > maxDepth {
+				maxDepth = depth
+			}
+		case '}':
+			depth--
+		}
+	}
+	return maxDepth
 }

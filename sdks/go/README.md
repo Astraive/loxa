@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/astraive/loxa/actions/workflows/sdks-go-ci.yml/badge.svg)](https://github.com/astraive/loxa/actions/workflows/sdks-go-ci.yml)
 
-**Status**: 🟢 **STABLE** (v0.2.3) - Production-ready, collector-first stable-v1 SDK
+**Status**: 🟢 **STABLE** (v0.2.5) - Production-ready, collector-first stable-v1 SDK
 
 Full emitter SDK conformance is tracked through `spec/`:
 
@@ -100,7 +100,7 @@ Sample event:
 // Create a custom logger with its own config
 logger, _ := loxa.CreateLoxa(loxa.Config{
     Service:      "checkout-api",
-    CollectorURL: "http://localhost:9090",
+    CollectorURL: "http://localhost:9308",
 })
 logger.Info(ctx, "payment processed")
 

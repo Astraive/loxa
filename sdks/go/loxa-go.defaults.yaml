@@ -1,4 +1,4 @@
-collector_url: http://127.0.0.1:9090
+collector_url: http://127.0.0.1:9308
 service_version: unknown
 environment: development
 batch_size: 100

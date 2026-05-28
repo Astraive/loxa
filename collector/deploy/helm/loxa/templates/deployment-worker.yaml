@@ -49,10 +49,10 @@ spec:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           ports:
             - name: http
-              containerPort: 9090
+              containerPort: 9308
               protocol: TCP
             - name: metrics
-              containerPort: 9090
+              containerPort: 9308
               protocol: TCP
           livenessProbe:
             httpGet:

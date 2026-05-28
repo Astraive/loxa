@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/astraive/loxa-collector/internal/version"
 	// Register eventbus backends
 	_ "github.com/astraive/loxa-collector/internal/eventbus/kafka"
 	_ "github.com/astraive/loxa-collector/internal/eventbus/memory"
@@ -13,7 +14,7 @@ import (
 	_ "github.com/astraive/loxa-collector/internal/eventbus/redis"
 )
 
-var version = "0.2.3"
+var collectorVersion = version.CollectorVersion()
 
 func main() {
 	if err := executeCollectorCLI(os.Args[1:], runCollector, configCommand); err != nil {
@@ -32,7 +33,7 @@ func executeCollectorCLI(args []string, runFn func(collectorConfig) error, confi
 		case "run":
 			args = args[1:]
 		case "version", "-v", "--version":
-			fmt.Println("loxa-collector version", version)
+			fmt.Println("loxa-collector version", collectorVersion)
 			return nil
 		default:
 			if !strings.HasPrefix(args[0], "-") {

@@ -13,7 +13,7 @@ loxa://[host][:port]/[project]?env=<env>&service=<service>&tls=<true|false>&tran
 
 ```bash
 # Local development
-LOXA_DSN=loxa://localhost:8080/demo?env=dev&tls=false
+LOXA_DSN=loxa://localhost:9308/demo?env=dev&tls=false
 LOXA_API_KEY=lx_sec_dev_k_xxx
 
 # Production
@@ -53,7 +53,7 @@ Setting `tls=auto` preserves the computed default.
 |--------------------------|-------------|
 | `tls=true`               | `443`       |
 | `tls=false`              | `80`        |
-| `localhost` without port | `8080`      |
+| `localhost` without port | `9308`      |
 
 ## Resolved URLs
 

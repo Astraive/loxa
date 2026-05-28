@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	loxacollector "github.com/astraive/loxa-collector"
 	collectorevent "github.com/astraive/loxa-collector/internal/event"
 	"github.com/astraive/loxa-collector/internal/eventbus"
 	processing "github.com/astraive/loxa-collector/internal/processing"
@@ -116,7 +117,7 @@ type workerState struct {
 	processor *processing.Processor
 }
 
-var version = "0.2.3"
+var version = loxacollector.Version
 
 func main() {
 	if err := executeWorkerCLI(os.Args[1:]); err != nil {

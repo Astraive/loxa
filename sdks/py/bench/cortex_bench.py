@@ -23,7 +23,7 @@ from bench.dataset import generate_dataset
 from loxa.cortex.engine import Engine
 
 
-def run_benchmark(cortex_url: str = "http://localhost:9100", seed: int = 42) -> dict:
+def run_benchmark(cortex_url: str = "http://localhost:9312", seed: int = 42) -> dict:
     """Run the full benchmark suite.
 
     Args:

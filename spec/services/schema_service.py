@@ -6,7 +6,7 @@ and a lightweight /metrics endpoint. Intended as a local prototype for a durable
 registry (cacheable, with health checks) that SDKs and CI can query.
 
 Run:
-  python spec\services\schema_service.py --host 0.0.0.0 --port 8080
+  python spec\services\schema_service.py --host 0.0.0.0 --port 9315
 
 This intentionally has no external dependencies and is easy to run in CI or as a lightweight
 container during rollout. It should be replaced by a production service (API gateway + CDN)
@@ -185,7 +185,7 @@ class SchemaServiceHandler(BaseHTTPRequestHandler):
         self.send_error(HTTPStatus.NOT_FOUND, "not found")
 
 
-def run_server(host: str = "127.0.0.1", port: int = 8080) -> None:
+def run_server(host: str = "127.0.0.1", port: int = 9315) -> None:
     server = ThreadingHTTPServer((host, port), SchemaServiceHandler)
     server.start_time = time.time()
     logging.info("Starting schema-service on %s:%d", host, port)
@@ -199,6 +199,6 @@ def run_server(host: str = "127.0.0.1", port: int = 8080) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default=os.getenv("SCHEMA_SERVICE_HOST", "127.0.0.1"))
-    parser.add_argument("--port", type=int, default=_env_int("SCHEMA_SERVICE_PORT", 8080))
+    parser.add_argument("--port", type=int, default=_env_int("SCHEMA_SERVICE_PORT", 9315))
     args = parser.parse_args()
     run_server(args.host, args.port)

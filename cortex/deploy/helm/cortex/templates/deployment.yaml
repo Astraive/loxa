@@ -42,10 +42,10 @@ spec:
           {{- end }}
           ports:
             - name: http
-              containerPort: 9100
+              containerPort: 9312
               protocol: TCP
             - name: grpc
-              containerPort: 9101
+              containerPort: 9313
               protocol: TCP
           envFrom:
             - configMapRef:
@@ -53,7 +53,10 @@ spec:
           {{- if .Values.storage.postgresql.password }}
           env:
             - name: CORTEX_POSTGRES_PASSWORD
-              value: {{ .Values.storage.postgresql.password | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "cortex.fullname" . }}-secrets
+                  key: postgres-password
           {{- end }}
           livenessProbe:
             httpGet:

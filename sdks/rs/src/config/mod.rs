@@ -2,6 +2,7 @@ pub mod async_config;
 #[allow(clippy::module_inception)]
 pub mod config;
 pub mod defaults;
+pub mod dsn;
 pub mod env;
 pub mod security;
 

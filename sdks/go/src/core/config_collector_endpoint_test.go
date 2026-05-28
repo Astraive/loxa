@@ -4,7 +4,7 @@ import "testing"
 
 func TestNewClient_AcceptsCollectorEndpointAlias(t *testing.T) {
 	client, err := NewClient(Config{
-		CollectorEndpoint: "http://localhost:8080",
+		CollectorEndpoint: "http://localhost:9308",
 		Service:           "checkout",
 	})
 	if err != nil {
@@ -13,7 +13,7 @@ func TestNewClient_AcceptsCollectorEndpointAlias(t *testing.T) {
 	if client == nil {
 		t.Fatal("NewClient() returned nil client")
 	}
-	if client.cfg.CollectorURL != "http://localhost:8080" {
+	if client.cfg.CollectorURL != "http://localhost:9308" {
 		t.Fatalf("CollectorURL = %q, want alias value", client.cfg.CollectorURL)
 	}
 }

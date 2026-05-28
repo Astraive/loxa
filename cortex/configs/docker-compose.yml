@@ -30,8 +30,8 @@ services:
       context: ../..
       dockerfile: cortex/configs/Dockerfile
     ports:
-      - "8080:8080"
-      - "9090:9090"
+      - "9312:9312"
+      - "9313:9313"
     environment:
       CORTEX_STORAGE_BACKEND: postgres
       CORTEX_POSTGRES_HOST: postgres
@@ -49,9 +49,9 @@ services:
 
   cortex-cli:
     profiles: ["cli"]
-    image: astraive/loxa-cli:0.2.3
+    image: astraive/loxa-cli:0.2.5
     environment:
-      LOXA_CORTEX_URL: http://cortex:8080
+      LOXA_CORTEX_URL: http://cortex:9312
     depends_on:
       - cortex
 

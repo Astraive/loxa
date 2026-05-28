@@ -134,6 +134,7 @@ func TestMiddleware_ValidPublicKey(t *testing.T) {
 	req := httptest.NewRequest("POST", "/events", nil)
 	req.Header.Set("Authorization", "Bearer lx_pub_live_kpub1_pubsecret")
 	req.Header.Set("X-Loxa-Env", "prod")
+	req.Header.Set("Origin", "https://app.example.com") // must match AllowedOrigins in test store
 	rec := httptest.NewRecorder()
 
 	handler.ServeHTTP(rec, req)
@@ -162,9 +163,7 @@ func TestMiddleware_MissingHeader(t *testing.T) {
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
-	if rec.Header().Get("X-Auth-Failure-Code") != "missing_token" {
-		t.Errorf("failure code = %q, want %q", rec.Header().Get("X-Auth-Failure-Code"), "missing_token")
-	}
+	// X-Auth-Failure-Code is no longer sent to clients (logged server-side only).
 }
 
 func TestMiddleware_InvalidKey(t *testing.T) {
@@ -209,9 +208,7 @@ func TestMiddleware_RevokedKey(t *testing.T) {
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
-	if rec.Header().Get("X-Auth-Failure-Code") != "key_revoked" {
-		t.Errorf("failure code = %q, want %q", rec.Header().Get("X-Auth-Failure-Code"), "key_revoked")
-	}
+	// X-Auth-Failure-Code is no longer sent to clients (logged server-side only).
 }
 
 func TestMiddleware_ExpiredKey(t *testing.T) {
@@ -234,9 +231,7 @@ func TestMiddleware_ExpiredKey(t *testing.T) {
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
-	if rec.Header().Get("X-Auth-Failure-Code") != "key_expired" {
-		t.Errorf("failure code = %q, want %q", rec.Header().Get("X-Auth-Failure-Code"), "key_expired")
-	}
+	// X-Auth-Failure-Code is no longer sent to clients (logged server-side only).
 }
 
 func TestMiddleware_WrongEnv(t *testing.T) {
@@ -260,9 +255,7 @@ func TestMiddleware_WrongEnv(t *testing.T) {
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
-	if rec.Header().Get("X-Auth-Failure-Code") != "env_not_allowed" {
-		t.Errorf("failure code = %q, want %q", rec.Header().Get("X-Auth-Failure-Code"), "env_not_allowed")
-	}
+	// X-Auth-Failure-Code is no longer sent to clients (logged server-side only).
 }
 
 func TestMiddleware_WrongService(t *testing.T) {
@@ -287,9 +280,7 @@ func TestMiddleware_WrongService(t *testing.T) {
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
-	if rec.Header().Get("X-Auth-Failure-Code") != "service_not_allowed" {
-		t.Errorf("failure code = %q, want %q", rec.Header().Get("X-Auth-Failure-Code"), "service_not_allowed")
-	}
+	// X-Auth-Failure-Code is no longer sent to clients (logged server-side only).
 }
 
 func TestRequirePermission_Allowed(t *testing.T) {

@@ -410,7 +410,7 @@ WebSocket endpoint for live event streaming. Connect and send a subscription mes
 **Connection**
 
 ```
-ws://localhost:9091/ws
+ws://localhost:9312/ws
 ```
 
 **Subscribe Message**

@@ -608,6 +608,9 @@ fn overlay_file_config(mut base: FileConfig, override_cfg: FileConfig) -> FileCo
     if override_cfg.collector_endpoint.is_some() {
         base.collector_endpoint = override_cfg.collector_endpoint;
     }
+    if override_cfg.api_key.is_some() {
+        base.api_key = override_cfg.api_key;
+    }
     if override_cfg.duplicate_policy.is_some() {
         base.duplicate_policy = override_cfg.duplicate_policy;
     }

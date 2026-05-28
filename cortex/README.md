@@ -88,7 +88,7 @@ docker compose up
 Reconstruct an incident:
 
 ```bash
-curl -X POST http://localhost:9091/reconstruct \
+curl -X POST http://localhost:9312/reconstruct \
   -H "Content-Type: application/json" \
   -d '{"incident_id": "inc-001", "mode": "fast"}'
 ```
@@ -96,13 +96,13 @@ curl -X POST http://localhost:9091/reconstruct \
 Get the service graph:
 
 ```bash
-curl http://localhost:9091/graph/service/payment-service
+curl http://localhost:9312/graph/service/payment-service
 ```
 
 Find similar incidents:
 
 ```bash
-curl -X POST http://localhost:9091/signatures/search \
+curl -X POST http://localhost:9312/signatures/search \
   -H "Content-Type: application/json" \
   -d '{"symptoms": ["timeout", "5xx_spike"], "services": ["payment-service"]}'
 ```
@@ -110,7 +110,7 @@ curl -X POST http://localhost:9091/signatures/search \
 Submit feedback:
 
 ```bash
-curl -X POST http://localhost:9091/feedback/remediation \
+curl -X POST http://localhost:9312/feedback/remediation \
   -H "Content-Type: application/json" \
   -d '{"incident_id": "inc-001", "action": "restart_pod", "outcome": "resolved", "confidence": 0.9}'
 ```

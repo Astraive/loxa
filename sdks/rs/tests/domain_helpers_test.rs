@@ -339,11 +339,11 @@ fn test_finish_group_error() {
 
 #[test]
 fn test_collector_api_stubs() {
-    let client = CollectorHttpClient::new("http://localhost:9090");
+    let client = CollectorHttpClient::new("http://localhost:9308");
     // Test client construction and URL formatting without making HTTP calls
-    assert_eq!(client.tail_endpoint(), "http://localhost:9090/tail");
+    assert_eq!(client.tail_endpoint(), "http://localhost:9308/tail");
     assert_eq!(client.sdk_name, "loxa-rs");
-    assert_eq!(client.sdk_version, "0.2.0");
+    assert_eq!(client.sdk_version, "0.2.5");
     // Envelope building test
     let envelope = client.envelope(&["{\"event\":\"test\"}".to_string()]);
     assert_eq!(

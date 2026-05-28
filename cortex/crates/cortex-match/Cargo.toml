@@ -1,6 +1,6 @@
 [package]
 name = "cortex-match"
-version = "0.2.3"
+version = "0.2.5"
 edition = "2021"
 description = "High-performance incident shape matching for LOXA Cortex"
 authors = ["LOXA Team"]

@@ -1,6 +1,6 @@
 # LOXA Python SDK
 
-**Status**: STABLE (v0.2.3) - Production-ready, full feature conformance
+**Status**: STABLE (v0.2.5) - Production-ready, full feature conformance
 
 Full API conformance with specification is complete. See [SDK_CONFORMANCE_CONTRACT.md](../../spec/docs/SDK_CONFORMANCE_CONTRACT.md) for detailed guarantees.
 
@@ -20,7 +20,7 @@ import loxa
 # Configure the default logger
 loxa.configure(
     loxa.production("checkout")
-    .with_collector_endpoint("http://127.0.0.1:9090")
+    .with_collector_endpoint("http://127.0.0.1:9308")
 )
 
 # Lifecycle
@@ -220,11 +220,11 @@ loxa.error("payment failed", provider="stripe", amount=4999)
 import loxa
 
 # Default API — configure once, use everywhere
-loxa.configure(loxa.production("checkout").with_collector_endpoint("http://127.0.0.1:9090"))
+loxa.configure(loxa.production("checkout").with_collector_endpoint("http://127.0.0.1:9308"))
 loxa.info("server started")
 
 # Custom instance
-logger = loxa.create_loxa(service="checkout-api", collector_endpoint="http://127.0.0.1:9090")
+logger = loxa.create_loxa(service="checkout-api", collector_endpoint="http://127.0.0.1:9308")
 logger.info("custom instance ready")
 
 # Alias -- same config, loxa.alias metadata
@@ -293,7 +293,7 @@ import loxa
 
 cfg = loxa.production("checkout").with_sink(loxa.StdoutSink())
 cfg = loxa.production("checkout").with_sink(loxa.FileSink("/var/log/app.log"))
-cfg = loxa.production("checkout").with_sink(loxa.HTTPBatchSink("http://collector:9090/events"))
+cfg = loxa.production("checkout").with_sink(loxa.HTTPBatchSink("http://collector:9308/events"))
 
 # For testing
 sink, store = loxa.MemorySink()

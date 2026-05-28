@@ -23,7 +23,7 @@ from loxa import (
 # Configure
 configure(
     production("checkout").with_sink(
-        HTTPBatchSink("http://127.0.0.1:9090/events")
+        HTTPBatchSink("http://127.0.0.1:9308/events")
     )
 )
 
@@ -404,7 +404,7 @@ cfg = (
     .with_version("1.2.0")
     .with_environment("prod")
     .with_region("ap-south-1")
-    .with_sink(HTTPBatchSink("http://collector:9090/events"))
+    .with_sink(HTTPBatchSink("http://collector:9308/events"))
     .with_sampler(SampleErrors())
     .with_redactor(DefaultRedactor())
     .with_duplicate_policy(CanonicalWins)
@@ -421,7 +421,7 @@ StderrSink()                                      # stderr
 FileSink("/var/log/app.log")                      # file
 MemorySink()                                      # testing
 NoopSink()                                        # discard
-HTTPBatchSink("http://collector:9090/events")  # HTTP batch
+HTTPBatchSink("http://collector:9308/events")  # HTTP batch
 ```
 
 ---
@@ -505,7 +505,7 @@ assert_has_checkpoint(events[0], "payment_started")
 from loxa import *
 
 configure(production("checkout").with_sink(
-    HTTPBatchSink("http://127.0.0.1:9090/events")
+    HTTPBatchSink("http://127.0.0.1:9308/events")
 ))
 
 def handle_checkout(user, cart, payment_method):

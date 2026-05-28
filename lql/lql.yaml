@@ -1,0 +1,5 @@
+name: loxa-lql
+version: 0.2.5
+description: Loxa Query Language parser and compiler
+license: MIT
+repository: https://github.com/Astraive/loxa

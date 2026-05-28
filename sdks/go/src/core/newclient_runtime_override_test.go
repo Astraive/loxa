@@ -11,7 +11,7 @@ func TestNewClient_CodeCompressionOverrideWinsOverEnv(t *testing.T) {
 	logger, err := NewClient(
 		ApplyConfig(
 			Config{},
-			WithCollectorURL("http://collector.example:8080"),
+			WithCollectorURL("http://collector.example:9308"),
 			WithService("checkout"),
 			WithCompression(false),
 		),
@@ -29,7 +29,7 @@ func TestNewClient_WithAsyncFalseDisablesDefaultPipeline(t *testing.T) {
 	logger, err := NewClient(
 		ApplyConfig(
 			Config{},
-			WithCollectorURL("http://collector.example:8080"),
+			WithCollectorURL("http://collector.example:9308"),
 			WithService("checkout"),
 			WithAsync(false),
 		),
@@ -51,7 +51,7 @@ func TestNewClient_DropOversizedOverrideWinsOverDefaults(t *testing.T) {
 
 	logger, err := NewClient(
 		Config{}.
-			WithCollectorEndpoint("http://collector.example:8080").
+			WithCollectorEndpoint("http://collector.example:9308").
 			WithService("checkout").
 			WithSink(sink).
 			WithAsync(false).

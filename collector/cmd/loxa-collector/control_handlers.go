@@ -16,8 +16,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const collectorVersion = "0.2.3"
-
 func (s *collectorState) handleVersion(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"version":            collectorVersion,
@@ -28,10 +26,7 @@ func (s *collectorState) handleVersion(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *collectorState) handleStatus(w http.ResponseWriter, r *http.Request) {
-	if !s.isAuthorized(r) {
-		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
-		return
-	}
+	// Auth is handled by the multi-key middleware in BuildMux.
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":           statusString(s.isReady()),
 		"version":          collectorVersion,
@@ -205,15 +200,26 @@ func (s *collectorState) handleQuery(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 
+	// Use a dedicated connection so SET and query run on the same connection.
+	// DuckDB SET is connection-scoped; using the pool directly means the SET
+	// might apply to one connection while the query runs on another.
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		log.Error().Err(err).Str("request_id", requestID).Msg("query conn acquire failed")
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_unavailable", "request_id": requestID})
+		return
+	}
+	defer conn.Close()
+
 	// Disable external access to block read_csv, read_json, etc.
 	// Reject the query if this fails — proceeding without the safety guard is unsafe.
-	if _, err := db.ExecContext(ctx, "SET enable_external_access=false"); err != nil {
+	if _, err := conn.ExecContext(ctx, "SET enable_external_access=false"); err != nil {
 		log.Error().Err(err).Str("request_id", requestID).Msg("failed to disable external access in DuckDB")
 		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_safety_check_failed", "request_id": requestID})
 		return
 	}
 
-	rows, err := db.QueryContext(ctx, query)
+	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
 		log.Error().Err(err).Str("request_id", requestID).Msg("query failed")
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "query_failed", "request_id": requestID})

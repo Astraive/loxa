@@ -135,3 +135,9 @@ gen/go/
 # Local / experimental app
 # =============================================================================
 loxana/
+# Local database files
+*.duckdb
+*.duckdb.wal
+*.db
+*.db.wal
+

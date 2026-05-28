@@ -1,5 +1,5 @@
 collector:
-  addr: ":9090"
+  addr: ":9308"
 fanout:
   outputs:
     - name: "loki-copy"

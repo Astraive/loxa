@@ -33,7 +33,7 @@ COPY collector/deploy/docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoi
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-EXPOSE 9090
+EXPOSE 9308
 
 RUN useradd -r -s /bin/false -u 10001 loxa && chown -R loxa:loxa /app
 USER loxa

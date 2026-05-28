@@ -330,7 +330,7 @@ def run_cli_flow() -> list[StepResult]:
             _stop_process(collector_proc)
             return results
 
-        defaults = _build_cli_defaults(temp_dir, base_url, "http://127.0.0.1:8080")
+        defaults = _build_cli_defaults(temp_dir, base_url, "http://127.0.0.1:9312")
         env = os.environ.copy()
         env["LOXA_CLI_DEFAULTS"] = str(defaults)
 
@@ -412,8 +412,8 @@ def run_cortex_full_stack() -> list[StepResult]:
         return results
 
     try:
-        health_ok = _wait_for_http("http://127.0.0.1:8080/healthz", timeout_s=30.0)
-        ready_ok = _wait_for_http("http://127.0.0.1:8080/readyz", timeout_s=30.0)
+        health_ok = _wait_for_http("http://127.0.0.1:9312/healthz", timeout_s=30.0)
+        ready_ok = _wait_for_http("http://127.0.0.1:9312/readyz", timeout_s=30.0)
         results.append(
             StepResult(
                 id="cortex.healthz",

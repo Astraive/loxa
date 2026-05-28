@@ -1,6 +1,6 @@
 [package]
 name = "loxa-lql"
-version = "0.2.3"
+version = "0.2.5"
 edition = "2021"
 description = "Loxa Query Language — compiles to DuckDB/ClickHouse SQL"
 license = "MIT"

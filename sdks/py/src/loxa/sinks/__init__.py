@@ -80,7 +80,7 @@ def health(sink: Any) -> bool:
 
 def otlp_sink(endpoint: str = "", **kwargs: Any) -> HTTPBatchSink:
     return HTTPBatchSink(
-        endpoint=endpoint or "http://127.0.0.1:9090/events",
+        endpoint=endpoint or "http://127.0.0.1:9308/events",
         **kwargs,
     )
 
@@ -91,7 +91,7 @@ def kafka_sink(endpoint: str = "", topic: str = "", **kwargs: Any) -> HTTPBatchS
     The collector must have a Kafka sink configured to handle these events.
     """
     return HTTPBatchSink(
-        endpoint=endpoint or "http://127.0.0.1:9090/events",
+        endpoint=endpoint or "http://127.0.0.1:9308/events",
         service=topic or kwargs.pop("service", ""),
         **kwargs,
     )

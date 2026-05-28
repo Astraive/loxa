@@ -1,6 +1,6 @@
 // End-to-end test: loxa-rs SDK -> HTTPBatchSink -> loxa-collector
 //
-// Requires a live loxa-collector on http://127.0.0.1:9090
+// Requires a live loxa-collector on http://127.0.0.1:9308
 // Run: cargo test --test collector_e2e -- --test-threads=1
 
 use loxa::{
@@ -8,7 +8,7 @@ use loxa::{
 };
 use serde_json::Value;
 
-const COLLECTOR_URL: &str = "http://127.0.0.1:9090";
+const COLLECTOR_URL: &str = "http://127.0.0.1:9308";
 
 fn collector_health() -> bool {
     let client = HTTPClient::with_timeout_ms(2_000);
@@ -72,7 +72,7 @@ fn config_option_with_collector_endpoint_auto_wires_httpbatch() {
 
 #[test]
 fn explicit_file_sink_preserved_alongside_collector_endpoint() {
-    let cfg = Config::test("explicit")
+    let cfg = Config::dev("explicit")
         .with_sink(loxa::FileSink("/tmp/loxa-e2e.log"))
         .with_collector_endpoint(COLLECTOR_URL);
     let logger = New(cfg);
@@ -116,7 +116,7 @@ fn no_collector_endpoint_keeps_default_sink() {
 }
 
 // ---------------------------------------------------------------------------
-// Live E2E tests (requires collector on :9090)
+// Live E2E tests (requires collector on :9308)
 // ---------------------------------------------------------------------------
 
 #[test]

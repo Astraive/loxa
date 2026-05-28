@@ -62,14 +62,14 @@ Benchmarks are designed to run on a standard development machine. For production
 1. Use the `loxa-loadgen` tool to generate realistic traffic:
 
 ```bash
-go run ./cmd/loxa-loadgen -url http://localhost:9090/ingest -rate 10000 -duration 60s
+go run ./cmd/loxa-loadgen -url http://localhost:9308/ingest -rate 10000 -duration 60s
 ```
 
 2. Monitor with Prometheus metrics at `/metrics`.
 3. Profile with `pprof` if needed:
 
 ```bash
-go tool pprof http://localhost:9090/debug/pprof/profile?seconds=30
+go tool pprof http://localhost:9308/debug/pprof/profile?seconds=30
 ```
 
 ## Benchmark Results

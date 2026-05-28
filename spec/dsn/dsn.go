@@ -9,7 +9,7 @@
 //
 // Examples:
 //
-//	loxa://localhost:8080/my-app?env=dev&tls=false
+//	loxa://localhost:9308/my-app?env=dev&tls=false
 //	loxa://collector.example.com/my-app?env=prod&tls=true
 //	loxa://loxa.internal:4318/backend?env=staging&service=auth&transport=otlp
 package dsn
@@ -56,7 +56,7 @@ type LoxaDSN struct {
 // Port defaults:
 //   - tls=true -> 443
 //   - tls=false -> 80
-//   - localhost without explicit port -> 8080
+//   - localhost without explicit port -> 9308
 func Parse(raw string) (*LoxaDSN, error) {
 	if raw == "" {
 		return nil, fmt.Errorf("invalid Loxa DSN: empty string")
@@ -115,8 +115,8 @@ func Parse(raw string) (*LoxaDSN, error) {
 	if !tls {
 		port = 80
 	}
-	if host == "localhost" && portStr == "" {
-		port = 8080
+	if isLocalhost(host) && portStr == "" {
+		port = 9308
 	}
 	if portStr != "" {
 		p, err := strconv.Atoi(portStr)

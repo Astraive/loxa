@@ -22,7 +22,7 @@ flowchart LR
 
 ### HTTP Ingest
 
-The ingest server listens on a configurable port (default: 9090) and accepts:
+The ingest server listens on a configurable port (default: 9308) and accepts:
 
 - Single JSON objects
 - JSON arrays

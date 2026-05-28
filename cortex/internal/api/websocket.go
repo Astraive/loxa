@@ -30,7 +30,8 @@ func newCortexWSUpgrader(allowedOrigins []string) websocket.Upgrader {
 			}
 			// Allow localhost for development (exact match with port, not prefix)
 			if origin == "http://localhost" || strings.HasPrefix(origin, "http://localhost:") ||
-				origin == "http://127.0.0.1" || strings.HasPrefix(origin, "http://127.0.0.1:") {
+				origin == "http://127.0.0.1" || strings.HasPrefix(origin, "http://127.0.0.1:") ||
+				origin == "http://[::1]" || strings.HasPrefix(origin, "http://[::1]:") {
 				return true
 			}
 			return false

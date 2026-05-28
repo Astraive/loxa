@@ -321,28 +321,28 @@ func TestConfigStructs(t *testing.T) {
 	cfg := Config{
 		HTTP: HTTPConfig{
 			Enabled:           true,
-			Addr:              ":9090",
+			Addr:              ":9308",
 			ReadHeaderTimeout: 5 * time.Second,
 			MaxBodyBytes:      10 * 1024 * 1024,
 		},
 		GRPC: GRPCConfig{
 			Enabled:              true,
-			Port:                 ":9091",
+			Port:                 ":9309",
 			MaxConcurrentStreams: 100,
 		},
 		GraphQL: GraphQLConfig{
 			Enabled:    true,
-			Port:       ":9092",
+			Port:       ":9310",
 			Playground: true,
 		},
 	}
 
 	assert.True(t, cfg.HTTP.Enabled)
-	assert.Equal(t, ":9090", cfg.HTTP.Addr)
+	assert.Equal(t, ":9308", cfg.HTTP.Addr)
 	assert.True(t, cfg.GRPC.Enabled)
-	assert.Equal(t, ":9091", cfg.GRPC.Port)
+	assert.Equal(t, ":9309", cfg.GRPC.Port)
 	assert.True(t, cfg.GraphQL.Enabled)
-	assert.Equal(t, ":9092", cfg.GraphQL.Port)
+	assert.Equal(t, ":9310", cfg.GraphQL.Port)
 }
 
 type mockIngestStream struct {

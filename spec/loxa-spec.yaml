@@ -1,0 +1,5 @@
+name: loxa-spec
+version: 0.2.5
+description: Wire and schema contract specification
+license: MIT
+repository: https://github.com/Astraive/loxa

@@ -17,8 +17,8 @@ func TestWithDSN(t *testing.T) {
 	}{
 		{
 			name:         "localhost dev",
-			dsn:          "loxa://localhost:8080/demo?env=dev&tls=false",
-			wantURL:      "http://localhost:8080",
+			dsn:          "loxa://localhost:9308/demo?env=dev&tls=false",
+			wantURL:      "http://localhost:9308",
 			wantEnv:      "dev",
 			wantInsecure: true,
 		},
@@ -111,13 +111,13 @@ func TestLoadFromEnv_DSN(t *testing.T) {
 
 	t.Run("LOXA_COLLECTOR_URL overrides DSN", func(t *testing.T) {
 		os.Setenv("LOXA_DSN", "loxa://collector.example.com/myapp?env=staging")
-		os.Setenv("LOXA_COLLECTOR_URL", "http://override:9090")
+		os.Setenv("LOXA_COLLECTOR_URL", "http://override:9308")
 		os.Unsetenv("LOXA_ENVIRONMENT")
 		os.Unsetenv("LOXA_SERVICE_NAME")
 
 		cfg := LoadFromEnv(Config{})
-		if cfg.CollectorURL != "http://override:9090" {
-			t.Errorf("CollectorURL = %q, want %q", cfg.CollectorURL, "http://override:9090")
+		if cfg.CollectorURL != "http://override:9308" {
+			t.Errorf("CollectorURL = %q, want %q", cfg.CollectorURL, "http://override:9308")
 		}
 		// Environment from DSN should still be present
 		if cfg.Environment != "staging" {
@@ -162,7 +162,7 @@ func TestLoadFromEnv_DSN(t *testing.T) {
 	})
 
 	t.Run("localhost DSN sets Insecure", func(t *testing.T) {
-		os.Setenv("LOXA_DSN", "loxa://localhost:8080/demo?tls=false")
+		os.Setenv("LOXA_DSN", "loxa://localhost:9308/demo?tls=false")
 		os.Unsetenv("LOXA_COLLECTOR_URL")
 		os.Unsetenv("LOXA_ENVIRONMENT")
 		os.Unsetenv("LOXA_SERVICE_NAME")
@@ -171,8 +171,8 @@ func TestLoadFromEnv_DSN(t *testing.T) {
 		if !cfg.Insecure {
 			t.Errorf("Insecure = false, want true for localhost DSN")
 		}
-		if cfg.CollectorURL != "http://localhost:8080" {
-			t.Errorf("CollectorURL = %q, want %q", cfg.CollectorURL, "http://localhost:8080")
+		if cfg.CollectorURL != "http://localhost:9308" {
+			t.Errorf("CollectorURL = %q, want %q", cfg.CollectorURL, "http://localhost:9308")
 		}
 	})
 

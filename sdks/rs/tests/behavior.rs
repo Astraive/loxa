@@ -109,11 +109,11 @@ fn duplicate_policy_error_on_duplicate_fails_emit() {
 #[test]
 fn collector_endpoint_installs_default_http_sink() {
     let logger =
-        New(Config::test("checkout").with_collector_endpoint("http://127.0.0.1:9090/events"));
+        New(Config::dev("checkout").with_collector_endpoint("http://127.0.0.1:9308/events"));
     let debug = format!("{logger:?}");
 
     assert!(debug.contains("HttpBatch"));
-    assert!(debug.contains("http://127.0.0.1:9090/events"));
+    assert!(debug.contains("http://127.0.0.1:9308/events"));
 }
 
 #[test]

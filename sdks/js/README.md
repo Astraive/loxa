@@ -2,7 +2,7 @@
 
 LOXA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loxa-collector.
 
-**Status**: STABLE (v0.2.3) - Production-ready, full feature conformance
+**Status**: STABLE (v0.2.5) - Production-ready, full feature conformance
 
 ## Installation
 
@@ -18,7 +18,7 @@ import { loxa } from 'loxa-js';
 // Configure
 loxa.configure(
   loxa.production('checkout')
-    .withCollectorEndpoint('http://localhost:9090')
+    .withCollectorEndpoint('http://localhost:9308')
 );
 
 // Lifecycle
@@ -237,11 +237,11 @@ await loxa.error('payment failed', loxa.string('provider', 'stripe'));
 import { loxa, createLoxa } from 'loxa-js';
 
 // Default API — configure once, use everywhere
-loxa.configure(loxa.production('checkout').withCollectorEndpoint('http://127.0.0.1:9090'));
+loxa.configure(loxa.production('checkout').withCollectorEndpoint('http://127.0.0.1:9308'));
 loxa.info('server started');
 
 // Custom instance
-const logger = createLoxa({ service: 'checkout-api', collectorUrl: 'http://127.0.0.1:9090' });
+const logger = createLoxa({ service: 'checkout-api', collectorUrl: 'http://127.0.0.1:9308' });
 logger.info('custom instance ready');
 
 // Alias -- same config, loxa.alias metadata
@@ -303,7 +303,7 @@ import {
 const cfg = production('checkout').withSink(stdoutSink());
 const cfg2 = production('checkout').withSink(fileSink('/var/log/app.log'));
 const cfg3 = production('checkout').withSink(httpBatchSink({
-  endpoint: 'http://collector:9090/events',
+  endpoint: 'http://collector:9308/events',
 }));
 
 // For testing

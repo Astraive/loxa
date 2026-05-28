@@ -28,7 +28,7 @@ func captureStdout(t *testing.T, run func() error) (string, error) {
 }
 
 func TestEmitSamplePrintsEnvelope(t *testing.T) {
-	cfg := config.Config{CollectorURL: "http://127.0.0.1:9090"}
+	cfg := config.Config{CollectorURL: "http://127.0.0.1:9308"}
 	old := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
@@ -48,7 +48,7 @@ func TestEmitSamplePrintsEnvelope(t *testing.T) {
 }
 
 func TestEmitSampleWritesOutputFile(t *testing.T) {
-	cfg := config.Config{CollectorURL: "http://127.0.0.1:9090"}
+	cfg := config.Config{CollectorURL: "http://127.0.0.1:9308"}
 	path := filepath.Join(t.TempDir(), "sample.json")
 	if err := EmitCommand(cfg, []string{"sample", "--output", path, "--print"}); err != nil {
 		t.Fatalf("emit sample: %v", err)
@@ -411,7 +411,7 @@ func TestDebugPipelineShowsStatus(t *testing.T) {
 }
 
 func TestEmitWithCustomKindAndOutcome(t *testing.T) {
-	cfg := config.Config{CollectorURL: "http://127.0.0.1:9090"}
+	cfg := config.Config{CollectorURL: "http://127.0.0.1:9308"}
 	old := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w

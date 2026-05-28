@@ -89,7 +89,7 @@ func BuildMux(ingestPath, healthPath, readyPath, metricsPath string, metricsEnab
 	mux.HandleFunc("GET /ready", handlers.HandleReady)
 	mux.HandleFunc("GET /readyz", handlers.HandleReady)
 	mux.HandleFunc("GET /version", handlers.HandleVersion)
-	mux.HandleFunc("GET /status", handlers.HandleStatus)
+	route("GET", "/status", handlers.HandleStatus, "status:read")
 
 	// ── Read endpoints ───────────────────────────────────────────────────
 	route("GET", "/sinks", handlers.HandleSinks, "events:read")

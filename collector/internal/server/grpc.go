@@ -11,6 +11,7 @@ import (
 
 	"github.com/astraive/loxa-collector/internal/auth"
 	"github.com/astraive/loxa-collector/internal/otlpconv"
+	"github.com/astraive/loxa-collector/internal/version"
 	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
 	collectorlogsv1 "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	"google.golang.org/grpc"
@@ -28,6 +29,7 @@ type GRPCServer struct {
 	srv               *grpc.Server
 	authEnabled       bool
 	allowLocalDevKeys bool
+	trustedProxies    []*net.IPNet
 	keyStore          auth.KeyStore
 	keyCache          *auth.MemoryKeyCache
 	serverSecret      []byte
@@ -53,6 +55,12 @@ func (s *GRPCServer) WithAuth(store auth.KeyStore, cache *auth.MemoryKeyCache, s
 // WithAllowLocalDevKeys enables lx_local_dev_* key acceptance on this server.
 func (s *GRPCServer) WithAllowLocalDevKeys(v bool) *GRPCServer {
 	s.allowLocalDevKeys = v
+	return s
+}
+
+// WithTrustedProxies sets the trusted proxy CIDRs for IP-based ABAC checks.
+func (s *GRPCServer) WithTrustedProxies(proxies []*net.IPNet) *GRPCServer {
+	s.trustedProxies = proxies
 	return s
 }
 
@@ -98,6 +106,9 @@ func (s *GRPCServer) Start(ctx context.Context) error {
 
 	if s.authEnabled {
 		grpcOpts := []auth.GRPCAuthOption{auth.GRPCWithAllowLocalDevKeys(s.allowLocalDevKeys)}
+		if len(s.trustedProxies) > 0 {
+			grpcOpts = append(grpcOpts, auth.GRPCWithTrustedProxies(s.trustedProxies))
+		}
 		opts = append(opts,
 			grpc.ChainUnaryInterceptor(auth.UnaryAuthInterceptor(s.keyStore, s.keyCache, s.serverSecret, grpcOpts...)),
 			grpc.ChainStreamInterceptor(auth.StreamAuthInterceptor(s.keyStore, s.keyCache, s.serverSecret, grpcOpts...)),
@@ -349,7 +360,7 @@ func (s *collectorIngestServer) IngestStream(stream loxav1.CollectorIngest_Inges
 func (s *collectorIngestServer) Ping(ctx context.Context, req *loxav1.PingRequest) (*loxav1.PingResponse, error) {
 	return &loxav1.PingResponse{
 		Status:  "ok",
-		Version: "0.2.3",
+		Version: version.CollectorVersion(),
 	}, nil
 }
 

@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"time"
 
+	loxacortex "github.com/astraive/loxa/loxa-cortex"
 	"github.com/astraive/loxa/loxa-cortex/internal/config"
 	"github.com/astraive/loxa/loxa-cortex/internal/correlation"
 	"github.com/astraive/loxa/loxa-cortex/internal/graph"
@@ -28,7 +30,7 @@ import (
 )
 
 // cortexVersion is the current version of the cortex service.
-const cortexVersion = "0.2.3"
+var cortexVersion = loxacortex.Version
 
 // maxGraphDepth caps the depth parameter for graph queries to prevent abuse.
 const maxGraphDepth = 100
@@ -108,7 +110,19 @@ func NewServer(cfg *config.Config, stor storage.Storage) *Server {
 
 	var rateLimit *middleware.RateLimiter
 	if cfg.RateLimit.Enabled {
-		rateLimit = middleware.NewRateLimiter(cfg.RateLimit.PerAPIKeyRPM, cfg.RateLimit.PerIPRPM)
+		var rlOpts []middleware.RateLimiterOption
+		if len(cfg.Server.TrustedProxies) > 0 {
+			var cidrs []*net.IPNet
+			for _, cidr := range cfg.Server.TrustedProxies {
+				_, ipNet, err := net.ParseCIDR(cidr)
+				if err != nil {
+					log.Fatal().Err(err).Msgf("invalid trusted_proxies CIDR %q", cidr)
+				}
+				cidrs = append(cidrs, ipNet)
+			}
+			rlOpts = append(rlOpts, middleware.WithTrustedProxies(cidrs))
+		}
+		rateLimit = middleware.NewRateLimiter(cfg.RateLimit.PerAPIKeyRPM, cfg.RateLimit.PerIPRPM, rlOpts...)
 	}
 
 	s := &Server{

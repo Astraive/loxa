@@ -729,8 +729,8 @@ def check_config() -> MainCheck:
         assert cfg.service == "my-svc", f"expected my-svc, got {cfg.service}"
 
     def c06(sc):
-        cfg = loxa.Test("test-svc").with_collector_endpoint("http://x:8080")
-        assert cfg.collector_endpoint == "http://x:8080", f"expected http://x:8080, got {cfg.collector_endpoint}"
+        cfg = loxa.Test("test-svc").with_collector_endpoint("http://x:9312")
+        assert cfg.collector_endpoint == "http://x:9312", f"expected http://x:9312, got {cfg.collector_endpoint}"
 
     def c07(sc):
         cfg = loxa.Test("test-svc").with_version("2.0.0")
@@ -824,7 +824,7 @@ def check_cortex() -> MainCheck:
     mc = MainCheck("CORTEX", "Cortex Integration")
 
     def c01(sc):
-        client = loxa.CortexClient("http://localhost:9100")
+        client = loxa.CortexClient("http://localhost:9312")
         assert client is not None, "CortexClient instantiation failed"
 
     def c02(sc):

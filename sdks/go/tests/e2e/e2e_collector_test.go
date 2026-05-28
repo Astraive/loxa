@@ -11,7 +11,7 @@ import (
 	loxa "github.com/astraive/loxa/sdks/go"
 )
 
-const collectorURL = "http://127.0.0.1:9090"
+const collectorURL = "http://127.0.0.1:9308"
 
 // newTestClient creates a SDK Logger that auto-installs HTTPBatchSink
 // when CollectorURL is set — this is the production path.

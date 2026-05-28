@@ -1,0 +1,6 @@
+name: loxa-collector
+version: 0.2.5
+description: High-performance event collector with DuckDB storage
+license: MIT
+repository: https://github.com/Astraive/loxa
+module: github.com/astraive/loxa-collector

@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	loxacortex "github.com/astraive/loxa/loxa-cortex"
 	"github.com/astraive/loxa/loxa-cortex/internal/collectorsync"
 	"github.com/astraive/loxa/loxa-cortex/internal/config"
 	"github.com/astraive/loxa/loxa-cortex/internal/logging"
@@ -23,10 +24,11 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+var version = loxacortex.Version
+
 var grpcServer *grpc.Server
 
 var (
-	version    = "0.2.3"
 	configPath = flag.String("config", "", "Path to configuration file")
 	logLevel   = flag.String("log-level", "info", "Log level (debug, info, warn, error)")
 	logFormat  = flag.String("log-format", "json", "Log format (json, console)")

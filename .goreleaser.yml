@@ -1,0 +1,38 @@
+project_name: loxa
+
+version: 2
+
+builds:
+  - dir: ./cli
+    main: ./cmd/loxa
+    binary: loxa
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X github.com/astraive/loxa-cli/internal/version.Version={{ .Version }}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+      - "^ci:"

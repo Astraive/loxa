@@ -27,13 +27,13 @@ spec/dsn/
 ```go
 import "github.com/astraive/loxa/spec/dsn"
 
-d, err := dsn.Parse("loxa://localhost:8080/demo?env=dev&tls=false")
+d, err := dsn.Parse("loxa://localhost:9308/demo?env=dev&tls=false")
 if err != nil {
     log.Fatal(err)
 }
-fmt.Println(d.BaseURL)    // http://localhost:8080
-fmt.Println(d.EventsURL)  // http://localhost:8080/events
-fmt.Println(d.TailWSURL)  // ws://localhost:8080/tail
+fmt.Println(d.BaseURL)    // http://localhost:9308
+fmt.Println(d.EventsURL)  // http://localhost:9308/events
+fmt.Println(d.TailWSURL)  // ws://localhost:9308/tail
 ```
 
 ## Cross-SDK validation

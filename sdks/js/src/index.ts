@@ -129,6 +129,10 @@ export {
 } from './config/config.ts';
 export type { Config, AsyncConfig, SecurityConfig, ConfigOptions } from './config/config.ts';
 
+// --- Config file loading ---
+export { loadFileConfig, parseSimpleYAML } from './config/config-file.ts';
+export type { YamlRecord } from './config/config-file.ts';
+
 // --- Context ---
 export { getEvent, hasEvent, eventId, requestIdFromContext, traceIdFromContext, runWithEvent, getEvent as FromContext, hasEvent as HasEvent, requestIdFromContext as RequestIDFromContext, traceIdFromContext as TraceIDFromContext } from './core/context.ts';
 

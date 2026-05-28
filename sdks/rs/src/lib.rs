@@ -1,6 +1,7 @@
 #![allow(non_snake_case, non_upper_case_globals)]
 
 mod config;
+pub mod dsn;
 mod errors;
 mod event;
 mod generated;
@@ -1629,7 +1630,7 @@ pub fn NoopSink() -> SinkConfig {
 }
 
 pub fn CollectorSink() -> SinkConfig {
-    CollectorSinkWithEndpoint("http://127.0.0.1:9090/events")
+    CollectorSinkWithEndpoint("http://127.0.0.1:9308/events")
 }
 
 pub fn CollectorSinkWithEndpoint(endpoint: impl Into<String>) -> SinkConfig {

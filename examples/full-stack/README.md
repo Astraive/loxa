@@ -6,7 +6,7 @@ Complete observability stack: LOXA Collector + Prometheus + Grafana.
 
 | Component | Port | Description |
 |-----------|------|-------------|
-| Collector | 9090 | Event ingestion and storage |
+| Collector | 9308 | Event ingestion and storage |
 | Prometheus | 9091 | Metrics collection |
 | Grafana | 3000 | Dashboards and visualization |
 
@@ -20,10 +20,10 @@ docker compose up -d
 
 ```bash
 # Collector health
-curl http://localhost:9090/healthz
+curl http://localhost:9308/healthz
 
 # Prometheus targets
-curl http://localhost:9091/api/core/targets
+curl http://localhost:9311/core/metrics
 
 # Grafana dashboards
 open http://localhost:3000

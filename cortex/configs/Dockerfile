@@ -34,9 +34,9 @@ RUN protoc -I proto -I /usr/include \
 # Build the cortex binary
 RUN cd cortex && CGO_ENABLED=1 go build -o /build/loxa-cortex ./cmd/server
 
-FROM debian:trixie-slim
+FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && \
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -44,10 +44,13 @@ WORKDIR /app
 COPY --from=builder /build/loxa-cortex ./cortex
 COPY --from=builder /build/cortex/configs ./configs
 
-EXPOSE 8080 9090
+EXPOSE 9312 9313
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:9312/healthz || exit 1
 
 ENV CORTEX_SERVER_HOST=0.0.0.0
-ENV CORTEX_SERVER_PORT=8080
+ENV CORTEX_SERVER_PORT=9312
 ENV CORTEX_STORAGE_BACKEND=postgres
 ENV CORTEX_LOG_LEVEL=info
 

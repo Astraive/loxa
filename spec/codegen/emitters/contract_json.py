@@ -6,7 +6,7 @@ from typing import Any
 
 def render_contract_json(contract: dict[str, Any]) -> str:
     payload = {
-        "product_version": contract.get("product_version", "0.2.0"),
+        "product_version": contract["product_version"],
         "spec_version": contract["spec_version"],
         "api_version": contract["api_version"],
         "event_version": contract["event_version"],

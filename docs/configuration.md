@@ -20,7 +20,7 @@ Server listening and request handling.
 
 ```yaml
 collector:
-  addr: ":9090"                    # Listen address (host:port)
+  addr: ":9308"                    # Listen address (host:port)
   read_header_timeout: 5s          # Header read timeout
   shutdown_timeout: 10s            # Graceful shutdown timeout
   max_body_bytes: 10485760         # Max POST body (10MB)
@@ -29,7 +29,7 @@ collector:
   server:
     http:
       enabled: true
-      addr: ":9090"
+      addr: ":9308"
       read_header_timeout: 5s
       max_body_bytes: 10485760
       max_header_bytes: 1048576    # Max header size (1MB)
@@ -37,7 +37,7 @@ collector:
     
     grpc:
       enabled: false
-      port: ":9091"
+      port: ":9309"
       max_connections: 1000
       max_concurrent_streams: 100
       max_recv_msg_size: 4194304   # 4MB
@@ -54,7 +54,7 @@ collector:
     
     graphql:
       enabled: false
-      port: ":9092"
+      port: ":9310"
       playground: true
       depth_limit: 10
       batch_limit: 10
@@ -80,7 +80,7 @@ auth:
 
 When enabled, all requests must include the API key:
 ```bash
-curl -H "Authorization: Bearer lx_sec_live_k2M9aQp_your_secret" http://localhost:9090/core/events -d '[...]'
+curl -H "Authorization: Bearer lx_sec_live_k2M9aQp_your_secret" http://localhost:9308/core/events -d '[...]'
 ```
 
 See [Authentication](authentication.md) and [Authorization](authorization.md) for full details.
@@ -514,7 +514,7 @@ All configuration can be overridden via environment variables:
 
 ```bash
 # Collector
-export LOXA_COLLECTOR_ADDR=":9091"
+export LOXA_COLLECTOR_ADDR=":9309"
 export LOXA_API_KEY="secret123"
 export LOXA_DUCKDB_PATH="/data/loxa.db"
 export LOXA_RETENTION_DAYS=30
@@ -547,7 +547,7 @@ loxa config validate -c loxa.yaml
 
 ```yaml
 collector:
-  addr: ":9090"
+  addr: ":9308"
 
 auth:
   enabled: false
@@ -567,7 +567,7 @@ metrics:
 
 ```yaml
 collector:
-  addr: ":9090"
+  addr: ":9308"
   max_body_bytes: 52428800             # 50MB
 
 auth:

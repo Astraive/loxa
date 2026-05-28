@@ -20,12 +20,12 @@ go build -o loxa-collector.exe ./cmd/loxa-collector
 ./loxa-collector.exe run -c configs/loxa.local.yaml
 ```
 
-The collector starts an HTTP server on `localhost:9090` by default.
+The collector starts an HTTP server on `localhost:9308` by default.
 
 ## Send Your First Event
 
 ```bash
-curl -X POST http://localhost:9090/ingest \
+curl -X POST http://localhost:9308/ingest \
   -H "Content-Type: application/json" \
   -d '{
     "id": "evt-001",

@@ -10,6 +10,8 @@ from queue import Empty, Full, Queue
 from threading import Event, Lock, Thread
 from typing import Callable, Iterable, Protocol
 
+from ..version import SDK_VERSION
+
 
 class WritableSink(Protocol):
     def write(self, encoded: str) -> None: ...
@@ -314,7 +316,7 @@ def encode_batch_envelope(encoded_events: Iterable[str]) -> str:
             "api_version": "v1",
             "source": {
                 "sdk": "loxa-py",
-                "version": "0.2.0",
+                "version": SDK_VERSION,
                 "service": service,
             },
             "events": events,

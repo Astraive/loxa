@@ -172,7 +172,7 @@ The API server exposes four transport protocols:
 | Protocol | Endpoint | Use Case |
 |---|---|---|
 | HTTP REST | `/*` | CRUD operations, reconstruction, graph queries |
-| gRPC | `:9092` | Collector push, high-throughput ingestion |
+| gRPC | `:9309` | Collector push, high-throughput ingestion |
 | WebSocket | `/ws` | Live event streaming, real-time incident feed |
 | GraphQL | `/graphql` | Flexible queries, dashboard integration |
 

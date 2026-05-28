@@ -17,16 +17,26 @@ spec:
         app.kubernetes.io/name: loxa-collector
         app.kubernetes.io/component: collector
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: collector
-          image: ghcr.io/astraive/loxa-collector:0.2.3
+          image: ghcr.io/astraive/loxa-collector:0.2.5
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
           args:
             - run
             - -c
             - /etc/loxa/config.yaml
           ports:
             - name: http
-              containerPort: 9090
+              containerPort: 9308
               protocol: TCP
           livenessProbe:
             httpGet:

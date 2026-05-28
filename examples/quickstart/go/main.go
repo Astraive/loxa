@@ -13,7 +13,7 @@ func main() {
 	// Default API — configure once, use everywhere
 	loxa.Configure(loxa.ApplyConfig(loxa.Production(),
 		loxa.WithService("quickstart-demo"),
-		loxa.WithCollectorEndpoint("http://localhost:9090"),
+		loxa.WithCollectorEndpoint("http://localhost:9308"),
 	))
 	defer loxa.Shutdown(ctx)
 
@@ -32,7 +32,7 @@ func main() {
 	// Custom instance
 	logger, _ := loxa.New(loxa.ApplyConfig(loxa.Config{},
 		loxa.WithService("checkout-api"),
-		loxa.WithCollectorEndpoint("http://localhost:9090"),
+		loxa.WithCollectorEndpoint("http://localhost:9308"),
 	))
 	logger.Info("custom instance ready")
 

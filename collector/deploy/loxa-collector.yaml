@@ -1,5 +1,5 @@
 collector:
-  addr: ":9090"
+  addr: ":9308"
   read_header_timeout: 5s
   shutdown_timeout: 10s
   max_body_bytes: 10485760

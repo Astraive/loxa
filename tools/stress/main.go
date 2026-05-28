@@ -17,6 +17,34 @@ import (
 	"time"
 )
 
+const fallbackVersion = "0.2.5"
+
+func loadVersion() string {
+	candidates := []string{
+		"loxa-collector.metadata.yaml",
+		"../loxa-collector.metadata.yaml",
+		"../../loxa-collector.metadata.yaml",
+		"../../../loxa-collector.metadata.yaml",
+	}
+	for _, path := range candidates {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		for _, line := range strings.Split(string(data), "\n") {
+			trimmed := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmed, "version:") {
+				value := strings.TrimSpace(strings.TrimPrefix(trimmed, "version:"))
+				value = strings.Trim(value, "\"'")
+				if value != "" {
+					return value
+				}
+			}
+		}
+	}
+	return fallbackVersion
+}
+
 type Result struct {
 	StatusCode int
 	Duration   time.Duration
@@ -197,8 +225,8 @@ func sampleEvent(id int) map[string]any {
 func main() {
 	// Limit OS threads on Windows to avoid thread exhaustion
 	runtime.GOMAXPROCS(32)
-	collectorURL := "http://127.0.0.1:9090"
-	cortexURL := "http://127.0.0.1:9100"
+	collectorURL := "http://127.0.0.1:9308"
+	cortexURL := "http://127.0.0.1:9312"
 	// Use connection pooling to avoid Windows thread exhaustion
 	transport := &http.Transport{
 		MaxIdleConns:        200,
@@ -234,7 +262,7 @@ func main() {
 	}
 
 	fmt.Println("========================================")
-	fmt.Println("LOXA v0.2.3 STRESS TEST SUITE")
+	fmt.Printf("LOXA v%s STRESS TEST SUITE\n", loadVersion())
 	fmt.Printf("Collector: %s\n", collectorURL)
 	fmt.Printf("Cortex:    %s\n", cortexURL)
 	fmt.Printf("Started:   %s\n", time.Now().Format(time.RFC3339))

@@ -117,7 +117,7 @@ import { configure, production, httpBatchSink } from 'loxa-js';
 
 configure(
   production('my-service').withSink(
-    httpBatchSink({ endpoint: 'http://collector:9090/events' })
+    httpBatchSink({ endpoint: 'http://collector:9308/events' })
   )
 );
 ```

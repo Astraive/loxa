@@ -1,6 +1,6 @@
 server:
   host: "0.0.0.0"
-  port: 9100
+  port: 9312
   read_timeout: 30s
   write_timeout: 30s
   shutdown_timeout: 10s
@@ -16,8 +16,8 @@ storage:
     database: "cortex"
     user: "cortex"
     password: ""
-    # SECURITY: Disable in production; set to "require" or "verify-full"
-    ssl_mode: "disable"
+    # SECURITY: TLS required for all connections. Override to "verify-full" when CA is available.
+    ssl_mode: "require"
     max_connections: 50
     max_idle_conns: 10
     conn_max_lifetime: 1h
@@ -73,7 +73,7 @@ logging:
 
 collector:
   mode: "pull"
-  url: "http://localhost:8081"
+  url: "http://localhost:9308"
   source_of_truth: true
   api_key: ""
   api_key_header: "X-API-Key"

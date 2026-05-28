@@ -13,7 +13,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 	t.Run("NewClient with all configuration options", func(t *testing.T) {
 		// Create a client with all configuration options set via code
 		cfg := Config{
-			CollectorURL:      "http://localhost:8080",
+			CollectorURL:      "http://localhost:9308",
 			Service:           "test-service",
 			Version:           "1.0.0",
 			Environment:       "production",
@@ -43,7 +43,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 	t.Run("Configuration precedence: code > environment > defaults", func(t *testing.T) {
 		// Set environment variables
 		os.Setenv("LOXA_SERVICE_NAME", "env-service")
-		os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:8080")
+		os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:9308")
 		os.Setenv("LOXA_BATCH_SIZE", "150")
 		defer func() {
 			os.Unsetenv("LOXA_SERVICE_NAME")
@@ -53,7 +53,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 
 		// Code configuration should override environment
 		cfg := Config{
-			CollectorURL: "http://code-collector:8080",
+			CollectorURL: "http://code-collector:9308",
 			Service:      "code-service",
 			BatchSize:    250,
 		}
@@ -74,7 +74,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 		
 		// Test with invalid values that will fail validation
 		cfg := Config{
-			CollectorURL: "http://localhost:8080",
+			CollectorURL: "http://localhost:9308",
 			Service:      "test-service",
 			BatchSize:    -1, // Invalid: negative value
 		}
@@ -87,7 +87,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 		// Test with missing service_name (required field)
 		// We need to bypass the defaults file by using validateSDKConfig directly
 		cfg = Config{
-			CollectorURL: "http://localhost:8080",
+			CollectorURL: "http://localhost:9308",
 			// Service is missing
 		}
 		err = validateSDKConfig(cfg)
@@ -110,7 +110,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 		// Requirement 32.7: service_version defaults to "unknown"
 		// Requirement 32.8: environment defaults to "development"
 		cfg := Config{
-			CollectorURL: "http://localhost:8080",
+			CollectorURL: "http://localhost:9308",
 			Service:      "test-service",
 		}
 
@@ -126,7 +126,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 	t.Run("Flush method blocks until events are emitted", func(t *testing.T) {
 		sink, store := MemorySink()
 		cfg := Config{
-			CollectorURL: "http://localhost:8080",
+			CollectorURL: "http://localhost:9308",
 			Service:      "test-service",
 			Sinks:        []Sink{sink},
 		}
@@ -158,7 +158,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 	t.Run("Shutdown method flushes and releases resources", func(t *testing.T) {
 		sink, store := MemorySink()
 		cfg := Config{
-			CollectorURL: "http://localhost:8080",
+			CollectorURL: "http://localhost:9308",
 			Service:      "test-service",
 			Sinks:        []Sink{sink},
 		}
@@ -188,7 +188,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 
 	t.Run("Configuration options via WithXXX functions", func(t *testing.T) {
 		cfg := ApplyConfig(Config{},
-			WithCollectorURL("http://localhost:8080"),
+			WithCollectorURL("http://localhost:9308"),
 			WithService("test-service"),
 			WithVersion("2.0.0"),
 			WithEnvironment("staging"),
@@ -215,7 +215,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 	t.Run("Environment variable configuration", func(t *testing.T) {
 		// Set all supported environment variables
 		envVars := map[string]string{
-			"LOXA_COLLECTOR_URL":      "http://env-collector:9090",
+			"LOXA_COLLECTOR_URL":      "http://env-collector:9308",
 			"LOXA_SERVICE_NAME":       "env-service",
 			"LOXA_SERVICE_VERSION":    "3.0.0",
 			"LOXA_ENVIRONMENT":        "testing",
@@ -259,7 +259,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 			{
 				name: "negative batch size",
 				config: Config{
-					CollectorURL: "http://localhost:8080",
+					CollectorURL: "http://localhost:9308",
 					Service:      "test-service",
 					BatchSize:    -1,
 				},
@@ -267,7 +267,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 			{
 				name: "negative flush interval",
 				config: Config{
-					CollectorURL:  "http://localhost:8080",
+					CollectorURL:  "http://localhost:9308",
 					Service:       "test-service",
 					FlushInterval: -1 * time.Second,
 				},
@@ -275,7 +275,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 			{
 				name: "negative max buffer size",
 				config: Config{
-					CollectorURL:  "http://localhost:8080",
+					CollectorURL:  "http://localhost:9308",
 					Service:       "test-service",
 					MaxBufferSize: -1,
 				},
@@ -283,7 +283,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 			{
 				name: "negative max retries",
 				config: Config{
-					CollectorURL: "http://localhost:8080",
+					CollectorURL: "http://localhost:9308",
 					Service:      "test-service",
 					MaxRetries:   -1,
 				},
@@ -291,7 +291,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 			{
 				name: "negative max backoff",
 				config: Config{
-					CollectorURL: "http://localhost:8080",
+					CollectorURL: "http://localhost:9308",
 					Service:      "test-service",
 					MaxBackoff:   -1 * time.Second,
 				},
@@ -299,7 +299,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 			{
 				name: "negative timeout",
 				config: Config{
-					CollectorURL: "http://localhost:8080",
+					CollectorURL: "http://localhost:9308",
 					Service:      "test-service",
 					Timeout:      -1 * time.Second,
 				},
@@ -307,7 +307,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 			{
 				name: "negative connection timeout",
 				config: Config{
-					CollectorURL:      "http://localhost:8080",
+					CollectorURL:      "http://localhost:9308",
 					Service:           "test-service",
 					ConnectionTimeout: -1 * time.Second,
 				},
@@ -336,7 +336,7 @@ func TestConfigStructCompleteness(t *testing.T) {
 		TenantID:    "tenant-123",
 
 		// Collector configuration (Requirement 2.10, 32.5)
-		CollectorURL: "http://localhost:8080",
+		CollectorURL: "http://localhost:9308",
 
 		// Batching configuration (Requirement 32.x)
 		BatchSize:     100,
@@ -401,7 +401,7 @@ func TestFlushAndShutdownBehavior(t *testing.T) {
 	t.Run("Flush blocks until all pending events are emitted", func(t *testing.T) {
 		sink, store := MemorySink()
 		cfg := Config{
-			CollectorURL: "http://localhost:8080",
+			CollectorURL: "http://localhost:9308",
 			Service:      "test-service",
 			Sinks:        []Sink{sink},
 		}
@@ -441,7 +441,7 @@ func TestFlushAndShutdownBehavior(t *testing.T) {
 	t.Run("Shutdown flushes events and releases resources", func(t *testing.T) {
 		sink, store := MemorySink()
 		cfg := Config{
-			CollectorURL: "http://localhost:8080",
+			CollectorURL: "http://localhost:9308",
 			Service:      "test-service",
 			Sinks:        []Sink{sink},
 		}
@@ -476,7 +476,7 @@ func TestFlushAndShutdownBehavior(t *testing.T) {
 	t.Run("Flush with context timeout", func(t *testing.T) {
 		sink, _ := MemorySink()
 		cfg := Config{
-			CollectorURL: "http://localhost:8080",
+			CollectorURL: "http://localhost:9308",
 			Service:      "test-service",
 			Sinks:        []Sink{sink},
 		}
@@ -501,7 +501,7 @@ func TestFlushAndShutdownBehavior(t *testing.T) {
 	t.Run("Shutdown with context timeout", func(t *testing.T) {
 		sink, _ := MemorySink()
 		cfg := Config{
-			CollectorURL: "http://localhost:8080",
+			CollectorURL: "http://localhost:9308",
 			Service:      "test-service",
 			Sinks:        []Sink{sink},
 		}

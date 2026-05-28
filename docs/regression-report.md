@@ -42,7 +42,7 @@
 
 ### Cortex
 - `cortex/cmd/server/main.go` -- server entry point
-- `cortex/configs/config.yaml` -- config: port 9100 -> 8080, postgres key -> postgresql
+- `cortex/configs/config.yaml` -- config: port 9100 -> 9312, postgres key -> postgresql
 - `cortex/internal/api/server.go` -- API server changes
 - `cortex/internal/storage/collector_event_store.go` -- added warning logs for discarded events
 - `cortex/internal/storage/postgres.go` -- added new columns to signature table (feature_weights, version, parent_signature_id, decay_factor, last_matched_at, behavioral_hash)
@@ -55,7 +55,7 @@
 
 ### SDKs
 - `sdks/go/src/core/config.go` -- HTTPBatchSink endpoint `/ingest` -> `/events`
-- `sdks/go/src/cortex/client.go` -- default endpoint port 9100 -> 8080
+- `sdks/go/src/cortex/client.go` -- default endpoint port 9100 -> 9312
 - `sdks/js/package-lock.json` -- version 0.0.1 -> 0.2.0
 - `sdks/py/src/loxa.egg-info/PKG-INFO` -- version 0.0.2 -> 0.2.0
 - `sdks/rs/src/config/config.rs` -- `validate()` changed from panic to Result return
@@ -222,7 +222,7 @@ No changes to proto files (`proto/loxa/core/*.proto`). Generated Go files exist 
 
 - Collector: `/events` (POST), `/events/batch` (POST), `/events/ndjson` (POST), `/events/{id}` (DELETE) -- all tested and working
 - Collector: `/ingest` (POST) -- still registered via configurable route, backward compatible
-- Cortex: port changed from 9100 to 8080 in config and SDK defaults
+- Cortex: port changed from 9100 to 9312 in config and SDK defaults
 - All E2E tests confirm API contracts hold across all 4 SDKs
 
 ---

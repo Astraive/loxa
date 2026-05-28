@@ -14,6 +14,7 @@ from ..generated.spec_contract import (
     parse_collector_response,
     validate_event_payload,
 )
+from ..version import SDK_VERSION
 
 
 class InstrumentedHTTPClient:
@@ -124,7 +125,7 @@ class CollectorClient:
         timeout: float = 2.0,
         retries: int = 2,
         sdk_name: str = "loxa-py",
-        sdk_version: str = "0.2.0",
+        sdk_version: str = SDK_VERSION,
         service: str = "",
     ) -> None:
         self.endpoint = endpoint

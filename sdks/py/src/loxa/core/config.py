@@ -327,10 +327,10 @@ def _apply_env_vars(cfg: Config) -> Config:
     if queue_env.isdigit():
         cfg.async_config.queue_size = int(queue_env)
 
-    # Batch size
+    # Batch size (event count)
     batch_env = os.getenv("LOXA_BATCH_SIZE", "").strip()
     if batch_env.isdigit():
-        cfg.async_config.max_batch_bytes = int(batch_env)
+        cfg.async_config.batch_size = int(batch_env)
 
     # Max event bytes
     max_bytes_env = os.getenv("LOXA_MAX_EVENT_BYTES", "").strip()

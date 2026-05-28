@@ -48,7 +48,7 @@ async function main() {
   // 1. Configure the default loxa instance with a service name, sink, and sampler.
   configure(
     production('checkout-service')
-      .withSink(httpBatchSink({ endpoint: 'http://collector:9090/events' }))
+      .withSink(httpBatchSink({ endpoint: 'http://collector:9308/events' }))
       .withSampler(sampleErrors())
       .withRedactor(defaultRedactor())
   );
@@ -178,7 +178,7 @@ import { loxa, configure, production, httpBatchSink, string } from 'loxa-js';
 
 configure(
   production('checkout-service')
-    .withSink(httpBatchSink({ endpoint: 'http://collector:9090/events' }))
+    .withSink(httpBatchSink({ endpoint: 'http://collector:9308/events' }))
 );
 
 const audit = loxa.alias('audit-service');

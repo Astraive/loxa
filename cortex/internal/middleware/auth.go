@@ -2,9 +2,12 @@ package middleware
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 
@@ -13,8 +16,29 @@ import (
 
 type Auth struct {
 	cfg       *config.AuthenticationConfig
-	keyCache map[string]*config.APIKey
-	once    sync.Once
+	keyCache  map[string]*hashedAPIKey
+	hmacSecret []byte
+	once      sync.Once
+}
+
+type hashedAPIKey struct {
+	Name     string
+	KeyHash  []byte
+	Role     string
+}
+
+// AutoGenerateHMACSecret derives a deterministic HMAC key from the configured API keys.
+// This ensures the same config always produces the same secret without requiring
+// an explicit HMAC_SECRET env var.
+func AutoGenerateHMACSecret(keys []config.APIKey) []byte {
+	var parts []string
+	for _, k := range keys {
+		parts = append(parts, k.Key)
+	}
+	sort.Strings(parts)
+	combined := strings.Join(parts, "|")
+	sum := sha256.Sum256([]byte(combined))
+	return sum[:]
 }
 
 func NewAuth(cfg *config.AuthenticationConfig) *Auth {
@@ -22,13 +46,36 @@ func NewAuth(cfg *config.AuthenticationConfig) *Auth {
 }
 
 func (a *Auth) init() {
-	if a.keyCache == nil && len(a.cfg.APIKeys) > 0 {
-		a.keyCache = make(map[string]*config.APIKey, len(a.cfg.APIKeys))
-		for i := range a.cfg.APIKeys {
-			key := &a.cfg.APIKeys[i]
-			a.keyCache[key.Key] = key
+	if a.keyCache != nil {
+		return
+	}
+	if len(a.cfg.APIKeys) == 0 {
+		return
+	}
+
+	// Determine HMAC secret: use explicit config or auto-generate from API keys.
+	if a.cfg.HMACSecret != "" {
+		a.hmacSecret = []byte(a.cfg.HMACSecret)
+	} else {
+		a.hmacSecret = AutoGenerateHMACSecret(a.cfg.APIKeys)
+	}
+
+	a.keyCache = make(map[string]*hashedAPIKey, len(a.cfg.APIKeys))
+	for i := range a.cfg.APIKeys {
+		key := &a.cfg.APIKeys[i]
+		hash := hmacSHA256([]byte(key.Key), a.hmacSecret)
+		a.keyCache[key.Name] = &hashedAPIKey{
+			Name:    key.Name,
+			KeyHash: hash,
+			Role:    key.Role,
 		}
 	}
+}
+
+func hmacSHA256(data, secret []byte) []byte {
+	mac := hmac.New(sha256.New, secret)
+	mac.Write(data)
+	return mac.Sum(nil)
 }
 
 type AuthResult struct {
@@ -48,9 +95,8 @@ func (a *Auth) Middleware(next http.Handler) http.Handler {
 
 		result := a.authenticate(r)
 		if !result.Authorized {
+			// Log detailed failure reason server-side; return generic error to client.
 			a.logAuthFailure(r, result.KeyName, result.Failure, result.FailureCode)
-			w.Header().Set("X-Auth-Failure-Reason", result.Failure)
-			w.Header().Set("X-Auth-Failure-Code", result.FailureCode)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -82,12 +128,14 @@ func (a *Auth) authenticate(r *http.Request) *AuthResult {
 		return result
 	}
 
-	subtleKey := []byte(providedKey)
-	for _, key := range a.cfg.APIKeys {
-		if subtle.ConstantTimeCompare(subtleKey, []byte(key.Key)) == 1 {
+	// Compare HMAC-SHA256 of provided key against stored hashes.
+	// This prevents timing attacks and avoids storing raw keys in memory.
+	incomingHash := hmacSHA256([]byte(providedKey), a.hmacSecret)
+	for _, cached := range a.keyCache {
+		if subtle.ConstantTimeCompare(incomingHash, cached.KeyHash) == 1 {
 			result.Authorized = true
-			result.KeyName = key.Name
-			result.Role = key.Role
+			result.KeyName = cached.Name
+			result.Role = cached.Role
 			return result
 		}
 	}
@@ -124,9 +172,8 @@ func (a *Auth) HandlerFunc(next http.HandlerFunc) http.HandlerFunc {
 
 		result := a.authenticate(r)
 		if !result.Authorized {
+			// Log detailed failure reason server-side; return generic error to client.
 			a.logAuthFailure(r, result.KeyName, result.Failure, result.FailureCode)
-			w.Header().Set("X-Auth-Failure-Reason", result.Failure)
-			w.Header().Set("X-Auth-Failure-Code", result.FailureCode)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -146,8 +193,6 @@ func (a *Auth) RequireRole(role string) func(http.Handler) http.Handler {
 			}
 
 			if !a.authorizeRole(r, role) {
-				w.Header().Set("X-Auth-Failure-Reason", "insufficient role")
-				w.Header().Set("X-Auth-Failure-Code", "unauthorized_role")
 				http.Error(w, "Forbidden", http.StatusForbidden)
 				return
 			}

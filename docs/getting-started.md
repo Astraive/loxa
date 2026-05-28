@@ -61,10 +61,10 @@ cd collector
 go run ./cmd/loxa-collector --config loxa-collector.defaults.yaml
 ```
 
-The collector starts on port 9090 by default. Verify it is running:
+The collector starts on port 9308 by default. Verify it is running:
 
 ```bash
-curl http://localhost:9090/healthz
+curl http://localhost:9308/healthz
 # Expected: {"status":"ok"}
 ```
 
@@ -92,7 +92,7 @@ import (
 )
 
 func main() {
-    loxa.Configure(loxa.Dev("my-service").WithCollectorEndpoint("http://localhost:9090"))
+    loxa.Configure(loxa.Dev("my-service").WithCollectorEndpoint("http://localhost:9308"))
     defer loxa.Shutdown(context.Background())
 
     ctx := loxa.StartEvent(context.Background(), loxa.Params{Event: "order.created"})
@@ -113,7 +113,7 @@ func main() {
 ```python
 import loxa
 
-loxa.configure(loxa.dev("my-service").with_collector_endpoint("http://localhost:9090"))
+loxa.configure(loxa.dev("my-service").with_collector_endpoint("http://localhost:9308"))
 
 ctx = loxa.start_event(event="order.created")
 loxa.enrich(ctx,
@@ -131,7 +131,7 @@ loxa.shutdown()
 ```rust
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     loxa::configure(
-        loxa::Config::dev("my-service").with_collector_endpoint("http://localhost:9090"),
+        loxa::Config::dev("my-service").with_collector_endpoint("http://localhost:9308"),
     )?;
 
     let mut ctx = loxa::start_event(loxa::Params::new("order.created"));
@@ -150,7 +150,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```typescript
 import { loxa } from "loxa-js";
 
-loxa.configure(loxa.dev("my-service").withCollectorEndpoint("http://localhost:9090"));
+loxa.configure(loxa.dev("my-service").withCollectorEndpoint("http://localhost:9308"));
 
 const ctx = loxa.startEvent({ event: "order.created" });
 loxa.enrich(ctx,
@@ -169,27 +169,27 @@ All SDKs export a default logger for quick usage. No explicit construction neede
 
 ### Go
 ```go
-loxa.Configure(loxa.Config{Service: "my-service", CollectorURL: "http://localhost:9090"})
+loxa.Configure(loxa.Config{Service: "my-service", CollectorURL: "http://localhost:9308"})
 loxa.Info("server started", loxa.String("port", "8080"))
 ```
 
 ### Python
 ```python
 import loxa
-loxa.configure(loxa.Config(service="my-service", collector_endpoint="http://localhost:9090"))
+loxa.configure(loxa.Config(service="my-service", collector_endpoint="http://localhost:9308"))
 loxa.info("server started", port="8080")
 ```
 
 ### Rust
 ```rust
-loxa::configure(loxa::Config::dev("my-service").with_collector_endpoint("http://localhost:9090")).unwrap();
+loxa::configure(loxa::Config::dev("my-service").with_collector_endpoint("http://localhost:9308")).unwrap();
 loxa::info("server started");
 ```
 
 ### JavaScript
 ```typescript
 import { loxa } from "loxa-js";
-loxa.configure(loxa.production("my-service").withCollectorEndpoint("http://localhost:9090"));
+loxa.configure(loxa.production("my-service").withCollectorEndpoint("http://localhost:9308"));
 loxa.info("server started");
 ```
 
@@ -199,26 +199,26 @@ Create isolated logger instances for different services or contexts:
 
 ### Go
 ```go
-logger, _ := loxa.New(loxa.Config{Service: "checkout-api", CollectorURL: "http://localhost:9090"})
+logger, _ := loxa.New(loxa.Config{Service: "checkout-api", CollectorURL: "http://localhost:9308"})
 logger.Info(ctx, "payment processed")
 ```
 
 ### Python
 ```python
-logger = loxa.create_loxa(service="checkout-api", collector_endpoint="http://localhost:9090")
+logger = loxa.create_loxa(service="checkout-api", collector_endpoint="http://localhost:9308")
 logger.info("payment processed")
 ```
 
 ### Rust
 ```rust
-let logger = loxa::create_loxa(loxa::Config::dev("checkout-api").with_collector_endpoint("http://localhost:9090"));
+let logger = loxa::create_loxa(loxa::Config::dev("checkout-api").with_collector_endpoint("http://localhost:9308"));
 logger.info("payment processed");
 ```
 
 ### JavaScript
 ```typescript
 import { loxa } from "loxa-js";
-const logger = loxa.createLoxa({ service: "checkout-api", collectorUrl: "http://localhost:9090" });
+const logger = loxa.createLoxa({ service: "checkout-api", collectorUrl: "http://localhost:9308" });
 logger.info("payment processed");
 ```
 

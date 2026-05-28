@@ -12,5 +12,5 @@ spec:
     app.kubernetes.io/part-of: loxa
   ports:
     - name: http
-      port: 8080
+      port: 9315
       targetPort: http

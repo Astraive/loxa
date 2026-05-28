@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.2.5] - 2026-05-28
+
+### Fixed
+- Security fixes for WebSocket origin validation, DuckDB connection pool safety, key cache invalidation
+- Version loaded from YAML metadata instead of hardcoded constants
+- Bump version to 0.2.5
+
+## [0.2.4] - 2026-05-28
+
+### Fixed
+- Version bumped to 0.2.4
+
 ## [0.2.3] - 2026-05-27
 
 ### Fixed

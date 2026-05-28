@@ -5,6 +5,30 @@ from pathlib import Path
 from typing import Any
 
 
+_FALLBACK_PRODUCT_VERSION = "0.2.5"
+
+
+def _load_product_version(spec_root: Path) -> str:
+    """Read version from loxa-spec.yaml, falling back to hardcoded default."""
+    candidates = [
+        spec_root / "loxa-spec.yaml",
+        spec_root.parent / "loxa-spec.yaml",
+    ]
+    for path in candidates:
+        if path.is_file():
+            try:
+                text = path.read_text(encoding="utf-8")
+                for line in text.splitlines():
+                    stripped = line.strip()
+                    if stripped.startswith("version:"):
+                        value = stripped.split(":", 1)[1].strip().strip("\"'")
+                        if value:
+                            return value
+            except OSError:
+                continue
+    return _FALLBACK_PRODUCT_VERSION
+
+
 def load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -104,7 +128,7 @@ def build_contract(spec_root: Path) -> dict[str, Any]:
     allowed_top_level_fields = sorted(props.keys())
 
     return {
-        "product_version": "0.2.0",
+        "product_version": _load_product_version(spec_root),
         "spec_version": props["schema_version"]["enum"][0],
         "api_version": ingest_schema["properties"]["api_version"]["enum"][0],
         "event_version": props["event_version"]["enum"][0],

@@ -1,11 +1,11 @@
 server:
   host: "0.0.0.0"
-  port: 8080
+  port: 9312
 
 grpc:
   enabled: true
   host: "0.0.0.0"
-  port: 9090
+  port: 9313
 
 storage:
   backend: "postgres"
@@ -40,5 +40,5 @@ logging:
 
 collector:
   mode: "fanout"
-  url: "http://localhost:8081"
+  url: "http://localhost:9308"
   poll_interval: 30s

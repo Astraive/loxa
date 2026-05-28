@@ -37,7 +37,7 @@ COPY collector/loxa-collector.defaults.yaml /app/config.yaml
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-EXPOSE 9090 9092
+EXPOSE 9308 9309 9310 9311
 
 RUN useradd -r -s /bin/false -u 10001 loxa && chown -R loxa:loxa /app
 USER loxa

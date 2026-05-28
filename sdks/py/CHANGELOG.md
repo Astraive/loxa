@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.5] - 2026-05-28
+
+### Fixed
+- Version bumped to 0.2.5
+- SDK parity manifest updated to 0.2.5
+
+## [0.2.4] - 2026-05-28
+
+### Fixed
+- Version bumped to 0.2.4
+
 ## [0.0.2] - 2026-05-20
 
 ### Added

@@ -3,6 +3,7 @@ package middleware
 import (
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,21 +16,34 @@ type clientLimiter struct {
 }
 
 type RateLimiter struct {
-	perAPIKeyRPM int
-	perIPRPM     int
-	apiKeys      map[string]*clientLimiter
-	ips          map[string]*clientLimiter
-	mu           sync.Mutex
-	cleanupTick  *time.Ticker
+	perAPIKeyRPM   int
+	perIPRPM       int
+	apiKeys        map[string]*clientLimiter
+	ips            map[string]*clientLimiter
+	mu             sync.Mutex
+	cleanupTick    *time.Ticker
+	trustedProxies []*net.IPNet
 }
 
-func NewRateLimiter(perAPIKeyRPM, perIPRPM int) *RateLimiter {
+// RateLimiterOption configures the RateLimiter.
+type RateLimiterOption func(*RateLimiter)
+
+// WithTrustedProxies sets the list of trusted proxy CIDRs for the rate limiter.
+// When set, X-Forwarded-For is trusted from these IPs to determine the real client IP.
+func WithTrustedProxies(proxies []*net.IPNet) RateLimiterOption {
+	return func(rl *RateLimiter) { rl.trustedProxies = proxies }
+}
+
+func NewRateLimiter(perAPIKeyRPM, perIPRPM int, opts ...RateLimiterOption) *RateLimiter {
 	rl := &RateLimiter{
 		perAPIKeyRPM: perAPIKeyRPM,
 		perIPRPM:     perIPRPM,
 		apiKeys:      make(map[string]*clientLimiter),
 		ips:          make(map[string]*clientLimiter),
 		cleanupTick:  time.NewTicker(5 * time.Minute),
+	}
+	for _, o := range opts {
+		o(rl)
 	}
 	go rl.cleanup()
 	return rl
@@ -103,11 +117,8 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 			}
 		}
 
-		// Rate limit by IP
-		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-		if ip == "" {
-			ip = r.RemoteAddr
-		}
+		// Rate limit by IP — use trusted proxy headers when applicable
+		ip := rl.extractClientIP(r)
 		ipLimiter := rl.getIPLimiter(ip)
 		if !ipLimiter.Allow() {
 			w.Header().Set("Retry-After", "1")
@@ -117,4 +128,44 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// extractClientIP determines the real client IP, respecting trusted proxies.
+func (rl *RateLimiter) extractClientIP(r *http.Request) string {
+	ipStr, _, _ := net.SplitHostPort(r.RemoteAddr)
+	if ipStr == "" {
+		ipStr = r.RemoteAddr
+	}
+
+	remoteIP := net.ParseIP(ipStr)
+	if remoteIP == nil {
+		return ipStr
+	}
+
+	// Only trust X-Forwarded-For if RemoteAddr is a trusted proxy
+	if len(rl.trustedProxies) > 0 && isTrustedProxyIP(remoteIP, rl.trustedProxies) {
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			parts := strings.Split(xff, ",")
+			for _, part := range parts {
+				candidate := net.ParseIP(strings.TrimSpace(part))
+				if candidate != nil && !isTrustedProxyIP(candidate, rl.trustedProxies) {
+					return candidate.String()
+				}
+			}
+		}
+		if xri := r.Header.Get("X-Real-IP"); xri != "" {
+			return strings.TrimSpace(xri)
+		}
+	}
+
+	return ipStr
+}
+
+func isTrustedProxyIP(ip net.IP, trusted []*net.IPNet) bool {
+	for _, cidr := range trusted {
+		if cidr.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }

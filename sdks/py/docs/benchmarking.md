@@ -25,7 +25,7 @@ cd sdks/py
 python bench/cortex_bench.py
 ```
 
-This benchmark requires a running cortex server at `http://localhost:9100`. It measures:
+This benchmark requires a running cortex server at `http://localhost:9312`. It measures:
 - Cold start time (target: <=60s)
 - Ingestion throughput (target: >=1000 events/sec)
 - Fast reconstruction p95 (target: <=2s)

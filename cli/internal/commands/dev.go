@@ -47,7 +47,7 @@ func DevCommand(ctx context.Context, cfg config.Config, _ []string) error {
 	}()
 
 	// Wait for collector to be ready before starting cortex
-	collectorURL := "http://localhost:9090/health"
+	collectorURL := "http://localhost:9308/health"
 	fmt.Println("Waiting for collector to be ready...")
 	for i := 0; i < 30; i++ {
 		time.Sleep(1 * time.Second)

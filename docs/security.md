@@ -52,7 +52,7 @@ client := loxa.New(loxa.Config{
 
 // Local dev
 client := loxa.New(loxa.Config{
-    Endpoint: "http://localhost:9090",
+    Endpoint: "http://localhost:9308",
     APIKey:   "lx_local_dev_mydevtoken",
     Service:  "test-service",
     Env:      "dev",

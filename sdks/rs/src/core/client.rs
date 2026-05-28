@@ -172,7 +172,7 @@ impl CollectorHttpClient {
             auth_header: "Authorization".to_string(),
             timeout_ms: 2_000,
             sdk_name: "loxa-rs".to_string(),
-            sdk_version: "0.2.0".to_string(),
+            sdk_version: crate::core::version::sdk_version().to_string(),
             service: None,
         }
     }

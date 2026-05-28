@@ -822,7 +822,7 @@ logger, err := loxa.New(loxa.ApplyConfig(
     loxa.WithEnvironment("production"),
     loxa.WithRegion("us-east-1"),
     loxa.WithSink(loxa.HTTPBatchSink(loxa.HTTPBatchSinkConfig{
-        Endpoint: "https://collector.internal:9091/ingest",
+        Endpoint: "https://collector.internal:9309/ingest",
         BatchSize: 100,
         FlushInterval: 5 * time.Second,
     })),

@@ -13,7 +13,7 @@ def test_e2e_collector_pipeline():
     # 1. Create logger with collector sink
     config = (
         loxa.Production("e2e-test-service")
-        .with_collector_endpoint("http://127.0.0.1:9090/events")
+        .with_collector_endpoint("http://127.0.0.1:9308/events")
     )
     logger = loxa.New(config)
 
@@ -38,7 +38,7 @@ def test_e2e_collector_pipeline():
     # 4. Verify via collector /status (accepted count)
     print("  Verifying via collector status...")
     status_req = urllib.request.Request(
-        "http://127.0.0.1:9090/status",
+        "http://127.0.0.1:9308/status",
         method="GET",
     )
     with urllib.request.urlopen(status_req, timeout=5) as resp:
@@ -58,7 +58,7 @@ def test_e2e_collector_pipeline():
     # Verify collector has events in DuckDB via query endpoint
     try:
         query_req = urllib.request.Request(
-            "http://127.0.0.1:9090/query",
+            "http://127.0.0.1:9308/query",
             data=json.dumps({"sql": "SELECT event, service, outcome FROM events WHERE service = 'e2e-test-service' LIMIT 10"}).encode(),
             headers={"content-type": "application/json"},
             method="POST",
@@ -74,7 +74,7 @@ def test_e2e_collector_pipeline():
 
     # 5. CollectorClient health/ready/version/status
     from loxa.core.http_client import CollectorClient
-    cc = CollectorClient("http://127.0.0.1:9090/events")
+    cc = CollectorClient("http://127.0.0.1:9308/events")
 
     assert cc.health() is True, "collector health check failed"
     print("\n  Collector health: True")

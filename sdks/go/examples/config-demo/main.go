@@ -18,9 +18,9 @@ func main() {
 	cfg1 := loxa.Dev()
 	cfg1 = loxa.ApplyConfig(cfg1,
 		loxa.WithService("my-service"),
-		loxa.WithVersion("0.2.3"),
+		loxa.WithVersion("0.2.5"),
 		loxa.WithEnvironment("production"),
-		loxa.WithCollectorURL("http://localhost:8080"),
+		loxa.WithCollectorURL("http://localhost:9308"),
 		loxa.WithTenantID("tenant-123"),
 		loxa.WithBatchSize(200),
 		loxa.WithFlushInterval(10*time.Second),
@@ -42,7 +42,7 @@ func main() {
 	os.Setenv("LOXA_SERVICE_NAME", "env-service")
 	os.Setenv("LOXA_SERVICE_VERSION", "2.0.0")
 	os.Setenv("LOXA_ENVIRONMENT", "staging")
-	os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:8080")
+	os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:9308")
 	os.Setenv("LOXA_TENANT_ID", "tenant-env")
 	os.Setenv("LOXA_FLUSH_INTERVAL", "15s")
 	
@@ -61,7 +61,7 @@ func main() {
 	cfg3 = loxa.LoadFromEnv(cfg3) // apply env vars
 	cfg3 = loxa.ApplyConfig(cfg3, // apply code config (highest precedence)
 		loxa.WithService("code-service"),
-		loxa.WithCollectorURL("http://code-collector:8080"),
+		loxa.WithCollectorURL("http://code-collector:9308"),
 	)
 	fmt.Printf("  Service: %s (from code, overrides env)\n", cfg3.Service)
 	fmt.Printf("  Version: %s (from env)\n", cfg3.Version)

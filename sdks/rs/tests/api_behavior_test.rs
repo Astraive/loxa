@@ -8,7 +8,7 @@ use loxa::{
 fn collector_sink_matches_local_collector_default() {
     match CollectorSink() {
         SinkConfig::HttpBatch { endpoint, .. } => {
-            assert_eq!(endpoint, "http://127.0.0.1:9090/events");
+            assert_eq!(endpoint, "http://127.0.0.1:9308/events");
         }
         other => panic!("expected HTTP batch sink, got {other:?}"),
     }

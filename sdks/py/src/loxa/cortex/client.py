@@ -19,7 +19,7 @@ class CortexClient:
 
         from loxa.cortex import CortexClient
 
-        cortex = CortexClient("http://localhost:8080")
+        cortex = CortexClient("http://localhost:9312")
         if cortex.health():
             ctx = cortex.reconstruct("inc-123")
             print(ctx.causal_chain)
@@ -27,7 +27,7 @@ class CortexClient:
 
     def __init__(
         self,
-        endpoint: str = "http://localhost:8080",
+        endpoint: str = "http://localhost:9312",
         api_key: str = "",
         auth_header: str = "Authorization",
         timeout: float = 10.0,

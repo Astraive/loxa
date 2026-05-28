@@ -1,6 +1,6 @@
 # LOXA-RS
 
-**Status**: STABLE (v0.0.1) - Production-ready, full feature conformance
+**Status**: STABLE (v0.2.5) - Production-ready, full feature conformance
 
 `loxa-rs` is a collector-first Rust SDK for wide events. It builds one structured event per operation (request, job, queue message, CLI run, cron run), then emits to your log/analytics backend.
 
@@ -11,7 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Configure the default logger
     loxa::configure(
         loxa::Config::production("checkout")
-            .with_collector_endpoint("http://127.0.0.1:9090"),
+            .with_collector_endpoint("http://127.0.0.1:9308"),
     )?;
 
     // Lifecycle
@@ -184,11 +184,11 @@ loxa::error("payment failed").unwrap();
 
 ```rust
 // Default API -- configure once, use everywhere
-loxa::configure(loxa::Config::production("checkout").with_collector_endpoint("http://127.0.0.1:9090"))?;
+loxa::configure(loxa::Config::production("checkout").with_collector_endpoint("http://127.0.0.1:9308"))?;
 loxa::info("server started");
 
 // Custom instance
-let logger = loxa::create_loxa(loxa::Config::dev("checkout-api").with_collector_endpoint("http://127.0.0.1:9090"));
+let logger = loxa::create_loxa(loxa::Config::dev("checkout-api").with_collector_endpoint("http://127.0.0.1:9308"));
 logger.info("custom instance ready");
 
 // Alias -- same config, loxa.alias metadata
@@ -242,7 +242,7 @@ use loxa::{StdoutSink, StderrSink, FileSink, MemorySink, NoopSink, HttpBatchSink
 
 let cfg = Config::production("checkout").with_sink(StdoutSink);
 let cfg = Config::production("checkout").with_sink(FileSink("/var/log/app.log"));
-let cfg = Config::production("checkout").with_sink(HttpBatchSink("http://collector:9090/events"));
+let cfg = Config::production("checkout").with_sink(HttpBatchSink("http://collector:9308/events"));
 ```
 
 ## Sampling

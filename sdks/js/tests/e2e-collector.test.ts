@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createLoxa, HTTPBatchSink, MemorySink, CollectorClient, String as AttrString, Int as AttrInt } from '../src/index.ts';
 
-const COLLECTOR_URL = process.env.LOXA_TEST_COLLECTOR_URL ?? 'http://127.0.0.1:9090';
+const COLLECTOR_URL = process.env.LOXA_TEST_COLLECTOR_URL ?? 'http://127.0.0.1:9308';
 
 describe('E2E: loxa-js → loxa-collector', () => {
   it('collector health check', async () => {

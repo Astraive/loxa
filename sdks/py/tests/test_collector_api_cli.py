@@ -141,7 +141,7 @@ def test_collector_client_family():
 
 
 def test_cortex_client_family():
-    cortex = loxa.CortexClient("http://localhost:8080")
+    cortex = loxa.CortexClient("http://localhost:9312")
     assert hasattr(cortex, "health")
     assert hasattr(cortex, "ready")
     assert hasattr(cortex, "reconstruct")

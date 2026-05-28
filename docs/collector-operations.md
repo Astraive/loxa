@@ -15,13 +15,13 @@
 livenessProbe:
   httpGet:
     path: /healthz
-    port: 9090
+    port: 9308
   initialDelaySeconds: 5
   periodSeconds: 10
 readinessProbe:
   httpGet:
     path: /readyz
-    port: 9090
+    port: 9308
   initialDelaySeconds: 10
   periodSeconds: 5
 ```
@@ -109,7 +109,7 @@ scrape_configs:
   - job_name: loxa-collector
     scrape_interval: 15s
     static_configs:
-      - targets: ["collector:9090"]
+      - targets: ["collector:9308"]
     metrics_path: /metrics
 ```
 

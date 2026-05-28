@@ -6,6 +6,7 @@ import { gzip as zlibGzip } from 'node:zlib';
 import { promisify } from 'node:util';
 import { parseCollectorResponse } from '../generated/spec-contract.ts';
 import type { CollectorResponse } from '../generated/spec-contract.ts';
+import { SDK_VERSION } from '../config/version.ts';
 
 const gzipAsync = promisify(zlibGzip);
 
@@ -194,7 +195,7 @@ export class HTTPBatchSink implements Sink {
     this.apiKey = opts.apiKey || '';
     this.authHeader = opts.authHeader || 'Authorization';
     this.sdkName = opts.sdkName || 'loxa-js';
-    this.sdkVersion = opts.sdkVersion || '0.2.0';
+    this.sdkVersion = opts.sdkVersion || SDK_VERSION;
     this.service = opts.service || '';
     this.timeout = opts.timeout || 2000;
     this.retries = opts.retries ?? 3;
@@ -465,7 +466,7 @@ export class OtlpSink implements Sink {
   private delegate: HTTPBatchSink;
   constructor(endpoint?: string) {
     this.delegate = new HTTPBatchSink({
-      endpoint: endpoint || 'http://127.0.0.1:9090/events',
+      endpoint: endpoint || 'http://127.0.0.1:9308/events',
     });
   }
   name() { return 'otlp'; }
@@ -511,7 +512,7 @@ export function health(sink: Sink): { name: string; status: 'healthy' } {
 }
 
 export function kafkaSink(config?: Record<string, unknown>): Sink {
-  const endpoint = (config?.endpoint as string) || 'http://127.0.0.1:9090/events';
+  const endpoint = (config?.endpoint as string) || 'http://127.0.0.1:9308/events';
   return new HTTPBatchSink({ endpoint });
 }
 

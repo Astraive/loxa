@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"strings"
 
+	loxacli "github.com/astraive/loxa-cli"
 	"github.com/astraive/loxa-cli/internal/client"
 	"github.com/astraive/loxa-cli/internal/commands"
 	"github.com/astraive/loxa-cli/internal/config"
 	"github.com/astraive/loxa-cli/internal/output"
 )
 
-const version = "0.2.3"
+var version = loxacli.Version
 
 var CommandMaturity = map[string]string{
 	"init":        "stable",

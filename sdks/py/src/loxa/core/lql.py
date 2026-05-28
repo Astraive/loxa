@@ -35,7 +35,7 @@ def query_lql(endpoint: str, lql: str, *, api_key: str = "", timeout: float = 30
     The collector compiles LQL to SQL server-side and returns results.
 
     Args:
-        endpoint: Collector URL (e.g. "http://localhost:9090")
+        endpoint: Collector URL (e.g. "http://localhost:9308")
         lql: LQL query string (e.g. 'from events | where level = "error" | limit 10')
         api_key: Optional API key for authentication
         timeout: Request timeout in seconds

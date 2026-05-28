@@ -52,7 +52,7 @@ func getCortexURL(cfg config.Config) string {
 	if url != "" {
 		return strings.TrimRight(url, "/")
 	}
-	return "http://localhost:9100"
+	return "http://localhost:9312"
 }
 
 func RunCortexServer(ctx context.Context, cfg config.Config, args []string) error {
@@ -414,7 +414,7 @@ func RunCortexReplay(ctx context.Context, cfg config.Config, args []string) erro
 	}
 
 	if collectorURL == "" {
-		collectorURL = "http://localhost:8081"
+		collectorURL = "http://localhost:9308"
 	}
 	if since == "" {
 		since = "1h"

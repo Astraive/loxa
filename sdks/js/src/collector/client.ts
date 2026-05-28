@@ -4,6 +4,7 @@ import { gzip as zlibGzip } from 'node:zlib';
 import { promisify } from 'node:util';
 import { buildIngestEnvelope, parseCollectorResponse } from '../generated/spec-contract.ts';
 import type { CollectorResponse } from '../generated/spec-contract.ts';
+import { SDK_VERSION } from '../config/version.ts';
 
 const gzipAsync = promisify(zlibGzip);
 
@@ -66,7 +67,7 @@ export class CollectorClient {
 
   /** Send a batch of events to the collector. */
   async sendBatch(events: Record<string, any>[]): Promise<CollectorResponse> {
-    const envelope = buildIngestEnvelope('loxa-js', '0.2.0', '', events);
+    const envelope = buildIngestEnvelope('loxa-js', SDK_VERSION, '', events);
     let body = Buffer.from(JSON.stringify(envelope), 'utf-8');
 
     const headers: Record<string, string> = {

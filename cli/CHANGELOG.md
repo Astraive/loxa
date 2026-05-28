@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.2.5] - 2026-05-28
+
+### Fixed
+- Security fixes for CLI version reporting
+- Version loaded from YAML metadata instead of hardcoded constants
+- Bump version to 0.2.5
+
+## [0.2.4] - 2026-05-28
+
+### Fixed
+- Version bumped to 0.2.4
+
 ## [0.0.2] - 2026-05-20
 
 ### Horizon 1 — Foundation Gate

@@ -10,8 +10,8 @@ import (
 func TestDefault(t *testing.T) {
 	cfg := Default()
 
-	if cfg.Server.Port != 8080 {
-		t.Fatalf("expected server port 8080, got %d", cfg.Server.Port)
+	if cfg.Server.Port != 9312 {
+		t.Fatalf("expected server port 9312, got %d", cfg.Server.Port)
 	}
 	if cfg.Storage.Backend != "duckdb" {
 		t.Fatalf("expected duckdb backend, got %s", cfg.Storage.Backend)
@@ -36,13 +36,107 @@ func TestDefault(t *testing.T) {
 	}
 }
 
+func TestDefaultAppliesEnvOverrides(t *testing.T) {
+	t.Setenv("CORTEX_SERVER_HOST", "10.0.0.1")
+	t.Setenv("CORTEX_SERVER_PORT", "8888")
+	t.Setenv("CORTEX_DUCKDB_PATH", "/tmp/env.db")
+	t.Setenv("CORTEX_LOG_LEVEL", "debug")
+	t.Setenv("CORTEX_MATCHER_MODE", "rust")
+
+	cfg := Default()
+
+	if cfg.Server.Host != "10.0.0.1" {
+		t.Fatalf("expected env host override, got %s", cfg.Server.Host)
+	}
+	if cfg.Server.Port != 8888 {
+		t.Fatalf("expected env port override, got %d", cfg.Server.Port)
+	}
+	if cfg.Storage.DuckDB.Path != "/tmp/env.db" {
+		t.Fatalf("expected env duckdb path override, got %s", cfg.Storage.DuckDB.Path)
+	}
+	if cfg.Logging.Level != "debug" {
+		t.Fatalf("expected env log level override, got %s", cfg.Logging.Level)
+	}
+	if cfg.Matcher.Mode != "rust" {
+		t.Fatalf("expected env matcher mode override, got %s", cfg.Matcher.Mode)
+	}
+}
+
+func TestDefaultLoadsUserOverrideFile(t *testing.T) {
+	dir := t.TempDir()
+	// Write a user override file
+	userYAML := []byte(`server:
+  host: "192.168.1.100"
+  port: 7777
+storage:
+  duckdb:
+    path: /data/custom.db
+`)
+	path := filepath.Join(dir, "loxa-cortex.yaml")
+	if err := os.WriteFile(path, userYAML, 0o600); err != nil {
+		t.Fatalf("write user config: %v", err)
+	}
+
+	// Temporarily change cwd so findUserConfigFile finds our file
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer os.Chdir(origDir)
+
+	cfg := Default()
+
+	if cfg.Server.Host != "192.168.1.100" {
+		t.Fatalf("expected user host override, got %s", cfg.Server.Host)
+	}
+	if cfg.Server.Port != 7777 {
+		t.Fatalf("expected user port override, got %d", cfg.Server.Port)
+	}
+	if cfg.Storage.DuckDB.Path != "/data/custom.db" {
+		t.Fatalf("expected user duckdb path override, got %s", cfg.Storage.DuckDB.Path)
+	}
+}
+
+func TestDefaultEnvOverridesUserFile(t *testing.T) {
+	dir := t.TempDir()
+	// User file sets port 7777
+	userYAML := []byte(`server:
+  port: 7777
+`)
+	path := filepath.Join(dir, "loxa.yaml")
+	if err := os.WriteFile(path, userYAML, 0o600); err != nil {
+		t.Fatalf("write user config: %v", err)
+	}
+
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer os.Chdir(origDir)
+
+	// Env should win over user file
+	t.Setenv("CORTEX_SERVER_PORT", "5555")
+
+	cfg := Default()
+
+	if cfg.Server.Port != 5555 {
+		t.Fatalf("expected env to override user file port, got %d", cfg.Server.Port)
+	}
+}
+
 func TestLoadAppliesEnvironmentOverrides(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
 	yaml := []byte(`
 server:
   host: 127.0.0.1
-  port: 8080
+  port: 9312
 storage:
   backend: duckdb
   duckdb:
@@ -51,7 +145,7 @@ logging:
   level: info
   format: json
 collector:
-  url: http://localhost:8081
+  url: http://localhost:9308
   source_of_truth: true
   query_table: events
   raw_column: raw
@@ -62,7 +156,7 @@ collector:
 	}
 
 	t.Setenv("CORTEX_SERVER_HOST", "0.0.0.0")
-	t.Setenv("CORTEX_SERVER_PORT", "9091")
+	t.Setenv("CORTEX_SERVER_PORT", "9312")
 	t.Setenv("CORTEX_DUCKDB_PATH", "./test.db")
 	t.Setenv("CORTEX_LOG_LEVEL", "debug")
 	t.Setenv("CORTEX_MATCHER_MODE", "rust")
@@ -81,7 +175,7 @@ collector:
 		t.Fatalf("load config: %v", err)
 	}
 
-	if cfg.Server.Host != "0.0.0.0" || cfg.Server.Port != 9091 {
+	if cfg.Server.Host != "0.0.0.0" || cfg.Server.Port != 9312 {
 		t.Fatalf("env overrides not applied: %+v", cfg.Server)
 	}
 	if cfg.Storage.DuckDB.Path != "./test.db" {
@@ -116,7 +210,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "valid duckdb",
 			cfg: Config{
-				Server: ServerConfig{Port: 8080},
+				Server: ServerConfig{Port: 9312},
 				Storage: StorageConfig{
 					Backend: "duckdb",
 					DuckDB:  DuckDBConfig{Path: "./cortex.db"},
@@ -141,7 +235,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "missing duckdb path",
 			cfg: Config{
-				Server:  ServerConfig{Port: 8080},
+				Server:  ServerConfig{Port: 9312},
 				Storage: StorageConfig{Backend: "duckdb"},
 				Matcher: MatcherConfig{Mode: "go"},
 				Logging: LoggingConfig{Level: "info", Format: "json"},
@@ -151,7 +245,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "invalid matcher mode",
 			cfg: Config{
-				Server: ServerConfig{Port: 8080},
+				Server: ServerConfig{Port: 9312},
 				Storage: StorageConfig{
 					Backend: "duckdb",
 					DuckDB:  DuckDBConfig{Path: "./cortex.db"},
@@ -164,7 +258,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "negative matcher cache size",
 			cfg: Config{
-				Server: ServerConfig{Port: 8080},
+				Server: ServerConfig{Port: 9312},
 				Storage: StorageConfig{
 					Backend: "duckdb",
 					DuckDB:  DuckDBConfig{Path: "./cortex.db"},
@@ -177,7 +271,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "negative collector tail buffer",
 			cfg: Config{
-				Server: ServerConfig{Port: 8080},
+				Server: ServerConfig{Port: 9312},
 				Storage: StorageConfig{
 					Backend: "duckdb",
 					DuckDB:  DuckDBConfig{Path: "./cortex.db"},
@@ -186,7 +280,7 @@ func TestValidate(t *testing.T) {
 				Logging: LoggingConfig{Level: "info", Format: "json"},
 				Collector: CollectorConfig{
 					SourceOfTruth:   true,
-					URL:             "http://localhost:8081",
+					URL:             "http://localhost:9308",
 					QueryTable:      "events",
 					RawColumn:       "raw",
 					TimestampColumn: "timestamp",
@@ -198,7 +292,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "invalid collector tail transport",
 			cfg: Config{
-				Server: ServerConfig{Port: 8080},
+				Server: ServerConfig{Port: 9312},
 				Storage: StorageConfig{
 					Backend: "duckdb",
 					DuckDB:  DuckDBConfig{Path: "./cortex.db"},
@@ -207,7 +301,7 @@ func TestValidate(t *testing.T) {
 				Logging: LoggingConfig{Level: "info", Format: "json"},
 				Collector: CollectorConfig{
 					SourceOfTruth:   true,
-					URL:             "http://localhost:8081",
+					URL:             "http://localhost:9308",
 					QueryTable:      "events",
 					RawColumn:       "raw",
 					TimestampColumn: "timestamp",

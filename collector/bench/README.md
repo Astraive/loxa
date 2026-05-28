@@ -30,7 +30,7 @@ Use `-benchmem` to see allocation stats. Use `-count=5` for statistical signific
 For sustained load testing, use the `loxa-loadgen` tool:
 
 ```bash
-go run ./cmd/loxa-loadgen -url http://localhost:9090/ingest -rate 10000 -duration 60s
+go run ./cmd/loxa-loadgen -url http://localhost:9308/ingest -rate 10000 -duration 60s
 ```
 
 This generates realistic event payloads at the specified rate for the specified duration.

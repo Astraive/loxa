@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     command: ["./loxa-collector", "run", "-c", "/app/configs/loxa.local.yaml"]
     ports:
-      - "9090:9090"
+      - "9308:9308"
     volumes:
       - ../../collector/configs:/app/configs:ro
       - collector-data:/app/data

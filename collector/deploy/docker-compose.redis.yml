@@ -19,7 +19,7 @@ services:
       dockerfile: collector/deploy/Dockerfile.collector
     command: ["./loxa-collector", "run", "-c", "/app/build/loxa-collector.yaml"]
     ports:
-      - "9090:9090"
+      - "9308:9308"
     volumes:
       - ../../:/app
     environment:
@@ -60,7 +60,7 @@ services:
       - -c
       - |
         sleep 5
-        curl -sS -X POST http://collector:9090/ingest \
+        curl -sS -X POST http://collector:9308/ingest \
           --data-binary @/payload/sample-events.ndjson \
           -H "Content-Type: application/x-ndjson"
 

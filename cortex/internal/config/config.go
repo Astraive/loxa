@@ -10,6 +10,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// userConfigFiles lists the user override file names searched in cwd order.
+var userConfigFiles = []string{"loxa-cortex.yaml", "loxa.yaml"}
+
 // Config represents the complete Cortex configuration
 type Config struct {
 	Server         ServerConfig         `yaml:"server"`
@@ -75,6 +78,7 @@ type ServerConfig struct {
 	ShutdownTimeout time.Duration `yaml:"shutdown_timeout"`
 	MaxBodyBytes    int64         `yaml:"max_body_bytes"`
 	AllowedOrigins  []string      `yaml:"allowed_origins"`
+	TrustedProxies  []string      `yaml:"trusted_proxies"`
 }
 
 // GRPCConfig contains gRPC server settings
@@ -126,8 +130,9 @@ type PostgresConfig struct {
 
 // AuthenticationConfig contains authentication settings
 type AuthenticationConfig struct {
-	Enabled bool     `yaml:"enabled"`
-	APIKeys []APIKey `yaml:"api_keys"`
+	Enabled    bool     `yaml:"enabled"`
+	APIKeys    []APIKey `yaml:"api_keys"`
+	HMACSecret string   `yaml:"hmac_secret"` // HMAC-SHA256 key for hashing API keys at rest
 }
 
 // APIKey represents an API key with role
@@ -353,6 +358,9 @@ func applyEnvOverrides(cfg *Config) {
 	// Authentication overrides
 	if v := os.Getenv("CORTEX_AUTH_ENABLED"); v != "" {
 		cfg.Authentication.Enabled = strings.ToLower(v) == "true"
+	}
+	if v := os.Getenv("CORTEX_HMAC_SECRET"); v != "" {
+		cfg.Authentication.HMACSecret = v
 	}
 	// CORTEX_API_KEYS: comma-separated list of name:key:role triples
 	// e.g. "my-service:sk_abc123:writer,read-only:sk_def456:reader"
@@ -638,12 +646,50 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// Default returns a configuration with sensible defaults
+// Default returns a configuration with sensible defaults. It also searches for
+// a user override file (loxa-cortex.yaml / loxa.yaml) in the current working
+// directory and applies environment variable overrides. The loading order is:
+// defaults -> user YAML -> env vars.
 func Default() *Config {
+	cfg := defaultConfig()
+	if path := findUserConfigFile(); path != "" {
+		// Silently ignore errors — user file is optional.
+		_ = loadFile(cfg, path)
+	}
+	applyEnvOverrides(cfg)
+	return cfg
+}
+
+// findUserConfigFile returns the path to the first user override file found in
+// the current working directory, or "" if none exists.
+func findUserConfigFile() string {
+	for _, name := range userConfigFiles {
+		if _, err := os.Stat(name); err == nil {
+			return name
+		}
+	}
+	return ""
+}
+
+// loadFile reads and parses a YAML file, overlaying non-zero values onto cfg.
+func loadFile(cfg *Config, path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read config file %s: %w", path, err)
+	}
+	if err := yaml.Unmarshal(data, cfg); err != nil {
+		return fmt.Errorf("failed to parse config file %s: %w", path, err)
+	}
+	return nil
+}
+
+// defaultConfig returns the raw configuration with sensible defaults (no file
+// or env processing). Use Default() for the full loading pipeline.
+func defaultConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
 			Host:            "0.0.0.0",
-			Port:            8080,
+			Port:            9312,
 			ReadTimeout:     30 * time.Second,
 			WriteTimeout:    30 * time.Second,
 			ShutdownTimeout: 10 * time.Second,
@@ -652,7 +698,7 @@ func Default() *Config {
 		GRPC: GRPCConfig{
 			Enabled: false,
 			Host:    "0.0.0.0",
-			Port:    9090,
+			Port:    9313,
 		},
 		Storage: StorageConfig{
 			Backend: "duckdb",
@@ -701,7 +747,7 @@ func Default() *Config {
 		},
 		Collector: CollectorConfig{
 			Mode:                 "fanout",
-			URL:                  "http://localhost:8081",
+			URL:                  "http://localhost:9308",
 			SourceOfTruth:        false,
 			APIKeyHeader:         "X-API-Key",
 			PollInterval:         30 * time.Second,

@@ -10,6 +10,7 @@ import (
 	"github.com/astraive/loxa-cli/internal/client"
 	"github.com/astraive/loxa-cli/internal/config"
 	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
+	"github.com/astraive/loxa-cli/internal/version"
 )
 
 func EmitCommand(cfg config.Config, args []string) error {
@@ -54,7 +55,7 @@ func EmitCommand(cfg config.Config, args []string) error {
 	if err != nil {
 		return err
 	}
-	compactRaw, err := speccontract.MarshalIngestEnvelope("loxa-cli", "0.2.3", *service, []json.RawMessage{eventRaw})
+	compactRaw, err := speccontract.MarshalIngestEnvelope("loxa-cli", version.Version, *service, []json.RawMessage{eventRaw})
 	if err != nil {
 		return err
 	}

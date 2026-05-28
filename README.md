@@ -45,7 +45,7 @@ import (
 
 func main() {
 	loxa.Configure(loxa.Production("checkout").
-		WithCollectorEndpoint("http://127.0.0.1:9090"))
+		WithCollectorEndpoint("http://127.0.0.1:9308"))
 	defer loxa.Shutdown(context.Background())
 
 	ctx := loxa.StartEvent(context.Background(), loxa.Params{
@@ -66,7 +66,7 @@ import loxa
 
 loxa.configure(
     loxa.production("checkout")
-    .with_collector_endpoint("http://127.0.0.1:9090")
+    .with_collector_endpoint("http://127.0.0.1:9308")
 )
 
 ctx = loxa.start_event(event="checkout.request", kind="http")
@@ -82,7 +82,7 @@ Rust:
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     loxa::configure(
         loxa::Config::production("checkout")
-            .with_collector_endpoint("http://127.0.0.1:9090"),
+            .with_collector_endpoint("http://127.0.0.1:9308"),
     )?;
 
     let mut ctx = loxa::start_event(loxa::Params::new("checkout.request").with_kind("http"));
@@ -101,7 +101,7 @@ import { loxa } from 'loxa-js';
 
 loxa.configure(
   loxa.production('checkout')
-    .withCollectorEndpoint('http://127.0.0.1:9090')
+    .withCollectorEndpoint('http://127.0.0.1:9308')
 );
 
 const ctx = loxa.startEvent({ event: 'checkout.request', kind: 'http' });

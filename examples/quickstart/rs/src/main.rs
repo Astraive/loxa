@@ -1,6 +1,6 @@
 fn main() {
     // Default API — configure once, use everywhere
-    loxa::configure(loxa::Config::production("quickstart-demo").with_collector_endpoint("http://localhost:9090"))
+    loxa::configure(loxa::Config::production("quickstart-demo").with_collector_endpoint("http://localhost:9308"))
         .expect("failed to configure");
 
     loxa::info("server started");
@@ -15,7 +15,7 @@ fn main() {
     }
 
     // Custom instance
-    let logger = loxa::create_loxa(loxa::Config::dev("checkout-api").with_collector_endpoint("http://localhost:9090"));
+    let logger = loxa::create_loxa(loxa::Config::dev("checkout-api").with_collector_endpoint("http://localhost:9308"));
     logger.info("custom instance ready");
 
     // Alias — same config, different service name

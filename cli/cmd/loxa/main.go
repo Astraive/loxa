@@ -7,6 +7,7 @@ import (
 
 	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 	"github.com/astraive/loxa-cli/internal/cli"
+	"github.com/astraive/loxa-cli/internal/version"
 )
 
 func main() {
@@ -30,7 +31,7 @@ func run(args []string) error {
 }
 
 func printUsage() {
-	fmt.Println("LOXA CLI v0.2.3")
+	fmt.Printf("LOXA CLI v%s\n", version.Version)
 	fmt.Println("\nCommands:")
 	fmt.Println("  init         Initialize LOXA config")
 	fmt.Println("  dev          Start development server (collector + cortex)")

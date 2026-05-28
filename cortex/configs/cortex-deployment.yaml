@@ -17,15 +17,25 @@ spec:
         app.kubernetes.io/name: cortex
         app.kubernetes.io/component: cortex
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: cortex
-          image: ghcr.io/astraive/loxa-cortex:0.2.3
+          image: ghcr.io/astraive/loxa-cortex:0.2.5
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
           ports:
             - name: http
-              containerPort: 9100
+              containerPort: 9312
               protocol: TCP
             - name: grpc
-              containerPort: 9101
+              containerPort: 9313
               protocol: TCP
           envFrom:
             - configMapRef:

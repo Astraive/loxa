@@ -1,10 +1,10 @@
 collector_repo_path: ./collector
 cortex_repo_path: ./cortex
 spec_repo_path: ./spec
-collector_url: http://127.0.0.1:9090
+collector_url: http://127.0.0.1:9308
 duckdb_path: loxa.db
 spool_dir: loxa-spool
 spool_file: spool.ndjson
 dlq_path: loxa-dlq.ndjson
 cortex:
-  url: http://127.0.0.1:9100
+  url: http://127.0.0.1:9312

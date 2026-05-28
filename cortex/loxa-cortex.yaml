@@ -1,0 +1,6 @@
+name: loxa-cortex
+version: 0.2.5
+description: Query engine and analytics layer for Loxa events
+license: MIT
+repository: https://github.com/Astraive/loxa
+module: github.com/astraive/loxa-cortex

@@ -15,6 +15,11 @@ func RunDuckDB(dbPath, sqlQuery string) error {
 	}
 	defer db.Close()
 
+	// Disable external access to block read_csv, read_json, etc.
+	if _, err := db.Exec("SET enable_external_access=false"); err != nil {
+		return fmt.Errorf("set safety guard: %w", err)
+	}
+
 	rows, err := db.Query(sqlQuery)
 	if err != nil {
 		return fmt.Errorf("execute query: %w", err)

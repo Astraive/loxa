@@ -50,14 +50,14 @@ loxa dev
 
 | Flag | Description |
 |---|---|
-| `--port` | Collector port (default: 9090) |
-| `--cortex-port` | Cortex port (default: 9091) |
+| `--port` | Collector port (default: 9308) |
+| `--cortex-port` | Cortex port (default: 9312) |
 | `--db` | DuckDB file path (default: `loxa-local.db`) |
 
 **Example**
 
 ```bash
-loxa dev --port 8080 --cortex-port 8081
+loxa dev --port 9308 --cortex-port 9312
 ```
 
 ---

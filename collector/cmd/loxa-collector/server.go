@@ -267,6 +267,16 @@ func runCollector(cfg collectorConfig) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Parse trusted proxy CIDRs once for all servers
+	var trustedCIDRs []*net.IPNet
+	for _, cidr := range cfg.trustedProxies {
+		_, ipNet, err := net.ParseCIDR(cidr)
+		if err != nil {
+			log.Fatal().Err(err).Msgf("invalid trusted_proxies CIDR %q", cidr)
+		}
+		trustedCIDRs = append(trustedCIDRs, ipNet)
+	}
+
 	auxServers := make([]serverruntime.Server, 0, 2)
 	if cfg.serverConfig.GRPC.Enabled {
 		grpcSrv := serverruntime.NewGRPCServer(cfg.serverConfig.GRPC, state)
@@ -279,6 +289,7 @@ func runCollector(cfg collectorConfig) error {
 			cache := auth.NewMemoryKeyCache(60*time.Second, 10*time.Second)
 			grpcSrv.WithAuth(store, cache, serverSecret)
 			grpcSrv.WithAllowLocalDevKeys(cfg.authAllowLocalDevKeys)
+			grpcSrv.WithTrustedProxies(trustedCIDRs)
 		}
 		auxServers = append(auxServers, grpcSrv)
 	}

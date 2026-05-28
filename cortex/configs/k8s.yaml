@@ -16,11 +16,11 @@ spec:
     spec:
       containers:
       - name: cortex
-        image: astraive/loxa-cortex:0.2.3
+        image: astraive/loxa-cortex:0.2.5
         ports:
-        - containerPort: 8080
+        - containerPort: 9312
           name: http
-        - containerPort: 9090
+        - containerPort: 9313
           name: grpc
         env:
         - name: CORTEX_STORAGE_BACKEND
@@ -47,13 +47,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 8080
+            port: 9312
           initialDelaySeconds: 10
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /readyz
-            port: 8080
+            port: 9312
           initialDelaySeconds: 5
           periodSeconds: 5
 ---
@@ -66,11 +66,11 @@ spec:
     app: cortex
   ports:
   - name: http
-    port: 8080
-    targetPort: 8080
+    port: 9312
+    targetPort: 9312
   - name: grpc
-    port: 9090
-    targetPort: 9090
+    port: 9313
+    targetPort: 9313
   type: ClusterIP
 ---
 apiVersion: v1

@@ -425,13 +425,32 @@ func (s *collectorState) applyBlueprint(bp Blueprint) error {
 		if typ == "" {
 			typ = "TEXT"
 		}
-		// Validate DuckDB type against allowlist
+		// Validate the COMPLETE DuckDB type string against the allowlist.
+		// Only the base type (before parentheses) is in the allowlist, but
+		// we must also validate that any parameters contain only safe chars
+		// (digits, commas, whitespace) to prevent SQL injection via types
+		// like "DECIMAL(10); DROP TABLE events--".
 		baseType := strings.ToUpper(typ)
+		params := ""
 		if idx := strings.Index(baseType, "("); idx > 0 {
 			baseType = baseType[:idx]
+			params = typ[idx:] // keep original case for params
 		}
 		if !allowedDuckDBTypes[baseType] {
 			return fmt.Errorf("unsupported DuckDB type %q for column %q", colDef.DuckDBType, colName)
+		}
+		// If there are parameters, validate they contain only safe chars
+		if params != "" {
+			safeParams := true
+			for _, c := range params {
+				if !((c >= '0' && c <= '9') || c == '(' || c == ')' || c == ',' || c == ' ') {
+					safeParams = false
+					break
+				}
+			}
+			if !safeParams {
+				return fmt.Errorf("invalid characters in DuckDB type parameters %q for column %q", colDef.DuckDBType, colName)
+			}
 		}
 		query := fmt.Sprintf("ALTER TABLE events ADD COLUMN IF NOT EXISTS %s %s", colIdent, typ)
 		if _, err := db.Exec(query); err != nil {

@@ -107,8 +107,9 @@ func Middleware(store KeyStore, cache *MemoryKeyCache, serverSecret []byte, opts
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ac, errCode, errReason := authenticate(r, store, cache, serverSecret, rateLimiter, mc.allowLocalDevKeys, mc.trustedProxies)
 			if ac == nil {
-				w.Header().Set("X-Auth-Failure-Reason", errReason)
-				w.Header().Set("X-Auth-Failure-Code", errCode)
+				// Log detailed failure reason server-side for diagnostics.
+				slog.Warn("auth_failure", "code", errCode, "reason", errReason, "path", r.URL.Path, "remote", r.RemoteAddr)
+				// Return generic error to client — do not leak internal failure details.
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
@@ -257,9 +258,15 @@ func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, server
 	}
 
 	// 11. Check origin restriction (for public keys)
+	// When AllowedOrigins is configured, empty Origin headers are rejected.
+	// Browsers always send Origin on cross-origin requests; an empty Origin
+	// indicates a non-browser client attempting to bypass origin restrictions.
 	if len(ac.AllowedOrigins) > 0 {
 		origin := r.Header.Get("Origin")
-		if origin != "" && !contains(ac.AllowedOrigins, origin) {
+		if origin == "" {
+			return nil, "origin_required", "origin header required when allowed_origins is configured"
+		}
+		if !contains(ac.AllowedOrigins, origin) {
 			return nil, "origin_not_allowed", "origin not permitted"
 		}
 	}

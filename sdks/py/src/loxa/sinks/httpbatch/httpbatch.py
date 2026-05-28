@@ -20,6 +20,7 @@ from ...core.http_client import (
     _parse_retry_after,
     _retry_delay,
 )
+from ...version import SDK_VERSION
 
 
 @dataclass(slots=True)
@@ -35,7 +36,7 @@ class HTTPBatchSink:
     api_key: str = ""
     auth_header: str = "Authorization"
     sdk_name: str = "loxa-py"
-    sdk_version: str = "0.2.0"
+    sdk_version: str = SDK_VERSION
     service: str = ""
     timeout: float = 2.0
     retries: int = 2

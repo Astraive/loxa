@@ -2,7 +2,7 @@
 """test_equivalence.py -- Cross-SDK equivalence test.
 
 Sends the same canonical event from each SDK and asserts stored events
-match on canonical fields. If no collector is running at localhost:9090,
+match on canonical fields. If no collector is running at localhost:9308,
 prints SKIP and exits 0.
 """
 
@@ -13,7 +13,7 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timezone
 
-COLLECTOR_URL = "http://localhost:9090"
+COLLECTOR_URL = "http://localhost:9308"
 CANONICAL_EVENT = {
     "service": "equivalence-test",
     "event": "test.cross-sdk",
@@ -105,7 +105,7 @@ def main():
     print()
 
     if not check_collector_available():
-        print("SKIP: Collector not running at localhost:9090")
+        print("SKIP: Collector not running at localhost:9308")
         print("Start the collector first: cd collector && go run ./cmd/loxa-collector")
         sys.exit(0)
 

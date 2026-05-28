@@ -1,6 +1,6 @@
 server:
   host: "0.0.0.0"
-  port: 9100
+  port: 9312
 
 storage:
   backend: "duckdb"
@@ -26,7 +26,7 @@ logging:
 
 collector:
   mode: "pull"
-  url: "http://localhost:9090"
+  url: "http://localhost:9308"
   source_of_truth: true
   api_key: ""
   poll_interval: 30s

@@ -156,10 +156,10 @@ describe('Logger', () => {
   it('auto-creates HTTPBatchSink when collectorUrl is set', () => {
     const loxa = new Logger({
       service: 'checkout',
-      collectorUrl: 'http://localhost:9090/events',
+      collectorUrl: 'http://localhost:9308/events',
     });
     const cfg = loxa.getConfig();
-    assert.equal(cfg.collectorUrl, 'http://localhost:9090/events');
+    assert.equal(cfg.collectorUrl, 'http://localhost:9308/events');
   });
 
   it('explicit sink takes precedence over collectorUrl', async () => {
@@ -167,7 +167,7 @@ describe('Logger', () => {
     const loxa = new Logger({
       service: 'checkout',
       sink,
-      collectorUrl: 'http://localhost:9090/events',
+      collectorUrl: 'http://localhost:9308/events',
     });
     const ctx = loxa.startEvent({ event: 'test' });
     loxa.finish(ctx, 'success');

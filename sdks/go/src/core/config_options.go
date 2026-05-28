@@ -300,7 +300,7 @@ func WithLogger(l *Logger) ConfigOption {
 // Example:
 //
 //	config.NewClient(config.Production(),
-//	    config.WithDSN("loxa://localhost:8080/demo?env=dev&tls=false"),
+//	    config.WithDSN("loxa://localhost:9308/demo?env=dev&tls=false"),
 //	)
 func WithDSN(raw string) ConfigOption {
 	return func(cfg Config) Config {
