@@ -41,6 +41,24 @@ jobs:
         with:
           go-version-file: ${{ inputs.component }}/go.mod
 
+      - name: Install protoc
+        if: inputs.component == 'collector' || inputs.component == 'cortex'
+        run: |
+          PROTOC_VERSION=34.1
+          curl -fsSL "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip" -o /tmp/protoc.zip
+          sudo unzip -o /tmp/protoc.zip -d /usr/local bin/protoc 'include/*'
+          rm /tmp/protoc.zip
+
+      - name: Install Go protoc plugins
+        if: inputs.component == 'collector' || inputs.component == 'cortex'
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.2
+
+      - name: Generate protobuf code
+        if: inputs.component == 'collector' || inputs.component == 'cortex'
+        run: make proto
+
       - name: Run component tests
         run: go test ./...
         working-directory: ${{ inputs.component }}
