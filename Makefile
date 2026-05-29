@@ -11,7 +11,7 @@ GEN_FILES := $(patsubst $(PROTO_DIR)/loxa/core/%.proto,$(GEN_DIR)/loxa/core/%.pb
 # Uses protoc directly (buf is optional, see proto/buf.gen.yaml for buf config)
 proto:
 	@mkdir -p $(GEN_DIR)/loxa/core
-	protoc -I $(PROTO_DIR) \
+	protoc -I $(PROTO_DIR) -I /usr/include \
 		--go_out=$(GEN_DIR) --go_opt=paths=source_relative \
 		--go-grpc_out=$(GEN_DIR) --go-grpc_opt=paths=source_relative \
 		proto/loxa/core/event.proto \
