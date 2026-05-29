@@ -1,0 +1,54 @@
+name: Publish GitHub Release
+
+on:
+  workflow_call:
+    inputs:
+      component:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      dry_run:
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    if: inputs.component == 'loxa'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install pyyaml
+
+      - name: Validate umbrella manifest
+        run: python scripts/release/validate-manifests.py --component loxa
+
+      - name: Check umbrella tag is available
+        run: python scripts/release/tag-component.py loxa --dry-run
+
+      - name: Create umbrella tag
+        if: inputs.dry_run != true
+        run: python scripts/release/tag-component.py loxa --push
+
+      - name: Create GitHub Release
+        if: inputs.dry_run != true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ inputs.version }}" \
+            release.yaml loxa.yaml \
+            --title "LOXA ${{ inputs.version }}" \
+            --notes "Umbrella LOXA repository release ${{ inputs.version }}."

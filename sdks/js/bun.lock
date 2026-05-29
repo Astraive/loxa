@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "loxa-js",
+      "name": "loxa",
       "devDependencies": {
         "@types/node": "^25.9.1",
         "typescript": "^6.0.3",

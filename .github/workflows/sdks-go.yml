@@ -2,9 +2,15 @@ name: Go SDK CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths:
+      - "sdks/go/**"
+      - "spec/**"
   pull_request:
+    paths:
+      - "sdks/go/**"
+      - "spec/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -38,6 +44,14 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install Python deps
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          pip install pytest
+          pip install -e sdks/py
+
+      # --- Build + Vet ---
+
       - name: Build (all modules)
         shell: pwsh
         run: |
@@ -58,6 +72,18 @@ jobs:
             Pop-Location
           }
 
+      # --- Lint ---
+
+      - name: Install golangci-lint
+        if: matrix.os == 'ubuntu-latest'
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+      - name: Lint
+        if: matrix.os == 'ubuntu-latest'
+        run: $(go env GOPATH)/bin/golangci-lint run
+
+      # --- Tests ---
+
       - name: Tests (all modules)
         shell: pwsh
         run: |
@@ -68,15 +94,23 @@ jobs:
             Pop-Location
           }
 
+      # --- Conformance ---
+
+      - name: Conformance tests
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: spec
+        run: python conformance/runner.py --sdk go --group all
+
+      # --- Vulnerability check (non-blocking) ---
+
       - name: Install govulncheck
         if: matrix.os == 'ubuntu-latest'
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
       - name: Vulnerability check
         if: matrix.os == 'ubuntu-latest'
-        # Non-blocking: govulncheck may flag Go stdlib vulnerabilities (e.g. GO-2025-4007)
-        # that are outside Loxa's control. The step stays visible for audit purposes but
-        # should not block CI. Pin go-version in setup-go to a patched release to resolve.
+        # Non-blocking: govulncheck may flag Go stdlib vulnerabilities
+        # that are outside Loxa's control. Visible for audit purposes.
         continue-on-error: true
         shell: pwsh
         run: |
@@ -88,26 +122,17 @@ jobs:
             Pop-Location
           }
 
-      - name: Install golangci-lint
-        if: matrix.os == 'ubuntu-latest'
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      # --- Stress tests ---
 
-      - name: Lint
-        if: matrix.os == 'ubuntu-latest'
-        run: $(go env GOPATH)/bin/golangci-lint run
-
-      - name: Stress tests (queue reliability)
+      - name: Stress tests
         working-directory: sdks/go/tests/integration
         run: go test ./... -run "TestAsyncPipelineDrain|TestAsyncPipelineNoLossConcurrent|TestConfigureDrainsPreviousLogger" -count=10
+
+      # --- Benchmarks ---
 
       - name: Benchmarks
         working-directory: sdks/go/bench
         run: go test ./... -run ^$ -bench . -count=1
-
-      - name: Grouped conformance
-        if: matrix.os == 'ubuntu-latest'
-        working-directory: spec
-        run: python conformance/runner.py --sdk go --group all
 
   required-checks:
     name: Required Checks

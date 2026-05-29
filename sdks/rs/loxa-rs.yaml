@@ -1,6 +1,17 @@
 name: loxa-rs
+kind: sdk
+language: rust
 version: 0.2.5
-description: Rust SDK for Loxa event collection
+description: Rust SDK for LOXA
 license: MIT
 repository: https://github.com/Astraive/loxa
-crate: loxa
+module: crates:loxa
+
+paths:
+  root: sdks/rs
+
+publish:
+  crates:
+    owner: astraive
+    package: loxa
+    directory: sdks/rs

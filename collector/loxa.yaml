@@ -1,6 +1,19 @@
 name: loxa-collector
+kind: docker
 version: 0.2.5
 description: High-performance event collector with DuckDB storage
 license: MIT
 repository: https://github.com/Astraive/loxa
 module: github.com/astraive/loxa/collector
+
+paths:
+  root: collector
+  dockerfile: collector/Dockerfile
+
+publish:
+  docker:
+    owner: astraive
+    images:
+      - astraive/loxa
+      - ghcr.io/astraive/loxa
+    context: .

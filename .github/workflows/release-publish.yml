@@ -1,0 +1,171 @@
+name: Release Publish
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      components:
+        description: "Comma-separated components to publish, for example collector,sdk-js"
+        required: true
+      version:
+        description: "Manifest version to publish, without leading v"
+        required: true
+      dry_run:
+        description: "Validate and build without publishing"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+  actions: read
+
+jobs:
+  plan:
+    name: Build publish plan
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      has_changes: ${{ steps.plan.outputs.has_changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install pyyaml
+
+      - run: python scripts/release/validate-manifests.py
+
+      - id: plan
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os, re, sys, yaml
+          version = "${{ inputs.version }}"
+          selected = [item.strip() for item in "${{ inputs.components }}".split(",") if item.strip()]
+          if not re.match(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$", version):
+              sys.exit("manual publish version must be X.Y.Z without leading v")
+          registry = yaml.safe_load(open("release.yaml", encoding="utf-8"))["components"]
+          include = []
+          for component in selected:
+              if component not in registry:
+                  sys.exit(f"unknown component: {component}")
+              manifest = yaml.safe_load(open(registry[component], encoding="utf-8"))
+              if str(manifest["version"]) != version:
+                  sys.exit(f"{component} manifest version {manifest['version']} does not match requested {version}")
+              include.append({"component": component, "manifest": registry[component], "new_version": version, "kind": manifest.get("kind"), "language": manifest.get("language"), "changed": True})
+          print("matrix=" + json.dumps({"include": include}, separators=(",", ":")))
+          print("has_changes=" + str(bool(include)).lower())
+          PY
+          else
+            BASE="${{ github.event.before }}"
+            if [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+              BASE="$(git rev-parse HEAD^)"
+            fi
+            python scripts/release/changed-components.py --base-ref "$BASE" --github-output
+          fi
+
+  publish-docker:
+    name: Publish Docker component
+    needs: plan
+    if: needs.plan.outputs.has_changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    uses: ./.github/workflows/publish-docker.yml
+    with:
+      component: ${{ matrix.component }}
+      version: ${{ matrix.new_version }}
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    secrets: inherit
+
+  publish-github-release:
+    name: Publish umbrella GitHub Release
+    needs: plan
+    if: needs.plan.outputs.has_changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    uses: ./.github/workflows/publish-github-release.yml
+    with:
+      component: ${{ matrix.component }}
+      version: ${{ matrix.new_version }}
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    secrets: inherit
+
+  publish-cli:
+    name: Publish CLI
+    needs: plan
+    if: needs.plan.outputs.has_changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    uses: ./.github/workflows/publish-cli.yml
+    with:
+      component: ${{ matrix.component }}
+      version: ${{ matrix.new_version }}
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    secrets: inherit
+
+  publish-js:
+    name: Publish JS SDK
+    needs: plan
+    if: needs.plan.outputs.has_changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    uses: ./.github/workflows/publish-js.yml
+    with:
+      component: ${{ matrix.component }}
+      version: ${{ matrix.new_version }}
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    secrets: inherit
+
+  publish-py:
+    name: Publish Python SDK
+    needs: plan
+    if: needs.plan.outputs.has_changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    uses: ./.github/workflows/publish-py.yml
+    with:
+      component: ${{ matrix.component }}
+      version: ${{ matrix.new_version }}
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    secrets: inherit
+
+  publish-rs:
+    name: Publish Rust crate
+    needs: plan
+    if: needs.plan.outputs.has_changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    uses: ./.github/workflows/publish-rs.yml
+    with:
+      component: ${{ matrix.component }}
+      version: ${{ matrix.new_version }}
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    secrets: inherit
+
+  verify-go-modules:
+    name: Verify Go module tags
+    needs: plan
+    if: needs.plan.outputs.has_changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    uses: ./.github/workflows/verify-go-modules.yml
+    with:
+      component: ${{ matrix.component }}
+      version: ${{ matrix.new_version }}
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    secrets: inherit

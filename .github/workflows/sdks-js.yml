@@ -6,12 +6,12 @@ on:
     paths:
       - "sdks/js/**"
       - "spec/**"
-      - ".github/workflows/sdks-js-ci.yml"
+      - ".github/workflows/sdks-js.yml"
   pull_request:
     paths:
       - "sdks/js/**"
       - "spec/**"
-      - ".github/workflows/sdks-js-ci.yml"
+      - ".github/workflows/sdks-js.yml"
   workflow_dispatch:
 
 permissions:
@@ -47,3 +47,17 @@ jobs:
       - name: Tests
         # Exclude e2e-collector tests (require a running collector)
         run: node --test --experimental-strip-types $(ls tests/*.test.ts | grep -v e2e-collector)
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install conformance dependencies
+        working-directory: .
+        run: |
+          pip install pytest
+          pip install -e sdks/py
+
+      - name: Run grouped conformance
+        working-directory: spec
+        run: python conformance/runner.py --sdk javascript --group all

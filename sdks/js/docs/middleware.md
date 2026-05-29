@@ -7,7 +7,7 @@ JS framework middleware for automatic HTTP event creation. The SDK provides Expr
 Import from the sub-path export:
 
 ```typescript
-import { loxaMiddleware } from 'loxa-js/middleware/express';
+import { loxaMiddleware } from 'loxa/middleware/express';
 import express from 'express';
 
 const app = express();
@@ -37,7 +37,7 @@ For raw `http.createServer` applications, use the middleware wrapper:
 
 ```typescript
 import http from 'http';
-import { configure, production } from 'loxa-js';
+import { configure, production } from 'loxa';
 
 configure(production('my-service'));
 
@@ -52,7 +52,7 @@ const server = http.createServer((req, res) => {
 The SDK uses Node.js `AsyncLocalStorage` to propagate event context across async operations. This means `getEvent()` works in any async function within the same request:
 
 ```typescript
-import { startEvent, enrich, getEvent, hasEvent, finish, emit } from 'loxa-js';
+import { startEvent, enrich, getEvent, hasEvent, finish, emit } from 'loxa';
 
 async function handleRequest() {
   const ctx = startEvent({ event: 'request', kind: 'http' });
@@ -79,11 +79,11 @@ async function someAsyncWork() {
 
 ### Koa (planned)
 
-- Sub-path export: `loxa-js/middleware/koa`
+- Sub-path export: `loxa/middleware/koa`
 
 ### Fastify (planned)
 
-- Sub-path export: `loxa-js/middleware/fastify`
+- Sub-path export: `loxa/middleware/fastify`
 
 ## Sub-Path Exports
 
@@ -113,7 +113,7 @@ All middleware implementations:
 Configure the global logger before adding middleware:
 
 ```typescript
-import { configure, production, httpBatchSink } from 'loxa-js';
+import { configure, production, httpBatchSink } from 'loxa';
 
 configure(
   production('my-service').withSink(

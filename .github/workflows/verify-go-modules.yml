@@ -1,0 +1,111 @@
+name: Verify Go Modules
+
+on:
+  workflow_call:
+    inputs:
+      component:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      dry_run:
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  verify:
+    if: inputs.component == 'spec' || inputs.component == 'sdk-go'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+      - uses: actions/setup-node@v4
+        if: inputs.component == 'spec'
+        with:
+          node-version: "22"
+      - uses: dtolnay/rust-toolchain@stable
+        if: inputs.component == 'spec'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pyyaml pytest
+      - run: python scripts/release/validate-manifests.py --component "${{ inputs.component }}"
+      - name: Test spec module
+        if: inputs.component == 'spec'
+        run: go test ./...
+        working-directory: spec
+      - name: Test Go SDK module
+        if: inputs.component == 'sdk-go'
+        run: go test ./...
+        working-directory: sdks/go
+      - name: Run spec dependent checks
+        if: inputs.component == 'spec'
+        run: python -m pip install -e sdks/py
+      - name: Go SDK conformance tests
+        if: inputs.component == 'spec'
+        run: go test ./...
+        working-directory: sdks/go
+      - name: JS SDK conformance tests
+        if: inputs.component == 'spec'
+        run: |
+          npm ci
+          npm run build
+          npm test
+        working-directory: sdks/js
+      - name: Python SDK conformance tests
+        if: inputs.component == 'spec'
+        run: pytest -v
+        working-directory: sdks/py
+      - name: Rust SDK conformance tests
+        if: inputs.component == 'spec'
+        run: cargo test --all-features
+        working-directory: sdks/rs
+      - name: Spec conformance runner
+        if: inputs.component == 'spec'
+        run: |
+          python spec/conformance/runner.py --sdk go --group all
+          python spec/conformance/runner.py --sdk javascript --group all
+          python spec/conformance/runner.py --sdk python --group all
+          python spec/conformance/runner.py --sdk rust --group all
+      - name: Collector contract tests
+        if: inputs.component == 'spec'
+        run: go test ./...
+        working-directory: collector
+      - name: CLI schema tests
+        if: inputs.component == 'spec'
+        run: go test ./...
+        working-directory: cli
+      - name: Check component tag is available
+        run: python scripts/release/tag-component.py "${{ inputs.component }}" --dry-run
+      - name: Create component tag
+        if: inputs.dry_run != true
+        run: python scripts/release/tag-component.py "${{ inputs.component }}" --push
+      - name: Create spec GitHub Release
+        if: inputs.component == 'spec' && inputs.dry_run != true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "spec/v${{ inputs.version }}" spec/loxa-spec.yaml spec/v1/event.schema.json --title "LOXA Spec ${{ inputs.version }}" --notes "LOXA spec release ${{ inputs.version }}"
+      - name: Verify module resolution
+        if: inputs.dry_run != true
+        shell: bash
+        run: |
+          tmp="$(mktemp -d)"
+          cd "$tmp"
+          go mod init verify-loxa-module
+          if [ "${{ inputs.component }}" = "spec" ]; then
+            go get github.com/astraive/loxa/spec@v${{ inputs.version }}
+            go list -m github.com/astraive/loxa/spec
+          else
+            go get github.com/astraive/loxa/sdks/go@v${{ inputs.version }}
+            go list -m github.com/astraive/loxa/sdks/go
+          fi

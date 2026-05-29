@@ -1,5 +1,5 @@
 {
-  "name": "loxa-js",
+  "name": "loxa",
   "type": "module",
   "version": "0.2.5",
   "description": "LOXA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loxa-collector",

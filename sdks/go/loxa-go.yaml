@@ -1,6 +1,17 @@
 name: loxa-go
+kind: sdk
+language: go
 version: 0.2.5
-description: Go SDK for Loxa event collection
+description: Go SDK for LOXA
 license: MIT
 repository: https://github.com/Astraive/loxa
 module: github.com/astraive/loxa/sdks/go
+
+paths:
+  root: sdks/go
+
+publish:
+  go:
+    owner: astraive
+    tag_prefix: sdks/go/v
+    install: github.com/astraive/loxa/sdks/go

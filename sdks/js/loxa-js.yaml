@@ -1,6 +1,17 @@
 name: loxa-js
+kind: sdk
+language: javascript
 version: 0.2.5
-description: JavaScript/TypeScript SDK for Loxa event collection
+description: JavaScript and TypeScript SDK for LOXA
 license: MIT
 repository: https://github.com/Astraive/loxa
-package: "@astraive/loxa"
+module: npm:loxa
+
+paths:
+  root: sdks/js
+
+publish:
+  npm:
+    owner: astraive
+    package: loxa
+    directory: sdks/js

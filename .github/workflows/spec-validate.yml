@@ -35,4 +35,4 @@ jobs:
 
       - name: Run conformance runner
         run: |
-          python spec/conformance_runner.py --sdk=python
+          python spec/conformance/runner.py --sdk all

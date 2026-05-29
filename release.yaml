@@ -1,0 +1,11 @@
+components:
+  loxa: loxa.yaml
+  spec: spec/loxa-spec.yaml
+  collector: collector/loxa.yaml
+  cortex: cortex/loxa-cortex.yaml
+  lql: lql/lql.yaml
+  cli: cli/loxa-cli.yaml
+  sdk-go: sdks/go/loxa-go.yaml
+  sdk-js: sdks/js/loxa-js.yaml
+  sdk-py: sdks/py/loxa-py.yaml
+  sdk-rs: sdks/rs/loxa-rs.yaml

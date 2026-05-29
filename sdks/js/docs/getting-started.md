@@ -1,6 +1,6 @@
 # Getting Started
 
-A 5-minute quickstart for the LOXA JS SDK (`loxa-js`). By the end you will have a working application that creates, enriches, finishes, and emits a wide-event using the `loxa` default instance.
+A 5-minute quickstart for the LOXA JS SDK (`loxa`). By the end you will have a working application that creates, enriches, finishes, and emits a wide-event using the `loxa` default instance.
 
 ## Default Client
 
@@ -17,7 +17,7 @@ JS maps to the v0.0.2 parity family as `loxa`, `createLoxa`, optional `new Loxa`
 ## Install
 
 ```bash
-npm install loxa-js
+npm install loxa
 ```
 
 Or from the monorepo:
@@ -42,7 +42,7 @@ import {
   tenantId,
   string,
   int,
-} from 'loxa-js';
+} from 'loxa';
 
 async function main() {
   // 1. Configure the default loxa instance with a service name, sink, and sampler.
@@ -103,7 +103,7 @@ main().catch(console.error);
 In production, send events to the LOXA collector with authentication:
 
 ```typescript
-import { configure, production, httpBatchSink, sampleErrors } from 'loxa-js';
+import { configure, production, httpBatchSink, sampleErrors } from 'loxa';
 
 configure(
   production('checkout-service')
@@ -122,7 +122,7 @@ The SDK automatically sets `Authorization: Bearer <key>` headers.
 | `apiKey` | `LOXA_API_KEY` | Ingest API key (`lx_sec_live_k_xxx_yyyy`) |
 
 ```typescript
-import { configure, production, dev } from 'loxa-js';
+import { configure, production, dev } from 'loxa';
 
 // Production
 configure(production('my-service').withApiKey('lx_sec_live_k_xxx_yyyy'));
@@ -138,7 +138,7 @@ See [Security](../../docs/security.md) for key types and RBAC roles.
 For simple log lines that do not need the full start/enrich/finish/emit lifecycle, use the convenience methods directly on `loxa`:
 
 ```typescript
-import { loxa, configure, production, string } from 'loxa-js';
+import { loxa, configure, production, string } from 'loxa';
 
 configure(production('my-service'));
 
@@ -154,7 +154,7 @@ These create an event internally, set the level, enrich with any extra attrs, fi
 Use `createLoxa` when you need a logger with a different config than the default:
 
 ```typescript
-import { createLoxa, stdoutSink, string } from 'loxa-js';
+import { createLoxa, stdoutSink, string } from 'loxa';
 
 const logger = createLoxa({
   service: 'checkout-api',
@@ -174,7 +174,7 @@ Custom instances are independent -- they do not share config or state with the d
 Use `alias` to create a logger that shares the same config as `loxa` and adds `loxa.alias` metadata. This is useful for emitting events from a logical subsystem without duplicating configuration:
 
 ```typescript
-import { loxa, configure, production, httpBatchSink, string } from 'loxa-js';
+import { loxa, configure, production, httpBatchSink, string } from 'loxa';
 
 configure(
   production('checkout-service')

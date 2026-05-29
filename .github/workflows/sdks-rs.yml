@@ -1,0 +1,134 @@
+name: Rust SDK CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "sdks/rs/**"
+      - "spec/**"
+      - ".github/workflows/sdks-rs.yml"
+  pull_request:
+    paths:
+      - "sdks/rs/**"
+      - "spec/**"
+      - ".github/workflows/sdks-rs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/rs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Format check
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/rs
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --all-features
+
+      - name: Tests (excl. collector_e2e)
+        run: >
+          cargo test --all-features
+          --lib
+          --test behavior
+          --test api_behavior_test
+          --test config_env
+          --test dsn_test
+          --test parity
+          --test typed_attribute_helpers
+          --test domain_helpers_test
+          --test smoke
+          --test e2e
+          --test spec_contract_test
+          --test conformance_fixtures
+          --test ingest_envelope_fixture
+          --test config_defaults
+          --test incident_id_test
+          --test client_creation
+          --test sampling_policy
+          --test state_machine
+          --test emitted_shape_fixture
+          --test alias_test
+          --test sink_queue_flush_shutdown
+          --test testing_conformance
+          --test httpbatch_transport
+          --test collector_cortex_conformance
+          --test basic_logging_events
+          --test collector_ack_fixture
+          --test collector_api_cli
+          --test identity_domain_helpers
+          --test lifecycle_event
+          --test process_group_timer_stopwatch
+
+  conformance:
+    name: Conformance
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/rs
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install conformance dependencies
+        run: |
+          pip install pytest
+          pip install -e sdks/py
+
+      - name: Conformance runner
+        working-directory: spec
+        run: python conformance/runner.py --sdk rust --group all
+
+      - name: Spec contract tests
+        run: cargo test --test spec_contract_test --test conformance_fixtures --test ingest_envelope_fixture
+
+  required-checks:
+    name: Required Checks
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [lint, build-test, conformance]
+    steps:
+      - name: Enforce job success
+        shell: bash
+        run: |
+          if [ "${{ needs.lint.result }}" != "success" ]; then
+            echo "::error::lint: ${{ needs.lint.result }}"
+            exit 1
+          fi
+          if [ "${{ needs.build-test.result }}" != "success" ]; then
+            echo "::error::build-test: ${{ needs.build-test.result }}"
+            exit 1
+          fi
+          if [ "${{ needs.conformance.result }}" != "success" ]; then
+            echo "::error::conformance: ${{ needs.conformance.result }}"
+            exit 1
+          fi

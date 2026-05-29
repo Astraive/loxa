@@ -1,4 +1,4 @@
-# Instrumentation Guide — loxa-js
+# Instrumentation Guide - loxa
 
 > A comprehensive, production-ready guide to instrumenting business workflows with the LOXA JS/TS SDK.
 
@@ -24,7 +24,7 @@
 
 ## 1. Introduction
 
-**loxa-js** is the JavaScript/TypeScript SDK for the LOXA observability platform. It provides structured event lifecycle management, timing primitives, rich attribute typing, automatic redaction, and production-grade delivery — all designed for business-critical instrumentation.
+**loxa** is the JavaScript/TypeScript SDK for the LOXA observability platform. It provides structured event lifecycle management, timing primitives, rich attribute typing, automatic redaction, and production-grade delivery — all designed for business-critical instrumentation.
 
 ### Why Structured Events?
 
@@ -38,12 +38,12 @@ Traditional logging emits flat text. LOXA emits **structured events** with:
 
 ### Naming Convention
 
-loxa-js exports **camelCase** as the primary API and **PascalCase** aliases for every function:
+loxa exports **camelCase** as the primary API and **PascalCase** aliases for every function:
 
 ```typescript
 // These are identical — use whichever style you prefer
-import { startEvent, userId, string } from "loxa-js";
-import { StartEvent, UserID, String } from "loxa-js";
+import { startEvent, userId, string } from "loxa";
+import { StartEvent, UserID, String } from "loxa";
 ```
 
 ### Event Anatomy
@@ -67,7 +67,7 @@ Every event flows through this pipeline. You can add attributes at any point bef
 This example instruments a complete e-commerce checkout flow:
 
 ```typescript
-import { loxa } from "loxa-js";
+import { loxa } from "loxa";
 
 // --- One-time setup ---
 loxa.configure(
@@ -358,7 +358,7 @@ stateDiagram-v2
 
 ## 4. Timing Primitives
 
-loxa-js provides four timing primitives, each suited to a different pattern.
+loxa provides four timing primitives, each suited to a different pattern.
 
 ### 4.1 Comparison Table
 
@@ -688,11 +688,11 @@ await loxa.runEvent(
 
 ### 9.1 Express Middleware
 
-loxa-js includes a drop-in Express middleware that instruments every request:
+loxa includes a drop-in Express middleware that instruments every request:
 
 ```typescript
 import express from "express";
-import { loxaMiddleware } from "loxa-js/middleware/express";
+import { loxaMiddleware } from "loxa/middleware/express";
 
 const app = express();
 
@@ -973,7 +973,7 @@ loxa.append(ctx,
 Creates a logger with a `MemorySink` for capturing events in tests:
 
 ```typescript
-import { testLogger, assertEvent, assertHasCheckpoint, assertRedacted } from "loxa-js";
+import { testLogger, assertEvent, assertHasCheckpoint, assertRedacted } from "loxa";
 
 describe("checkout flow", () => {
   it("should emit checkout event with correct attrs", async () => {
@@ -1005,7 +1005,7 @@ describe("checkout flow", () => {
 One-shot capture helper for quick assertions:
 
 ```typescript
-import { capture, assertEvent, assertAttr } from "loxa-js";
+import { capture, assertEvent, assertAttr } from "loxa";
 
 it("should track error outcome", async () => {
   const events = await capture(async (logger) => {
@@ -1031,7 +1031,7 @@ it("should track error outcome", async () => {
 | `assertHasCheckpoint(json, name)` | Assert a checkpoint with the given name exists |
 
 ```typescript
-import { capture, assertEvent, assertRedacted, assertHasCheckpoint } from "loxa-js";
+import { capture, assertEvent, assertRedacted, assertHasCheckpoint } from "loxa";
 
 it("should redact sensitive fields", async () => {
   const events = await capture(async (logger) => {
@@ -1063,7 +1063,7 @@ it("should record checkpoints", async () => {
 **With Jest/Vitest:**
 
 ```typescript
-import { testLogger, assertEvent } from "loxa-js";
+import { testLogger, assertEvent } from "loxa";
 
 // In beforeEach or test setup
 const { logger, sink } = testLogger();
@@ -1116,7 +1116,7 @@ it("should track process steps", async () => {
 ### 13.1 E-Commerce Checkout Flow
 
 ```typescript
-import { loxa } from "loxa-js";
+import { loxa } from "loxa";
 
 async function handleCheckout(req: CheckoutRequest) {
   const ctx = loxa.startEvent({
@@ -1469,7 +1469,7 @@ const mySchema = loxa.CustomSchema((view) => ({
 For accessing the current event from deep call stacks without passing `ctx`:
 
 ```typescript
-import { getEvent, hasEvent, eventId, runWithEvent } from "loxa-js";
+import { getEvent, hasEvent, eventId, runWithEvent } from "loxa";
 
 // Check if an event is in context
 if (hasEvent()) {
@@ -1491,4 +1491,4 @@ runWithEvent(ctx, () => {
 
 ---
 
-*Generated for loxa-js v0.0.1. See [public-api.md](./public-api.md) for the full API surface reference.*
+*Generated for loxa v0.0.1. See [public-api.md](./public-api.md) for the full API surface reference.*

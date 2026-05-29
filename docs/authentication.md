@@ -142,7 +142,7 @@ let logger = loxa::create_loxa(
 ### JavaScript
 
 ```typescript
-import { loxa } from "loxa-js";
+import { loxa } from "loxa";
 
 loxa.configure(
     loxa.production("checkout-api")
@@ -154,7 +154,7 @@ loxa.configure(
 Or create a custom instance:
 
 ```typescript
-import { createLoxa } from "loxa-js";
+import { createLoxa } from "loxa";
 
 const logger = createLoxa({
     service: "checkout-api",

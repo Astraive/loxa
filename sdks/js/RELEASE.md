@@ -1,10 +1,10 @@
 # Release Process
 
-This document describes how to publish a new release of the LOXA JS SDK (loxa-js).
+This document describes how to publish a new release of the LOXA JS SDK (`loxa`).
 
 ## Prerequisites
 
-- npm account with publish access to the `loxa-js` package.
+- npm account with publish access to the `loxa` package.
 - Node.js 18+ installed locally.
 - All tests passing: `npm test`.
 - TypeScript compiles clean: `npm run lint`.
@@ -60,14 +60,14 @@ npm publish --access public
 Create a Git tag following the `js/vX.Y.Z` convention:
 
 ```bash
-git tag -a js/v0.2.0 -m "loxa-js v0.2.0"
+git tag -a js/v0.2.0 -m "loxa v0.2.0"
 git push origin js/v0.2.0
 ```
 
 ### 6. Create a GitHub Release
 
 ```bash
-gh release create js/v0.2.0 --title "loxa-js v0.2.0" --notes-file release-notes.md
+gh release create js/v0.2.0 --title "loxa v0.2.0" --notes-file release-notes.md
 ```
 
 ## Version Policy

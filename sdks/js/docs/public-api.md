@@ -1,14 +1,14 @@
 # Public API
 
-The JS SDK (loxa-js) public API surface, aligned with the cross-language parity manifest at `docs/sdk-parity-manifest.json`.
+The JS SDK (`loxa`) public API surface, aligned with the cross-language parity manifest at `docs/sdk-parity-manifest.json`.
 
 ## Module Exports
 
-The SDK exports from `loxa-js` (main entry) and sub-path exports for middleware:
+The SDK exports from `loxa` (main entry) and sub-path exports for middleware:
 
 ```typescript
-import { ... } from 'loxa-js';
-import { loxaMiddleware } from 'loxa-js/middleware/express';
+import { ... } from 'loxa';
+import { loxaMiddleware } from 'loxa/middleware/express';
 ```
 
 ## Lifecycle
@@ -60,7 +60,7 @@ import { loxaMiddleware } from 'loxa-js/middleware/express';
 ### ConfigBuilder
 
 ```typescript
-import { production, httpBatchSink, sampleErrors } from 'loxa-js';
+import { production, httpBatchSink, sampleErrors } from 'loxa';
 
 const config = production('my-service')
   .withSink(httpBatchSink({ endpoint: 'http://collector:9308/events' }))

@@ -1,0 +1,78 @@
+name: Publish CLI
+
+on:
+  workflow_call:
+    inputs:
+      component:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      dry_run:
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+  actions: read
+
+jobs:
+  publish:
+    if: inputs.component == 'cli'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cli/go.mod
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install pyyaml
+        working-directory: .
+
+      - run: python scripts/release/validate-manifests.py --component cli
+        working-directory: .
+
+      - name: Run CLI tests
+        run: go test ./...
+
+      - name: Create local release tag
+        if: inputs.dry_run != true
+        run: python scripts/release/tag-component.py cli
+        working-directory: .
+
+      - name: Dry-run release tag
+        if: inputs.dry_run == true
+        run: python scripts/release/tag-component.py cli --dry-run
+        working-directory: .
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: ${{ inputs.dry_run == true && 'release --clean --snapshot --skip=publish --config .goreleaser.yaml' || 'release --clean --config .goreleaser.yaml' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push component tag
+        if: inputs.dry_run != true
+        run: git push origin "cli/v${{ inputs.version }}"
+        working-directory: .
+
+      - name: Verify go install target
+        if: inputs.dry_run != true
+        run: go install github.com/astraive/loxa/cli/cmd/loxa@cli/v${{ inputs.version }}
+        working-directory: .

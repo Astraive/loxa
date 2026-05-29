@@ -51,6 +51,29 @@ The design principle is simple:
 
 > **SDKs stay thin. The collector owns the pipeline.**
 
+## Install Loxa CLI
+
+### macOS / Linux
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/astraive/loxa/main/cli/install/install.sh | bash
+```
+
+### Windows PowerShell
+
+```powershell
+irm https://raw.githubusercontent.com/astraive/loxa/main/cli/install/install.ps1 | iex
+```
+
+## Install SDKs
+
+```bash
+npm install loxa
+pip install loxa
+cargo add loxa
+go get github.com/astraive/loxa/sdks/go
+```
+
 ## Repository Layout
 
 ```txt
@@ -63,6 +86,7 @@ The design principle is simple:
 │   ├── rs/      # Lightweight Rust SDK using HttpBatch
 │   └── js/      # Lightweight JavaScript/TypeScript SDK using HTTPBatchSink
 ├── cli/         # Local operator CLI
+│   └── install/ # CLI-only install scripts
 ├── lql/         # LOXA Query Language compiler / tooling
 ├── spec/        # Shared wire and schema contract
 ├── docs/        # Architecture, configuration, deployment, and security docs

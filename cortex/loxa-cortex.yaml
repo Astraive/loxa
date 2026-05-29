@@ -1,6 +1,19 @@
 name: loxa-cortex
+kind: docker
 version: 0.2.5
-description: Query engine and analytics layer for Loxa events
+description: Incident intelligence and graph analysis engine for LOXA
 license: MIT
 repository: https://github.com/Astraive/loxa
 module: github.com/astraive/loxa/cortex
+
+paths:
+  root: cortex
+  dockerfile: cortex/configs/Dockerfile
+
+publish:
+  docker:
+    owner: astraive
+    images:
+      - astraive/loxa-cortex
+      - ghcr.io/astraive/loxa-cortex
+    context: .

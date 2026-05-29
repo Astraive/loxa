@@ -6,6 +6,7 @@ import json
 import subprocess
 import sys
 import time
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -145,6 +146,43 @@ def _run_check(check: Check, verbose: bool) -> CheckResult:
     )
 
 
+def _is_collector_reachable() -> bool:
+    """Check if the collector is reachable at its health endpoint."""
+    try:
+        req = urllib.request.Request("http://127.0.0.1:9308/healthz", method="GET")
+        with urllib.request.urlopen(req, timeout=3):
+            return True
+    except Exception:
+        return False
+
+
+def _is_python_sdk_installed() -> bool:
+    """Check if the loxa Python SDK can be imported."""
+    result = subprocess.run(
+        [sys.executable, "-c", "import loxa"],
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0
+
+
+def _skip_result(check: Check, reason: str) -> CheckResult:
+    """Create a CheckResult representing a skipped check."""
+    print(f"[{check.sdk}:{check.group}] SKIP ({reason})")
+    return CheckResult(
+        sdk=check.sdk,
+        group=check.group,
+        description=check.description,
+        command=check.command,
+        cwd=str(check.cwd),
+        passed=True,
+        returncode=0,
+        duration_s=0.0,
+        stdout="",
+        stderr="",
+    )
+
+
 def _selected_checks(sdk: str, group: str) -> list[Check]:
     sdks = list(SDK_GROUPS.keys()) if sdk == "all" else [sdk]
     groups = _all_groups() if group == "all" else [group]
@@ -210,7 +248,26 @@ def main() -> int:
 
     checks = _selected_checks(args.sdk, args.group)
     results: list[CheckResult] = []
+
+    # Pre-check: is the collector reachable? (cached, only checked if needed)
+    collector_ok: bool | None = None
+    python_sdk_ok: bool | None = None
+
     for check in checks:
+        if check.group == "collector_integration":
+            if collector_ok is None:
+                collector_ok = _is_collector_reachable()
+            if not collector_ok:
+                results.append(_skip_result(check, "no collector at 127.0.0.1:9308"))
+                continue
+
+        if check.sdk == "python":
+            if python_sdk_ok is None:
+                python_sdk_ok = _is_python_sdk_installed()
+            if not python_sdk_ok:
+                results.append(_skip_result(check, "python sdk not installed"))
+                continue
+
         results.append(_run_check(check, args.verbose))
     if args.json:
         _print_json(results)

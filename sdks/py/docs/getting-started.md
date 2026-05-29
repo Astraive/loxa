@@ -205,7 +205,7 @@ All four LOXA SDKs follow the same API pattern. The table below shows equivalent
 
 | Operation | Python | JavaScript | Go | Rust |
 |---|---|---|---|---|
-| Import | `import loxa` | `import { loxa } from "loxa-js"` | `import "github.com/astraive/loxa/sdks/go"` | `use loxa_rs::prelude::*` |
+| Import | `import loxa` | `import { loxa } from "loxa"` | `import "github.com/astraive/loxa/sdks/go"` | `use loxa_rs::prelude::*` |
 | Configure default | `loxa.configure(...)` | `loxa.configure(...)` | `loxa.Configure(...)` | `loxa::configure(...)` |
 | Custom instance | `loxa.create_loxa(service="x")` | `createLoxa({ service: "x" })` | `loxa.New(loxa.WithService("x"))` | `loxa::create_loxa(config)` |
 | Alias | `loxa.alias("x")` | `loxa.alias("x")` | `loxa.Default().Alias("x")` | `loxa::alias("x")` |

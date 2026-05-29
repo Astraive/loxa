@@ -1,0 +1,82 @@
+name: Python SDK CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "sdks/py/**"
+      - "spec/**"
+      - ".github/workflows/sdks-py.yml"
+  pull_request:
+    paths:
+      - "sdks/py/**"
+      - "spec/**"
+      - ".github/workflows/sdks-py.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-test-conformance:
+    name: Lint / Test / Conformance / Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/py
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package and dev dependencies
+        run: |
+          pip install -e .
+          pip install pytest ruff build
+
+      # --- Lint ---
+
+      - name: Lint (ruff check)
+        run: ruff check src/ tests/
+
+      - name: Format check (ruff format)
+        run: ruff format --check src/ tests/
+
+      # --- Type check (enable when mypy is configured in pyproject.toml) ---
+      # Uncomment the steps below once [tool.mypy] is added to pyproject.toml
+      # and mypy is added to requirements-dev.txt or dev dependencies.
+      #
+      # - name: Type check (mypy)
+      #   run: |
+      #     pip install mypy
+      #     mypy src/loxa
+
+      # --- Tests ---
+
+      - name: Unit tests
+        run: pytest --ignore=tests/test_e2e_live.py -v
+
+      - name: Spec conformance tests
+        run: pytest tests/test_spec_conformance.py tests/test_collector_ack_fixture.py tests/test_emitted_shape_fixture.py tests/test_parity.py -v
+
+      # --- Conformance runner ---
+
+      - name: Grouped conformance runner
+        working-directory: spec
+        run: python conformance/runner.py --sdk python --group all
+
+      # --- Build ---
+
+      - name: Build wheel and sdist
+        run: python -m build
+
+      - name: Verify dist contents
+        run: |
+          ls -la dist/
+          pip install dist/*.whl --force-reinstall --no-deps
+          python -c "import loxa; print(loxa.__version__ if hasattr(loxa, '__version__') else 'import ok')"

@@ -1,0 +1,84 @@
+name: Publish JS
+
+on:
+  workflow_call:
+    inputs:
+      component:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      dry_run:
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  id-token: write
+  actions: read
+
+jobs:
+  publish:
+    if: inputs.component == 'sdk-js'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/js
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install pyyaml
+        working-directory: .
+
+      - run: python scripts/release/validate-manifests.py --component sdk-js
+        working-directory: .
+
+      - name: Enforce npm package identity
+        run: |
+          test "$(node -p "require('./package.json').name")" = "loxa"
+          test "$(node -p "require('./package.json').version")" = "${{ inputs.version }}"
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
+      - name: Check component tag is available
+        run: python scripts/release/tag-component.py sdk-js --dry-run
+        working-directory: .
+
+      - name: Configure npm token fallback
+        if: inputs.dry_run != true
+        run: |
+          if [ -n "${NPM_TOKEN}" ]; then
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+          fi
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish package
+        if: inputs.dry_run != true
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Pack package
+        if: inputs.dry_run == true
+        run: npm pack
+
+      - name: Create component tag
+        if: inputs.dry_run != true
+        run: python scripts/release/tag-component.py sdk-js --push
+        working-directory: .

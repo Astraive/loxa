@@ -12,7 +12,7 @@ def _repo_root() -> Path:
 
 
 def _fixture() -> dict[str, Any]:
-    path = _repo_root() / "spec" / "examples" / "golden" / "emitted-shape" / "structured_http_success.json"
+    path = _repo_root() / "spec" / "fixtures" / "emitted-shape" / "structured_http_success.json"
     return json.loads(path.read_text())
 
 

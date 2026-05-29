@@ -1,6 +1,6 @@
 # Benchmarking
 
-How to run and interpret benchmarks for the LOXA JS SDK (loxa-js).
+How to run and interpret benchmarks for the LOXA JS SDK (`loxa`).
 
 ## Running Benchmarks
 

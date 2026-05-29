@@ -1,5 +1,20 @@
 name: loxa-lql
+kind: package
+language: rust
 version: 0.2.5
-description: Loxa Query Language parser and compiler
+description: LOXA Query Language compiler and tooling
 license: MIT
 repository: https://github.com/Astraive/loxa
+module: github.com/astraive/loxa/lql
+
+paths:
+  root: lql
+
+publish:
+  github_release:
+    owner: astraive
+    artifact: lql
+  crates:
+    owner: astraive
+    package: loxa-lql
+    directory: lql

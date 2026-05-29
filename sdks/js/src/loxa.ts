@@ -2,7 +2,7 @@
  * loxa-js default facade — the `loxa` default Logger instance + module-level functions.
  *
  * Usage:
- *   import { loxa, createLoxa } from "loxa-js";
+ *   import { loxa, createLoxa } from "loxa";
  *   loxa.configure(loxa.production("checkout").withSink(loxa.httpBatchSink({...})));
  *   const ctx = loxa.startEvent({ event: "checkout.request" });
  *   loxa.append(ctx, loxa.userId("u_123"));

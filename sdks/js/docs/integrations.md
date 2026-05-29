@@ -1,6 +1,6 @@
 # Integrations
 
-Logging and tracing integrations for the LOXA JS SDK (loxa-js).
+Logging and tracing integrations for the LOXA JS SDK (`loxa`).
 
 ## Logging Framework Bridges
 
@@ -9,7 +9,7 @@ The JS SDK can be used as a structured logging backend. Events follow the LOXA w
 ### Using LOXA as a Logging Backend
 
 ```typescript
-import { loxa } from 'loxa-js';
+import { loxa } from 'loxa';
 
 // These create and emit events with the appropriate level
 loxa.info('User signed up', loxa.userId('u-123'), loxa.string('method', 'oauth'));
@@ -21,7 +21,7 @@ loxa.error('Payment failed', loxa.errorCode('PAYMENT_DECLINED'), loxa.string('or
 Replace `console.log` with LOXA structured events:
 
 ```typescript
-import { loxa } from 'loxa-js';
+import { loxa } from 'loxa';
 
 function structuredLog(message: string, meta?: Record<string, any>) {
   const attrs = Object.entries(meta || {}).map(([k, v]) => loxa.string(k, String(v)));
@@ -34,7 +34,7 @@ function structuredLog(message: string, meta?: Record<string, any>) {
 The SDK supports OpenTelemetry trace context propagation. When an OTel span is active, the SDK automatically extracts trace IDs:
 
 ```typescript
-import { startEvent, traceId, spanId } from 'loxa-js';
+import { startEvent, traceId, spanId } from 'loxa';
 
 // If OTel context is available, traceId/spanId are auto-populated
 const ctx = startEvent({ event: 'my.operation' });
@@ -52,7 +52,7 @@ Create a Winston transport that emits LOXA events:
 
 ```typescript
 import winston from 'winston';
-import { loxa } from 'loxa-js';
+import { loxa } from 'loxa';
 
 const loxaTransport = new winston.transports.Console({
   log: (logInfo: any) => {
@@ -74,7 +74,7 @@ Pino is a popular fast JSON logger for Node.js. Bridge it to LOXA:
 
 ```typescript
 import pino from 'pino';
-import { loxa } from 'loxa-js';
+import { loxa } from 'loxa';
 
 const pinoLogger = pino({
   hooks: {
