@@ -1,182 +1,120 @@
-# LOXA Release Setup
+# Release Setup
 
-LOXA publishes each component only when that component's YAML manifest version increases. The central registry is `release.yaml`; every workflow reads component paths from that file. Registry owners and publisher accounts are `astraive`.
+This document describes how to publish a Loxa release.
 
-## Repository Settings
+## Overview
 
-Go to:
+Loxa uses a **manual-only** release workflow. Pushing to `main` does NOT trigger publishing. You must explicitly dispatch the `release-publish.yml` workflow with a component list, version, and dry-run flag.
 
-```txt
-GitHub repo -> Settings -> Actions -> General
+The release system is manifest-driven. Each component has a YAML manifest (e.g., `collector/loxa.yaml`, `sdks/js/package.json`) that declares its version. The release workflow reads these manifests and publishes only when the requested version matches the manifest version.
+
+## Components
+
+| Component | Manifest | Publishes to |
+|-----------|----------|--------------|
+| `collector` | `collector/loxa.yaml` | Docker Hub + GHCR |
+| `cortex` | `cortex/loxa-cortex.yaml` | Docker Hub + GHCR |
+| `cli` | `cli/loxa-cli.yaml` | GitHub Releases (GoReleaser) |
+| `sdk-js` | `sdks/js/package.json` | npm |
+| `sdk-py` | `sdks/py/pyproject.toml` | PyPI |
+| `sdk-rs` | `sdks/rs/Cargo.toml` | crates.io |
+| `lql` | `lql/lql.yaml` | crates.io |
+| `spec` | `spec/loxa-spec.yaml` | GitHub Releases |
+| `loxa` | `loxa.yaml` | GitHub Release (umbrella) |
+
+## How to Publish
+
+### 1. Bump versions
+
+Update the version in each component manifest you want to release. All manifests for a single release must have the same version.
+
+```bash
+# Example: bump collector to 0.2.6
+# Edit collector/loxa.yaml → version: "0.2.6"
 ```
 
-Set:
+### 2. Validate manifests locally
 
-- Allow GitHub Actions.
-- Workflow permissions: Read and write permissions.
-- Allow GitHub Actions to create and approve pull requests if maintainers use automation for release PRs.
-- Enable access to packages/GHCR.
-
-The publishing workflows request:
-
-```yaml
-permissions:
-  contents: write
-  packages: write
-  id-token: write
-  actions: read
+```bash
+python scripts/release/validate-manifests.py
 ```
 
-## Required Secrets
+This checks that all manifests are parseable and consistent.
 
-Add these in `GitHub repo -> Settings -> Secrets and variables -> Actions`:
+### 3. Dry-run the release
 
-```txt
-DOCKERHUB_USERNAME
-DOCKERHUB_TOKEN
-NPM_TOKEN
-PYPI_API_TOKEN
-CARGO_REGISTRY_TOKEN
-```
+Go to **Actions → Release Publish → Run workflow**:
 
-`NPM_TOKEN` is optional when npm trusted publishing is configured. `PYPI_API_TOKEN` is optional when PyPI trusted publishing is configured. `CARGO_REGISTRY_TOKEN` is required for crates.io publishing. Docker Hub secrets are required for collector and cortex image publishing.
+- **components**: `collector,cortex` (comma-separated)
+- **version**: `0.2.6`
+- **dry_run**: `true` (default)
 
-## Docker Hub
+This validates everything without actually publishing.
 
-1. Create Docker Hub repositories:
-   - `astraive/loxa`
-   - `astraive/loxa-cortex`
-2. Create a Docker Hub access token.
-3. Add GitHub Actions secrets:
-   - `DOCKERHUB_USERNAME`
-   - `DOCKERHUB_TOKEN`
+### 4. Publish for real
 
-Collector images publish as:
+Run the same workflow with **dry_run**: `false`.
 
-```txt
-astraive/loxa:X.Y.Z
-```
+## Reusable Publish Workflows
 
-Cortex images publish as:
+The release controller calls these reusable workflows:
 
-```txt
-astraive/loxa-cortex:X.Y.Z
-```
+| Workflow | Trigger | What it does |
+|----------|---------|--------------|
+| `publish-docker.yml` | `workflow_call` | Builds and pushes Docker images for collector/cortex |
+| `publish-cli.yml` | `workflow_call` | Runs GoReleaser for the CLI binary |
+| `publish-js.yml` | `workflow_call` | Publishes JS SDK to npm with provenance |
+| `publish-py.yml` | `workflow_call` | Publishes Python SDK to PyPI |
+| `publish-rs.yml` | `workflow_call` | Publishes Rust SDK and LQL crates |
+| `publish-github-release.yml` | `workflow_call` | Creates umbrella GitHub Release |
+| `verify-go-modules.yml` | `workflow_call` | Verifies Go module tags resolve correctly |
 
-`latest` is published only from `main` for stable manifest versions.
+All reusable workflows accept `component`, `version`, and `dry_run` inputs. Each workflow checks if it's responsible for the given component and skips otherwise.
 
-## GHCR
+## Secrets Required
 
-GHCR uses `GITHUB_TOKEN`; no extra registry token is required.
+| Secret | Used by |
+|--------|---------|
+| `DOCKERHUB_USERNAME` | publish-docker |
+| `DOCKERHUB_TOKEN` | publish-docker |
+| `NPM_TOKEN` | publish-js |
+| `PYPI_API_TOKEN` | publish-py |
+| `CARGO_REGISTRY_TOKEN` | publish-rs |
+| `GITHUB_TOKEN` | publish-cli, publish-github-release, publish-rs |
 
-After the first publish, change package visibility to public if needed. Images are:
+## Component Tags
 
-```txt
-ghcr.io/astraive/loxa
-ghcr.io/astraive/loxa-cortex
-```
+Each component gets a Git tag after successful publishing:
 
-## npm
+| Component | Tag format |
+|-----------|------------|
+| collector | `collector/v0.2.6` |
+| cortex | `cortex/v0.2.6` |
+| cli | `cli/v0.2.6` |
+| sdk-js | `sdk-js/v0.2.6` |
+| sdk-py | `sdk-py/v0.2.6` |
+| sdk-rs | `sdk-rs/v0.2.6` |
+| lql | `lql/v0.2.6` |
+| spec | `spec/v0.2.6` |
+| loxa (umbrella) | `v0.2.6` |
 
-Package name must be:
+## Legacy Workflows (removed)
 
-```txt
-loxa
-```
+The following old tag-based release workflows have been removed:
 
-Do not publish `loxa-js`.
+- `sdks-py-release.yml` (triggered on `py-v*` tags) — replaced by `release-publish.yml → publish-py.yml`
+- `sdks-rs-release.yml` (triggered on `rs-v*` tags) — replaced by `release-publish.yml → publish-rs.yml`
 
-Users install the JavaScript SDK independently:
+## Troubleshooting
 
-```txt
-npm install loxa
-```
+### "manifest version does not match requested version"
 
-Preferred option: configure npm trusted publishing for the `loxa` package and this repository workflow.
+The version in the component's manifest file doesn't match the version you passed to the workflow. Update the manifest first.
 
-Fallback option: create an npm automation token and add it as:
+### "unknown component"
 
-```txt
-NPM_TOKEN
-```
+Check the component name against the `release.yaml` registry file. Valid names: `collector`, `cortex`, `cli`, `sdk-js`, `sdk-py`, `sdk-rs`, `lql`, `spec`, `loxa`.
 
-## PyPI
+### Dry run succeeded but real publish failed
 
-Package name must be:
-
-```txt
-loxa
-```
-
-Users install the Python SDK independently:
-
-```txt
-pip install loxa
-```
-
-Preferred option: configure PyPI trusted publishing for this repository workflow.
-
-Fallback option: create a PyPI API token scoped to `loxa` and add it as:
-
-```txt
-PYPI_API_TOKEN
-```
-
-## crates.io
-
-1. Create a crates.io API token.
-2. Add it as:
-
-```txt
-CARGO_REGISTRY_TOKEN
-```
-
-The Rust SDK package name is:
-
-```txt
-loxa
-```
-
-Users install the Rust SDK independently:
-
-```txt
-cargo add loxa
-```
-
-The LQL crate package is:
-
-```txt
-loxa-lql
-```
-
-LQL publishes to crates.io only when `lql/lql.yaml` contains `publish.crates`.
-
-## Go Modules
-
-Go publishing happens through Git tags. There is no Go registry token.
-
-Required module tags:
-
-```txt
-spec/vX.Y.Z
-cli/vX.Y.Z
-sdks/go/vX.Y.Z
-```
-
-The Go verification workflow creates or verifies component tags, then checks module resolution with `go get` or `go install`.
-
-Users install the Go SDK with:
-
-```txt
-go get github.com/astraive/loxa/sdks/go
-```
-
-## Umbrella GitHub Release
-
-The root `loxa.yaml` manifest controls full repository releases. When only `loxa.yaml` has a version bump, CI creates a GitHub Release tagged:
-
-```txt
-vX.Y.Z
-```
-
-This is a GitHub-only umbrella release. It does not publish every component to Docker Hub, npm, PyPI, or crates.io.
+Check that the required secrets are configured in the repository settings. Each publish workflow needs its own secret (see table above).

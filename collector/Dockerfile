@@ -10,6 +10,8 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36 && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5
 
 # Copy module files and download dependencies
+COPY gen/go/go.mod gen/go/go.sum ./gen/go/
+COPY spec/go.mod ./spec/go.mod
 COPY collector/go.mod collector/go.sum ./collector/
 RUN cd collector && go mod download
 

@@ -1,12 +1,10 @@
 name: Release Publish
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       components:
-        description: "Comma-separated components to publish, for example collector,sdk-js"
+        description: "Comma-separated components to publish, for example collector,cortex"
         required: true
       version:
         description: "Manifest version to publish, without leading v"
@@ -14,7 +12,7 @@ on:
       dry_run:
         description: "Validate and build without publishing"
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: write
@@ -45,8 +43,7 @@ jobs:
       - id: plan
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            python - <<'PY' >> "$GITHUB_OUTPUT"
+          python - <<'PY' >> "$GITHUB_OUTPUT"
           import json, os, re, sys, yaml
           version = "${{ inputs.version }}"
           selected = [item.strip() for item in "${{ inputs.components }}".split(",") if item.strip()]
@@ -64,13 +61,6 @@ jobs:
           print("matrix=" + json.dumps({"include": include}, separators=(",", ":")))
           print("has_changes=" + str(bool(include)).lower())
           PY
-          else
-            BASE="${{ github.event.before }}"
-            if [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
-              BASE="$(git rev-parse HEAD^)"
-            fi
-            python scripts/release/changed-components.py --base-ref "$BASE" --github-output
-          fi
 
   publish-docker:
     name: Publish Docker component
@@ -83,7 +73,7 @@ jobs:
     with:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
-      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      dry_run: ${{ inputs.dry_run }}
     secrets: inherit
 
   publish-github-release:
@@ -97,7 +87,7 @@ jobs:
     with:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
-      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      dry_run: ${{ inputs.dry_run }}
     secrets: inherit
 
   publish-cli:
@@ -111,7 +101,7 @@ jobs:
     with:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
-      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      dry_run: ${{ inputs.dry_run }}
     secrets: inherit
 
   publish-js:
@@ -125,7 +115,7 @@ jobs:
     with:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
-      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      dry_run: ${{ inputs.dry_run }}
     secrets: inherit
 
   publish-py:
@@ -139,7 +129,7 @@ jobs:
     with:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
-      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      dry_run: ${{ inputs.dry_run }}
     secrets: inherit
 
   publish-rs:
@@ -153,7 +143,7 @@ jobs:
     with:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
-      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      dry_run: ${{ inputs.dry_run }}
     secrets: inherit
 
   verify-go-modules:
@@ -167,5 +157,5 @@ jobs:
     with:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
-      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      dry_run: ${{ inputs.dry_run }}
     secrets: inherit
