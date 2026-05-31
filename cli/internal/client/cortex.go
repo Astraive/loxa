@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 )
@@ -40,7 +40,7 @@ func FetchCortexMetrics(baseURL string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := readResponseBody(resp.Body)
 	if resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("cortex returned %d: %s", resp.StatusCode, string(body))
 	}
@@ -64,7 +64,7 @@ func IngestCortexBatch(ctx context.Context, baseURL string, events []map[string]
 		return err
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := readResponseBody(resp.Body)
 	if resp.StatusCode >= 300 {
 		return fmt.Errorf("cortex returned %d: %s", resp.StatusCode, string(body))
 	}
@@ -97,12 +97,12 @@ func RecordCortexFeedback(ctx context.Context, baseURL string, payload []byte) (
 }
 
 func FetchCortexServiceGraph(ctx context.Context, baseURL, service string, depth int) ([]byte, error) {
-	path := fmt.Sprintf("/graph/service/%s?depth=%d", service, depth)
+	path := "/graph/service/" + url.PathEscape(service) + "?depth=" + url.QueryEscape(fmt.Sprint(clampDepth(depth)))
 	return getCortexJSON(ctx, baseURL, path)
 }
 
 func FetchCortexIncidentGraph(ctx context.Context, baseURL, incidentID string, depth int) ([]byte, error) {
-	path := fmt.Sprintf("/graph/incident/%s?depth=%d", incidentID, depth)
+	path := "/graph/incident/" + url.PathEscape(incidentID) + "?depth=" + url.QueryEscape(fmt.Sprint(clampDepth(depth)))
 	return getCortexJSON(ctx, baseURL, path)
 }
 
@@ -117,7 +117,7 @@ func getCortexJSON(ctx context.Context, baseURL, path string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := readResponseBody(resp.Body)
 	if resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("cortex returned %d: %s", resp.StatusCode, string(body))
 	}
@@ -137,8 +137,28 @@ func QueryCortexGraphQL(ctx context.Context, baseURL, query string, variables ma
 }
 
 func FetchSignatures(ctx context.Context, baseURL string, limit int) ([]byte, error) {
-	query := fmt.Sprintf(`{ signatures(limit: %d) { id pattern count lastSeen } }`, limit)
+	query := fmt.Sprintf(`{ signatures(limit: %d) { id pattern count lastSeen } }`, clampLimit(limit, 100, 1000))
 	return QueryCortexGraphQL(ctx, baseURL, query, nil)
+}
+
+func clampDepth(depth int) int {
+	if depth < 1 {
+		return 1
+	}
+	if depth > 10 {
+		return 10
+	}
+	return depth
+}
+
+func clampLimit(limit, fallback, max int) int {
+	if limit < 1 {
+		return fallback
+	}
+	if limit > max {
+		return max
+	}
+	return limit
 }
 
 func postCortexJSON(ctx context.Context, baseURL, path string, payload []byte) ([]byte, error) {
@@ -156,7 +176,7 @@ func postCortexJSON(ctx context.Context, baseURL, path string, payload []byte) (
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := readResponseBody(resp.Body)
 	if resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("cortex returned %d: %s", resp.StatusCode, string(body))
 	}

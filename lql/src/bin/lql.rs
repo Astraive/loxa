@@ -27,9 +27,10 @@ fn main() {
                 args[2..].join(" ")
             } else {
                 let mut buf = String::new();
-                io::stdin()
-                    .read_to_string(&mut buf)
-                    .expect("failed to read stdin");
+                if let Err(err) = io::stdin().read_to_string(&mut buf) {
+                    eprintln!("error: failed to read stdin: {}", err);
+                    std::process::exit(1);
+                }
                 buf
             };
 

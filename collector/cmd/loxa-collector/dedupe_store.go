@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -51,15 +53,21 @@ func newRedisDedupeStore(cfg collectorConfig) (dedupeStore, error) {
 }
 
 func (s *redisDedupeStore) SeenBefore(ctx context.Context, value string, window time.Duration) (bool, error) {
-	key := value
-	if strings.TrimSpace(s.prefix) != "" {
-		key = s.prefix + value
-	}
+	key := redisDedupeKey(s.prefix, value)
 	ok, err := s.client.SetNX(ctx, key, "1", window).Result()
 	if err != nil {
 		return false, err
 	}
 	return !ok, nil
+}
+
+func redisDedupeKey(prefix, value string) string {
+	sum := sha256.Sum256([]byte(value))
+	key := hex.EncodeToString(sum[:])
+	if strings.TrimSpace(prefix) != "" {
+		key = prefix + key
+	}
+	return key
 }
 
 func (s *redisDedupeStore) Close() error {

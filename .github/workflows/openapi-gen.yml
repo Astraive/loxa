@@ -16,7 +16,7 @@ jobs:
           chmod +x ./tools/generate_openapi.sh
           ./tools/generate_openapi.sh
       - name: Upload generated clients
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: openapi-generated
           path: generated/openapi

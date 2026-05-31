@@ -2,7 +2,7 @@
 
 LOXA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loxa-collector.
 
-**Status**: STABLE (v0.2.5) - Production-ready, full feature conformance
+**Status**: STABLE (v0.2.6) - Production-ready, full feature conformance
 
 ## Installation
 

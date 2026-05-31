@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 
-_FALLBACK_PRODUCT_VERSION = "0.2.5"
+_FALLBACK_PRODUCT_VERSION = "0.2.6"
 
 
 def _load_product_version(spec_root: Path) -> str:

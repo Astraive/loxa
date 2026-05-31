@@ -18,7 +18,7 @@ pub fn duration_to_duckdb_interval(d: &Duration) -> String {
         DurationUnit::Minutes => format!("INTERVAL '{}' MINUTE", d.value),
         DurationUnit::Hours => format!("INTERVAL '{}' HOUR", d.value),
         DurationUnit::Days => format!("INTERVAL '{}' DAY", d.value),
-        DurationUnit::Weeks => format!("INTERVAL '{}' DAY", d.value * 7),
+        DurationUnit::Weeks => format!("INTERVAL '{}' DAY", d.value.saturating_mul(7)),
     }
 }
 
@@ -30,7 +30,7 @@ pub fn duration_to_clickhouse_interval(d: &Duration) -> String {
         DurationUnit::Minutes => format!("toIntervalMinute({})", d.value),
         DurationUnit::Hours => format!("toIntervalHour({})", d.value),
         DurationUnit::Days => format!("toIntervalDay({})", d.value),
-        DurationUnit::Weeks => format!("toIntervalDay({})", d.value * 7),
+        DurationUnit::Weeks => format!("toIntervalDay({})", d.value.saturating_mul(7)),
     }
 }
 

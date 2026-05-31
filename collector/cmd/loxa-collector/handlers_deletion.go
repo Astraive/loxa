@@ -149,8 +149,11 @@ func (s *collectorState) handleDeleteEvents(w http.ResponseWriter, r *http.Reque
 
 // deleteEventsByTenant deletes all events for a specific tenant
 func (s *collectorState) deleteEventsByTenant(ctx context.Context, tenantID string) (int64, error) {
-	// Build safe SQL query with parameterized input
-	query := fmt.Sprintf(`DELETE FROM "%s" WHERE tenant_id = ?`, s.cfg.duckDBTable)
+	tableIdent, err := quoteSQLIdent(s.cfg.duckDBTable)
+	if err != nil {
+		return 0, err
+	}
+	query := fmt.Sprintf(`DELETE FROM %s WHERE tenant_id = ?`, tableIdent)
 
 	result, err := s.queryDB.ExecContext(ctx, query, tenantID)
 	if err != nil {
@@ -167,10 +170,20 @@ func (s *collectorState) deleteEventsByTenant(ctx context.Context, tenantID stri
 
 // deleteEventsByUser deletes all events for a specific user
 func (s *collectorState) deleteEventsByUser(ctx context.Context, userID string) (int64, error) {
-	// Delete events by user_id field in the raw JSON or via schema projection
-	query := fmt.Sprintf(`DELETE FROM "%s" WHERE user_id = ? OR raw LIKE ?`, s.cfg.duckDBTable)
+	tableIdent, err := quoteSQLIdent(s.cfg.duckDBTable)
+	if err != nil {
+		return 0, err
+	}
+	rawIdent, err := quoteSQLIdent(s.cfg.duckDBRawColumn)
+	if err != nil {
+		rawIdent, err = quoteSQLIdent("raw")
+		if err != nil {
+			return 0, err
+		}
+	}
+	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = ? OR %s LIKE ? ESCAPE '\'`, tableIdent, rawIdent)
 
-	result, err := s.queryDB.ExecContext(ctx, query, userID, fmt.Sprintf("%%\"user_id\":\"%s\"%%", escapeLIKE(escapeSQL(userID))))
+	result, err := s.queryDB.ExecContext(ctx, query, userID, fmt.Sprintf("%%\"user_id\":\"%s\"%%", escapeLIKE(userID)))
 	if err != nil {
 		return 0, err
 	}
@@ -185,7 +198,11 @@ func (s *collectorState) deleteEventsByUser(ctx context.Context, userID string) 
 
 // deleteEvent deletes a specific event by ID
 func (s *collectorState) deleteEvent(ctx context.Context, eventID string) (int64, error) {
-	query := fmt.Sprintf(`DELETE FROM "%s" WHERE event_id = ?`, s.cfg.duckDBTable)
+	tableIdent, err := quoteSQLIdent(s.cfg.duckDBTable)
+	if err != nil {
+		return 0, err
+	}
+	query := fmt.Sprintf(`DELETE FROM %s WHERE event_id = ?`, tableIdent)
 
 	result, err := s.queryDB.ExecContext(ctx, query, eventID)
 	if err != nil {

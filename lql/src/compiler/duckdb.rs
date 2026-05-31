@@ -172,13 +172,23 @@ fn compile_expr_with_aliases(
                         _ => unreachable!(),
                     };
                     let pattern = match op {
-                        BinOp::Contains | BinOp::Has => format!("%{}%", strip_quotes(&r)),
+                        BinOp::Contains | BinOp::Has => {
+                            format!("%{}%", escape_like_pattern(&strip_quotes(&r)))
+                        }
                         _ => r.clone(),
                     };
                     Ok(format!("{} {} '{}'", l, op_str, strip_quotes(&pattern)))
                 }
-                BinOp::StartsWith => Ok(format!("{} LIKE '{}%'", l, strip_quotes(&r))),
-                BinOp::EndsWith => Ok(format!("{} LIKE '%{}'", l, strip_quotes(&r))),
+                BinOp::StartsWith => Ok(format!(
+                    "{} LIKE '{}%'",
+                    l,
+                    escape_like_pattern(&strip_quotes(&r))
+                )),
+                BinOp::EndsWith => Ok(format!(
+                    "{} LIKE '%{}'",
+                    l,
+                    escape_like_pattern(&strip_quotes(&r))
+                )),
                 _ => Ok(format!("{} {} {}", l, op, r)),
             }
         }
@@ -366,19 +376,28 @@ fn compile_function(name: &str, args: &[Expr], schema: &Schema) -> Result<String
 }
 
 fn escape_ident(name: &str) -> String {
-    if name.contains('.') || name.contains('"') || name == "*" {
+    if name == "*" {
         name.to_string()
     } else {
-        format!("\"{}\"", name)
+        format!("\"{}\"", name.replace('"', "\"\""))
     }
 }
 
 fn strip_quotes(s: &str) -> String {
-    if (s.starts_with('\'') && s.ends_with('\'')) || (s.starts_with('"') && s.ends_with('"')) {
+    if s.len() >= 2
+        && ((s.starts_with('\'') && s.ends_with('\'')) || (s.starts_with('"') && s.ends_with('"')))
+    {
         s[1..s.len() - 1].to_string()
     } else {
         s.to_string()
     }
+}
+
+fn escape_like_pattern(s: &str) -> String {
+    s.replace('\\', "\\\\")
+        .replace('\'', "''")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
 }
 
 fn chrono_offset(d: &Duration) -> String {

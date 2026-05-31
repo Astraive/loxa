@@ -75,16 +75,24 @@ func (s *collectorState) HandleLQLQuery(w http.ResponseWriter, r *http.Request) 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		log.Error().Err(err).Str("request_id", requestID).Msg("lql query conn acquire failed")
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_unavailable", "request_id": requestID})
+		return
+	}
+	defer conn.Close()
+
 	// Disable external access to block read_csv, read_json, etc.
 	// Reject the query if this fails — proceeding without the safety guard is unsafe.
-	if _, err := db.ExecContext(ctx, "SET enable_external_access=false"); err != nil {
+	if _, err := conn.ExecContext(ctx, "SET enable_external_access=false"); err != nil {
 		log.Error().Err(err).Str("request_id", requestID).Msg("failed to disable external access in DuckDB")
 		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_safety_check_failed", "request_id": requestID})
 		return
 	}
 
 	start := time.Now()
-	rows, err := db.QueryContext(ctx, sqlQuery)
+	rows, err := conn.QueryContext(ctx, sqlQuery)
 	if err != nil {
 		log.Error().Err(err).Str("request_id", requestID).Msg("lql query failed")
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "query_failed", "request_id": requestID})

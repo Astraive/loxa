@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import json
+import socket
 import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+from ipaddress import ip_address
+from os import getenv
 from typing import Any, Iterable
+from urllib.parse import urlencode, urlparse
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from ..generated.spec_contract import (
@@ -128,6 +132,7 @@ class CollectorClient:
         sdk_version: str = SDK_VERSION,
         service: str = "",
     ) -> None:
+        _validate_collector_endpoint(endpoint)
         self.endpoint = endpoint
         self.api_key = api_key
         self.auth_header = auth_header
@@ -182,8 +187,6 @@ class CollectorClient:
 
     def _base_url(self) -> str:
         """Extract host:port base URL from the endpoint."""
-        from urllib.parse import urlparse
-
         parsed = urlparse(self.endpoint)
         return f"{parsed.scheme}://{parsed.netloc}"
 
@@ -249,11 +252,11 @@ class CollectorClient:
         url = self.endpoint.rstrip("/") + "/tail"
         params = []
         if service:
-            params.append(f"service={service}")
+            params.append(("service", service))
         if kind:
-            params.append(f"kind={kind}")
+            params.append(("kind", kind))
         if params:
-            url += "?" + "&".join(params)
+            url += "?" + urlencode(params)
 
         request = Request(url, headers={"accept": "application/x-ndjson"})
         with urlopen(request, timeout=timeout) as response:
@@ -264,6 +267,36 @@ class CollectorClient:
                         yield json.loads(line)
                     except json.JSONDecodeError:
                         yield line
+
+
+def _validate_collector_endpoint(endpoint: str) -> None:
+    parsed = urlparse(endpoint)
+    if parsed.scheme not in {"http", "https"}:
+        raise ValueError("collector endpoint must use http or https")
+    if not parsed.hostname:
+        raise ValueError("collector endpoint must include a host")
+    if _private_endpoint_allowed():
+        return
+    host = parsed.hostname
+    if host in {"localhost", "127.0.0.1", "::1"}:
+        return
+    addresses: set[str] = set()
+    try:
+        addresses = {item[4][0] for item in socket.getaddrinfo(host, parsed.port or _default_port(parsed.scheme))}
+    except socket.gaierror:
+        return
+    for raw in addresses:
+        addr = ip_address(raw)
+        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_multicast or addr.is_reserved:
+            raise ValueError("collector endpoint resolves to a non-public address")
+
+
+def _private_endpoint_allowed() -> bool:
+    return getenv("LOXA_ALLOW_PRIVATE_COLLECTOR_ENDPOINTS", "").lower() in {"1", "true", "yes"}
+
+
+def _default_port(scheme: str) -> int:
+    return 443 if scheme == "https" else 80
 
 
 def WrapHTTPClient(client=None):

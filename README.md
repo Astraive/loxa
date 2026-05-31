@@ -13,7 +13,7 @@
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT">
   </a>
   <a href="https://github.com/astraive/loxa/releases">
-    <img src="https://img.shields.io/badge/version-v0.2.5-green.svg" alt="Version">
+    <img src="https://img.shields.io/badge/version-v0.2.6-green.svg" alt="Version">
   </a>
   <br>
   <a href="https://github.com/astraive/loxa/actions/workflows/collector-ci.yml">
@@ -28,7 +28,8 @@
   <a href="https://github.com/astraive/loxa/actions/workflows/sdks-rs-ci.yml">
     <img src="https://github.com/astraive/loxa/actions/workflows/sdks-rs-ci.yml/badge.svg" alt="Rust SDK CI">
   </a>
-  <a href="https://github.com/astraive/loxa/actions/workflows/Ioxana-ci.yml">
+  <a href="https://github.com/Astraive/loxana/actions/workflows/loxana-ci.yml">
+    <img src="https://github.com/Astraive/loxana/actions/workflows/loxana-ci.yml/badge.svg" alt="Loxana CI">
   </a>
   <a href="https://hub.docker.com/r/astraive/loxa">
   <br>
@@ -312,7 +313,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #### JavaScript / TypeScript
 
 ```ts
-import { loxa } from 'loxa-js';
+import { loxa } from 'loxa';
 
 loxa.configure(
   loxa.production('checkout')
@@ -409,10 +410,10 @@ flowchart TD
 
 | Language                | Command                                          |
 | ----------------------- | ------------------------------------------------ |
-| Go                      | `go get github.com/astraive/loxa/sdks/go@v0.2.3` |
+| Go                      | `go get github.com/astraive/loxa/sdks/go@v0.2.6` |
 | Python                  | `pip install loxa`                               |
 | Rust                    | `cargo add loxa`                                 |
-| JavaScript / TypeScript | `npm install loxa-js`                            |
+| JavaScript / TypeScript | `npm install loxa`                               |
 
 ## Current Status
 

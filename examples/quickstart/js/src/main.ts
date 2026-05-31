@@ -1,4 +1,4 @@
-import { configure, production, startEvent, enrich, finish, emit, info, createLoxa, alias } from "loxa-js";
+import { configure, production, startEvent, enrich, finish, emit, info, createLoxa, alias } from "loxa";
 
 // Default API — configure once, use everywhere
 configure(production("quickstart-demo").withCollectorEndpoint("http://localhost:9308"));

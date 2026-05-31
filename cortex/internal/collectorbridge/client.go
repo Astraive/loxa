@@ -15,14 +15,16 @@ import (
 	"strings"
 	"time"
 
-	transportcontracts "github.com/astraive/loxa/spec/transport/contracts"
 	"github.com/astraive/loxa/cortex/internal/config"
 	"github.com/astraive/loxa/cortex/internal/eventconv"
 	"github.com/astraive/loxa/cortex/internal/models"
+	transportcontracts "github.com/astraive/loxa/spec/transport/contracts"
 	"github.com/gorilla/websocket"
 )
 
 var sqlIdentPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+const maxCollectorQueryLimit = 10000
 
 type Cursor struct {
 	Timestamp time.Time `json:"timestamp"`
@@ -204,9 +206,7 @@ func (c *Client) GetByID(ctx context.Context, id string) (*models.Event, error) 
 }
 
 func (c *Client) ListRecent(ctx context.Context, limit int) ([]*models.Event, error) {
-	if limit <= 0 {
-		limit = 1000
-	}
+	limit = clampQueryLimit(limit, 1000)
 	table, rawCol, tsCol, err := c.sqlParts()
 	if err != nil {
 		return nil, err
@@ -224,9 +224,7 @@ func (c *Client) FindByIncidentID(ctx context.Context, incidentID string, limit 
 }
 
 func (c *Client) FindByService(ctx context.Context, service, from, to string, limit int) ([]*models.Event, error) {
-	if limit <= 0 {
-		limit = 1000
-	}
+	limit = clampQueryLimit(limit, 1000)
 	table, rawCol, tsCol, err := c.sqlParts()
 	if err != nil {
 		return nil, err
@@ -318,6 +316,7 @@ func (c *Client) rowToEvent(row map[string]any) (*models.Event, error) {
 }
 
 func (c *Client) buildIncrementalQuery(cursor Cursor, limit int) (string, error) {
+	limit = clampQueryLimit(limit, 1000)
 	table, rawCol, tsCol, err := c.sqlParts()
 	if err != nil {
 		return "", err
@@ -336,13 +335,14 @@ func (c *Client) buildIncrementalQuery(cursor Cursor, limit int) (string, error)
 }
 
 func (c *Client) buildJSONFieldQuery(field, value string, limit int) (string, error) {
+	if !sqlIdentPattern.MatchString(strings.TrimSpace(field)) {
+		return "", fmt.Errorf("invalid JSON field %q", field)
+	}
 	table, rawCol, tsCol, err := c.sqlParts()
 	if err != nil {
 		return "", err
 	}
-	if limit <= 0 {
-		limit = 1000
-	}
+	limit = clampQueryLimit(limit, 1000)
 	return fmt.Sprintf(
 		"SELECT %s FROM %s WHERE json_extract_string(%s, '$.%s') = %s ORDER BY %s ASC LIMIT %d",
 		rawCol, table, rawCol, field, quoteSQLString(value), tsCol, limit,
@@ -355,10 +355,11 @@ func (c *Client) sqlParts() (table, rawCol, tsCol string, err error) {
 			return "", "", "", fmt.Errorf("invalid collector SQL identifier %q", ident)
 		}
 	}
-	return c.cfg.QueryTable, c.cfg.RawColumn, c.cfg.TimestampColumn, nil
+	return quoteSQLIdent(c.cfg.QueryTable), quoteSQLIdent(c.cfg.RawColumn), quoteSQLIdent(c.cfg.TimestampColumn), nil
 }
 
 func (c *Client) queryRows(ctx context.Context, query string, limit int) ([]map[string]any, error) {
+	limit = clampQueryLimit(limit, 1000)
 	payload := map[string]any{
 		"query": query,
 		"limit": limit,
@@ -394,6 +395,20 @@ func (c *Client) queryRows(ctx context.Context, query string, limit int) ([]map[
 
 func quoteSQLString(v string) string {
 	return "'" + strings.ReplaceAll(v, "'", "''") + "'"
+}
+
+func quoteSQLIdent(v string) string {
+	return `"` + strings.ReplaceAll(strings.TrimSpace(v), `"`, `""`) + `"`
+}
+
+func clampQueryLimit(limit, fallback int) int {
+	if limit <= 0 {
+		limit = fallback
+	}
+	if limit > maxCollectorQueryLimit {
+		return maxCollectorQueryLimit
+	}
+	return limit
 }
 
 // appendTimeRangeConds adds optional from/to timestamp conditions to the WHERE clause.
@@ -467,9 +482,7 @@ func (c *Client) FindByRelease(ctx context.Context, release string, limit int) (
 }
 
 func (c *Client) FindByDurationRange(ctx context.Context, minMs, maxMs float64, limit int) ([]*models.Event, error) {
-	if limit <= 0 {
-		limit = 1000
-	}
+	limit = clampQueryLimit(limit, 1000)
 	table, rawCol, tsCol, err := c.sqlParts()
 	if err != nil {
 		return nil, err
@@ -626,8 +639,9 @@ func (c *Client) ListLifecycleSummaries(ctx context.Context, filter map[string]a
 		total = int(countRows[0]["total"].(float64))
 	}
 
-	if limit <= 0 {
-		limit = 100
+	limit = clampQueryLimit(limit, 100)
+	if offset < 0 {
+		offset = 0
 	}
 	dataQuery := fmt.Sprintf(
 		"SELECT %s FROM %s WHERE %s ORDER BY %s DESC LIMIT %d OFFSET %d",

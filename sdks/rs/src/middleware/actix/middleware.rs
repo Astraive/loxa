@@ -4,7 +4,7 @@ pub fn middleware_name() -> &'static str {
 
 #[cfg(feature = "actix")]
 pub mod actix_impl {
-    use super::*;
+    use crate::{Logger, Params};
     use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
     use actix_web::Error;
     use futures_util::future::{ok, LocalBoxFuture, Ready};

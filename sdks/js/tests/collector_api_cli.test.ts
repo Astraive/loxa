@@ -9,7 +9,8 @@ afterEach(() => {
 
 it('covers collector and cortex client families', async () => {
   const collectorServer = http.createServer((req, res) => {
-    const path = req.url || '/';
+    const url = new URL(req.url || '/', 'http://localhost');
+    const path = url.pathname;
     const method = req.method || 'GET';
     const writeJson = (status: number, obj: any) => {
       res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -20,7 +21,7 @@ it('covers collector and cortex client families', async () => {
     if (path === '/validate') return writeJson(200, { valid: true });
     if (path === '/events' && method === 'POST') return writeJson(200, { accepted: 1, rejected: 0, invalid: 0 });
     if (path === '/query') return writeJson(200, { rows: [] });
-    if (path === '/tail') return writeJson(200, { events: [] });
+    if (path === '/tail' && method === 'GET') return writeJson(200, { events: [] });
     if (path === '/events' && method === 'DELETE') return writeJson(200, { deleted: 1 });
     if (path === '/replay') return writeJson(202, { replayed: 1 });
     if (path === '/dlq') return writeJson(200, { events: [] });

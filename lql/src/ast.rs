@@ -159,11 +159,11 @@ impl Duration {
     pub fn to_millis(&self) -> u64 {
         match self.unit {
             DurationUnit::Milliseconds => self.value,
-            DurationUnit::Seconds => self.value * 1000,
-            DurationUnit::Minutes => self.value * 60 * 1000,
-            DurationUnit::Hours => self.value * 3600 * 1000,
-            DurationUnit::Days => self.value * 86400 * 1000,
-            DurationUnit::Weeks => self.value * 604800 * 1000,
+            DurationUnit::Seconds => self.value.saturating_mul(1000),
+            DurationUnit::Minutes => self.value.saturating_mul(60).saturating_mul(1000),
+            DurationUnit::Hours => self.value.saturating_mul(3600).saturating_mul(1000),
+            DurationUnit::Days => self.value.saturating_mul(86400).saturating_mul(1000),
+            DurationUnit::Weeks => self.value.saturating_mul(604800).saturating_mul(1000),
         }
     }
 }

@@ -8,14 +8,11 @@ import (
 	"encoding/pem"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 )
-
-var jwtKeyCache sync.Map
 
 func (s *collectorState) isAuthorized(r *http.Request) bool {
 	if !s.cfg.authEnabled {
@@ -37,7 +34,8 @@ func (s *collectorState) isAuthorized(r *http.Request) bool {
 
 func (s *collectorState) authorizeAPIKey(r *http.Request) bool {
 	if s.cfg.apiKey == "" {
-		return true
+		s.logAuthFailure(r, "api_key_unconfigured")
+		return false
 	}
 	providedKey := strings.TrimSpace(r.Header.Get(s.cfg.apiKeyHeader))
 	authorized := subtle.ConstantTimeCompare([]byte(providedKey), []byte(s.cfg.apiKey)) == 1
@@ -68,9 +66,7 @@ func (s *collectorState) authorizeJWT(r *http.Request) bool {
 		return false
 	}
 
-	parsed, err := jwt.ParseSigned(token, []jose.SignatureAlgorithm{
-		jose.HS256, jose.HS384, jose.HS512, jose.RS256, jose.RS384, jose.RS512, jose.ES256, jose.ES384, jose.ES512,
-	})
+	parsed, err := jwt.ParseSigned(token, jwtSignatureAlgorithms(key))
 	if err != nil {
 		s.logAuthFailure(r, "jwt_parse_failed")
 		return false
@@ -156,13 +152,20 @@ func jwtVerificationKey(raw string) any {
 	if raw == "" {
 		return nil
 	}
-	if cached, ok := jwtKeyCache.Load(raw); ok {
-		return cached
-	}
+	return parseJWTVerificationKey(raw)
+}
 
-	key := parseJWTVerificationKey(raw)
-	jwtKeyCache.Store(raw, key)
-	return key
+func jwtSignatureAlgorithms(key any) []jose.SignatureAlgorithm {
+	switch key.(type) {
+	case []byte:
+		return []jose.SignatureAlgorithm{jose.HS256, jose.HS384, jose.HS512}
+	case *rsa.PublicKey:
+		return []jose.SignatureAlgorithm{jose.RS256, jose.RS384, jose.RS512}
+	case *ecdsa.PublicKey:
+		return []jose.SignatureAlgorithm{jose.ES256, jose.ES384, jose.ES512}
+	default:
+		return nil
+	}
 }
 
 // extractCryptoKey returns the key if it's an RSA or ECDSA public key, nil otherwise.

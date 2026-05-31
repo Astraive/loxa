@@ -21,6 +21,14 @@ storage:
     max_connections: 50
     max_idle_conns: 10
     conn_max_lifetime: 1h
+  min_similarity_threshold: 0.5
+  similarity:
+    shape_partial: 0.7
+    shape_mismatch: 0.3
+    weights:
+      shape: 0.4
+      symptom: 0.3
+      vector: 0.3
 
 matcher:
   mode: "go"
@@ -137,16 +145,6 @@ reconstructor:
     log_default: 0.1
     service: 0.2
     default: 0.1
-
-storage:
-  min_similarity_threshold: 0.5
-  similarity:
-    shape_partial: 0.7
-    shape_mismatch: 0.3
-    weights:
-      shape: 0.4
-      symptom: 0.3
-      vector: 0.3
 
 memory:
   decay_period: 2160h    # 90 days

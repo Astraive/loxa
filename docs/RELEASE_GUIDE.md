@@ -76,30 +76,30 @@ The workflow validates that every selected component manifest already has that e
 
 To release only the collector:
 
-1. Change `collector/loxa.yaml` from `0.2.5` to `0.2.6`.
+1. Change `collector/loxa.yaml` from `0.2.6` to `0.2.7`.
 2. Update collector changelog or release notes.
 3. Push to `main`.
 4. CI detects the collector version bump.
 5. CI builds and publishes Docker images:
-   - `astraive/loxa:0.2.6`
-   - `ghcr.io/astraive/loxa:0.2.6`
-6. CI creates `collector/v0.2.6`.
+   - `astraive/loxa:0.2.7`
+   - `ghcr.io/astraive/loxa:0.2.7`
+6. CI creates `collector/v0.2.7`.
 
 To release the JS SDK:
 
-1. Change `sdks/js/loxa-js.yaml` from `0.2.5` to `0.2.6`.
-2. Ensure `sdks/js/package.json` and `sdks/js/package-lock.json` also use `0.2.6`.
+1. Change `sdks/js/loxa-js.yaml` from `0.2.6` to `0.2.7`.
+2. Ensure `sdks/js/package.json` and `sdks/js/package-lock.json` also use `0.2.7`.
 3. Push to `main`.
 4. CI runs JS tests and builds the package.
 5. CI publishes npm package `loxa`.
-6. CI creates `sdks/js/v0.2.6`.
+6. CI creates `sdks/js/v0.2.7`.
 
 To create a full repository release:
 
-1. Change `loxa.yaml` from `0.2.5` to `0.2.6`.
+1. Change `loxa.yaml` from `0.2.6` to `0.2.7`.
 2. Push to `main`.
 3. CI validates the release manifests and affected checks.
-4. CI creates tag `v0.2.6`.
+4. CI creates tag `v0.2.7`.
 5. CI creates the umbrella GitHub Release.
 
 To release the CLI:

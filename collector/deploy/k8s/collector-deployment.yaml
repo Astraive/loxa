@@ -23,7 +23,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: collector
-          image: ghcr.io/astraive/loxa:0.2.5
+          image: ghcr.io/astraive/loxa:0.2.6
           securityContext:
             capabilities:
               drop:
@@ -38,6 +38,17 @@ spec:
             - name: http
               containerPort: 9308
               protocol: TCP
+          env:
+            - name: COLLECTOR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: loxa-collector-secrets
+                  key: api-key
+            - name: LOXA_STORAGE_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: loxa-collector-secrets
+                  key: storage-encryption-key
           livenessProbe:
             httpGet:
               path: /healthz

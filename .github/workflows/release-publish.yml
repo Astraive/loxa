@@ -74,7 +74,9 @@ jobs:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
       dry_run: ${{ inputs.dry_run }}
-    secrets: inherit
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   publish-github-release:
     name: Publish umbrella GitHub Release
@@ -88,7 +90,6 @@ jobs:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
       dry_run: ${{ inputs.dry_run }}
-    secrets: inherit
 
   publish-cli:
     name: Publish CLI
@@ -102,7 +103,6 @@ jobs:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
       dry_run: ${{ inputs.dry_run }}
-    secrets: inherit
 
   publish-js:
     name: Publish JS SDK
@@ -116,7 +116,8 @@ jobs:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
       dry_run: ${{ inputs.dry_run }}
-    secrets: inherit
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-py:
     name: Publish Python SDK
@@ -130,7 +131,8 @@ jobs:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
       dry_run: ${{ inputs.dry_run }}
-    secrets: inherit
+    secrets:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
 
   publish-rs:
     name: Publish Rust crate
@@ -144,7 +146,8 @@ jobs:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
       dry_run: ${{ inputs.dry_run }}
-    secrets: inherit
+    secrets:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
   verify-go-modules:
     name: Verify Go module tags
@@ -158,4 +161,3 @@ jobs:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
       dry_run: ${{ inputs.dry_run }}
-    secrets: inherit

@@ -1,6 +1,6 @@
 # LOXA-RS
 
-**Status**: STABLE (v0.2.5) - Production-ready, full feature conformance
+**Status**: STABLE (v0.2.6) - Production-ready, full feature conformance
 
 `loxa-rs` is a collector-first Rust SDK for wide events. It builds one structured event per operation (request, job, queue message, CLI run, cron run), then emits to your log/analytics backend.
 

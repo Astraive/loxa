@@ -13,6 +13,9 @@ on:
         required: false
         type: boolean
         default: false
+    secrets:
+      CARGO_REGISTRY_TOKEN:
+        required: true
 
 permissions:
   contents: write
@@ -85,5 +88,5 @@ jobs:
       - name: Create GitHub Release artifact
         if: inputs.dry_run != true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: gh release create "lql/v${{ inputs.version }}" lql/target/release/lql* --title "LOXA LQL ${{ inputs.version }}" --notes "LOXA LQL release ${{ inputs.version }}"

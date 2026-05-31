@@ -19,6 +19,7 @@ from ...core.http_client import (
     _parse_collector_response_body,
     _parse_retry_after,
     _retry_delay,
+    _validate_collector_endpoint,
 )
 from ...version import SDK_VERSION
 
@@ -46,6 +47,9 @@ class HTTPBatchSink:
     ndjson: bool = False
     stats_handler: Any = None
     _last_response: dict | None = field(default=None, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        _validate_collector_endpoint(self.endpoint)
 
     def write(self, encoded: str) -> None:
         self.write_batch([encoded])

@@ -8,19 +8,25 @@ services:
       - "9308:9308"
     volumes:
       - ../:/app
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9308/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   sample-app:
     image: curlimages/curl:8.12.1
     depends_on:
-      - collector
+      collector:
+        condition: service_healthy
     volumes:
       - ../build:/payload
     entrypoint:
       - /bin/sh
       - -c
       - |
-        sleep 3
-        curl -sS -X POST http://collector:9308/ingest \
+        curl -sS -X POST http://collector:9308/events \
           --data-binary @/payload/sample-events.ndjson \
           -H "Content-Type: application/x-ndjson"
 
@@ -41,16 +47,22 @@ services:
       - -config.file=/etc/loki/local-config.yaml
     ports:
       - "3100:3100"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   loki-seed:
     image: curlimages/curl:8.12.1
     depends_on:
-      - loki
+      loki:
+        condition: service_healthy
     entrypoint:
       - /bin/sh
       - -c
       - |
-        sleep 4
         NOW=$(date +%s%N)
         curl -sS -X POST http://loki:3100/loki/api/core/push \
           -H "Content-Type: application/json" \

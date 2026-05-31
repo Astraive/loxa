@@ -3,6 +3,13 @@ use std::os::raw::c_char;
 
 use crate::{Matcher, Signature};
 
+fn cstr_to_string(ptr: *const c_char) -> Option<String> {
+    if ptr.is_null() {
+        return None;
+    }
+    unsafe { CStr::from_ptr(ptr) }.to_str().ok().map(str::to_owned)
+}
+
 /// Score a query signature against a candidate signature.
 /// Both arguments are JSON-serialized Signature objects.
 /// Returns the similarity score as f64.
@@ -11,20 +18,20 @@ pub extern "C" fn score_ffi(
     query_json: *const c_char,
     candidate_json: *const c_char,
 ) -> f64 {
-    let query_str = match unsafe { CStr::from_ptr(query_json) }.to_str() {
-        Ok(s) => s,
-        Err(_) => return 0.0,
+    let query_str = match cstr_to_string(query_json) {
+        Some(s) => s,
+        None => return 0.0,
     };
-    let candidate_str = match unsafe { CStr::from_ptr(candidate_json) }.to_str() {
-        Ok(s) => s,
-        Err(_) => return 0.0,
+    let candidate_str = match cstr_to_string(candidate_json) {
+        Some(s) => s,
+        None => return 0.0,
     };
 
-    let query: Signature = match serde_json::from_str(query_str) {
+    let query: Signature = match serde_json::from_str(&query_str) {
         Ok(s) => s,
         Err(_) => return 0.0,
     };
-    let candidate: Signature = match serde_json::from_str(candidate_str) {
+    let candidate: Signature = match serde_json::from_str(&candidate_str) {
         Ok(s) => s,
         Err(_) => return 0.0,
     };
@@ -44,20 +51,20 @@ pub extern "C" fn topk_search_ffi(
     candidates_json: *const c_char,
     k: usize,
 ) -> *mut c_char {
-    let query_str = match unsafe { CStr::from_ptr(query_json) }.to_str() {
-        Ok(s) => s,
-        Err(_) => return CString::new("[]").unwrap().into_raw(),
+    let query_str = match cstr_to_string(query_json) {
+        Some(s) => s,
+        None => return CString::new("[]").unwrap().into_raw(),
     };
-    let candidates_str = match unsafe { CStr::from_ptr(candidates_json) }.to_str() {
-        Ok(s) => s,
-        Err(_) => return CString::new("[]").unwrap().into_raw(),
+    let candidates_str = match cstr_to_string(candidates_json) {
+        Some(s) => s,
+        None => return CString::new("[]").unwrap().into_raw(),
     };
 
-    let query: Signature = match serde_json::from_str(query_str) {
+    let query: Signature = match serde_json::from_str(&query_str) {
         Ok(s) => s,
         Err(_) => return CString::new("[]").unwrap().into_raw(),
     };
-    let candidates: Vec<Signature> = match serde_json::from_str(candidates_str) {
+    let candidates: Vec<Signature> = match serde_json::from_str(&candidates_str) {
         Ok(s) => s,
         Err(_) => return CString::new("[]").unwrap().into_raw(),
     };
@@ -86,12 +93,12 @@ pub extern "C" fn topk_search_ffi(
 pub extern "C" fn shape_hash_ffi(
     signature_json: *const c_char,
 ) -> *mut c_char {
-    let sig_str = match unsafe { CStr::from_ptr(signature_json) }.to_str() {
-        Ok(s) => s,
-        Err(_) => return CString::new("").unwrap().into_raw(),
+    let sig_str = match cstr_to_string(signature_json) {
+        Some(s) => s,
+        None => return CString::new("").unwrap().into_raw(),
     };
 
-    let sig: Signature = match serde_json::from_str(sig_str) {
+    let sig: Signature = match serde_json::from_str(&sig_str) {
         Ok(s) => s,
         Err(_) => return CString::new("").unwrap().into_raw(),
     };

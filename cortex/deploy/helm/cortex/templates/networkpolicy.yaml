@@ -14,15 +14,10 @@ spec:
     - Ingress
     - Egress
   ingress:
-    - from:
-        - podSelector: {}
-      ports:
-        - protocol: TCP
-          port: 9312
-        - protocol: TCP
-          port: 9313
-    {{- with .Values.networkPolicy.ingress }}
-    {{- toYaml . | nindent 4 }}
+    {{- if .Values.networkPolicy.ingress }}
+    {{- toYaml .Values.networkPolicy.ingress | nindent 4 }}
+    {{- else }}
+    []
     {{- end }}
   egress:
     - to: []
@@ -31,10 +26,6 @@ spec:
           port: 53
         - protocol: UDP
           port: 53
-    - to: []
-      ports:
-        - protocol: TCP
-          port: 5432
     {{- with .Values.networkPolicy.egress }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

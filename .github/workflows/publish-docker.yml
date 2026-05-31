@@ -13,11 +13,18 @@ on:
         required: false
         type: boolean
         default: false
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: false
+      DOCKERHUB_TOKEN:
+        required: false
 
 permissions:
   contents: write
   packages: write
+  id-token: write
   actions: read
+  security-events: write
 
 jobs:
   publish:
@@ -86,6 +93,7 @@ jobs:
                   tags.append(f"{image}:latest")
           print("dockerfile=" + (paths.get("dockerfile") or docker.get("dockerfile")))
           print("context=" + docker.get("context", "."))
+          print("primary_tag=" + tags[0])
           print("tags=" + ",".join(tags))
           PY
 
@@ -104,9 +112,10 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ github.token }}
 
       - name: Build and publish image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: ${{ steps.manifest.outputs.context }}
@@ -114,6 +123,41 @@ jobs:
           push: ${{ inputs.dry_run != true }}
           tags: ${{ steps.manifest.outputs.tags }}
           provenance: true
+          sbom: true
+
+      - name: Scan image for vulnerabilities
+        if: inputs.dry_run != true
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ steps.manifest.outputs.primary_tag }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Upload vulnerability scan
+        if: inputs.dry_run != true && always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
+      - name: Install cosign
+        if: inputs.dry_run != true
+        uses: sigstore/cosign-installer@v3.8.2
+
+      - name: Sign published image digest
+        if: inputs.dry_run != true
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          TAGS: ${{ steps.manifest.outputs.tags }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra image_tags <<< "$TAGS"
+          for tag in "${image_tags[@]}"; do
+            image="${tag%%:*}"
+            cosign sign --yes "${image}@${DIGEST}"
+          done
 
       - name: Create component tag
         if: inputs.dry_run != true

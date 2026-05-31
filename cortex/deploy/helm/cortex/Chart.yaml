@@ -2,8 +2,8 @@ apiVersion: v2
 name: cortex
 description: Loxa Cortex — incident reconstruction and operational memory engine
 type: application
-version: 0.2.5
-appVersion: "0.2.5"
+version: 0.2.6
+appVersion: "0.2.6"
 keywords:
   - observability
   - incident-response

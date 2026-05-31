@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: schema-service
-          image: ghcr.io/astraive/loxa-schema-service:0.2.5
+          image: ghcr.io/astraive/loxa-schema-service:0.2.6
           imagePullPolicy: IfNotPresent
           command:
             - sh

@@ -114,9 +114,21 @@ fn compile_expr_with_aliases(
             match op {
                 BinOp::Like => Ok(format!("{} LIKE {}", l, r)),
                 BinOp::NotLike => Ok(format!("{} NOT LIKE {}", l, r)),
-                BinOp::Contains | BinOp::Has => Ok(format!("{} LIKE '%{}%'", l, strip_quotes(&r))),
-                BinOp::StartsWith => Ok(format!("{} LIKE '{}%'", l, strip_quotes(&r))),
-                BinOp::EndsWith => Ok(format!("{} LIKE '%{}'", l, strip_quotes(&r))),
+                BinOp::Contains | BinOp::Has => Ok(format!(
+                    "{} LIKE '%{}%'",
+                    l,
+                    escape_like_pattern(&strip_quotes(&r))
+                )),
+                BinOp::StartsWith => Ok(format!(
+                    "{} LIKE '{}%'",
+                    l,
+                    escape_like_pattern(&strip_quotes(&r))
+                )),
+                BinOp::EndsWith => Ok(format!(
+                    "{} LIKE '%{}'",
+                    l,
+                    escape_like_pattern(&strip_quotes(&r))
+                )),
                 _ => Ok(format!("{} {} {}", l, op, r)),
             }
         }
@@ -263,16 +275,25 @@ fn escape_ident(name: &str) -> String {
     if name == "*" {
         name.to_string()
     } else {
-        format!("\"{}\"", name)
+        format!("\"{}\"", name.replace('"', "\"\""))
     }
 }
 
 fn strip_quotes(s: &str) -> String {
-    if (s.starts_with('\'') && s.ends_with('\'')) || (s.starts_with('"') && s.ends_with('"')) {
+    if s.len() >= 2
+        && ((s.starts_with('\'') && s.ends_with('\'')) || (s.starts_with('"') && s.ends_with('"')))
+    {
         s[1..s.len() - 1].to_string()
     } else {
         s.to_string()
     }
+}
+
+fn escape_like_pattern(s: &str) -> String {
+    s.replace('\\', "\\\\")
+        .replace('\'', "''")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
 }
 
 fn interval_unit(d: &Duration) -> &'static str {

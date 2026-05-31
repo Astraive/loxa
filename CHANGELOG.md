@@ -4,6 +4,69 @@ All notable changes to the LOXA project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/0.2.0/).
 
+## [0.2.6] - 2026-05-30
+
+### Security
+
+#### Critical Fixes
+- **Auth bypass on empty API key**: Collector now rejects requests when `apiKey` is empty, even if `auth_enabled=true`
+- **JWT algorithm confusion**: JWT verification now restricts accepted algorithms to match the configured key type (HMAC vs RSA vs ECDSA)
+- **SQL injection in worker ensureSchema**: DuckDB table/column names are now quoted via `quoteSQLIdent()` with identifier validation
+- **SQL injection in blueprint handlers**: Blueprint type validation now blocks semicolons, SQL comments, and uses configured `duckDBTable` instead of hardcoded "events"
+- **Query injection bypass**: `/lql/query` now uses a dedicated DuckDB connection for `SET enable_external_access=false`; `isSafeQuery` blocks function aliases, extensions, and file/network primitives
+- **WebSocket CORS bypass**: Tail WebSocket now validates `Origin` header against allowed origins instead of accepting all
+- **SQL injection in deletion handler**: `deleteEventsByUser` LIKE pattern now uses proper escaping
+- **SQL injection in frontend LQL**: Numeric values regex-validated before interpolation; `limit` validated as integer; `escapeIdent` escapes double quotes; `escapeSQLString` escapes LIKE wildcards
+- **API key in localStorage**: API key moved from persistent `localStorage` to `sessionStorage` with automatic legacy cleanup
+- **Weak encryption KDF**: At-rest encryption key derivation moved from raw SHA-256 to HKDF with proper salt
+- **Cortex secrets in plaintext**: Production K8s manifests now require secret-backed credentials; SSL mode defaults to "require"
+- **Redis without auth**: Redis endpoints now require authentication
+- **PostgreSQL empty password**: All config files now require passwords from secrets
+- **Path traversal (Python SDK)**: `DiskOfflineBuffer`, `FileSink`, `RotatingFileSink` now reject path traversal attempts
+- **SSRF (Python SDK)**: Collector endpoint validation blocks private/internal metadata targets
+
+#### Runtime Safety
+- **Goroutine leak in rate limiter**: `KeyRateLimiter` now has `Close()` method called during collector shutdown
+- **Memory leak in JWT cache**: Unbounded `jwtKeyCache` replaced with bounded cache
+- **FFI null pointer (Rust)**: `CStr::from_ptr` now performs null checks before dereference
+- **Parser silent corruption (LQL)**: Out-of-bounds token access returns proper error instead of `NullLit` sentinel
+- **Negative limit overflow (LQL)**: `limit -5` now rejected with error instead of wrapping to huge usize
+- **Integer overflow (LQL)**: Duration math uses `saturating_mul` to prevent silent wraparound
+- **WASM validate error handling**: Validation errors now return `Err()` instead of `Ok(json)`, so JS `catch` blocks see failures
+
+#### Hardened Patterns
+- **LIKE pattern escaping**: LQL compilers now escape single quotes in LIKE patterns, preventing SQL injection
+- **strip_quotes panic**: Single-char strings like `"` handled safely without panic
+- **unreachable!() in match arms**: Replaced with proper error handling to prevent runtime panics
+- **Dedup Redis key length**: Event IDs hashed before use as Redis keys to prevent memory exhaustion
+- **Spool scanner buffer**: Bounded to prevent 2GB memory allocation from malformed input
+- **Config secrets redaction**: `config print` now redacts API keys, encryption keys, and passwords
+
+### Changed
+
+- **K8s manifests**: Auth enabled by default in collector and cortex ConfigMaps
+- **Rate limiting**: Enabled by default in cortex deployment
+- **NetworkPolicy**: Tightened defaults to restrict ingress/egress
+- **Docker healthcheck**: Now uses `wget` (installed in image) for reliable health checks
+- **Rust SDK locks**: `RwLock` and `Mutex` now recover from poisoning instead of panicking
+- **Python SDK config**: `with_*` methods return copies instead of mutating originals
+- **Loxana sidebar**: Shows actual collector health status instead of hardcoded "System Online"
+- **Loxana QueryClient**: Created per component mount instead of module-scope singleton
+- **Loxana API requests**: All fetch calls now have 30s timeout with AbortController
+- **Loxana code dedup**: Consolidated duplicate `cn()`, `getApiKey()`, and `Panel` type definitions
+
+### Fixed
+
+- **Pipeline pending race (Go SDK)**: `DropOldest` mode no longer decrements pending for un-enqueued items
+- **HTTP response body leak (Go SDK)**: `HttpBatchSink` now drains response body on success
+- **FileSink leak (Python SDK)**: Files properly closed on shutdown
+- **DiskOfflineBuffer leak (Python SDK)**: File handles explicitly closed
+- **flush() timeout (Python SDK)**: Timeout parameter now actually respected
+- **Starlette middleware (Python SDK)**: Uses async HTTP to avoid blocking ASGI worker
+- **Thread-unsafe stats (Python SDK)**: `DeliveryStats` now uses threading lock
+- **Settings URL validation (Loxana)**: Collector URL validated as http/https before saving
+- **ErrorBoundary logging (Loxana)**: `componentDidCatch` now logs errors with component stack
+
 ## [0.2.5] - 2026-05-28
 
 ### Fixed

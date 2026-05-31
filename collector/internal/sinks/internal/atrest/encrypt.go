@@ -8,6 +8,8 @@ import (
 	"encoding/base64"
 	"io"
 	"strings"
+
+	"golang.org/x/crypto/hkdf"
 )
 
 const Prefix = "enc:"
@@ -37,8 +39,12 @@ func EncryptBytes(plain []byte, key string) ([]byte, error) {
 }
 
 func buildAEAD(key string) (cipher.AEAD, error) {
-	sum := sha256.Sum256([]byte(key))
-	block, err := aes.NewCipher(sum[:])
+	derived := make([]byte, 32)
+	reader := hkdf.New(sha256.New, []byte(key), []byte("loxa-at-rest-v1"), []byte("aes-256-gcm"))
+	if _, err := io.ReadFull(reader, derived); err != nil {
+		return nil, err
+	}
+	block, err := aes.NewCipher(derived)
 	if err != nil {
 		return nil, err
 	}

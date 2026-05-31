@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 from ..sinks import HTTPBatchSink, StdoutSink
 
 
@@ -11,7 +12,7 @@ class RotatingFileSink:
     """Size-based rotating file sink."""
 
     def __init__(self, path: str = "loxa.log", max_bytes: int = 10 * 1024 * 1024, max_backups: int = 5) -> None:
-        self.path = path
+        self.path = str(_safe_output_path(path))
         self.max_bytes = max_bytes
         self.max_backups = max_backups
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
@@ -56,3 +57,14 @@ def CollectorSink(config=None):
         else "http://127.0.0.1:9308/events"
     )
     return HTTPBatchSink(endpoint)
+
+
+def _safe_output_path(path: str) -> Path:
+    if "\x00" in path:
+        raise ValueError("file sink path contains a null byte")
+    candidate = Path(path)
+    if any(part == ".." for part in candidate.parts):
+        raise ValueError("file sink path must not contain parent-directory traversal")
+    if candidate.exists() and candidate.is_dir():
+        raise ValueError("file sink path must be a file")
+    return candidate

@@ -3,8 +3,8 @@ package core
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -371,7 +371,7 @@ func (s *collectorSink) WriteEvent(ctx context.Context, encoded []byte, ev *Even
 		_, _ = io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 	}()
-	raw, readErr := io.ReadAll(resp.Body)
+	raw, readErr := readSinkResponse(resp.Body)
 	if readErr != nil {
 		return readErr
 	}
@@ -454,6 +454,17 @@ func truncateErrorBody(body string) string {
 		return body[:512] + "... (truncated)"
 	}
 	return strings.TrimSpace(body)
+}
+
+func readSinkResponse(body io.Reader) ([]byte, error) {
+	raw, err := io.ReadAll(io.LimitReader(body, maxCollectorClientResponseBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(raw) > maxCollectorClientResponseBytes {
+		return raw[:maxCollectorClientResponseBytes], fmt.Errorf("response exceeds %d bytes", maxCollectorClientResponseBytes)
+	}
+	return raw, nil
 }
 
 func gzipBody(body []byte) ([]byte, error) {
@@ -587,7 +598,7 @@ func (s *httpBatchSink) send(ctx context.Context, payload []byte) error {
 		resp.Body.Close()
 	}()
 	if resp.StatusCode >= 300 {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, _ := readSinkResponse(resp.Body)
 		return fmt.Errorf("httpbatch: unexpected status %d: %s", resp.StatusCode, truncateErrorBody(string(bodyBytes)))
 	}
 	return nil

@@ -20,8 +20,7 @@ cortex.exe
 # Rust / Cargo
 target/
 **/target/
-Cargo.lock
-# keep Cargo.lock for apps if needed; remove this line if you want lock committed
+# Cargo.lock committed for reproducible binary builds
 
 # Go
 bin/

@@ -25,7 +25,7 @@ pub mod testkit;
 pub mod utils;
 
 use serde_json::Value;
-use std::sync::{Arc, OnceLock, RwLock};
+use std::sync::{Arc, OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 pub use crate::core::client::{
     extract_http_headers, inject_http_headers, CollectorHttpClient, HTTPClient, HTTPRequest,
@@ -96,7 +96,7 @@ pub fn Configure(config: Config) -> Logger {
 pub fn configure(config: Config) -> Result<Logger, LoxaError> {
     let logger = Logger::try_new(config)?;
     let lock = GLOBAL_LOGGER.get_or_init(|| RwLock::new(Logger::new(Config::dev("loxa"))));
-    let mut guard = lock.write().unwrap();
+    let mut guard = write_global_logger(lock);
     // Shut down the previous logger before replacing it
     let _ = guard.shutdown();
     *guard = logger.clone();
@@ -114,11 +114,8 @@ pub fn Reset() -> Result<Logger, LoxaError> {
 
 /// Return the global default logger. Always succeeds (dev default if not configured).
 pub fn default() -> Logger {
-    GLOBAL_LOGGER
-        .get_or_init(|| RwLock::new(Logger::new(Config::dev("loxa"))))
-        .read()
-        .unwrap()
-        .clone()
+    let lock = GLOBAL_LOGGER.get_or_init(|| RwLock::new(Logger::new(Config::dev("loxa"))));
+    read_global_logger(lock).clone()
 }
 
 pub fn Default(service: impl Into<String>) -> Logger {
@@ -174,16 +171,27 @@ pub fn StartCronEvent(cron: impl Into<String>) -> Params {
 static GLOBAL_LOGGER: OnceLock<RwLock<Logger>> = OnceLock::new();
 
 fn default_logger() -> Logger {
-    GLOBAL_LOGGER
-        .get_or_init(|| RwLock::new(Logger::new(Config::dev("loxa"))))
-        .read()
-        .unwrap()
-        .clone()
+    let lock = GLOBAL_LOGGER.get_or_init(|| RwLock::new(Logger::new(Config::dev("loxa"))));
+    read_global_logger(lock).clone()
 }
 
 pub fn set_global_logger(logger: Logger) {
     let lock = GLOBAL_LOGGER.get_or_init(|| RwLock::new(Logger::new(Config::dev("loxa"))));
-    *lock.write().unwrap() = logger;
+    *write_global_logger(lock) = logger;
+}
+
+fn read_global_logger(lock: &RwLock<Logger>) -> RwLockReadGuard<'_, Logger> {
+    match lock.read() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    }
+}
+
+fn write_global_logger(lock: &RwLock<Logger>) -> RwLockWriteGuard<'_, Logger> {
+    match lock.write() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    }
 }
 
 pub fn Append(event: &mut EventContext, attr: Attr) {

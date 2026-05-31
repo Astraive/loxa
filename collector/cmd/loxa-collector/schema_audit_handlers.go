@@ -304,14 +304,14 @@ func intersection(left, right []string) []string {
 func mustQuoteSQLIdent(value string) string {
 	quoted, err := quoteSQLIdent(value)
 	if err != nil {
-		return value
+		return `""`
 	}
 	return quoted
 }
 
 // Blueprint represents a user-defined schema blueprint
 type Blueprint struct {
-	Name    string                    `json:"name"`
+	Name    string                     `json:"name"`
 	Columns map[string]BlueprintColumn `json:"columns"`
 }
 
@@ -375,7 +375,7 @@ func (s *collectorState) handleBlueprintList(w http.ResponseWriter, r *http.Requ
 		defer db.Close()
 	}
 
-	rows, err := db.Query("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'events' ORDER BY ordinal_position")
+	rows, err := db.Query("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = ? ORDER BY ordinal_position", s.cfg.duckDBTable)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "query_failed", "message": err.Error()})
 		return
@@ -416,6 +416,11 @@ func (s *collectorState) applyBlueprint(bp Blueprint) error {
 		"DECIMAL": true, "NUMERIC": true,
 	}
 
+	tableIdent, err := quoteSQLIdent(s.cfg.duckDBTable)
+	if err != nil {
+		return fmt.Errorf("invalid table name %q: %w", s.cfg.duckDBTable, err)
+	}
+
 	for colName, colDef := range bp.Columns {
 		colIdent, err := quoteSQLIdent(colName)
 		if err != nil {
@@ -452,7 +457,7 @@ func (s *collectorState) applyBlueprint(bp Blueprint) error {
 				return fmt.Errorf("invalid characters in DuckDB type parameters %q for column %q", colDef.DuckDBType, colName)
 			}
 		}
-		query := fmt.Sprintf("ALTER TABLE events ADD COLUMN IF NOT EXISTS %s %s", colIdent, typ)
+		query := fmt.Sprintf("ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s %s", tableIdent, colIdent, typ)
 		if _, err := db.Exec(query); err != nil {
 			return fmt.Errorf("add column %s: %w", colName, err)
 		}

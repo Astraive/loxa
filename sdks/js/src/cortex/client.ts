@@ -5,6 +5,7 @@ export interface CortexClientOptions {
   url: string;
   apiKey?: string;
   timeout?: number;
+  maxResponseBytes?: number;
 }
 
 export interface ReconstructionResult {
@@ -130,11 +131,13 @@ export class CortexClient {
   private url: string;
   private apiKey: string;
   private timeout: number;
+  private maxResponseBytes: number;
 
   constructor(opts: CortexClientOptions) {
     this.url = opts.url.replace(/\/$/, '');
     this.apiKey = opts.apiKey || '';
     this.timeout = opts.timeout || 5000;
+    this.maxResponseBytes = opts.maxResponseBytes || 10 * 1024 * 1024;
   }
 
   /** Check if cortex is healthy. */
@@ -239,13 +242,21 @@ export class CortexClient {
       const req = mod.request({
         hostname: url.hostname,
         port: url.port || (isHttps ? 443 : 80),
-        path: url.pathname,
+        path: `${url.pathname}${url.search}`,
         method,
         headers,
         timeout: this.timeout,
       }, (res) => {
         let data = '';
-        res.on('data', (chunk: Buffer) => { data += chunk.toString(); });
+        let bytes = 0;
+        res.on('data', (chunk: Buffer) => {
+          bytes += chunk.length;
+          if (bytes > this.maxResponseBytes) {
+            req.destroy(new Error(`response exceeds ${this.maxResponseBytes} bytes`));
+            return;
+          }
+          data += chunk.toString();
+        });
         res.on('end', () => {
           resolve({ statusCode: res.statusCode || 0, body: data });
         });

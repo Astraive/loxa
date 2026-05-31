@@ -5,8 +5,12 @@ from __future__ import annotations
 import json
 import urllib.request
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote, urlencode
 
+from loxa.core.http_client import _validate_collector_endpoint
 from .models import GraphView, IncidentContext, Remediation, RemediationFeedback
+
+MAX_RESPONSE_BYTES = 10 * 1024 * 1024
 
 
 class CortexClient:
@@ -31,11 +35,14 @@ class CortexClient:
         api_key: str = "",
         auth_header: str = "Authorization",
         timeout: float = 10.0,
+        max_response_bytes: int = MAX_RESPONSE_BYTES,
     ) -> None:
+        _validate_collector_endpoint(endpoint)
         self.endpoint = endpoint.rstrip("/")
         self.api_key = api_key
         self.auth_header = auth_header
         self.timeout = timeout
+        self.max_response_bytes = max(1, max_response_bytes)
 
     def _headers(self) -> dict[str, str]:
         headers = {"content-type": "application/json"}
@@ -50,17 +57,23 @@ class CortexClient:
         url = f"{self.endpoint}{path}"
         req = urllib.request.Request(url, headers=self._headers(), method="GET")
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            return json.loads(resp.read())
+            return json.loads(self._read_response(resp))
 
     def _post(self, path: str, body: dict | None = None) -> dict:
         url = f"{self.endpoint}{path}"
         data = json.dumps(body or {}).encode("utf-8")
         req = urllib.request.Request(url, data=data, headers=self._headers(), method="POST")
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            raw = resp.read()
+            raw = self._read_response(resp)
             if raw:
                 return json.loads(raw)
             return {}
+
+    def _read_response(self, resp) -> bytes:
+        raw = resp.read(self.max_response_bytes + 1)
+        if len(raw) > self.max_response_bytes:
+            raise ValueError(f"response exceeds {self.max_response_bytes} bytes")
+        return raw
 
     def health(self) -> bool:
         """Check if cortex is healthy."""
@@ -81,9 +94,9 @@ class CortexClient:
     def metrics(self) -> str:
         """Fetch Prometheus metrics from cortex."""
         url = f"{self.endpoint}/metrics"
-        req = urllib.request.Request(url, method="GET")
+        req = urllib.request.Request(url, headers=self._headers(), method="GET")
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            return resp.read().decode("utf-8")
+            return self._read_response(resp).decode("utf-8")
 
     def reconstruct(
         self,
@@ -116,7 +129,7 @@ class CortexClient:
         mode: str = "fast",
     ) -> IncidentContext:
         """Reconstruct an incident using the URL-param variant."""
-        resp = self._post(f"/incidents/{incident_id}/reconstruct", {"mode": mode})
+        resp = self._post(f"/incidents/{quote(incident_id, safe='')}/reconstruct", {"mode": mode})
         return IncidentContext(
             incident_id=resp.get("incident_id", incident_id),
             timestamp=resp.get("timestamp", ""),
@@ -136,7 +149,8 @@ class CortexClient:
         depth: int = 3,
     ) -> GraphView:
         """Fetch the dependency graph for a service."""
-        resp = self._get(f"/graph/service/{service}?depth={depth}")
+        depth = _clamp_positive_int(depth, 3, 100)
+        resp = self._get(f"/graph/service/{quote(service, safe='')}?{urlencode({'depth': depth})}")
         return GraphView(
             nodes=resp.get("nodes", []),
             edges=resp.get("edges", []),
@@ -148,7 +162,8 @@ class CortexClient:
         depth: int = 3,
     ) -> GraphView:
         """Fetch the graph for a specific incident."""
-        resp = self._get(f"/graph/incident/{incident_id}?depth={depth}")
+        depth = _clamp_positive_int(depth, 3, 100)
+        resp = self._get(f"/graph/incident/{quote(incident_id, safe='')}?{urlencode({'depth': depth})}")
         return GraphView(
             nodes=resp.get("nodes", []),
             edges=resp.get("edges", []),
@@ -181,6 +196,7 @@ class CortexClient:
 
     def similar_incidents(self, incident_id: str, limit: int = 10) -> list[dict]:
         """Find incidents similar to the given one."""
+        limit = _clamp_positive_int(limit, 10, 1000)
         resp = self._post(
             "/reconstruct",
             {
@@ -211,4 +227,14 @@ class CortexClient:
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            resp.read()
+            self._read_response(resp)
+
+
+def _clamp_positive_int(value: int, default: int, maximum: int) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    if parsed <= 0:
+        return default
+    return min(parsed, maximum)

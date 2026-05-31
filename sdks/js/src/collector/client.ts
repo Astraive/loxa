@@ -105,8 +105,9 @@ export class CollectorClient {
   }
 
   /** Tail events from the collector (streaming stub). */
-  async tail(query: Record<string, any>): Promise<any> {
-    const res = await this.request('POST', '/tail', Buffer.from(JSON.stringify(query), 'utf-8'));
+  async tail(query?: Record<string, any>): Promise<any> {
+    const params = query ? '?' + new URLSearchParams(query as any).toString() : '';
+    const res = await this.request('GET', `/tail${params}`);
     return JSON.parse(res.body);
   }
 
@@ -212,7 +213,7 @@ export class CollectorClient {
       const req = mod.request({
         hostname: url.hostname,
         port: url.port || (isHttps ? 443 : 80),
-        path: url.pathname,
+        path: url.pathname + url.search,
         method,
         headers,
         timeout: this.timeout,

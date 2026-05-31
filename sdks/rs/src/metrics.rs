@@ -1,11 +1,18 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 use std::time::Duration;
 
 const DEFAULT_HISTOGRAM_BUCKETS: [f64; 13] = [
     0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0,
 ];
+
+fn lock_or_recover<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    match mutex.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    }
+}
 
 #[derive(Debug)]
 struct HistogramState {
@@ -116,18 +123,15 @@ impl MetricsCollector {
     }
 
     pub fn record_event_dropped(&self, reason: &str) {
-        let mut map = self
-            .events_dropped_by_reason
-            .lock()
-            .expect("metrics dropped lock");
+        let mut map = lock_or_recover(&self.events_dropped_by_reason);
         *map.entry(reason.to_string()).or_insert(0) += 1;
         if !reason.is_empty() {
-            *self.last_error.lock().expect("metrics lock") = reason.to_string();
+            *lock_or_recover(&self.last_error) = reason.to_string();
         }
     }
 
     pub fn record_retry(&self, attempt: u32) {
-        let mut map = self.retry_by_attempt.lock().expect("metrics retry lock");
+        let mut map = lock_or_recover(&self.retry_by_attempt);
         *map.entry(attempt.max(1)).or_insert(0) += 1;
     }
 
@@ -137,7 +141,7 @@ impl MetricsCollector {
 
     pub fn observe_emit_duration(&self, duration: Duration) {
         let seconds = duration.as_secs_f64();
-        let mut hist = self.emit_duration.lock().expect("metrics histogram lock");
+        let mut hist = lock_or_recover(&self.emit_duration);
         hist.observe(seconds);
     }
 
@@ -150,17 +154,9 @@ impl MetricsCollector {
     }
 
     pub fn snapshot(&self) -> MetricsSnapshot {
-        let dropped = self
-            .events_dropped_by_reason
-            .lock()
-            .expect("metrics dropped lock")
-            .clone();
-        let retry = self
-            .retry_by_attempt
-            .lock()
-            .expect("metrics retry lock")
-            .clone();
-        let hist = self.emit_duration.lock().expect("metrics histogram lock");
+        let dropped = lock_or_recover(&self.events_dropped_by_reason).clone();
+        let retry = lock_or_recover(&self.retry_by_attempt).clone();
+        let hist = lock_or_recover(&self.emit_duration);
         let buckets: Vec<(f64, u64)> = hist
             .buckets
             .iter()
@@ -180,7 +176,7 @@ impl MetricsCollector {
             emit_duration_buckets: buckets,
             emit_duration_sum: hist.sum,
             emit_duration_count: hist.total,
-            last_error: self.last_error.lock().expect("metrics lock").clone(),
+            last_error: lock_or_recover(&self.last_error).clone(),
         }
     }
 

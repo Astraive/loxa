@@ -17,7 +17,7 @@ import (
 )
 
 // The tail WebSocket feature is not yet wired into the router.
-// Keeping the implementation for future use. 
+// Keeping the implementation for future use.
 //lint:ignore U1000 tail transport
 
 //nolint:unused
@@ -25,7 +25,7 @@ var tailWSUpgrader = websocket.Upgrader{
 	ReadBufferSize:  16 * 1024,
 	WriteBufferSize: 16 * 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		return true
+		return serverruntime.NewWebSocketUpgrader(nil).CheckOrigin(r)
 	},
 }
 

@@ -210,18 +210,64 @@ func createFanoutSinks(cfg workerConfig) ([]processing.NamedSink, *processing.Na
 func ensureSchema(db *sql.DB, cfg workerConfig) error {
 	columns := make([]string, 0, len(cfg.duckDBSchema)+1)
 	for col, path := range cfg.duckDBSchema {
+		colIdent, err := quoteWorkerSQLIdent(col)
+		if err != nil {
+			return err
+		}
 		if typ, ok := cfg.duckDBColumnTypes[path]; ok {
-			columns = append(columns, fmt.Sprintf("%s %s", col, typ))
+			typ, err = validateWorkerSQLType(typ)
+			if err != nil {
+				return err
+			}
+			columns = append(columns, fmt.Sprintf("%s %s", colIdent, typ))
 		} else {
-			columns = append(columns, fmt.Sprintf("%s TEXT", col))
+			columns = append(columns, fmt.Sprintf("%s TEXT", colIdent))
 		}
 	}
 	if cfg.duckDBStoreRaw {
-		columns = append(columns, fmt.Sprintf("%s TEXT", cfg.duckDBRawColumn))
+		rawIdent, err := quoteWorkerSQLIdent(cfg.duckDBRawColumn)
+		if err != nil {
+			return err
+		}
+		columns = append(columns, fmt.Sprintf("%s TEXT", rawIdent))
 	}
-	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (%s)", cfg.duckDBTable, strings.Join(columns, ", "))
-	_, err := db.Exec(query)
+	tableIdent, err := quoteWorkerSQLIdent(cfg.duckDBTable)
+	if err != nil {
+		return err
+	}
+	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (%s)", tableIdent, strings.Join(columns, ", "))
+	_, err = db.Exec(query)
 	return err
+}
+
+func quoteWorkerSQLIdent(ident string) (string, error) {
+	ident = strings.TrimSpace(ident)
+	if ident == "" {
+		return "", fmt.Errorf("sql identifier cannot be empty")
+	}
+	if !workerConfigIdentPattern.MatchString(ident) {
+		return "", fmt.Errorf("invalid sql identifier %q", ident)
+	}
+	return `"` + strings.ReplaceAll(ident, `"`, `""`) + `"`, nil
+}
+
+func validateWorkerSQLType(typ string) (string, error) {
+	typ = strings.TrimSpace(typ)
+	if typ == "" {
+		return "", fmt.Errorf("sql type cannot be empty")
+	}
+	for _, forbidden := range []string{";", "--", "/*", "*/"} {
+		if strings.Contains(typ, forbidden) {
+			return "", fmt.Errorf("invalid sql type %q", typ)
+		}
+	}
+	for _, r := range typ {
+		if !(r >= 'A' && r <= 'Z') && !(r >= 'a' && r <= 'z') && !(r >= '0' && r <= '9') &&
+			r != '_' && r != ' ' && r != '(' && r != ')' && r != ',' {
+			return "", fmt.Errorf("invalid sql type %q", typ)
+		}
+	}
+	return typ, nil
 }
 
 func newDuckDBFanoutSink(cfg workerConfig, output workerFanoutOutput) (collectorevent.Sink, *sql.DB, error) {

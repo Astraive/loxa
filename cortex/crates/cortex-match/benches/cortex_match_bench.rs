@@ -43,21 +43,11 @@ fn make_query_signature() -> Signature {
 
 fn make_candidate_signatures(n: usize) -> Vec<Signature> {
     let kinds = [
-        vec![
-            "deploy",
-            "latency_spike",
-            "timeout",
-            "rollback",
-        ],
+        vec!["deploy", "latency_spike", "timeout", "rollback"],
         vec!["deploy", "error_rate", "restart"],
         vec!["deploy", "memory_leak", "rollback"],
         vec!["deploy", "cpu_spike", "error_rate", "restart"],
-        vec![
-            "deploy",
-            "latency_spike",
-            "timeout",
-            "deploy_fail",
-        ],
+        vec!["deploy", "latency_spike", "timeout", "deploy_fail"],
     ];
     (0..n)
         .map(|i| {
@@ -226,15 +216,18 @@ fn bench_similarity_scoring(c: &mut Criterion) {
     );
     c.bench_function("shape_similarity_combined", |b| {
         b.iter(|| {
-            let s = similarity::similarity::shape_similarity(black_box(&query), black_box(&candidate));
+            let s =
+                similarity::similarity::shape_similarity(black_box(&query), black_box(&candidate));
             black_box(s);
         })
     });
 
     c.bench_function("topology_independent_similarity", |b| {
         b.iter(|| {
-            let s =
-                similarity::similarity::topology_independent(black_box(&query), black_box(&candidate));
+            let s = similarity::similarity::topology_independent(
+                black_box(&query),
+                black_box(&candidate),
+            );
             black_box(s);
         })
     });
@@ -265,8 +258,7 @@ fn bench_topk_search(c: &mut Criterion) {
         // Brute force for comparison
         c.bench_function(&format!("brute_search_{}_candidates", n), |b| {
             b.iter(|| {
-                let results =
-                    search_brute(black_box(&query), black_box(&candidates), 10, "shape");
+                let results = search_brute(black_box(&query), black_box(&candidates), 10, "shape");
                 black_box(&results);
             })
         });
@@ -306,7 +298,9 @@ fn bench_large_ruleset(c: &mut Criterion) {
 
     // Graph matching
     let query_graph = make_graph("q", 8);
-    let cand_graphs: Vec<IncidentGraph> = (0..100).map(|i| make_graph(&format!("c{}", i), 10)).collect();
+    let cand_graphs: Vec<IncidentGraph> = (0..100)
+        .map(|i| make_graph(&format!("c{}", i), 10))
+        .collect();
 
     c.bench_function("graph_pattern_match_100", |b| {
         b.iter(|| {
@@ -380,7 +374,8 @@ fn bench_invalid_input(c: &mut Criterion) {
 
     c.bench_function("topology_independent_empty", |b| {
         b.iter(|| {
-            let s = similarity::similarity::topology_independent(black_box(&empty), black_box(&empty));
+            let s =
+                similarity::similarity::topology_independent(black_box(&empty), black_box(&empty));
             black_box(s);
         })
     });

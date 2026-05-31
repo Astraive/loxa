@@ -14,6 +14,8 @@ type KeyRateLimiter struct {
 	eventLimiters   map[string]*rate.Limiter
 	lastSeen        map[string]time.Time
 	mu              sync.RWMutex
+	stopCh          chan struct{}
+	stopOnce        sync.Once
 }
 
 // NewKeyRateLimiter creates a new per-key rate limiter.
@@ -22,26 +24,39 @@ func NewKeyRateLimiter() *KeyRateLimiter {
 		requestLimiters: make(map[string]*rate.Limiter),
 		eventLimiters:   make(map[string]*rate.Limiter),
 		lastSeen:        make(map[string]time.Time),
+		stopCh:          make(chan struct{}),
 	}
 	go rl.cleanupLoop()
 	return rl
+}
+
+// Close stops the background cleanup goroutine.
+func (rl *KeyRateLimiter) Close() {
+	rl.stopOnce.Do(func() {
+		close(rl.stopCh)
+	})
 }
 
 // cleanupLoop evicts entries not seen in the last 30 minutes.
 func (rl *KeyRateLimiter) cleanupLoop() {
 	ticker := time.NewTicker(10 * time.Minute)
 	defer ticker.Stop()
-	for range ticker.C {
-		rl.mu.Lock()
-		cutoff := time.Now().Add(-30 * time.Minute)
-		for k, t := range rl.lastSeen {
-			if t.Before(cutoff) {
-				delete(rl.requestLimiters, k)
-				delete(rl.eventLimiters, k)
-				delete(rl.lastSeen, k)
+	for {
+		select {
+		case <-ticker.C:
+			rl.mu.Lock()
+			cutoff := time.Now().Add(-30 * time.Minute)
+			for k, t := range rl.lastSeen {
+				if t.Before(cutoff) {
+					delete(rl.requestLimiters, k)
+					delete(rl.eventLimiters, k)
+					delete(rl.lastSeen, k)
+				}
 			}
+			rl.mu.Unlock()
+		case <-rl.stopCh:
+			return
 		}
-		rl.mu.Unlock()
 	}
 }
 

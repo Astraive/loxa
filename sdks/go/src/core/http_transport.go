@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const maxHTTPTransportResponseBytes = 10 << 20
+
 // HTTPTransport provides HTTP client with retry logic for event delivery.
 type HTTPTransport struct {
 	client            *http.Client
@@ -128,7 +130,7 @@ func (t *HTTPTransport) Do(ctx context.Context, req *http.Request) (*HTTPRespons
 		}
 
 		// Read response body
-		respBody, err := io.ReadAll(resp.Body)
+		respBody, err := readHTTPTransportResponse(resp.Body)
 		resp.Body.Close()
 		if err != nil {
 			lastErr = fmt.Errorf("failed to read response body: %w", err)
@@ -176,6 +178,17 @@ func (t *HTTPTransport) Do(ctx context.Context, req *http.Request) (*HTTPRespons
 		return nil, fmt.Errorf("all retries exhausted: %w", lastErr)
 	}
 	return nil, fmt.Errorf("all retries exhausted")
+}
+
+func readHTTPTransportResponse(body io.Reader) ([]byte, error) {
+	raw, err := io.ReadAll(io.LimitReader(body, maxHTTPTransportResponseBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(raw) > maxHTTPTransportResponseBytes {
+		return raw[:maxHTTPTransportResponseBytes], fmt.Errorf("response exceeds %d bytes", maxHTTPTransportResponseBytes)
+	}
+	return raw, nil
 }
 
 // isRetryableError determines if an error is retryable.

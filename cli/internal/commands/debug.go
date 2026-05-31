@@ -38,7 +38,7 @@ func debugEvent(ctx context.Context, cfg config.Config, args []string) error {
 	if !isValidEventID(eventID) {
 		return fmt.Errorf("invalid event_id: must match [a-zA-Z0-9_:-]+")
 	}
-	sql := fmt.Sprintf("SELECT * FROM events WHERE event_id = '%s' LIMIT 1", eventID)
+	sql := fmt.Sprintf("SELECT * FROM events WHERE event_id = %s LIMIT 1", quoteSQLString(eventID))
 	body, err := client.Query(cfg.CollectorURL, "duckdb", sql)
 	if err != nil {
 		return fmt.Errorf("query event: %w", err)
@@ -68,6 +68,10 @@ func debugEvent(ctx context.Context, cfg config.Config, args []string) error {
 		fmt.Println("Event not found")
 	}
 	return nil
+}
+
+func quoteSQLString(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
 }
 
 func debugPipeline(ctx context.Context, cfg config.Config) error {

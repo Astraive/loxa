@@ -84,7 +84,7 @@ mod wasm {
     pub fn validate(input: &str) -> Result<String, JsValue> {
         match super::validate_query(input) {
             Ok(()) => Ok("{}".to_string()),
-            Err(e) => Ok(format!("{{\"error\": \"{}\"}}", e.to_string())),
+            Err(e) => Err(JsValue::from_str(&e.to_string())),
         }
     }
 

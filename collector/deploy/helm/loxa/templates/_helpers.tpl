@@ -63,10 +63,14 @@ Service account name
 Return the collector image
 */}}
 {{- define "loxa.collector.image" -}}
+{{- if .Values.collector.image.digest }}
+{{- .Values.global.imageRegistry }}/{{ .Values.collector.image.repository | default "loxa" }}@{{ .Values.collector.image.digest }}
+{{- else }}
 {{- if .Values.collector.image.repository }}
 {{- .Values.global.imageRegistry }}/{{ .Values.collector.image.repository }}:{{ .Values.collector.image.tag | default "latest" }}
 {{- else }}
 {{- .Values.global.imageRegistry }}/loxa:{{ .Values.collector.image.tag | default "latest" }}
+{{- end }}
 {{- end }}
 {{- end }}
 
@@ -74,9 +78,13 @@ Return the collector image
 Return the worker image
 */}}
 {{- define "loxa.worker.image" -}}
+{{- if .Values.worker.image.digest }}
+{{- .Values.global.imageRegistry }}/{{ .Values.worker.image.repository | default "loxa-worker" }}@{{ .Values.worker.image.digest }}
+{{- else }}
 {{- if .Values.worker.image.repository }}
 {{- .Values.global.imageRegistry }}/{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag | default "latest" }}
 {{- else }}
 {{- .Values.global.imageRegistry }}/loxa-worker:{{ .Values.worker.image.tag | default "latest" }}
+{{- end }}
 {{- end }}
 {{- end }}

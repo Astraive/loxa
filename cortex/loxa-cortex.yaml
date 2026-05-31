@@ -1,6 +1,6 @@
 name: loxa-cortex
 kind: docker
-version: 0.2.5
+version: 0.2.6
 description: Incident intelligence and graph analysis engine for LOXA
 license: MIT
 repository: https://github.com/Astraive/loxa

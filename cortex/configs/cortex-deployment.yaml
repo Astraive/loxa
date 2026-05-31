@@ -23,7 +23,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: cortex
-          image: ghcr.io/astraive/loxa-cortex:0.2.5
+          image: ghcr.io/astraive/loxa-cortex:0.2.6
           securityContext:
             capabilities:
               drop:
@@ -46,7 +46,11 @@ spec:
                 secretKeyRef:
                   name: cortex-secrets
                   key: postgres-password
-                  optional: true
+            - name: CORTEX_API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: cortex-secrets
+                  key: api-keys
           livenessProbe:
             httpGet:
               path: /healthz

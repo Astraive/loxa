@@ -18,7 +18,7 @@ func main() {
 	cfg1 := loxa.Dev()
 	cfg1 = loxa.ApplyConfig(cfg1,
 		loxa.WithService("my-service"),
-		loxa.WithVersion("0.2.5"),
+		loxa.WithVersion("0.2.6"),
 		loxa.WithEnvironment("production"),
 		loxa.WithCollectorURL("http://localhost:9308"),
 		loxa.WithTenantID("tenant-123"),

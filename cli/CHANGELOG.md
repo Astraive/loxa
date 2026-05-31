@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.2.6] - 2026-05-30
+
+### Security
+- Escape Cortex graph path parameters
+- Clamp graph/signature limits
+- Safer debug SQL string handling
+
+### Fixed
+- Bump version to 0.2.6
+
 ## [0.2.5] - 2026-05-28
 
 ### Fixed

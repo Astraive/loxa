@@ -4,13 +4,14 @@ pub fn middleware_name() -> &'static str {
 
 #[cfg(feature = "axum")]
 pub mod axum_impl {
-    use super::*;
+    use crate::{Logger, Params};
     use axum::extract::Request;
     use axum::middleware::Next;
     use axum::response::Response;
     use std::sync::Arc;
     use std::time::Instant;
 
+    #[allow(dead_code)]
     pub struct LoxaLayer {
         logger: Arc<Logger>,
         service_name: String,

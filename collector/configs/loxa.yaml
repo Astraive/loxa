@@ -26,8 +26,8 @@ rate_limit:
 
 # ─── Routes ──────────────────────────────────────────────────────────────────
 routes:
-  ingest: "/ingest"
-  health: "/healthz"
+  ingest: "/events"
+  health: "/health"
   ready:  "/readyz"
   metrics: "/metrics"
 
@@ -55,7 +55,7 @@ duckdb:
   # Column mapping: schema field → DuckDB column
   schema:
     event_id:    "event_id"
-    event_type:  "event"
+    event_name:  "event"
     service:     "service"
     status_code: "http.status"
     duration_ms: "duration_ms"
@@ -155,7 +155,7 @@ dedupe:
   backend: "memory"                     # memory (only option currently)
 
 # ─── Schema Governance ───────────────────────────────────────────────────────
-schema:
+schema_governance:
   mode: "off"                           # off | warn | reject | quarantine
   schema_version: "v1"
   event_version: "v1"

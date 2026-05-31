@@ -79,6 +79,12 @@ impl Parser {
             Token::Limit => {
                 self.advance();
                 let n = self.expect_integer()?;
+                if n < 0 {
+                    return Err(LqlError::Compile {
+                        message: "limit must be non-negative".to_string(),
+                        span: None,
+                    });
+                }
                 Ok(Statement::Limit(n as usize))
             }
             Token::Project => {
@@ -95,7 +101,14 @@ impl Parser {
             }
             Token::Top => {
                 self.advance();
-                let count = self.expect_integer()? as usize;
+                let n = self.expect_integer()?;
+                if n < 0 {
+                    return Err(LqlError::Compile {
+                        message: "top count must be non-negative".to_string(),
+                        span: None,
+                    });
+                }
+                let count = n as usize;
                 let order = if self.check(&Token::Asc) {
                     self.advance();
                     Order::Asc
@@ -396,6 +409,9 @@ impl Parser {
     }
 
     fn parse_primary(&mut self) -> Result<Expr, LqlError> {
+        if self.pos >= self.tokens.len() {
+            return Err(LqlError::UnexpectedEof);
+        }
         match self.current().clone() {
             Token::StringLit(s) => {
                 self.advance();
@@ -551,6 +567,9 @@ impl Parser {
     }
 
     fn unexpected(&self, expected: &str) -> LqlError {
+        if self.pos >= self.tokens.len() {
+            return LqlError::UnexpectedEof;
+        }
         let token = self.current().clone();
         let pos = self.pos;
         LqlError::UnexpectedToken {

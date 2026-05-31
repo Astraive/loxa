@@ -108,7 +108,7 @@ jobs:
       - name: Create spec GitHub Release
         if: inputs.component == 'spec' && inputs.dry_run != true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: gh release create "spec/v${{ inputs.version }}" spec/loxa-spec.yaml spec/v1/event.schema.json --title "LOXA Spec ${{ inputs.version }}" --notes "LOXA spec release ${{ inputs.version }}"
       - name: Verify module resolution
         if: inputs.dry_run != true

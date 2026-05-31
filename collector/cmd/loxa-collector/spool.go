@@ -8,11 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"path/filepath"
 	"time"
 )
+
+const maxSpoolReplayRecordBytes = 16 * 1024 * 1024
 
 func (s *collectorState) initReliability() error {
 	if s.cfg.reliabilityMode != "spool" && s.cfg.reliabilityMode != "hybrid" {
@@ -346,8 +347,12 @@ func (s *collectorState) replaySpool() error {
 	skippedBytes := int64(0)
 	skippedCount := int64(0)
 	sc := bufio.NewScanner(s.spoolFile)
-	buf := make([]byte, 0, 1024*1024)
-	sc.Buffer(buf, math.MaxInt32)
+	maxRecordBytes := int(s.cfg.maxEventBytes)
+	if maxRecordBytes <= 0 || maxRecordBytes > maxSpoolReplayRecordBytes {
+		maxRecordBytes = maxSpoolReplayRecordBytes
+	}
+	buf := make([]byte, 0, min(maxRecordBytes, 1024*1024))
+	sc.Buffer(buf, maxRecordBytes)
 
 	for sc.Scan() {
 		line := bytes.TrimSpace(sc.Bytes())
@@ -370,6 +375,9 @@ func (s *collectorState) replaySpool() error {
 		}
 		s.enqueueDelivery(decoded)
 		replayCount++
+	}
+	if err := sc.Err(); err != nil {
+		return fmt.Errorf("scan spool replay: %w", err)
 	}
 
 	s.metrics.spoolReplayCount += replayCount
@@ -453,4 +461,3 @@ func (s *collectorState) quarantineBadSpoolLine(raw []byte) {
 		logJSON("error", "spool_quarantine_write_failed", map[string]any{"error": err.Error()})
 	}
 }
-

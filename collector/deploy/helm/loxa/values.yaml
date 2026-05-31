@@ -15,7 +15,8 @@ collector:
 
   image:
     repository: loxa
-    tag: "0.2.5"
+    tag: "0.2.6"
+    digest: ""
     pullPolicy: IfNotPresent
 
   service:
@@ -103,7 +104,8 @@ worker:
 
   image:
     repository: loxa-worker
-    tag: "0.2.5"
+    tag: "0.2.6"
+    digest: ""
     pullPolicy: IfNotPresent
 
   podAnnotations: {}
@@ -123,6 +125,10 @@ worker:
     maxReplicas: 10
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
+
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
 
   nodeSelector: {}
   tolerations: []
@@ -167,8 +173,10 @@ persistence:
 
 networkPolicy:
   enabled: true
+  # Production charts default to deny-all ingress. Add explicit rules for app
+  # namespaces/pods that may send events to the collector.
   egress: {}
-  ingress: {}
+  ingress: []
 
 rbac:
   create: true

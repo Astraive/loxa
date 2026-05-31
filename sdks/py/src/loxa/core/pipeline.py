@@ -21,6 +21,17 @@ class BatchWritableSink(Protocol):
     def write_batch(self, encoded_events: list[str]) -> None: ...
 
 
+def _safe_buffer_path(path: str | os.PathLike[str]) -> Path:
+    candidate = Path(path)
+    if "\x00" in str(candidate):
+        raise ValueError("offline buffer path contains a null byte")
+    if any(part == ".." for part in candidate.parts):
+        raise ValueError("offline buffer path must not contain parent-directory traversal")
+    if candidate.exists() and candidate.is_dir():
+        raise ValueError("offline buffer path must be a file")
+    return candidate
+
+
 @dataclass(slots=True)
 class DeliveryStats:
     enqueued: int = 0
@@ -109,7 +120,7 @@ class DiskOfflineBuffer:
     """Small disk spool for SDK-to-collector retry without becoming a collector."""
 
     def __init__(self, path: str | os.PathLike[str], max_bytes: int = 32 * 1024 * 1024) -> None:
-        self.path = Path(path)
+        self.path = _safe_buffer_path(path)
         self.max_bytes = max_bytes
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = Lock()

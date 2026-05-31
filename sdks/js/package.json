@@ -1,7 +1,7 @@
 {
   "name": "loxa",
   "type": "module",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "LOXA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loxa-collector",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -16,7 +16,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "node --test --experimental-strip-types tests/*.test.ts",
+    "test": "node scripts/run-node-tests.mjs",
     "lint": "tsc --noEmit"
   },
   "keywords": [

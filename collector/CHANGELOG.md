@@ -2,6 +2,29 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.2.6] - 2026-05-30
+
+### Security
+- Fix empty API key auth bypass (reject when key is empty)
+- Fix JWT algorithm confusion (restrict to matching key type)
+- Fix SQL injection in worker ensureSchema (quote identifiers, validate types)
+- Fix SQL injection in blueprint handlers (block semicolons/comments, use configured table)
+- Fix query injection bypass (dedicated DuckDB connection, expanded blocklist)
+- Fix WebSocket CORS bypass (validate Origin header)
+- Fix SQL injection in deletion handler (escape LIKE patterns)
+- Move encryption KDF from SHA-256 to HKDF
+- Add Close() to rate limiter, fix goroutine leak
+- Bound JWT key cache to prevent memory leak
+- Redact secrets in config print output
+- Bound spool scanner buffer, hash Redis dedup keys
+- Tighten K8s auth/rate-limit/NetworkPolicy defaults
+- Fix Docker healthcheck (install wget)
+
+### Changed
+- Auth enabled by default in K8s ConfigMap
+- Rate limiting enabled by default in cortex ConfigMap
+- SSL mode defaults to "require" for PostgreSQL
+
 ## [0.2.5] - 2026-05-28
 
 ### Fixed

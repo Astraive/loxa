@@ -26,7 +26,7 @@ RUN cd collector && CGO_ENABLED=1 GOOS=linux go build -o /out/loxa-collector ./c
 
 FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tzdata curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tzdata wget && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -43,7 +43,7 @@ USER loxa
 EXPOSE 9308 9309 9310 9311
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:9308/healthz || exit 1
+  CMD wget --spider -q http://localhost:9308/health || exit 1
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["loxa-collector", "run", "-c", "/app/config.yaml"]

@@ -2,6 +2,14 @@
 
 All notable changes to the LOXA Go SDK are documented in this file.
 
+## [0.2.6] - 2026-05-30
+
+### Fixed
+- Fix pipeline DropOldest pending counter race
+- Fix HttpBatchSink response body leak
+- Add response body caps in collector/cortex clients
+- Bump version to 0.2.6
+
 ## [0.2.5] - 2026-05-28
 
 ### Fixed

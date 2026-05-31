@@ -2,7 +2,7 @@
 ///
 /// Falls back to a hardcoded default if the file cannot be found or parsed.
 
-const FALLBACK_VERSION: &str = "0.2.5";
+const FALLBACK_VERSION: &str = "0.2.6";
 
 /// Read version from loxa-rs.yaml, searching standard locations.
 /// Returns FALLBACK_VERSION if file not found or parsing fails.

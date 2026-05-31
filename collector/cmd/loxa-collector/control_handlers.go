@@ -486,9 +486,12 @@ func isReadOnlyQuery(query string) bool {
 	if lower == "" {
 		return false
 	}
+	if strings.Contains(lower, ";") || strings.Contains(lower, "--") || strings.Contains(lower, "/*") || strings.Contains(lower, "*/") {
+		return false
+	}
 	for _, prefix := range []string{"select", "with", "show", "describe", "pragma table_info", "pragma database_list"} {
 		if strings.HasPrefix(lower, prefix) {
-			return !strings.Contains(lower, ";")
+			return true
 		}
 	}
 	return false
@@ -498,12 +501,15 @@ func isReadOnlyQuery(query string) bool {
 // DuckDB functions and DML operations that can be hidden inside CTEs or subqueries.
 func isSafeQuery(query string) bool {
 	lower := strings.ToLower(strings.TrimSpace(query))
+	if strings.Contains(lower, ";") || strings.Contains(lower, "--") || strings.Contains(lower, "/*") || strings.Contains(lower, "*/") {
+		return false
+	}
 	// Block dangerous DuckDB functions and DDL/DML keywords
 	dangerous := []string{
 		"chr(", "unicode(",
-		"read_csv_auto", "read_ndjson", "read_csv", "read_json", "read_parquet", "read_blob",
-		"glob(", "iceberg_scan", "delta_scan",
-		"install", "load ", "attach", "copy ", "export",
+		"read_", "scan(", "glob(", "iceberg_scan", "delta_scan",
+		"httpfs", "spatial", "sqlite", "postgres", "mysql", "s3", "http://", "https://", "file:",
+		"install", "load ", "load\t", "attach", "copy ", "export",
 		"call ", "prepare", "execute",
 		"query(", "printf(", "format(",
 		"create ", "drop ", "alter ", "truncate",

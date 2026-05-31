@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Callable, Protocol, runtime_checkable
 
 from ..sinks.stdout import StdoutSink
@@ -135,93 +135,73 @@ class Config:
         return cls(service=service, environment="test", level="debug", strict=True, sinks=[])
 
     def with_service(self, service: str) -> "Config":
-        self.service = service
-        return self
+        return replace(self, service=service)
 
     def with_alias(self, alias: str) -> "Config":
-        self.alias = alias
-        return self
+        return replace(self, alias=alias)
 
     def with_version(self, version: str) -> "Config":
-        self.version = version
-        return self
+        return replace(self, version=version)
 
     def with_environment(self, environment: str) -> "Config":
-        self.environment = environment
-        return self
+        return replace(self, environment=environment)
 
     def with_region(self, region: str) -> "Config":
-        self.region = region
-        return self
+        return replace(self, region=region)
 
     def with_sink(self, sink: Any) -> "Config":
-        self.sinks.append(sink)
-        return self
+        return replace(self, sinks=[*self.sinks, sink])
 
     def with_sampler(self, sampler: Any) -> "Config":
-        self.sampler = sampler
-        return self
+        return replace(self, sampler=sampler)
 
     def with_redactor(self, redactor: Any) -> "Config":
-        self.redactor = redactor
-        return self
+        return replace(self, redactor=redactor)
 
     def with_metrics(self, metrics: Any) -> "Config":
-        self.metrics = metrics
-        return self
+        return replace(self, metrics=metrics)
 
     def with_schema(self, schema: Any) -> "Config":
-        self.schema = schema
-        return self
+        return replace(self, schema=schema)
 
     def with_event_schema(self, schema: Any) -> "Config":
         return self.with_schema(schema)
 
     def with_async(self, enabled: bool) -> "Config":
-        self.async_config.enabled = enabled
-        return self
+        return replace(self, async_config=replace(self.async_config, enabled=enabled))
 
     def with_collector_endpoint(self, endpoint: str) -> "Config":
-        self.collector_endpoint = endpoint
-        return self
+        return replace(self, collector_endpoint=endpoint)
 
     def with_api_key(self, api_key: str) -> "Config":
-        self.api_key = api_key.strip()
-        return self
+        return replace(self, api_key=api_key.strip())
 
     def with_duplicate_policy(self, policy: str) -> "Config":
-        self.duplicate_policy = policy
-        return self
+        return replace(self, duplicate_policy=policy)
 
     def with_exit_on_fatal(self, enabled: bool = True) -> "Config":
-        self.exit_on_fatal = enabled
-        return self
+        return replace(self, exit_on_fatal=enabled)
 
     def with_release(self, value: str) -> "Config":
-        self.release = value
-        return self
+        return replace(self, release=value)
 
     def with_namespace(self, value: str) -> "Config":
-        self.namespace = value
-        return self
+        return replace(self, namespace=value)
 
     def with_otel_bridge(self, value: bool) -> "Config":
-        self.otel_bridge = value
+        async_config = self.async_config
         if value:
-            self.async_config.enabled = True
-        return self
+            async_config = replace(async_config, enabled=True)
+        return replace(self, otel_bridge=value, async_config=async_config)
 
     def with_retry(self, value: bool) -> "Config":
-        self.retry = value
-        return self
+        return replace(self, retry=value)
 
     def with_timeout(self, value: float) -> "Config":
-        self.timeout = value
-        return self
+        return replace(self, timeout=value)
 
     def with_logger(self, value: Any) -> "Config":
-        self.logger = value
-        return self
+        return replace(self, logger=value)
 
     @classmethod
     def disabled(cls) -> "Config":

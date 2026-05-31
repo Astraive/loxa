@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.6] - 2026-05-30
+
+### Security
+- Enable auth and rate limiting by default in K8s manifests
+- Require secret-backed credentials for database connections
+- SSL mode defaults to "require" for PostgreSQL
+- FFI null pointer checks in cortex-match crate
+- Tighten Helm NetworkPolicy defaults
+
+### Fixed
+- Bump version to 0.2.6
+
 ## [0.2.5] - 2026-05-28
 
 ### Fixed

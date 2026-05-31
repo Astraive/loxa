@@ -389,6 +389,12 @@ func shutdownCollector(server *http.Server, auxServers []serverruntime.Server, s
 			logJSON("error", "collector_dedupe_store_close_failed", map[string]any{"error": err.Error()})
 		}
 	}
+	if state.keyRateLimiter != nil {
+		state.keyRateLimiter.Close()
+	}
+	if state.keyCache != nil {
+		state.keyCache.Close()
+	}
 	if state.cortexBridge != nil {
 		if err := state.cortexBridge.Close(); err != nil {
 			logJSON("error", "collector_cortex_bridge_close_failed", map[string]any{"error": err.Error()})
@@ -561,28 +567,28 @@ func newMemoryKeyStoreFromConfig(cfg collectorConfig, serverSecret []byte) *memo
 		// Legacy key format (not lx_...): treat as a raw secret with a fixed key_id
 		hash := auth.HashSecret(cfg.apiKey, serverSecret)
 		store.keys["legacy"] = &auth.KeyRecord{
-			ID:           "legacy",
-			KeyID:        "legacy",
-			SecretHash:   hash,
-			Kind:         auth.KeyKindSecret,
-			Roles:        []auth.Role{auth.RoleIngestServer},
-			MaxPayloadBytes:     int(cfg.maxBodyBytes),
+			ID:                   "legacy",
+			KeyID:                "legacy",
+			SecretHash:           hash,
+			Kind:                 auth.KeyKindSecret,
+			Roles:                []auth.Role{auth.RoleIngestServer},
+			MaxPayloadBytes:      int(cfg.maxBodyBytes),
 			MaxRequestsPerMinute: int(cfg.rateLimitRPS) * 60,
-			MaxEventsPerMinute:  int(cfg.rateLimitRPS) * 600,
+			MaxEventsPerMinute:   int(cfg.rateLimitRPS) * 600,
 		}
 		return store
 	}
 
 	hash := auth.HashSecret(parsed.Secret, serverSecret)
 	store.keys[parsed.KeyID] = &auth.KeyRecord{
-		ID:           parsed.KeyID,
-		KeyID:        parsed.KeyID,
-		SecretHash:   hash,
-		Kind:         parsed.Kind,
-		Roles:        []auth.Role{auth.RoleIngestServer},
-		MaxPayloadBytes:     int(cfg.maxBodyBytes),
+		ID:                   parsed.KeyID,
+		KeyID:                parsed.KeyID,
+		SecretHash:           hash,
+		Kind:                 parsed.Kind,
+		Roles:                []auth.Role{auth.RoleIngestServer},
+		MaxPayloadBytes:      int(cfg.maxBodyBytes),
 		MaxRequestsPerMinute: int(cfg.rateLimitRPS) * 60,
-		MaxEventsPerMinute:  int(cfg.rateLimitRPS) * 600,
+		MaxEventsPerMinute:   int(cfg.rateLimitRPS) * 600,
 	}
 
 	return store

@@ -1,6 +1,6 @@
 name: loxa
 kind: release
-version: 0.2.5
+version: 0.2.6
 description: Umbrella LOXA repository release
 license: MIT
 repository: https://github.com/Astraive/loxa

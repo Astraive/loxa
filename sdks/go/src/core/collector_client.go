@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 )
+
+const maxCollectorClientResponseBytes = 10 << 20
 
 // CollectorClient communicates with the LOXA collector REST API.
 type CollectorClient struct {
@@ -57,7 +60,7 @@ func (c *CollectorClient) do(ctx context.Context, method, path string, body []by
 		return nil, fmt.Errorf("collector: do: %w", err)
 	}
 	defer resp.Body.Close()
-	raw, err := io.ReadAll(resp.Body)
+	raw, err := readCollectorResponse(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("collector: read: %w", err)
 	}
@@ -108,12 +111,12 @@ func (c *CollectorClient) DLQList(ctx context.Context, filter json.RawMessage) (
 
 // DLQRead reads a dead-letter queue entry by ID.
 func (c *CollectorClient) DLQRead(ctx context.Context, id string) ([]byte, error) {
-	return c.do(ctx, http.MethodGet, "/dlq/"+id, nil)
+	return c.do(ctx, http.MethodGet, "/dlq/"+url.PathEscape(id), nil)
 }
 
 // DLQReplay replays a dead-letter queue entry.
 func (c *CollectorClient) DLQReplay(ctx context.Context, id string) ([]byte, error) {
-	return c.do(ctx, http.MethodPost, "/dlq/"+id+"/replay", nil)
+	return c.do(ctx, http.MethodPost, "/dlq/"+url.PathEscape(id)+"/replay", nil)
 }
 
 // KeysCreate creates a new API key.
@@ -123,11 +126,11 @@ func (c *CollectorClient) KeysCreate(ctx context.Context, keyReq json.RawMessage
 
 // KeysRevoke revokes an API key.
 func (c *CollectorClient) KeysRevoke(ctx context.Context, keyID string) ([]byte, error) {
-	return c.do(ctx, http.MethodDelete, "/keys/"+keyID, nil)
+	return c.do(ctx, http.MethodDelete, "/keys/"+url.PathEscape(keyID), nil)
 }
 
 func (c *CollectorClient) KeysRotate(ctx context.Context, keyID string) ([]byte, error) {
-	return c.do(ctx, http.MethodPost, "/keys/"+keyID+"/rotate", nil)
+	return c.do(ctx, http.MethodPost, "/keys/"+url.PathEscape(keyID)+"/rotate", nil)
 }
 
 // SinksList lists configured sinks from the collector.
@@ -136,7 +139,18 @@ func (c *CollectorClient) SinksList(ctx context.Context) ([]byte, error) {
 }
 
 func (c *CollectorClient) SinksTest(ctx context.Context, name string) ([]byte, error) {
-	return c.do(ctx, http.MethodPost, "/sinks/"+name+"/test", nil)
+	return c.do(ctx, http.MethodPost, "/sinks/"+url.PathEscape(name)+"/test", nil)
+}
+
+func readCollectorResponse(body io.Reader) ([]byte, error) {
+	raw, err := io.ReadAll(io.LimitReader(body, maxCollectorClientResponseBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(raw) > maxCollectorClientResponseBytes {
+		return raw[:maxCollectorClientResponseBytes], fmt.Errorf("response exceeds %d bytes", maxCollectorClientResponseBytes)
+	}
+	return raw, nil
 }
 
 func (c *CollectorClient) PolicyValidate(ctx context.Context, policy json.RawMessage) ([]byte, error) {

@@ -8,7 +8,7 @@ schemaService:
   replicaCount: 2
   image:
     repository: ghcr.io/astraive/loxa-schema-service
-    tag: "0.2.5"
+    tag: "0.2.6"
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
@@ -46,7 +46,7 @@ stager:
   replicaCount: 1
   image:
     repository: ghcr.io/astraive/loxa-stager
-    tag: "0.2.5"
+    tag: "0.2.6"
     pullPolicy: IfNotPresent
   config:
     STAGER_QUEUE_BACKEND: kafka

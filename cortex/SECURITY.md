@@ -42,6 +42,6 @@
 - **Verify**: `grep "changeme" configs/docker-compose.yml` (should return nothing)
 
 ## K8s Image Pinning (deploy/)
-- **What**: All deployment manifests pin images to `:0.2.5` instead of `:latest`
+- **What**: All deployment manifests pin images to `:0.2.6` instead of `:latest`
 - **Why**: `:latest` is mutable -- a compromised registry push affects all pods on next restart
 - **Verify**: `grep -rn ":latest" */deploy/ configs/` (should only match doc examples)

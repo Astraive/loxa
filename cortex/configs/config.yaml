@@ -15,8 +15,8 @@ storage:
     database: "cortex"
     user: "cortex"
     password: ""
-    # SECURITY: Disable in production; set to "require" or "verify-full"
-    ssl_mode: "disable"
+    # SECURITY: TLS required for all connections. Set to "verify-full" when CA is available.
+    ssl_mode: "require"
     max_connections: 50
 
 authentication:

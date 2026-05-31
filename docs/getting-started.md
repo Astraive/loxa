@@ -148,7 +148,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### JavaScript
 
 ```typescript
-import { loxa } from "loxa-js";
+import { loxa } from "loxa";
 
 loxa.configure(loxa.dev("my-service").withCollectorEndpoint("http://localhost:9308"));
 
@@ -188,7 +188,7 @@ loxa::info("server started");
 
 ### JavaScript
 ```typescript
-import { loxa } from "loxa-js";
+import { loxa } from "loxa";
 loxa.configure(loxa.production("my-service").withCollectorEndpoint("http://localhost:9308"));
 loxa.info("server started");
 ```
@@ -217,7 +217,7 @@ logger.info("payment processed");
 
 ### JavaScript
 ```typescript
-import { loxa } from "loxa-js";
+import { loxa } from "loxa";
 const logger = loxa.createLoxa({ service: "checkout-api", collectorUrl: "http://localhost:9308" });
 logger.info("payment processed");
 ```
@@ -246,7 +246,7 @@ audit.info("permission changed");
 
 ### JavaScript
 ```typescript
-import { loxa } from "loxa-js";
+import { loxa } from "loxa";
 const audit = loxa.alias("audit-service");
 audit.info("permission changed");
 ```

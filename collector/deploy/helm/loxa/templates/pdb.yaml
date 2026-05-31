@@ -18,3 +18,24 @@ spec:
       {{- include "loxa.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: collector
 {{- end }}
+---
+{{- if and .Values.worker.enabled (default false .Values.worker.podDisruptionBudget.enabled) }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "loxa.fullname" . }}-worker
+  labels:
+    {{- include "loxa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  {{- if .Values.worker.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.worker.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if .Values.worker.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.worker.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "loxa.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+{{- end }}

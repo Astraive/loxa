@@ -17,6 +17,7 @@ const (
 	defaultEndpoint   = "http://localhost:9312"
 	defaultAuthHeader = "X-API-Key"
 	defaultTimeout    = 10 * time.Second
+	maxResponseBytes  = 10 << 20
 )
 
 // Client is an HTTP client for the Cortex incident intelligence API.
@@ -120,7 +121,7 @@ func (c *Client) Metrics(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("cortex: metrics request failed: %w", err)
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+	body, err := readResponseBody(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("cortex: read metrics response: %w", err)
 	}
@@ -250,7 +251,7 @@ func (c *Client) doJSON(req *http.Request, out any) error {
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := readResponseBody(resp.Body)
 	if err != nil {
 		return fmt.Errorf("cortex: read response: %w", err)
 	}
@@ -265,6 +266,17 @@ func (c *Client) doJSON(req *http.Request, out any) error {
 		}
 	}
 	return nil
+}
+
+func readResponseBody(body io.Reader) ([]byte, error) {
+	raw, err := io.ReadAll(io.LimitReader(body, maxResponseBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(raw) > maxResponseBytes {
+		return raw[:maxResponseBytes], fmt.Errorf("response exceeds %d bytes", maxResponseBytes)
+	}
+	return raw, nil
 }
 
 func (c *Client) getJSON(ctx context.Context, path string, out any) error {

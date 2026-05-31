@@ -39,7 +39,8 @@ services:
       CORTEX_POSTGRES_DATABASE: cortex
       CORTEX_POSTGRES_USER: cortex
       CORTEX_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD environment variable}
-      CORTEX_AUTH_ENABLED: "false"
+      CORTEX_AUTH_ENABLED: "true"
+      CORTEX_API_KEYS: ${CORTEX_API_KEYS:?Set CORTEX_API_KEYS as name:key:role}
       CORTEX_LOG_LEVEL: info
     depends_on:
       postgres:
@@ -49,7 +50,7 @@ services:
 
   cortex-cli:
     profiles: ["cli"]
-    image: astraive/loxa-cli:0.2.5
+    image: astraive/loxa-cli:0.2.6
     environment:
       LOXA_CORTEX_URL: http://cortex:9312
     depends_on:

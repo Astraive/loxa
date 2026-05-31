@@ -46,7 +46,7 @@ jobs:
       - name: Create GitHub Release
         if: inputs.dry_run != true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           gh release create "v${{ inputs.version }}" \
             release.yaml loxa.yaml \

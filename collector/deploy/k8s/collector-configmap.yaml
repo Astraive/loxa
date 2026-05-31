@@ -15,8 +15,9 @@ data:
       max_events_per_request: 5000
 
     auth:
-      enabled: false
+      enabled: true
       header: X-API-Key
+      value_env: COLLECTOR_API_KEY
 
     rate_limit:
       enabled: true
@@ -31,6 +32,7 @@ data:
 
     storage:
       primary: duckdb
+      encryption_key_env: LOXA_STORAGE_ENCRYPTION_KEY
 
     duckdb:
       path: /data/loxa.db

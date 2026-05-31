@@ -19,7 +19,10 @@ import (
 	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
 )
 
-const defaultTimeout = 30 * time.Second
+const (
+	defaultTimeout      = 30 * time.Second
+	maxCLIResponseBytes = 10 << 20
+)
 
 // RunCollectorCommand executes the local collector binary from the collector repo.
 func RunCollectorCommand(ctx context.Context, collectorRepoPath string, args []string) error {
@@ -78,7 +81,7 @@ func PostIngest(baseURL, contentType string, payload []byte) error {
 			return err
 		}
 
-		body, readErr := io.ReadAll(resp.Body)
+		body, readErr := readResponseBody(resp.Body)
 		resp.Body.Close()
 		if readErr != nil {
 			lastErr = readErr
@@ -125,10 +128,10 @@ func FetchStatus(baseURL string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := readResponseBody(resp.Body)
 		return nil, fmt.Errorf("status returned %d: %s", resp.StatusCode, string(body))
 	}
-	return io.ReadAll(resp.Body)
+	return readResponseBody(resp.Body)
 }
 
 // FetchMetrics fetches Prometheus metrics from the collector.
@@ -146,10 +149,10 @@ func FetchMetrics(baseURL string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := readResponseBody(resp.Body)
 		return nil, fmt.Errorf("metrics returned %d: %s", resp.StatusCode, string(body))
 	}
-	return io.ReadAll(resp.Body)
+	return readResponseBody(resp.Body)
 }
 
 // Query runs a query against the collector's query endpoint.
@@ -173,10 +176,10 @@ func Query(baseURL, engine, sqlQuery string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := readResponseBody(resp.Body)
 		return nil, fmt.Errorf("query returned %d: %s", resp.StatusCode, string(body))
 	}
-	return io.ReadAll(resp.Body)
+	return readResponseBody(resp.Body)
 }
 
 // TailStream opens an HTTP stream to the collector for tailing events.
@@ -334,7 +337,7 @@ func WatchStream(ctx context.Context, baseURL string, filters map[string]string)
 		return nil, err
 	}
 	if resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := readResponseBody(resp.Body)
 		resp.Body.Close()
 		return nil, fmt.Errorf("watch returned %d: %s", resp.StatusCode, string(body))
 	}
@@ -377,7 +380,7 @@ func getJSON(baseURL, path string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := readResponseBody(resp.Body)
 	if resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("collector returned %d: %s", resp.StatusCode, string(body))
 	}
@@ -399,7 +402,7 @@ func postJSON(ctx context.Context, baseURL, path string, payload []byte) ([]byte
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := readResponseBody(resp.Body)
 	if resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("collector returned %d: %s", resp.StatusCode, string(body))
 	}
@@ -426,7 +429,7 @@ func deleteJSON(ctx context.Context, baseURL, path, reason string) ([]byte, erro
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := readResponseBody(resp.Body)
 	if resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("collector returned %d: %s", resp.StatusCode, string(body))
 	}
@@ -443,6 +446,10 @@ func validateIngestPayload(contentType string, payload []byte) error {
 		return fmt.Errorf("collector ingest payload must be valid JSON: %w", err)
 	}
 	return validateIngestEnvelopeShape(envelope)
+}
+
+func readResponseBody(body io.Reader) ([]byte, error) {
+	return io.ReadAll(io.LimitReader(body, maxCLIResponseBytes+1))
 }
 
 func validateIngestEnvelopeShape(envelope map[string]any) error {

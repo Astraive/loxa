@@ -1,7 +1,7 @@
 name: loxa-rs
 kind: sdk
 language: rust
-version: 0.2.5
+version: 0.2.6
 description: Rust SDK for LOXA
 license: MIT
 repository: https://github.com/Astraive/loxa

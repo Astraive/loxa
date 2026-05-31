@@ -1,8 +1,8 @@
 {
-  "version": "0.2.5",
+  "version": "0.2.6",
   "package": "loxa",
   "scope": "lightweight-sdk",
-  "stability": "product-parity-v0.2.5",
+  "stability": "product-parity-v0.2.6",
   "policy": "full-product-method-family",
   "sdks": ["go", "python", "rust", "javascript"],
   "lifecycle": [

@@ -9,7 +9,8 @@ replicaCount: 2
 
 image:
   repository: loxa-cortex
-  tag: "0.2.5"
+  tag: "0.2.6"
+  digest: ""
   pullPolicy: IfNotPresent
 
 service:
@@ -66,10 +67,15 @@ serviceAccount:
   name: ""
   annotations: {}
 
+rbac:
+  create: true
+
 networkPolicy:
   enabled: true
+  # Production charts default to deny-all ingress and only DNS egress. Add
+  # explicit ingress rules and database egress rules for your cluster.
   egress: {}
-  ingress: {}
+  ingress: []
 
 podSecurityContext:
   runAsNonRoot: true

@@ -76,7 +76,7 @@ jobs:
 
       - name: Install golangci-lint
         if: matrix.os == 'ubuntu-latest'
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
 
       - name: Lint
         if: matrix.os == 'ubuntu-latest'
@@ -101,17 +101,14 @@ jobs:
         working-directory: spec
         run: python conformance/runner.py --sdk go --group all
 
-      # --- Vulnerability check (non-blocking) ---
+      # --- Vulnerability check ---
 
       - name: Install govulncheck
         if: matrix.os == 'ubuntu-latest'
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
 
       - name: Vulnerability check
         if: matrix.os == 'ubuntu-latest'
-        # Non-blocking: govulncheck may flag Go stdlib vulnerabilities
-        # that are outside Loxa's control. Visible for audit purposes.
-        continue-on-error: true
         shell: pwsh
         run: |
           $govuln = Join-Path (go env GOPATH) "bin/govulncheck"

@@ -63,9 +63,13 @@ Service account name
 Return the cortex image
 */}}
 {{- define "cortex.image" -}}
+{{- if .Values.image.digest }}
+{{- .Values.global.imageRegistry }}/{{ .Values.image.repository | default "loxa-cortex" }}@{{ .Values.image.digest }}
+{{- else }}
 {{- if .Values.image.repository }}
 {{- .Values.global.imageRegistry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}
 {{- else }}
 {{- .Values.global.imageRegistry }}/loxa-cortex:{{ .Values.image.tag | default "latest" }}
+{{- end }}
 {{- end }}
 {{- end }}

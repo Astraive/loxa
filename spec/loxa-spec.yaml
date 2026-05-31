@@ -1,6 +1,6 @@
 name: loxa-spec
 kind: spec
-version: 0.2.5
+version: 0.2.6
 description: Shared LOXA wire, schema, event, and conformance contract
 license: MIT
 repository: https://github.com/Astraive/loxa
