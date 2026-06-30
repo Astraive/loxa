@@ -46,27 +46,52 @@ class Middleware:
                 String("http.remote_ip", environ.get("REMOTE_ADDR", "")),
             )
             response = self.app(environ, capture_start_response)
-            chunks = []
-            for chunk in response:
-                if isinstance(chunk, bytes):
-                    response_bytes += len(chunk)
-                else:
-                    chunk = chunk.encode("utf-8")
-                    response_bytes += len(chunk)
-                chunks.append(chunk)
-            Finish(
-                ctx,
-                "error" if status_code >= 500 else "success",
-                Int("status_code", status_code),
-                Int("response_bytes", response_bytes),
-                Int("duration_ms", int((time.perf_counter() - started) * 1000)),
-            )
-            return chunks
         except Exception as exc:
             FinishError(ctx, exc, Bool("panic", True))
-            raise
-        finally:
             Emit(ctx)
+            raise
+
+        def stream_response() -> Iterable[bytes]:
+            nonlocal response_bytes
+            finalized = False
+            try:
+                for chunk in response:
+                    if isinstance(chunk, bytes):
+                        response_bytes += len(chunk)
+                        yield chunk
+                    else:
+                        encoded_chunk = chunk.encode("utf-8")
+                        response_bytes += len(encoded_chunk)
+                        yield encoded_chunk
+                Finish(
+                    ctx,
+                    "error" if status_code >= 500 else "success",
+                    Int("status_code", status_code),
+                    Int("response_bytes", response_bytes),
+                    Int("duration_ms", int((time.perf_counter() - started) * 1000)),
+                )
+                finalized = True
+            except Exception as exc:
+                FinishError(ctx, exc, Bool("panic", True))
+                finalized = True
+                raise
+            finally:
+                try:
+                    if not finalized:
+                        Finish(
+                            ctx,
+                            "error" if status_code >= 500 else "success",
+                            Int("status_code", status_code),
+                            Int("response_bytes", response_bytes),
+                            Int("duration_ms", int((time.perf_counter() - started) * 1000)),
+                        )
+                    close = getattr(response, "close", None)
+                    if callable(close):
+                        close()
+                finally:
+                    Emit(ctx)
+
+        return stream_response()
 
 
 def middleware(app=None, **config):
