@@ -81,7 +81,9 @@ jobs:
         if: inputs.component == 'spec'
         run: |
           PROTOC_VERSION=34.1
+          PROTOC_SHA256=af27ea66cd26938fe48587804ca7d4817457a08350021a1c6e23a27ccc8c6904
           curl -fsSL "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip" -o /tmp/protoc.zip
+          echo "${PROTOC_SHA256}  /tmp/protoc.zip" | sha256sum -c -
           sudo unzip -o /tmp/protoc.zip -d /usr/local bin/protoc 'include/*'
           rm /tmp/protoc.zip
       - name: Install Go protoc plugins
