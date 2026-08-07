@@ -7,7 +7,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
 	"github.com/astraive/loxa/cortex/internal/config"
 	"github.com/astraive/loxa/cortex/internal/eventbus"
 	"github.com/astraive/loxa/cortex/internal/eventconv"
@@ -20,8 +19,11 @@ import (
 	"github.com/astraive/loxa/cortex/internal/redaction"
 	"github.com/astraive/loxa/cortex/internal/storage"
 	"github.com/astraive/loxa/cortex/internal/topology"
+	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type GRPCServer struct {
@@ -79,6 +81,10 @@ func (s *GRPCServer) Healthz(ctx context.Context, req *loxav1.HealthzRequest) (*
 
 // IngestEvent processes a single event from the full Event proto message.
 func (s *GRPCServer) IngestEvent(ctx context.Context, req *loxav1.IngestEventRequest) (*loxav1.IngestEventResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "ingest event request is required")
+	}
+
 	event, warnings, err := protoEventToModel(req.Event)
 	if err != nil {
 		return nil, err
@@ -100,6 +106,10 @@ func (s *GRPCServer) IngestEvent(ctx context.Context, req *loxav1.IngestEventReq
 
 // IngestBatch processes multiple events from the full Event proto messages.
 func (s *GRPCServer) IngestBatch(ctx context.Context, req *loxav1.IngestBatchRequest) (*loxav1.IngestBatchResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "ingest batch request is required")
+	}
+
 	events := make([]*models.Event, 0, len(req.Events))
 	var allWarnings []string
 
@@ -135,7 +145,7 @@ func (s *GRPCServer) IngestBatch(ctx context.Context, req *loxav1.IngestBatchReq
 // protoEventToModel converts a proto Event message to a models.Event, extracting all lifecycle fields.
 func protoEventToModel(pe *loxav1.Event) (*models.Event, []string, error) {
 	if pe == nil {
-		return nil, nil, nil
+		return nil, nil, status.Error(codes.InvalidArgument, "event is required")
 	}
 
 	event := &models.Event{

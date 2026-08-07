@@ -7,14 +7,16 @@ import (
 	"testing"
 	"time"
 
-	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
 	"github.com/astraive/loxa/cortex/internal/config"
 	"github.com/astraive/loxa/cortex/internal/models"
 	"github.com/astraive/loxa/cortex/internal/redaction"
 	"github.com/astraive/loxa/cortex/internal/storage"
+	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -99,11 +101,11 @@ func TestGRPCServerProvenanceIsGrpc(t *testing.T) {
 	// Test single IngestEvent
 	resp, err := client.IngestEvent(context.Background(), &loxav1.IngestEventRequest{
 		Event: &loxav1.Event{
-			EventId:   "evt-provenance-single",
-			Timestamp: timestamppb.New(ts),
-			Kind:      loxav1.EventKind_EVENT_KIND_HTTP,
-			Service:   "checkout",
-			Event:     "checkout.started",
+			EventId:    "evt-provenance-single",
+			Timestamp:  timestamppb.New(ts),
+			Kind:       loxav1.EventKind_EVENT_KIND_HTTP,
+			Service:    "checkout",
+			Event:      "checkout.started",
 			IncidentId: "inc-1234",
 		},
 	})
@@ -135,4 +137,43 @@ func TestGRPCServerProvenanceIsGrpc(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "grpc", event.Provenance, "batch gRPC-ingested event should have 'grpc' provenance")
 	require.Equal(t, "inc-5678", event.IncidentID, "IncidentID should be preserved from proto in batch")
+}
+
+func TestGRPCServerRejectsEmptyIngestEventRequest(t *testing.T) {
+	t.Parallel()
+
+	cfg := config.Default()
+	cfg.Storage.Backend = "duckdb"
+	cfg.Storage.DuckDB.Path = filepath.Join(t.TempDir(), "cortex.duckdb")
+	cfg.Collector.SourceOfTruth = false
+
+	stor, err := storage.NewStorage(cfg)
+	require.NoError(t, err)
+	defer stor.Close()
+
+	srv := grpc.NewServer()
+	NewGRPCServer(cfg, stor, redaction.Config{}).RegisterServer(srv)
+
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer lis.Close()
+	go func() { _ = srv.Serve(lis) }()
+	defer srv.GracefulStop()
+
+	conn, err := grpc.NewClient(lis.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	defer conn.Close()
+
+	client := loxav1.NewCortexServiceClient(conn)
+	_, err = client.IngestEvent(context.Background(), &loxav1.IngestEventRequest{})
+	require.Error(t, err)
+	require.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+func TestProtoEventToModelRejectsNilEvent(t *testing.T) {
+	event, warnings, err := protoEventToModel(nil)
+	require.Nil(t, event)
+	require.Nil(t, warnings)
+	require.Error(t, err)
+	require.Equal(t, codes.InvalidArgument, status.Code(err))
 }
