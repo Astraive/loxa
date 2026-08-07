@@ -28,6 +28,13 @@ jobs:
       matrix: ${{ steps.plan.outputs.matrix }}
       has_changes: ${{ steps.plan.outputs.has_changes }}
     steps:
+      - name: Require main for publishing
+        if: ${{ inputs.dry_run != true && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "Release publishing is only allowed from refs/heads/main." >&2
+          echo "Run this workflow from main or use dry_run=true for branch validation." >&2
+          exit 1
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
