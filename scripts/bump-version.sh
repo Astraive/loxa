@@ -28,11 +28,8 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # can replace just the version number while preserving surrounding syntax.
 # ---------------------------------------------------------------------------
 FILES=(
-  # Go binaries — var version = "X.Y.Z"
-  "collector/cmd/loxa-collector/main.go"
-  "collector/cmd/loxa-worker/main.go"
-  "collector/cmd/loxa-loadgen/main.go"
-  "cortex/cmd/server/main.go"
+  # Collector fallback version — used when loxa.yaml cannot be found.
+  "collector/internal/version/version.go"
 
   # CLI — version.Version is set via ldflags ("dev" default), so we skip it.
   # If it ever gets a hardcoded default, add it here.
@@ -66,14 +63,10 @@ FILES=(
   "sdks/js/loxa-js.yaml"
   "spec/loxa-spec.yaml"
   "lql/lql.yaml"
-  "loxana/loxana.yaml"
 
   # Goreleaser
   "collector/deploy/goreleaser.yml"
 
-  # Loxana frontend
-  "loxana/package.json"
-  "loxana/src/lib/version.ts"
 
   # Docker image tags (astraive/loxa-<component>:X.Y.Z)
   "cortex/configs/docker-compose.yml"
@@ -190,7 +183,7 @@ check_versions() {
 
   echo ""
   local count=${#seen[@]}
-  if [[ "$count" -eq 1 ]]; then
+  if [[ "$all_ok" == "true" && "$count" -eq 1 ]]; then
     local v="${!seen[*]}"
     echo "OK — all files report version $v"
     exit 0

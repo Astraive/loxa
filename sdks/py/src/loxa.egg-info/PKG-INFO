@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: loxa
-Version: 0.2.0
+Version: 0.2.6
 Summary: Python LOXA wide-event SDK
 Author: Astraive
 Requires-Python: >=3.10
@@ -8,7 +8,7 @@ Description-Content-Type: text/markdown
 
 # LOXA Python SDK
 
-**Status**: STABLE (v0.0.1) - Production-ready, full feature conformance
+**Status**: STABLE (v0.2.6) - Production-ready, full feature conformance
 
 Full API conformance with specification is complete. See [SDK_CONFORMANCE_CONTRACT.md](../../spec/docs/SDK_CONFORMANCE_CONTRACT.md) for detailed guarantees.
 
@@ -28,11 +28,11 @@ import loxa
 # Configure the default logger
 loxa.configure(
     loxa.production("checkout")
-    .with_collector_endpoint("http://127.0.0.1:9090")
+    .with_collector_endpoint("http://127.0.0.1:9308")
 )
 
 # Lifecycle
-ctx = loxa.start_http_event(event="checkout.request", method="POST", path="/checkout")
+ctx = loxa.start_event(loxa.Params(event="checkout.request", kind="http", method="POST", path="/checkout"))
 loxa.enrich(ctx, loxa.UserID("u_123"), loxa.String("payment.provider", "stripe"))
 loxa.finish(ctx, "success", loxa.Int("status_code", 200))
 loxa.emit(ctx)
@@ -228,11 +228,11 @@ loxa.error("payment failed", provider="stripe", amount=4999)
 import loxa
 
 # Default API — configure once, use everywhere
-loxa.configure(loxa.production("checkout").with_collector_endpoint("http://127.0.0.1:9090"))
+loxa.configure(loxa.production("checkout").with_collector_endpoint("http://127.0.0.1:9308"))
 loxa.info("server started")
 
 # Custom instance
-logger = loxa.create_loxa(service="checkout-api", collector_endpoint="http://127.0.0.1:9090")
+logger = loxa.create_loxa(service="checkout-api", collector_endpoint="http://127.0.0.1:9308")
 logger.info("custom instance ready")
 
 # Alias -- same config, loxa.alias metadata
@@ -301,7 +301,7 @@ import loxa
 
 cfg = loxa.production("checkout").with_sink(loxa.StdoutSink())
 cfg = loxa.production("checkout").with_sink(loxa.FileSink("/var/log/app.log"))
-cfg = loxa.production("checkout").with_sink(loxa.HTTPBatchSink("http://collector:9090/events"))
+cfg = loxa.production("checkout").with_sink(loxa.HTTPBatchSink("http://collector:9308/events"))
 
 # For testing
 sink, store = loxa.MemorySink()
@@ -456,18 +456,18 @@ if loxa.HasEvent(ctx):
 ## Testing
 
 ```python
-from loxa.testkit.helpers import test_logger, capture, assert_event, assert_redacted, assert_has_checkpoint, CapturingLogger
+from loxa.testkit.helpers import TestLogger, Capture, AssertEvent, AssertRedacted, AssertHasCheckpoint, CapturingLogger
 
 # Test logger with memory sink
-logger, store = test_logger("test")
+logger, store = TestLogger("test")
 
 # Capture events
-events = capture(lambda: some_function())
+events = Capture(lambda: some_function())
 
 # Assert
-assert_event(events[0], "user.id", "u_123")
-assert_redacted(events[0], "password")
-assert_has_checkpoint(events[0], "payment_started")
+AssertEvent(events[0], user__id="u_123")
+AssertRedacted(events[0], "password")
+AssertHasCheckpoint(events[0], "payment_started")
 
 # Context manager
 with CapturingLogger("test") as (logger, store):

@@ -4,6 +4,7 @@ src/loxa/__init__.py
 src/loxa/loxa.py
 src/loxa/metrics.py
 src/loxa/py.typed
+src/loxa/version.py
 src/loxa.egg-info/PKG-INFO
 src/loxa.egg-info/SOURCES.txt
 src/loxa.egg-info/dependency_links.txt
@@ -24,6 +25,7 @@ src/loxa/core/config_options.py
 src/loxa/core/context.py
 src/loxa/core/core.py
 src/loxa/core/dotkey.py
+src/loxa/core/dsn.py
 src/loxa/core/duplicate.py
 src/loxa/core/duplicate_policy.py
 src/loxa/core/encoder.py
@@ -142,6 +144,7 @@ tests/test_collector_ack_fixture.py
 tests/test_collector_api_cli.py
 tests/test_config_loader.py
 tests/test_delivery_semantics.py
+tests/test_dsn.py
 tests/test_e2e_live.py
 tests/test_emitted_shape_fixture.py
 tests/test_httpbatch_sink.py
@@ -157,6 +160,7 @@ tests/test_panic_safety.py
 tests/test_parity.py
 tests/test_process_group_timer_stopwatch.py
 tests/test_sampling_policy.py
+tests/test_security_hardening.py
 tests/test_sink_queue_flush_shutdown.py
 tests/test_smoke.py
 tests/test_spec_conformance.py

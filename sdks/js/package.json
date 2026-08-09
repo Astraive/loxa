@@ -17,6 +17,7 @@
   "scripts": {
     "build": "tsc",
     "test": "node scripts/run-node-tests.mjs",
+    "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },
   "keywords": [

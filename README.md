@@ -19,8 +19,8 @@
   <a href="https://github.com/astraive/loxa/actions/workflows/collector-ci.yml">
     <img src="https://github.com/astraive/loxa/actions/workflows/collector-ci.yml/badge.svg" alt="Collector CI">
   </a>
-  <a href="https://github.com/astraive/loxa/actions/workflows/sdks-go-ci.yml">
-    <img src="https://github.com/astraive/loxa/actions/workflows/sdks-go-ci.yml/badge.svg" alt="Go SDK CI">
+  <a href="https://github.com/astraive/loxa/actions/workflows/sdks-go.yml">
+    <img src="https://github.com/astraive/loxa/actions/workflows/sdks-go.yml/badge.svg" alt="Go SDK CI">
   </a>
   <a href="https://github.com/astraive/loxa/actions/workflows/sdks-py-ci.yml">
     <img src="https://github.com/astraive/loxa/actions/workflows/sdks-py-ci.yml/badge.svg" alt="Python SDK CI">
@@ -227,19 +227,29 @@ The stable operator surface is:
 
 ### 1. Start the Collector
 
-From this repo:
+The tracked Collector configuration is secure by default. Generate distinct runtime secrets; do not put them in YAML or source control.
 
 ```bash
 cd collector
-go run ./cmd/loxa-collector run -c configs/loxa.local.yaml
+export COLLECTOR_AUTH_SERVER_SECRET="$(openssl rand -hex 32)"
+export COLLECTOR_INGEST_KEY_SECRET="$(openssl rand -hex 24)"
+export COLLECTOR_ADMIN_KEY_SECRET="$(openssl rand -hex 24)"
+export LOXA_STORAGE_ENCRYPTION_KEY="$(openssl rand -hex 32)"
+export LOXA_API_KEY="lx_sec_live_kingest_${COLLECTOR_INGEST_KEY_SECRET}"
+go run ./cmd/loxa-collector run -c configs/loxa.yaml
 ```
 
-Or through the CLI when `collector_repo_path` points at `collector`:
+Verify the public health endpoint, then send an authenticated event to the actual ingest route:
 
 ```bash
-cd cli
-go run ./cmd/loxa collector run -c configs/loxa.local.yaml
+curl http://127.0.0.1:9308/health
+curl -X POST http://127.0.0.1:9308/events \
+  -H "Authorization: Bearer ${LOXA_API_KEY}" \
+  -H 'Content-Type: application/json' \
+  -d '[{"event":"checkout.request","service":"checkout"}]'
 ```
+
+The admin token uses `lx_sec_live_kadmin_${COLLECTOR_ADMIN_KEY_SECRET}` and is intended for query and administrative routes.
 
 ### 2. Emit an Event from an SDK
 
