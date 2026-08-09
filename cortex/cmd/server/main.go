@@ -42,13 +42,19 @@ func main() {
 
 	log.Info().Msg("Starting LOXA Cortex")
 
-	cfg := config.Default()
-	if *configPath != "" {
-		var err error
+	var (
+		cfg *config.Config
+		err error
+	)
+	if *configPath == "" {
+		cfg, err = config.LoadDefault()
+	} else {
 		cfg, err = config.Load(*configPath)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to load config")
-		}
+	}
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to load config")
+	}
+	if *configPath != "" {
 		log.Info().Str("config", *configPath).Msg("Loaded configuration")
 	}
 
