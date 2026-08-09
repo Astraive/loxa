@@ -513,6 +513,7 @@ func findDefaultsFile() string {
 		"loxa-collector.defaults.yaml",
 		filepath.Join("..", "loxa-collector.defaults.yaml"),
 		filepath.Join("..", "..", "loxa-collector.defaults.yaml"),
+		filepath.Join(string(filepath.Separator), "app", "config.yaml"),
 	}
 	for _, candidate := range candidates {
 		if _, err := os.Stat(candidate); err == nil {

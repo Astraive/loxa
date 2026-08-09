@@ -112,9 +112,6 @@ duckdb:
     duration_ms: DOUBLE
     timestamp: TIMESTAMP
 
-cortex_schema:
-  enabled: true
-
 retention:
   enabled: false
   days: 30
