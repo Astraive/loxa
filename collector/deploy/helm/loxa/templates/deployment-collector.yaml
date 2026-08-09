@@ -15,12 +15,16 @@ spec:
       app.kubernetes.io/component: collector
   template:
     metadata:
+      {{- with .Values.collector.podAnnotations }}
       annotations:
-        {{- toYaml .Values.collector.podAnnotations | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
         {{- include "loxa.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: collector
-        {{- toYaml .Values.collector.podLabels | nindent 8 }}
+        {{- with .Values.collector.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       serviceAccountName: {{ include "loxa.serviceAccountName" . }}
       securityContext:
