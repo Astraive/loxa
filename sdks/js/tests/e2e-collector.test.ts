@@ -42,7 +42,7 @@ describeE2E('E2E: loxa-js → loxa-collector', () => {
   });
 
   it('CollectorClient.sendBatch sends events to collector', async () => {
-    const client = new CollectorClient({ url: COLLECTOR_URL, apiKey: COLLECTOR_API_KEY, authHeader: 'X-API-Key' });
+    const client = new CollectorClient({ url: COLLECTOR_URL, apiKey: COLLECTOR_API_KEY, authHeader: 'Authorization' });
 
     const events = [{
       schema_version: 'v1',

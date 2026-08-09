@@ -79,7 +79,11 @@ export class CollectorClient {
       headers['Content-Encoding'] = 'gzip';
     }
 
-    if (this.apiKey) headers[this.authHeader] = this.apiKey;
+    if (this.apiKey) {
+      headers[this.authHeader] = this.authHeader.toLowerCase() === 'authorization'
+        ? `Bearer ${this.apiKey}`
+        : this.apiKey;
+    }
 
     const res = await this.request('POST', '/events', body, headers);
     return parseCollectorResponse(res.body);
