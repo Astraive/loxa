@@ -669,7 +669,7 @@ def run_shared_sdk_conformance() -> list[StepResult]:
                 _run(
                     "sdk.rs.collector_e2e",
                     "sdk_conformance",
-                    ["cargo", "test", "--test", "collector_e2e"],
+                    ["cargo", "test", "--test", "collector_e2e", "--", "--include-ignored"],
                     WORKSPACE_ROOT / "sdks" / "rs",
                     env=env,
                     timeout_s=300,

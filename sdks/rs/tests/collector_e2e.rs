@@ -126,6 +126,7 @@ fn no_collector_endpoint_keeps_default_sink() {
 // ---------------------------------------------------------------------------
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn collector_is_healthy() {
     assert!(
         collector_health(),
@@ -134,6 +135,7 @@ fn collector_is_healthy() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn raw_envelope_accepted_by_collector() {
     assert!(collector_health());
 
@@ -162,6 +164,7 @@ fn raw_envelope_accepted_by_collector() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn batch_envelope_accepted_by_collector() {
     assert!(collector_health());
 
@@ -196,6 +199,7 @@ fn batch_envelope_accepted_by_collector() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn sdk_emit_produces_valid_envelope() {
     assert!(collector_health());
 
@@ -227,6 +231,7 @@ fn sdk_emit_produces_valid_envelope() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn http_event_with_trace_context_accepted() {
     assert!(collector_health());
 
@@ -256,6 +261,7 @@ fn http_event_with_trace_context_accepted() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn error_event_with_error_details_accepted() {
     assert!(collector_health());
 
@@ -282,6 +288,7 @@ fn error_event_with_error_details_accepted() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn enriched_event_with_attrs_accepted() {
     assert!(collector_health());
 
@@ -309,6 +316,7 @@ fn enriched_event_with_attrs_accepted() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn collector_rejects_invalid_envelope() {
     assert!(collector_health());
 
@@ -323,6 +331,7 @@ fn collector_rejects_invalid_envelope() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn collector_rejects_empty_events() {
     assert!(collector_health());
 
@@ -342,6 +351,7 @@ fn collector_rejects_empty_events() {
 // ---------------------------------------------------------------------------
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn full_sdk_flow_emit_to_collector() {
     assert!(collector_health());
 
