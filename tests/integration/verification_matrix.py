@@ -483,7 +483,7 @@ def run_cortex_full_stack() -> list[StepResult]:
     up = _run(
         "cortex.compose.up",
         "cortex_runtime",
-        ["docker", "compose", "-f", "configs/docker-compose.yml", "up", "-d", "--wait"],
+        ["docker", "compose", "-f", "configs/docker-compose.yml", "up", "--build", "-d", "--wait"],
         CORTEX_ROOT,
         env=compose_env,
         timeout_s=120,
@@ -499,6 +499,17 @@ def run_cortex_full_stack() -> list[StepResult]:
         up.details["reason"] = "docker engine is unavailable"
     results.append(up)
     if up.status != "implemented_and_passing":
+        results.append(
+            _run(
+                "cortex.compose.down",
+                "cortex_runtime",
+                ["docker", "compose", "-f", "configs/docker-compose.yml", "down", "--remove-orphans"],
+                CORTEX_ROOT,
+                env=compose_env,
+                ok_returncodes=(0,),
+                timeout_s=60,
+            )
+        )
         return results
 
     try:
@@ -595,6 +606,7 @@ def run_shared_sdk_conformance() -> list[StepResult]:
             env["LOXA_TEST_COLLECTOR_URL"] = collector.base_url
             env["LOXA_API_KEY"] = collector.ingest_token
             env["LOXA_COLLECTOR_API_KEY"] = collector.ingest_token
+            env["LOXA_TEST_COLLECTOR_ADMIN_KEY"] = collector.admin_token
 
             if _tool_available("cargo"):
                 results.append(
@@ -619,6 +631,52 @@ def run_shared_sdk_conformance() -> list[StepResult]:
                             timeout_s=600,
                         )
                     )
+            results.append(
+                _run(
+                    "sdk.go.collector_e2e",
+                    "sdk_conformance",
+                    ["go", "test", ".", "-count=1"],
+                    WORKSPACE_ROOT / "sdks" / "go" / "tests" / "e2e",
+                    env=env,
+                    timeout_s=180,
+                )
+                if _tool_available("go")
+                else _blocked("sdk.go.collector_e2e", "sdk_conformance", "go is unavailable")
+            )
+            results.append(
+                _run(
+                    "sdk.js.collector_e2e",
+                    "sdk_conformance",
+                    ["npm.cmd" if os.name == "nt" else "npm", "test"],
+                    WORKSPACE_ROOT / "sdks" / "js",
+                    env=env,
+                    timeout_s=180,
+                )
+                if _tool_available("npm")
+                else _blocked("sdk.js.collector_e2e", "sdk_conformance", "npm is unavailable")
+            )
+            results.append(
+                _run(
+                    "sdk.py.collector_e2e",
+                    "sdk_conformance",
+                    [PYTHON, "-m", "pytest", "-q", "tests/test_e2e_live.py"],
+                    WORKSPACE_ROOT / "sdks" / "py",
+                    env=env,
+                    timeout_s=180,
+                )
+            )
+            results.append(
+                _run(
+                    "sdk.rs.collector_e2e",
+                    "sdk_conformance",
+                    ["cargo", "test", "--test", "collector_e2e"],
+                    WORKSPACE_ROOT / "sdks" / "rs",
+                    env=env,
+                    timeout_s=300,
+                )
+                if _tool_available("cargo")
+                else _blocked("sdk.rs.collector_e2e", "sdk_conformance", "cargo is unavailable")
+            )
         finally:
             _stop_process(collector_proc)
     return results
@@ -797,7 +855,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run platform-safe LOXA verification flows and emit a machine-readable matrix.")
     parser.add_argument(
         "--flow",
-        choices=("collector_smoke", "cli_flow", "cortex_full_stack", "matrix"),
+        choices=("collector_smoke", "cli_flow", "cortex_full_stack", "sdk_collector_e2e", "matrix"),
         default="matrix",
     )
     parser.add_argument("--json-out", help="Write JSON output to this path.")
@@ -811,6 +869,9 @@ def main() -> int:
         payload = {"flow": args.flow, "results": [asdict(result) for result in results]}
     elif args.flow == "cortex_full_stack":
         results = run_cortex_full_stack()
+        payload = {"flow": args.flow, "results": [asdict(result) for result in results]}
+    elif args.flow == "sdk_collector_e2e":
+        results = run_shared_sdk_conformance()
         payload = {"flow": args.flow, "results": [asdict(result) for result in results]}
     else:
         results = []
