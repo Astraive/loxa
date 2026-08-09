@@ -5,7 +5,6 @@
 #   3. Use a secrets manager (Vault, AWS Secrets Manager, etc.)
 #   4. Remove port bindings to host network
 #   5. Enable authentication (set CORTEX_AUTH_ENABLED=true)
-#   6. Set a strong CORTEX_STORAGE_ENCRYPTION_KEY
 
 services:
   postgres:

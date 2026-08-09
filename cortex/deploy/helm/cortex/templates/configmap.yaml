@@ -16,5 +16,7 @@ data:
   CORTEX_MATCHER_MODE: {{ .Values.matcher.mode | quote }}
   CORTEX_CORRELATION_ENABLED: {{ .Values.correlation.enabled | quote }}
   CORTEX_PII_REDACTION_ENABLED: {{ .Values.pii_redaction.enabled | quote }}
-  CORTEX_RATE_LIMIT_ENABLED: {{ .Values.rate_limit.enabled | quote }}
+  CORTEX_RATELIMIT_ENABLED: {{ .Values.rate_limit.enabled | quote }}
+  CORTEX_RATELIMIT_PER_API_KEY_RPM: {{ .Values.rate_limit.per_api_key_rpm | quote }}
+  CORTEX_RATELIMIT_PER_IP_RPM: {{ .Values.rate_limit.per_ip_rpm | quote }}
   CORTEX_AUTH_ENABLED: {{ .Values.authentication.enabled | quote }}

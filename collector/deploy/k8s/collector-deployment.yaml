@@ -39,11 +39,21 @@ spec:
               containerPort: 9308
               protocol: TCP
           env:
-            - name: COLLECTOR_API_KEY
+            - name: COLLECTOR_AUTH_SERVER_SECRET
               valueFrom:
                 secretKeyRef:
                   name: loxa-collector-secrets
-                  key: api-key
+                  key: auth-server-secret
+            - name: COLLECTOR_INGEST_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: loxa-collector-secrets
+                  key: ingest-key-secret
+            - name: COLLECTOR_ADMIN_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: loxa-collector-secrets
+                  key: admin-key-secret
             - name: LOXA_STORAGE_ENCRYPTION_KEY
               valueFrom:
                 secretKeyRef:
@@ -51,7 +61,7 @@ spec:
                   key: storage-encryption-key
           livenessProbe:
             httpGet:
-              path: /healthz
+              path: /health
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
