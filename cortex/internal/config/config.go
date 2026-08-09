@@ -374,6 +374,9 @@ func applyEnvOverrides(cfg *Config) {
 	if v := os.Getenv("CORTEX_POSTGRES_PASSWORD"); v != "" {
 		cfg.Storage.PostgreSQL.Password = v
 	}
+	if v := os.Getenv("CORTEX_POSTGRES_SSL_MODE"); v != "" {
+		cfg.Storage.PostgreSQL.SSLMode = v
+	}
 
 	// Authentication overrides
 	if v := os.Getenv("CORTEX_AUTH_ENABLED"); v != "" {

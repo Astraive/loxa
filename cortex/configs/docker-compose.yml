@@ -38,6 +38,9 @@ services:
       CORTEX_POSTGRES_DATABASE: cortex
       CORTEX_POSTGRES_USER: cortex
       CORTEX_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD environment variable}
+      # The local Compose PostgreSQL service does not provision TLS. Production
+      # deployments inherit the secure "require" default from the bundled config.
+      CORTEX_POSTGRES_SSL_MODE: disable
       CORTEX_AUTH_ENABLED: "true"
       CORTEX_API_KEYS: ${CORTEX_API_KEYS:?Set CORTEX_API_KEYS as name:key:role}
       CORTEX_LOG_LEVEL: info
@@ -45,7 +48,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./configs:/app/configs
+      - ./:/app/configs:ro
 
   cortex-cli:
     profiles: ["cli"]

@@ -41,6 +41,7 @@ func TestDefaultAppliesEnvOverrides(t *testing.T) {
 	t.Setenv("CORTEX_SERVER_HOST", "10.0.0.1")
 	t.Setenv("CORTEX_SERVER_PORT", "8888")
 	t.Setenv("CORTEX_DUCKDB_PATH", "/tmp/env.db")
+	t.Setenv("CORTEX_POSTGRES_SSL_MODE", "disable")
 	t.Setenv("CORTEX_LOG_LEVEL", "debug")
 	t.Setenv("CORTEX_MATCHER_MODE", "rust")
 
@@ -54,6 +55,9 @@ func TestDefaultAppliesEnvOverrides(t *testing.T) {
 	}
 	if cfg.Storage.DuckDB.Path != "/tmp/env.db" {
 		t.Fatalf("expected env duckdb path override, got %s", cfg.Storage.DuckDB.Path)
+	}
+	if cfg.Storage.PostgreSQL.SSLMode != "disable" {
+		t.Fatalf("expected env postgres SSL mode override, got %s", cfg.Storage.PostgreSQL.SSLMode)
 	}
 	if cfg.Logging.Level != "debug" {
 		t.Fatalf("expected env log level override, got %s", cfg.Logging.Level)
