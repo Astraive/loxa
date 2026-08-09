@@ -175,50 +175,36 @@ When an API key is configured, the SDK automatically sends these headers:
 
 ## Collector Configuration
 
-The collector validates API keys using the RBAC+ABAC auth system. Configure it in the collector YAML:
+The Collector validates configured key records using RBAC and ABAC. `server_secret` is an independent HMAC key; it is not the at-rest storage key. `secret_env` names hold only the token secret, so a configured key is presented as `lx_{kind}_live_{key_id}_${SECRET_ENV}`.
 
 ```yaml
 auth:
   enabled: true
-  server_secret: "${COLLECTOR_SERVER_SECRET}"
-  cache_ttl: 60s
-  negative_cache_ttl: 10s
+  server_secret: "${COLLECTOR_AUTH_SERVER_SECRET}"
+  cache_ttl: 5m
+  negative_cache_ttl: 30s
   keys:
-    - name: "prod-backend"
-      key_id: "k2M9aQp"
-      secret_env: "PROD_KEY_SECRET"
-      kind: "sec"
-      roles: ["collector_ingest_server"]
-      allowed_envs: ["prod"]
-      allowed_services: ["checkout-api", "payment-api"]
-      max_requests_per_minute: 5000
-      max_events_per_minute: 50000
-      max_payload_bytes: 262144
-    - name: "web-dashboard"
-      key_id: "kabc123"
-      secret_env: "WEB_KEY_SECRET"
-      kind: "pub"
-      roles: ["collector_ingest_public"]
-      allowed_origins: ["https://app.example.com"]
-      max_requests_per_minute: 600
-      max_events_per_minute: 1000
-      max_payload_bytes: 65536
+    - name: ingest
+      key_id: kingest
+      secret_env: COLLECTOR_INGEST_KEY_SECRET
+      kind: sec
+      roles: [collector_ingest_server]
+    - name: administrator
+      key_id: kadmin
+      secret_env: COLLECTOR_ADMIN_KEY_SECRET
+      kind: sec
+      roles: [project_admin]
+    - name: browser
+      key_id: collector_browser
+      secret_env: COLLECTOR_BROWSER_KEY_SECRET
+      kind: pub
+      roles: [collector_ingest_public]
+      allowed_origins: [https://app.example.com]
+storage:
+  encryption_key_env: LOXA_STORAGE_ENCRYPTION_KEY
 ```
 
-### Disabling Auth for Local Development
-
-```yaml
-auth:
-  enabled: false
-```
-
-Or with dev mode (accepts `local` keys):
-
-```yaml
-auth:
-  enabled: true
-  dev_mode: true
-```
+All configured key IDs must be unique. `kind` is `sec` or `pub`; public keys require a non-empty origin allowlist. Auth startup requires a non-empty resolved server secret, every configured key secret, and the storage encryption key. An explicit `auth.enabled: false` remains an operator override, not a tracked default.
 
 ## Token Storage Security
 
@@ -228,10 +214,10 @@ The collector never stores raw API keys. Keys are stored as HMAC-SHA256 hashes:
 hash = hmac_sha256(server_secret, token_secret)
 ```
 
-- Server secret from `COLLECTOR_SERVER_SECRET` environment variable
+- Server secret from `COLLECTOR_AUTH_SERVER_SECRET`, resolved through `auth.server_secret`
+- Token secrets from each configured `secret_env`
+- The independent raw-event encryption key from `LOXA_STORAGE_ENCRYPTION_KEY`
 - Constant-time comparison via `crypto/subtle.ConstantTimeCompare`
-- Positive cache TTL: 60 seconds
-- Negative cache TTL: 10 seconds
 
 ## Key Rotation
 
@@ -240,51 +226,26 @@ hash = hmac_sha256(server_secret, token_secret)
 3. The collector accepts both keys during the overlap window
 4. Revoke the old key after all deployments are updated
 
-## Backward Compatibility
+## Legacy Bootstrap Token
 
-The collector supports `X-API-Key` as a fallback header for legacy clients. This is deprecated — use `Authorization: Bearer` for all new integrations.
-
-```
-# Deprecated (still works)
-X-API-Key: lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
-
-# Recommended
-Authorization: Bearer lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
-```
+For a single-key bootstrap only, `auth.value` or `auth.value_env` may supply a complete valid LOXA token. It is parsed and assigned the `collector_ingest_server` role. New deployments should use `auth.keys`; raw, non-LOXA legacy values are rejected when authentication is active.
 
 ## Error Responses
 
-Authentication failures return HTTP 401 with diagnostic headers:
+Protected routes return one non-sensitive unauthenticated wire contract. Detailed authentication failures are logged server-side and are never echoed to a client.
 
-```
+```http
 HTTP/1.1 401 Unauthorized
-X-Auth-Failure-Reason: Key not found
-X-Auth-Failure-Code: key_not_found
 Content-Type: application/json
+X-Auth-Failure-Code: unauthorized
+X-Auth-Failure-Reason: authentication required
 
-{"error": "unauthorized"}
+{"error":"unauthorized"}
 ```
-
-### Failure Codes
-
-| Code | Reason |
-|------|--------|
-| `missing_token` | No Authorization header present |
-| `invalid_key_format` | Key doesn't match `lx_` format |
-| `key_not_found` | Key ID not found in store |
-| `key_revoked` | Key has been revoked |
-| `key_expired` | Key has expired |
-| `key_kind_mismatch` | Key kind prefix doesn't match DB record |
-| `invalid_secret` | HMAC verification failed |
-| `env_not_allowed` | `X-Loxa-Env` not in `allowed_envs` |
-| `service_not_allowed` | `X-Loxa-Service` not in `allowed_services` |
-| `origin_not_allowed` | Origin not in `allowed_origins` |
-| `ip_not_allowed` | Client IP not in `allowed_ips` |
-| `rate_limited` | Per-key rate limit exceeded |
 
 ## Local Development
 
-For local development, use a `local` key with auth disabled or in dev mode:
+For local development, either deliberately disable auth or set `allow_local_dev_keys: true` alongside enabled auth. Local keys are rejected by default.
 
 ```bash
 export LOXA_API_KEY="lx_local_dev_mydevtoken"

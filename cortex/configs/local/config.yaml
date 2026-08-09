@@ -8,11 +8,14 @@ storage:
     path: "./cortex-stress.db"
 
 authentication:
-  enabled: false
+  # API keys are supplied at runtime via CORTEX_API_KEYS.
+  enabled: true
   api_keys: []
 
 rate_limit:
-  enabled: false
+  enabled: true
+  per_api_key_rpm: 1000
+  per_ip_rpm: 100
 
 tls:
   enabled: false

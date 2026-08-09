@@ -17,7 +17,22 @@ data:
     auth:
       enabled: true
       header: X-API-Key
-      value_env: COLLECTOR_API_KEY
+      server_secret: ${COLLECTOR_AUTH_SERVER_SECRET}
+      cache_ttl: 5m
+      negative_cache_ttl: 30s
+      keys:
+        - name: collector-ingest
+          key_id: kingest
+          secret_env: COLLECTOR_INGEST_KEY_SECRET
+          kind: sec
+          roles:
+            - collector_ingest_server
+        - name: collector-admin
+          key_id: kadmin
+          secret_env: COLLECTOR_ADMIN_KEY_SECRET
+          kind: sec
+          roles:
+            - project_admin
 
     rate_limit:
       enabled: true
@@ -25,8 +40,8 @@ data:
       burst: 1000
 
     routes:
-      ingest: /ingest
-      health: /healthz
+      ingest: /events
+      health: /health
       ready: /readyz
       metrics: /metrics
 

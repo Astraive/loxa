@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -40,6 +41,7 @@ func TestDefaultAppliesEnvOverrides(t *testing.T) {
 	t.Setenv("CORTEX_SERVER_HOST", "10.0.0.1")
 	t.Setenv("CORTEX_SERVER_PORT", "8888")
 	t.Setenv("CORTEX_DUCKDB_PATH", "/tmp/env.db")
+	t.Setenv("CORTEX_POSTGRES_SSL_MODE", "disable")
 	t.Setenv("CORTEX_LOG_LEVEL", "debug")
 	t.Setenv("CORTEX_MATCHER_MODE", "rust")
 
@@ -53,6 +55,9 @@ func TestDefaultAppliesEnvOverrides(t *testing.T) {
 	}
 	if cfg.Storage.DuckDB.Path != "/tmp/env.db" {
 		t.Fatalf("expected env duckdb path override, got %s", cfg.Storage.DuckDB.Path)
+	}
+	if cfg.Storage.PostgreSQL.SSLMode != "disable" {
+		t.Fatalf("expected env postgres SSL mode override, got %s", cfg.Storage.PostgreSQL.SSLMode)
 	}
 	if cfg.Logging.Level != "debug" {
 		t.Fatalf("expected env log level override, got %s", cfg.Logging.Level)
@@ -144,6 +149,8 @@ storage:
 logging:
   level: info
   format: json
+authentication:
+  enabled: false
 collector:
   url: http://localhost:9308
   source_of_truth: true
@@ -323,4 +330,180 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadDefaultPipeline(t *testing.T) {
+	defaults := writeBundledDefaults(t)
+	useBundledDefaults(t, defaults)
+
+	dir := t.TempDir()
+	writeConfigFile(t, filepath.Join(dir, "loxa-cortex.yaml"), "server:\n  port: 7777\n")
+	changeWorkingDirectory(t, dir)
+	t.Setenv("CORTEX_SERVER_PORT", "8888")
+
+	cfg, err := LoadDefault()
+	if err != nil {
+		t.Fatalf("LoadDefault: %v", err)
+	}
+	if cfg.Server.Port != 8888 {
+		t.Fatalf("environment must override cwd config, got port %d", cfg.Server.Port)
+	}
+	if cfg.Storage.DuckDB.Path != "./bundled.db" {
+		t.Fatalf("expected bundled storage configuration, got %q", cfg.Storage.DuckDB.Path)
+	}
+}
+
+func TestLoadDefaultSkipsProjectManifest(t *testing.T) {
+	defaults := writeBundledDefaults(t)
+	useBundledDefaults(t, defaults)
+
+	dir := t.TempDir()
+	writeConfigFile(t, filepath.Join(dir, "loxa.yaml"), "name: loxa\nkind: release\nmodule: github.com/astraive/loxa\n")
+	changeWorkingDirectory(t, dir)
+
+	cfg, err := LoadDefault()
+	if err != nil {
+		t.Fatalf("LoadDefault: %v", err)
+	}
+	if cfg.Server.Port != 9312 {
+		t.Fatalf("release manifest must not override bundled config, got port %d", cfg.Server.Port)
+	}
+}
+
+func TestLoadDefaultRejectsInvalidRuntimeOverride(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{name: "malformed YAML", content: "server: [", want: "failed to parse runtime override"},
+		{name: "invalid configuration", content: "server:\n  port: 0\n", want: "invalid configuration"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			defaults := writeBundledDefaults(t)
+			useBundledDefaults(t, defaults)
+			dir := t.TempDir()
+			writeConfigFile(t, filepath.Join(dir, "loxa.yaml"), tc.content)
+			changeWorkingDirectory(t, dir)
+
+			_, err := LoadDefault()
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("LoadDefault error = %v, want containing %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestLoadOverlaysBundledDefaultsThenEnvironment(t *testing.T) {
+	defaults := writeBundledDefaults(t)
+	useBundledDefaults(t, defaults)
+
+	override := filepath.Join(t.TempDir(), "runtime.yaml")
+	writeConfigFile(t, override, "server:\n  port: 7777\n")
+	t.Setenv("CORTEX_SERVER_PORT", "8888")
+
+	cfg, err := Load(override)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Server.Port != 8888 {
+		t.Fatalf("environment must override named config, got port %d", cfg.Server.Port)
+	}
+	if cfg.Storage.DuckDB.Path != "./bundled.db" {
+		t.Fatalf("named config must retain bundled fields, got %q", cfg.Storage.DuckDB.Path)
+	}
+}
+
+func TestValidateEnabledAuthenticationRequiresValidKey(t *testing.T) {
+	base := func() Config {
+		return Config{
+			Server:  ServerConfig{Port: 9312},
+			Storage: StorageConfig{Backend: "duckdb", DuckDB: DuckDBConfig{Path: "./cortex.db"}},
+			Matcher: MatcherConfig{Mode: "go"},
+			Logging: LoggingConfig{Level: "info", Format: "json"},
+			Authentication: AuthenticationConfig{
+				Enabled: true,
+			},
+		}
+	}
+
+	tests := []struct {
+		name string
+		key  []APIKey
+		ok   bool
+	}{
+		{name: "no keys"},
+		{name: "empty name", key: []APIKey{{Key: "secret", Role: "reader"}}},
+		{name: "empty key", key: []APIKey{{Name: "reader", Role: "reader"}}},
+		{name: "invalid role", key: []APIKey{{Name: "service", Key: "secret", Role: "operator"}}},
+		{name: "valid reader", key: []APIKey{{Name: "reader", Key: "secret", Role: "reader"}}, ok: true},
+		{name: "valid writer", key: []APIKey{{Name: "writer", Key: "secret", Role: "writer"}}, ok: true},
+		{name: "valid admin", key: []APIKey{{Name: "admin", Key: "secret", Role: "admin"}}, ok: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := base()
+			cfg.Authentication.APIKeys = tc.key
+			err := cfg.Validate()
+			if tc.ok && err != nil {
+				t.Fatalf("Validate: %v", err)
+			}
+			if !tc.ok && err == nil {
+				t.Fatal("expected validation error")
+			}
+		})
+	}
+}
+
+func writeBundledDefaults(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), bundledDefaultFilename)
+	writeConfigFile(t, path, `server:
+  port: 9312
+storage:
+  backend: duckdb
+  duckdb:
+    path: ./bundled.db
+matcher:
+  mode: go
+logging:
+  level: info
+  format: json
+authentication:
+  enabled: false
+`)
+	return path
+}
+
+func useBundledDefaults(t *testing.T, path string) {
+	t.Helper()
+	previous := bundledDefaultCandidates
+	bundledDefaultCandidates = func() []string { return []string{path} }
+	t.Cleanup(func() { bundledDefaultCandidates = previous })
+}
+
+func writeConfigFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("write config %s: %v", path, err)
+	}
+}
+
+func changeWorkingDirectory(t *testing.T, dir string) {
+	t.Helper()
+	original, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get working directory: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("change working directory: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(original); err != nil {
+			t.Errorf("restore working directory: %v", err)
+		}
+	})
 }

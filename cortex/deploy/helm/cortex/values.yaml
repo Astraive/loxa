@@ -103,11 +103,13 @@ storage:
     max_connections: 50
 
 authentication:
-  enabled: false
-  api_keys: []
+  enabled: true
+  # Existing Secret containing CORTEX_API_KEYS when authentication is enabled.
+  existingSecret: ""
+  apiKeysKey: api-keys
 
 rate_limit:
-  enabled: false
+  enabled: true
   per_api_key_rpm: 1000
   per_ip_rpm: 100
 

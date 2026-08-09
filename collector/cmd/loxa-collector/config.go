@@ -5,13 +5,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/astraive/loxa/collector/internal/auth"
 	collectorconfig "github.com/astraive/loxa/collector/internal/config"
 	serverconfig "github.com/astraive/loxa/collector/internal/server"
 	"gopkg.in/yaml.v3"
@@ -526,6 +526,115 @@ func applyEnvOverrides(fc *fileConfig) error {
 	return nil
 }
 
+func resolveAuthConfig(fc fileConfig) (string, []collectorAuthKey, error) {
+	serverSecret, err := resolveConfigSecret("auth.server_secret", fc.Auth.ServerSecret)
+	if err != nil {
+		return "", nil, err
+	}
+
+	keys := make([]collectorAuthKey, 0, len(fc.Auth.Keys))
+	seenKeyIDs := make(map[string]struct{}, len(fc.Auth.Keys))
+	for i, key := range fc.Auth.Keys {
+		keyID := strings.TrimSpace(key.KeyID)
+		if keyID == "" {
+			return "", nil, fmt.Errorf("auth.keys[%d].key_id must not be empty", i)
+		}
+		if strings.Contains(keyID, "_") {
+			return "", nil, fmt.Errorf("auth.keys[%d].key_id must not contain underscores because LOXA key tokens use underscore separators", i)
+		}
+		if _, exists := seenKeyIDs[keyID]; exists {
+			return "", nil, fmt.Errorf("auth.keys[%d].key_id %q must be unique", i, keyID)
+		}
+		seenKeyIDs[keyID] = struct{}{}
+
+		secretEnv := strings.TrimSpace(key.SecretEnv)
+		if !configIdentPattern.MatchString(secretEnv) {
+			return "", nil, fmt.Errorf("auth.keys[%d].secret_env must name an environment variable", i)
+		}
+		secret := strings.TrimSpace(os.Getenv(secretEnv))
+		if secret == "" {
+			return "", nil, fmt.Errorf("auth.keys[%d].secret_env %q did not resolve to a non-empty value", i, secretEnv)
+		}
+
+		var kind auth.KeyKind
+		switch strings.ToLower(strings.TrimSpace(key.Kind)) {
+		case string(auth.KeyKindPublic):
+			kind = auth.KeyKindPublic
+		case string(auth.KeyKindSecret):
+			kind = auth.KeyKindSecret
+		default:
+			return "", nil, fmt.Errorf("auth.keys[%d].kind must be pub or sec", i)
+		}
+		if kind == auth.KeyKindPublic {
+			hasOrigin := false
+			for _, origin := range key.AllowedOrigins {
+				if strings.TrimSpace(origin) != "" {
+					hasOrigin = true
+					break
+				}
+			}
+			if !hasOrigin {
+				return "", nil, fmt.Errorf("auth.keys[%d].allowed_origins must not be empty for public keys", i)
+			}
+		}
+
+		roles := make([]auth.Role, len(key.Roles))
+		for j, rawRole := range key.Roles {
+			role := auth.Role(strings.TrimSpace(rawRole))
+			if !isKnownAuthRole(role) {
+				return "", nil, fmt.Errorf("auth.keys[%d].roles[%d] %q is not recognized", i, j, rawRole)
+			}
+			roles[j] = role
+		}
+		keys = append(keys, collectorAuthKey{
+			name:                 strings.TrimSpace(key.Name),
+			keyID:                keyID,
+			secret:               secret,
+			kind:                 kind,
+			roles:                roles,
+			allowedEnvs:          append([]string(nil), key.AllowedEnvs...),
+			allowedServices:      append([]string(nil), key.AllowedServices...),
+			allowedOrigins:       append([]string(nil), key.AllowedOrigins...),
+			allowedIPs:           append([]string(nil), key.AllowedIPs...),
+			maxPayloadBytes:      key.MaxPayloadBytes,
+			maxRequestsPerMinute: key.MaxRequestsPerMinute,
+			maxEventsPerMinute:   key.MaxEventsPerMinute,
+		})
+	}
+	return serverSecret, keys, nil
+}
+
+func resolveConfigSecret(field, raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", nil
+	}
+	if strings.HasPrefix(value, "${") || strings.HasSuffix(value, "}") {
+		if len(value) < 4 || !strings.HasPrefix(value, "${") || !strings.HasSuffix(value, "}") {
+			return "", fmt.Errorf("%s must be a literal or exactly ${ENV_VAR}", field)
+		}
+		envName := value[2 : len(value)-1]
+		if !configIdentPattern.MatchString(envName) {
+			return "", fmt.Errorf("%s has invalid environment variable reference %q", field, value)
+		}
+		value = strings.TrimSpace(os.Getenv(envName))
+		if value == "" {
+			return "", fmt.Errorf("%s environment variable %q did not resolve to a non-empty value", field, envName)
+		}
+	}
+	return value, nil
+}
+
+func isKnownAuthRole(role auth.Role) bool {
+	switch role {
+	case auth.RoleIngestPublic, auth.RoleIngestServer, auth.RoleIngestEnterprise,
+		auth.RoleProjectReadonly, auth.RoleProjectOperator, auth.RoleProjectAdmin:
+		return true
+	default:
+		return false
+	}
+}
+
 func validateFileConfig(fc fileConfig) error {
 	if strings.TrimSpace(fc.Collector.Addr) == "" {
 		return errors.New("collector.addr must not be empty")
@@ -542,11 +651,34 @@ func validateFileConfig(fc fileConfig) error {
 	if fc.Collector.MaxEventsPerReq <= 0 {
 		return errors.New("collector.max_events_per_request must be > 0")
 	}
-	if fc.Auth.Enabled && strings.TrimSpace(fc.Auth.Value) == "" {
-		return errors.New("auth enabled but no API key resolved")
-	}
 	if strings.TrimSpace(fc.Auth.Header) == "" {
 		return errors.New("auth.header must not be empty")
+	}
+	authServerSecret, _, err := resolveAuthConfig(fc)
+	if err != nil {
+		return err
+	}
+	if fc.Auth.Enabled {
+		if authServerSecret == "" {
+			return errors.New("auth.enabled requires auth.server_secret")
+		}
+		if fc.Auth.CacheTTL <= 0 {
+			return errors.New("auth.cache_ttl must be > 0 when auth is enabled")
+		}
+		if fc.Auth.NegativeCacheTTL <= 0 {
+			return errors.New("auth.negative_cache_ttl must be > 0 when auth is enabled")
+		}
+		if strings.TrimSpace(fc.Auth.Value) != "" {
+			if _, err := auth.ParseKey(fc.Auth.Value); err != nil {
+				return fmt.Errorf("auth.value must be a valid LOXA API key: %w", err)
+			}
+		}
+		if len(fc.Auth.Keys) == 0 && strings.TrimSpace(fc.Auth.Value) == "" {
+			return errors.New("auth enabled but no configured key or valid legacy API key")
+		}
+	}
+	if strings.TrimSpace(fc.Storage.EncryptionKey) == "" {
+		return errors.New("storage.encryption_key_env must resolve to a non-empty key")
 	}
 	if fc.RateLimit.Enabled {
 		if fc.RateLimit.RPS <= 0 {
@@ -924,6 +1056,7 @@ func validateComponentRegistry(reg collectorconfig.ComponentRegistryConfig) erro
 }
 
 func runtimeConfigFromFile(fc fileConfig) collectorConfig {
+	authServerSecret, authKeys, _ := resolveAuthConfig(fc)
 	return collectorConfig{
 		addr:                fc.Collector.Addr,
 		readHeaderTimeout:   fc.Collector.ReadHeaderTimeout,
@@ -979,10 +1112,14 @@ func runtimeConfigFromFile(fc fileConfig) collectorConfig {
 				BatchLimit: fc.Collector.Server.GraphQL.BatchLimit,
 			},
 		},
-		authEnabled:             fc.Auth.Enabled,
-		authAllowLocalDevKeys:   fc.Auth.AllowLocalDevKeys,
-		apiKeyHeader:            fc.Auth.Header,
-		apiKey:                  fc.Auth.Value,
+		authEnabled:           fc.Auth.Enabled,
+		authAllowLocalDevKeys: fc.Auth.AllowLocalDevKeys,
+		authServerSecret:      authServerSecret,
+		authCacheTTL:          fc.Auth.CacheTTL,
+		authNegativeCacheTTL:  fc.Auth.NegativeCacheTTL,
+		authKeys:              authKeys,
+		apiKeyHeader:          fc.Auth.Header,
+		apiKey:                fc.Auth.Value,
 		rateLimitEnabled:        fc.RateLimit.Enabled,
 		rateLimitRPS:            fc.RateLimit.RPS,
 		rateLimitBurst:          fc.RateLimit.Burst,
@@ -1235,23 +1372,3 @@ func marshalPrintableConfig(fc fileConfig) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-// Deprecated: mergeConfigFile is preserved for backward compatibility
-func mergeConfigFile(dst *fileConfig, path string) error {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	dec := yaml.NewDecoder(bytes.NewReader(raw))
-	dec.KnownFields(true)
-	if err := dec.Decode(dst); err != nil {
-		return err
-	}
-	var extraDoc fileConfig
-	if err := dec.Decode(&extraDoc); err != io.EOF {
-		if err == nil {
-			return errors.New("config file must contain a single YAML document")
-		}
-		return err
-	}
-	return nil
-}

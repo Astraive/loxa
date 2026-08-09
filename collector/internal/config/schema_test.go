@@ -80,6 +80,22 @@ collector:
 	assert.Equal(t, 15, cfg.Collector.Server.GraphQL.DepthLimit)
 }
 
+func TestLoadFileRejectsUnknownFieldsAndAcceptsVersion(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "loxa.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("version: \"1.0\"\ncollector:\n  unknown: true\n"), 0o600))
+	cfg := Default()
+	err := LoadFile(&cfg, path)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown")
+
+	require.NoError(t, os.WriteFile(path, []byte("version: \"1.0\"\nauth:\n  server_secret: \"${COLLECTOR_AUTH_SERVER_SECRET}\"\n  cache_ttl: 1m\n  negative_cache_ttl: 5s\n  keys:\n    - name: ingest\n      key_id: kingest\n      secret_env: COLLECTOR_INGEST_KEY_SECRET\n      kind: sec\n      roles: [collector_ingest_server]\n"), 0o600))
+	cfg = Default()
+	require.NoError(t, LoadFile(&cfg, path))
+	assert.Equal(t, "1.0", cfg.Version)
+	require.Len(t, cfg.Auth.Keys, 1)
+	assert.Equal(t, "kingest", cfg.Auth.Keys[0].KeyID)
+}
+
 func TestServerConfigTLS(t *testing.T) {
 	yaml := `
 collector:

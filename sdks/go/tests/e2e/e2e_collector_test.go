@@ -5,13 +5,30 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
 	loxa "github.com/astraive/loxa/sdks/go"
 )
 
-const collectorURL = "http://127.0.0.1:9308"
+const defaultCollectorURL = "http://127.0.0.1:9308"
+
+func collectorURL() string {
+	if value := strings.TrimRight(os.Getenv("LOXA_TEST_COLLECTOR_URL"), "/"); value != "" {
+		return value
+	}
+	return defaultCollectorURL
+}
+
+func ingestAPIKey() string {
+	return os.Getenv("LOXA_API_KEY")
+}
+
+func adminAPIKey() string {
+	return os.Getenv("LOXA_TEST_COLLECTOR_ADMIN_KEY")
+}
 
 // newTestClient creates a SDK Logger that auto-installs HTTPBatchSink
 // when CollectorURL is set — this is the production path.
@@ -19,7 +36,8 @@ func newTestClient(t *testing.T, opts ...loxa.ConfigOption) *loxa.Logger {
 	t.Helper()
 	cfg := loxa.Config{
 		Service:      "e2e-test",
-		CollectorURL: collectorURL,
+		CollectorURL: collectorURL(),
+		APIKey:       ingestAPIKey(),
 	}
 	for _, opt := range opts {
 		cfg = opt(cfg)
@@ -97,7 +115,7 @@ func TestE2E_HTTPBatchSink_AsyncBatch(t *testing.T) {
 func TestE2E_HTTPBatchSink_VersionCheck(t *testing.T) {
 	_ = newTestClient(t)
 
-	resp, err := http.Get(collectorURL + "/version")
+	resp, err := http.Get(collectorURL() + "/version")
 	if err != nil {
 		t.Fatalf("version: %v", err)
 	}
@@ -141,7 +159,14 @@ func TestE2E_HTTPBatchSink_MultipleFlushes(t *testing.T) {
 
 func getCollectorStatus(t *testing.T) []byte {
 	t.Helper()
-	resp, err := http.Get(collectorURL + "/status")
+	req, err := http.NewRequest(http.MethodGet, collectorURL()+"/status", nil)
+	if err != nil {
+		t.Fatalf("create status request: %v", err)
+	}
+	if token := adminAPIKey(); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("status: %v", err)
 	}

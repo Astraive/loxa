@@ -11,6 +11,9 @@ requires-python = ">=3.10"
 authors = [{name = "Astraive"}]
 dependencies = []
 
+[tool.setuptools]
+py-modules = ["loxa_contract"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["loxa*"]
@@ -27,4 +30,4 @@ ignore = ["E501", "F401"]
 "__init__.py" = ["F401", "F403"]
 
 [tool.setuptools.package-data]
-loxa = ["py.typed"]
+loxa = ["py.typed", "loxa-py.defaults.yaml"]

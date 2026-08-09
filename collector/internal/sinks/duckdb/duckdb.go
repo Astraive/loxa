@@ -105,6 +105,9 @@ type sink struct {
 
 // New creates a DuckDB sink.
 func New(cfg Config) (collectorevent.Sink, error) {
+	if cfg.EncryptRaw && strings.TrimSpace(cfg.EncryptKey) == "" {
+		return nil, errors.New("duckdb: encrypt_key must not be empty when encrypt_raw is enabled")
+	}
 	if cfg.Table == "" {
 		cfg.Table = "loxa_events"
 	}

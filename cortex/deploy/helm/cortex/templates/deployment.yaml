@@ -50,13 +50,22 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "cortex.fullname" . }}-config
-          {{- if .Values.storage.postgresql.password }}
+          {{- if or .Values.storage.postgresql.password .Values.authentication.enabled }}
           env:
+            {{- if .Values.storage.postgresql.password }}
             - name: CORTEX_POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "cortex.fullname" . }}-secrets
                   key: postgres-password
+            {{- end }}
+            {{- if .Values.authentication.enabled }}
+            - name: CORTEX_API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "authentication.existingSecret is required when authentication.enabled is true" .Values.authentication.existingSecret }}
+                  key: {{ required "authentication.apiKeysKey is required when authentication.enabled is true" .Values.authentication.apiKeysKey }}
+            {{- end }}
           {{- end }}
           livenessProbe:
             httpGet:

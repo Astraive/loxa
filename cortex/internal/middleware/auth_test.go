@@ -58,23 +58,35 @@ func TestAuthMiddlewareRejectsAndAccepts(t *testing.T) {
 }
 
 func TestRequireRole(t *testing.T) {
-	auth := NewAuth(&config.AuthenticationConfig{
-		Enabled: true,
-		APIKeys: []config.APIKey{{Name: "reader", Key: "r", Role: "reader"}},
-	})
+	tests := []struct {
+		name string
+		role string
+		key  string
+		want int
+	}{
+		{name: "reader cannot write", role: "reader", key: "reader-key", want: http.StatusForbidden},
+		{name: "writer can write", role: "writer", key: "writer-key", want: http.StatusOK},
+	}
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("X-API-Key", "r")
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			auth := NewAuth(&config.AuthenticationConfig{
+				Enabled: true,
+				APIKeys: []config.APIKey{{Name: tc.role, Key: tc.key, Role: tc.role}},
+			})
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req.Header.Set("X-API-Key", tc.key)
+			rec := httptest.NewRecorder()
+			handler := auth.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				auth.RequireRole("writer")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusOK)
+				})).ServeHTTP(w, r)
+			}))
 
-	rec := httptest.NewRecorder()
-	handler := auth.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth.RequireRole("writer")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})).ServeHTTP(w, r)
-	}))
-	handler.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected forbidden, got %d", rec.Code)
+			handler.ServeHTTP(rec, req)
+			if rec.Code != tc.want {
+				t.Fatalf("status = %d, want %d", rec.Code, tc.want)
+			}
+		})
 	}
 }

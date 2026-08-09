@@ -4,6 +4,7 @@ import { createLoxa, HTTPBatchSink, MemorySink, CollectorClient, String as AttrS
 import net from 'node:net';
 
 const COLLECTOR_URL = process.env.LOXA_TEST_COLLECTOR_URL ?? 'http://127.0.0.1:9308';
+const COLLECTOR_API_KEY = process.env.LOXA_API_KEY ?? '';
 
 async function isCollectorReachable(): Promise<boolean> {
   const url = new URL(COLLECTOR_URL);
@@ -41,7 +42,7 @@ describeE2E('E2E: loxa-js → loxa-collector', () => {
   });
 
   it('CollectorClient.sendBatch sends events to collector', async () => {
-    const client = new CollectorClient({ url: COLLECTOR_URL });
+    const client = new CollectorClient({ url: COLLECTOR_URL, apiKey: COLLECTOR_API_KEY, authHeader: 'Authorization' });
 
     const events = [{
       schema_version: 'v1',
@@ -65,6 +66,7 @@ describeE2E('E2E: loxa-js → loxa-collector', () => {
     const acks: any[] = [];
     const sink = new HTTPBatchSink({
       endpoint: `${COLLECTOR_URL}/events`,
+      apiKey: COLLECTOR_API_KEY,
       batchSize: 1,        // flush immediately
       flushIntervalMs: 100,
       retries: 2,
@@ -113,6 +115,7 @@ describeE2E('E2E: loxa-js → loxa-collector', () => {
   it('HTTPBatchSink handles gzip compression', async () => {
     const sink = new HTTPBatchSink({
       endpoint: `${COLLECTOR_URL}/events`,
+      apiKey: COLLECTOR_API_KEY,
       enableCompression: true,
       batchSize: 1,
       flushIntervalMs: 100,
@@ -134,6 +137,7 @@ describeE2E('E2E: loxa-js → loxa-collector', () => {
   it('HTTPBatchSink handles NDJSON mode', async () => {
     const sink = new HTTPBatchSink({
       endpoint: `${COLLECTOR_URL}/events`,
+      apiKey: COLLECTOR_API_KEY,
       ndjson: true,
       batchSize: 1,
       flushIntervalMs: 100,
@@ -157,6 +161,7 @@ describeE2E('E2E: loxa-js → loxa-collector', () => {
     const sink = new HTTPBatchSink({
       endpoint: `${COLLECTOR_URL}/events`,
       batchSize: 10,       // batch up to 10
+      apiKey: COLLECTOR_API_KEY,
       flushIntervalMs: 500,
       statsHandler: {
         onCollectorAck(data) { acks.push(data); },

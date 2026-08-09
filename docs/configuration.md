@@ -62,39 +62,48 @@ collector:
 
 ### `auth`
 
-API key authentication using `Authorization: Bearer` header (optional).
+API-key authentication uses `Authorization: Bearer` and is enabled in every tracked Collector configuration. `server_secret` is used only for HMAC key-record hashing and must not be reused as the storage encryption key.
 
 ```yaml
 auth:
   enabled: true
-  server_secret: "${COLLECTOR_SERVER_SECRET}"
-  cache_ttl: 60s
-  negative_cache_ttl: 10s
+  server_secret: "${COLLECTOR_AUTH_SERVER_SECRET}"
+  cache_ttl: 5m
+  negative_cache_ttl: 30s
   keys:
-    - name: "default"
-      key_id: "k2M9aQp"
-      secret_env: "COLLECTOR_API_KEY_SECRET"
-      kind: "sec"
-      roles: ["collector_ingest_server"]
+    - name: ingest
+      key_id: kingest
+      secret_env: COLLECTOR_INGEST_KEY_SECRET
+      kind: sec
+      roles: [collector_ingest_server]
+    - name: administrator
+      key_id: kadmin
+      secret_env: COLLECTOR_ADMIN_KEY_SECRET
+      kind: sec
+      roles: [project_admin]
 ```
 
-When enabled, all requests must include the API key:
+`secret_env` is the secret segment of `lx_{kind}_live_{key_id}_{secret}`, not the full token. Key IDs are unique; `kind` must be `sec` or `pub`; every role must be a supported Collector role; and public keys require `allowed_origins`.
+
 ```bash
-curl -H "Authorization: Bearer lx_sec_live_k2M9aQp_your_secret" http://localhost:9308/core/events -d '[...]'
+curl -X POST http://localhost:9308/events \
+  -H "Authorization: Bearer lx_sec_live_kingest_${COLLECTOR_INGEST_KEY_SECRET}" \
+  -H 'Content-Type: application/json' -d '[{"event":"example"}]'
+curl http://localhost:9308/health
 ```
 
 See [Authentication](authentication.md) and [Authorization](authorization.md) for full details.
 
 ### `routes`
 
-HTTP endpoint paths.
+HTTP endpoint paths. The default ingest endpoint is `/events`; `/health` is public. Other data and administration routes require the corresponding permission.
 
 ```yaml
 routes:
-  ingest: /ingest                      # Event ingest endpoint
-  health: /healthz                     # Health check
-  ready: /readyz                       # Readiness probe
-  metrics: /metrics                    # Prometheus metrics
+  ingest: /events
+  health: /health
+  ready: /readyz
+  metrics: /metrics
 ```
 
 ### `rate_limit`
@@ -110,11 +119,12 @@ rate_limit:
 
 ### `storage`
 
-Primary storage backend.
+DuckDB is the supported primary storage backend. Raw event persistence is encrypted by Collector construction, so this environment reference must resolve to a non-empty key before startup.
 
 ```yaml
 storage:
-  primary: duckdb                      # duckdb | kafka
+  primary: duckdb
+  encryption_key_env: LOXA_STORAGE_ENCRYPTION_KEY
 ```
 
 ### `duckdb`

@@ -15,12 +15,16 @@ spec:
       app.kubernetes.io/component: worker
   template:
     metadata:
+      {{- with .Values.worker.podAnnotations }}
       annotations:
-        {{- toYaml .Values.worker.podAnnotations | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
         {{- include "loxa.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: worker
-        {{- toYaml .Values.worker.podLabels | nindent 8 }}
+        {{- with .Values.worker.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       serviceAccountName: {{ include "loxa.serviceAccountName" . }}
       securityContext:
@@ -47,59 +51,37 @@ spec:
           imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
-          ports:
-            - name: http
-              containerPort: 9308
-              protocol: TCP
-            - name: metrics
-              containerPort: 9308
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 3
-          startupProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            failureThreshold: 30
+          command: ["loxa-worker"]
+          args: ["run", "-c", "/app/config/config.yaml"]
           lifecycle:
             preStop:
               exec:
                 command: ["/bin/sh", "-c", "sleep 5"]
           resources:
             {{- toYaml .Values.worker.resources | nindent 12 }}
+          {{- if .Values.collector.enabled }}
           env:
-            - name: LOXA_CONFIG_FILE
-              value: /app/config/config.yaml
+            - name: LOXA_STORAGE_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "collector.security.existingSecret is required when collector.enabled is true" .Values.collector.security.existingSecret }}
+                  key: {{ .Values.collector.security.storageEncryptionKey }}
+          {{- end }}
           volumeMounts:
             - name: config
               mountPath: /app/config
-            {{- if .Values.persistence.enabled }}
+              readOnly: true
             - name: data
               mountPath: /data
-            {{- end }}
       volumes:
         - name: config
           configMap:
             name: {{ include "loxa.fullname" . }}-worker-config
-        {{- if .Values.persistence.enabled }}
         - name: data
+          {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "loxa.fullname" . }}-worker
-        {{- end }}
+            claimName: {{ default (printf "%s-worker" (include "loxa.fullname" .)) .Values.persistence.worker.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
 {{- end }}

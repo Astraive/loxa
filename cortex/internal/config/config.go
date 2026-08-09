@@ -1,8 +1,11 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -287,29 +290,46 @@ type CollectorConfig struct {
 	CursorPath           string        `yaml:"cursor_path"`
 }
 
-// Load loads configuration from a YAML file and applies environment variable overrides
+// Load loads the bundled defaults, overlays a named YAML configuration file,
+// then applies environment variable overrides and validates the resulting
+// configuration.
 func Load(configPath string) (*Config, error) {
-	// Read YAML file
-	data, err := os.ReadFile(configPath)
+	cfg, err := loadBundledDefaults()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
+		return nil, err
 	}
-
-	// Parse YAML
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	if err := loadFile(cfg, configPath); err != nil {
+		return nil, err
 	}
-
-	// Apply environment variable overrides
-	applyEnvOverrides(&cfg)
-
-	// Validate configuration
+	applyEnvOverrides(cfg)
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
+	return cfg, nil
+}
 
-	return &cfg, nil
+// LoadDefault loads bundled defaults, optionally overlays a supported runtime
+// override from the current directory, applies environment variable overrides,
+// and validates the resulting configuration.
+func LoadDefault() (*Config, error) {
+	cfg, err := loadBundledDefaults()
+	if err != nil {
+		return nil, err
+	}
+
+	if path, err := findUserConfigFile(); err != nil {
+		return nil, err
+	} else if path != "" {
+		if err := loadFile(cfg, path); err != nil {
+			return nil, err
+		}
+	}
+
+	applyEnvOverrides(cfg)
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+	return cfg, nil
 }
 
 // applyEnvOverrides applies environment variable overrides to configuration
@@ -354,6 +374,9 @@ func applyEnvOverrides(cfg *Config) {
 	if v := os.Getenv("CORTEX_POSTGRES_PASSWORD"); v != "" {
 		cfg.Storage.PostgreSQL.Password = v
 	}
+	if v := os.Getenv("CORTEX_POSTGRES_SSL_MODE"); v != "" {
+		cfg.Storage.PostgreSQL.SSLMode = v
+	}
 
 	// Authentication overrides
 	if v := os.Getenv("CORTEX_AUTH_ENABLED"); v != "" {
@@ -365,10 +388,7 @@ func applyEnvOverrides(cfg *Config) {
 	// CORTEX_API_KEYS: comma-separated list of name:key:role triples
 	// e.g. "my-service:sk_abc123:writer,read-only:sk_def456:reader"
 	if v := os.Getenv("CORTEX_API_KEYS"); v != "" {
-		keys := parseAPIKeys(v)
-		if len(keys) > 0 {
-			cfg.Authentication.APIKeys = keys
-		}
+		cfg.Authentication.APIKeys = parseAPIKeys(v)
 	}
 
 	// Matcher overrides
@@ -566,14 +586,19 @@ func (c *Config) Validate() error {
 
 	// Validate authentication config
 	if c.Authentication.Enabled {
+		if len(c.Authentication.APIKeys) == 0 {
+			return fmt.Errorf("at least one api key is required when authentication is enabled")
+		}
 		for _, key := range c.Authentication.APIKeys {
-			if key.Name == "" {
+			if strings.TrimSpace(key.Name) == "" {
 				return fmt.Errorf("api key name cannot be empty")
 			}
-			if key.Key == "" {
+			if strings.TrimSpace(key.Key) == "" {
 				return fmt.Errorf("api key cannot be empty")
 			}
-			if key.Role != "reader" && key.Role != "writer" && key.Role != "admin" {
+			switch key.Role {
+			case "reader", "writer", "admin":
+			default:
 				return fmt.Errorf("invalid api key role: %s (must be 'reader', 'writer', or 'admin')", key.Role)
 			}
 		}
@@ -646,45 +671,154 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// Default returns a configuration with sensible defaults. It also searches for
-// a user override file (loxa-cortex.yaml / loxa.yaml) in the current working
-// directory and applies environment variable overrides. The loading order is:
-// defaults -> user YAML -> env vars.
+// Default returns the legacy in-memory defaults for library callers. Production
+// startup must use LoadDefault or Load so configuration errors cannot be
+// ignored.
 func Default() *Config {
 	cfg := defaultConfig()
-	if path := findUserConfigFile(); path != "" {
-		// Silently ignore errors — user file is optional.
+	if path, err := findUserConfigFile(); err == nil && path != "" {
 		_ = loadFile(cfg, path)
 	}
 	applyEnvOverrides(cfg)
 	return cfg
 }
 
-// findUserConfigFile returns the path to the first user override file found in
-// the current working directory, or "" if none exists.
-func findUserConfigFile() string {
-	for _, name := range userConfigFiles {
-		if _, err := os.Stat(name); err == nil {
-			return name
+const bundledDefaultFilename = "loxa-cortex.defaults.yaml"
+
+var bundledDefaultCandidates = defaultBundledDefaultCandidates
+
+func defaultBundledDefaultCandidates() []string {
+	candidates := []string{filepath.Join(string(filepath.Separator), "app", "configs", bundledDefaultFilename)}
+	if executable, err := os.Executable(); err == nil {
+		candidates = append(candidates, filepath.Join(filepath.Dir(executable), "configs", bundledDefaultFilename))
+	}
+	if cwd, err := os.Getwd(); err == nil {
+		for dir := cwd; ; dir = filepath.Dir(dir) {
+			candidates = append(candidates,
+				filepath.Join(dir, "configs", bundledDefaultFilename),
+				filepath.Join(dir, "cortex", "configs", bundledDefaultFilename),
+			)
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
 		}
 	}
-	return ""
+	return uniquePaths(candidates)
 }
 
-// loadFile reads and parses a YAML file, overlaying non-zero values onto cfg.
+func uniquePaths(paths []string) []string {
+	seen := make(map[string]struct{}, len(paths))
+	unique := make([]string, 0, len(paths))
+	for _, path := range paths {
+		if _, ok := seen[path]; ok {
+			continue
+		}
+		seen[path] = struct{}{}
+		unique = append(unique, path)
+	}
+	return unique
+}
+
+func loadBundledDefaults() (*Config, error) {
+	var attempted []string
+	for _, path := range bundledDefaultCandidates() {
+		attempted = append(attempted, path)
+		if _, err := os.Stat(path); err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, fmt.Errorf("failed to inspect bundled defaults %s: %w", path, err)
+		}
+		cfg := defaultConfig()
+		if err := loadFile(cfg, path); err != nil {
+			return nil, fmt.Errorf("failed to load bundled defaults: %w", err)
+		}
+		return cfg, nil
+	}
+	return nil, fmt.Errorf("bundled Cortex defaults %q not found (searched: %s)", bundledDefaultFilename, strings.Join(attempted, ", "))
+}
+
+// findUserConfigFile returns the first supported runtime override from the
+// current directory. Repository/package manifests are deliberately skipped:
+// they use the same filenames but are not service configuration.
+func findUserConfigFile() (string, error) {
+	for _, name := range userConfigFiles {
+		data, err := os.ReadFile(name)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return "", fmt.Errorf("failed to read runtime override %s: %w", name, err)
+		}
+		isManifest, err := isProjectManifest(data)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse runtime override %s: %w", name, err)
+		}
+		if isManifest {
+			continue
+		}
+		return name, nil
+	}
+	return "", nil
+}
+
+// isProjectManifest recognizes release manifests by their top-level kind and
+// also skips the checked-in Cortex package manifest, which uses the same
+// override filename convention.
+func isProjectManifest(data []byte) (bool, error) {
+	var document yaml.Node
+	if err := yaml.Unmarshal(data, &document); err != nil {
+		return false, err
+	}
+	if len(document.Content) == 0 || document.Content[0].Kind != yaml.MappingNode {
+		return false, nil
+	}
+	var kind, module string
+	mapping := document.Content[0]
+	for i := 0; i+1 < len(mapping.Content); i += 2 {
+		switch mapping.Content[i].Value {
+		case "kind":
+			kind = mapping.Content[i+1].Value
+		case "module":
+			module = mapping.Content[i+1].Value
+		}
+	}
+	return kind == "release" || (kind != "" && module != ""), nil
+}
+
+// loadFile reads a YAML file and overlays it onto cfg. Unknown fields are
+// rejected so misspelled runtime settings never silently weaken deployment.
 func loadFile(cfg *Config, path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read config file %s: %w", path, err)
 	}
-	if err := yaml.Unmarshal(data, cfg); err != nil {
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(cfg); err != nil {
+		return fmt.Errorf("failed to parse config file %s: %w", path, err)
+	}
+	if err := ensureSingleYAMLDocument(decoder); err != nil {
 		return fmt.Errorf("failed to parse config file %s: %w", path, err)
 	}
 	return nil
 }
 
-// defaultConfig returns the raw configuration with sensible defaults (no file
-// or env processing). Use Default() for the full loading pipeline.
+func ensureSingleYAMLDocument(decoder *yaml.Decoder) error {
+	var extra yaml.Node
+	err := decoder.Decode(&extra)
+	if err == io.EOF {
+		return nil
+	}
+	if err == nil {
+		return fmt.Errorf("multiple YAML documents are not supported")
+	}
+	return err
+}
+
+// defaultConfig returns the raw in-memory configuration without file or
+// environment processing.
 func defaultConfig() *Config {
 	return &Config{
 		Server: ServerConfig{

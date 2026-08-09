@@ -17,6 +17,7 @@ from .config import (
     KeepBoth,
     LastWins,
     UserWins,
+    _collector_ingest_endpoint,
 )
 from .errors import EventClosedError, EventValidationError
 from .event import (
@@ -71,7 +72,7 @@ class Logger:
         if not self._config.sinks or all(self._is_default_terminal_sink(sink) for sink in self._config.sinks):
             self._config = replace(
                 self._config,
-                sinks=[HTTPBatchSink(endpoint, api_key=self._config.api_key, service=self._config.service)],
+                sinks=[HTTPBatchSink(_collector_ingest_endpoint(endpoint), api_key=self._config.api_key, service=self._config.service)],
             )
 
     @staticmethod

@@ -24,6 +24,23 @@ class TestStager(unittest.TestCase):
                     if p.is_file(): p.unlink()
                 except: pass
 
+    def test_produce_keeps_events_with_same_clock_value(self):
+        event = {
+            "event_id": "stg-same-clock",
+            "timestamp": "2026-05-18T12:30:45Z",
+            "service": "s",
+            "schema_version": "v1",
+            "event_version": "v1",
+            "event": "same-clock",
+        }
+        with patch("services.queue_prototype.time.time", return_value=1_716_035_845.0):
+            first = Path(self.queue.produce(event))
+            second = Path(self.queue.produce(event))
+
+        self.assertNotEqual(first, second)
+        self.assertTrue(first.exists())
+        self.assertTrue(second.exists())
+
     def test_stage_two_events(self):
         e1 = {'event_id': 'stg-1', 'timestamp': '2026-05-18T12:30:45Z', 'service': 's', 'schema_version': 'v1', 'event_version': 'v1', 'event': 'a'}
         e2 = {'event_id': 'stg-2', 'timestamp': '2026-05-18T12:30:46Z', 'service': 's', 'schema_version': 'v1', 'event_version': 'v1', 'event': 'b'}

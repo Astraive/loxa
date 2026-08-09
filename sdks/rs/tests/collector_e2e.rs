@@ -1,18 +1,23 @@
-// End-to-end test: loxa-rs SDK -> HTTPBatchSink -> loxa-collector
+// End-to-end test: loxa-rs SDK -> HTTPBatchSink -> loxa-collector.
 //
-// Requires a live loxa-collector on http://127.0.0.1:9308
-// Run: cargo test --test collector_e2e -- --test-threads=1
+// Requires a live collector at LOXA_TEST_COLLECTOR_URL (default
+// http://127.0.0.1:9308) and its ingest token in LOXA_API_KEY.
 
 use loxa::{
     CollectorSinkWithEndpoint, Config, HTTPClient, HTTPRequest, New, Params, WithCollectorEndpoint,
 };
 use serde_json::Value;
+use std::env;
 
 const COLLECTOR_URL: &str = "http://127.0.0.1:9308";
 
+fn collector_url() -> String {
+    env::var("LOXA_TEST_COLLECTOR_URL").unwrap_or_else(|_| COLLECTOR_URL.to_string())
+}
+
 fn collector_health() -> bool {
     let client = HTTPClient::with_timeout_ms(2_000);
-    let req = HTTPRequest::new("GET", format!("{COLLECTOR_URL}/healthz"));
+    let req = HTTPRequest::new("GET", format!("{}/health", collector_url()));
     client
         .send(&req)
         .map(|r| r.status_code == 200)
@@ -22,7 +27,8 @@ fn collector_health() -> bool {
 fn send_raw_envelope(envelope: &Value) -> (u16, String) {
     let client = HTTPClient::with_timeout_ms(5_000);
     let body = serde_json::to_vec(envelope).unwrap();
-    let req = HTTPRequest::new("POST", format!("{COLLECTOR_URL}/events"))
+    let req = HTTPRequest::new("POST", format!("{}/events", collector_url()))
+        .with_header("Authorization", format!("Bearer {}", env::var("LOXA_API_KEY").unwrap_or_default()))
         .with_header("Content-Type", "application/json")
         .with_body(body);
     let resp = client.send(&req).unwrap();
@@ -120,6 +126,7 @@ fn no_collector_endpoint_keeps_default_sink() {
 // ---------------------------------------------------------------------------
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn collector_is_healthy() {
     assert!(
         collector_health(),
@@ -128,6 +135,7 @@ fn collector_is_healthy() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn raw_envelope_accepted_by_collector() {
     assert!(collector_health());
 
@@ -156,6 +164,7 @@ fn raw_envelope_accepted_by_collector() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn batch_envelope_accepted_by_collector() {
     assert!(collector_health());
 
@@ -190,6 +199,7 @@ fn batch_envelope_accepted_by_collector() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn sdk_emit_produces_valid_envelope() {
     assert!(collector_health());
 
@@ -221,6 +231,7 @@ fn sdk_emit_produces_valid_envelope() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn http_event_with_trace_context_accepted() {
     assert!(collector_health());
 
@@ -250,6 +261,7 @@ fn http_event_with_trace_context_accepted() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn error_event_with_error_details_accepted() {
     assert!(collector_health());
 
@@ -276,6 +288,7 @@ fn error_event_with_error_details_accepted() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn enriched_event_with_attrs_accepted() {
     assert!(collector_health());
 
@@ -303,6 +316,7 @@ fn enriched_event_with_attrs_accepted() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn collector_rejects_invalid_envelope() {
     assert!(collector_health());
 
@@ -317,6 +331,7 @@ fn collector_rejects_invalid_envelope() {
 }
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn collector_rejects_empty_events() {
     assert!(collector_health());
 
@@ -336,6 +351,7 @@ fn collector_rejects_empty_events() {
 // ---------------------------------------------------------------------------
 
 #[test]
+#[ignore = "requires LOXA_TEST_COLLECTOR_URL and LOXA_API_KEY"]
 fn full_sdk_flow_emit_to_collector() {
     assert!(collector_health());
 
