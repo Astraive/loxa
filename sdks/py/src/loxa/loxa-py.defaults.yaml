@@ -1,0 +1,23 @@
+service: ""
+version: ""
+environment: development
+region: ""
+level: info
+strict: false
+collector_endpoint: ""
+duplicate_policy: canonical_wins
+checkpoint_emit_immediately: false
+async_config:
+  enabled: false
+  queue_size: 8192
+  workers: 1
+  max_batch_bytes: 262144
+security:
+  redact_by_default: true
+  allow_pii: false
+  max_field_bytes: 4096
+  max_event_bytes: 262144
+  max_attr_count: 512
+  drop_oversized_events: true
+field_naming:
+  policy: expand_dot_keys

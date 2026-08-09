@@ -312,6 +312,7 @@ def _find_defaults_path() -> Path:
         return Path(override)
     here = Path(__file__).resolve()
     candidates = [
+        here.parents[1] / "loxa-py.defaults.yaml",
         here.parents[2] / "loxa-py.defaults.yaml",
         Path.cwd() / "loxa-py.defaults.yaml",
     ]

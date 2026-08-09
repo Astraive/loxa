@@ -269,6 +269,13 @@ def new_client(code_config: Config):  # -> Logger
     return Logger(merged)
 
 
+def _collector_ingest_endpoint(endpoint: str) -> str:
+    endpoint = endpoint.strip().rstrip("/")
+    if endpoint.endswith("/events"):
+        return endpoint
+    return f"{endpoint}/events"
+
+
 def _apply_env_vars(cfg: Config) -> Config:
     """Apply environment variables to config, overriding file values."""
     env_map = {
@@ -390,6 +397,7 @@ def _find_defaults_path() -> Path:
         return Path(override)
     here = Path(__file__).resolve()
     candidates = [
+        here.parents[1] / "loxa-py.defaults.yaml",
         here.parents[2] / "loxa-py.defaults.yaml",
         here.parents[3] / "loxa-py.defaults.yaml",
         Path.cwd() / "loxa-py.defaults.yaml",

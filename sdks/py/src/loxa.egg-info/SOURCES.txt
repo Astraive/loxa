@@ -1,6 +1,8 @@
 README.md
 pyproject.toml
+src/loxa_contract.py
 src/loxa/__init__.py
+src/loxa/loxa-py.defaults.yaml
 src/loxa/loxa.py
 src/loxa/metrics.py
 src/loxa/py.typed
@@ -142,6 +144,7 @@ tests/test_canonical_fields.py
 tests/test_client_creation.py
 tests/test_collector_ack_fixture.py
 tests/test_collector_api_cli.py
+tests/test_collector_endpoint_config.py
 tests/test_config_loader.py
 tests/test_delivery_semantics.py
 tests/test_dsn.py

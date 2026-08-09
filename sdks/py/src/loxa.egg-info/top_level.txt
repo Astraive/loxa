@@ -1,1 +1,2 @@
 loxa
+loxa_contract

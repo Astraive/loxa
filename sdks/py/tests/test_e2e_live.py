@@ -51,7 +51,7 @@ def test_e2e_collector_pipeline():
     # 1. Create logger with collector sink
     config = (
         loxa.Production("e2e-test-service")
-        .with_collector_endpoint(f"{COLLECTOR_URL}/events")
+        .with_collector_endpoint(COLLECTOR_URL)
         .with_api_key(INGEST_API_KEY)
     )
     logger = loxa.New(config)
