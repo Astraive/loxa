@@ -38,6 +38,12 @@ class StepResult:
     stderr: str = ""
     details: dict[str, Any] = field(default_factory=dict)
 
+@dataclass(frozen=True)
+class CollectorRuntime:
+    base_url: str
+    ingest_token: str
+    admin_token: str
+
 
 def _tool_available(name: str) -> bool:
     return shutil.which(name) is not None
@@ -121,6 +127,17 @@ def _http_request(
         return int(exc.code), body_text
 
 
+def _has_encrypted_raw(response: str) -> bool:
+    try:
+        payload = json.loads(response)
+    except json.JSONDecodeError:
+        return False
+    rows = payload.get("rows", []) if isinstance(payload, dict) else []
+    return any(
+        isinstance(row, dict) and isinstance(row.get("raw"), str) and row["raw"].startswith("enc:")
+        for row in rows
+    )
+
 def _wait_for_http(url: str, *, timeout_s: float = 20.0) -> bool:
     deadline = time.time() + timeout_s
     while time.time() < deadline:
@@ -135,9 +152,9 @@ def _wait_for_http(url: str, *, timeout_s: float = 20.0) -> bool:
     return False
 
 
-def _build_cli_defaults(temp_dir: Path, collector_url: str, cortex_url: str) -> Path:
-    defaults = temp_dir / "loxa-cli.defaults.yaml"
-    defaults.write_text(
+def _build_cli_config(temp_dir: Path, collector_url: str, cortex_url: str) -> Path:
+    config_path = temp_dir / "loxa-cli.yaml"
+    config_path.write_text(
         "\n".join(
             [
                 f"collector_repo_path: {COLLECTOR_ROOT.as_posix()}",
@@ -154,14 +171,16 @@ def _build_cli_defaults(temp_dir: Path, collector_url: str, cortex_url: str) -> 
         ),
         encoding="utf-8",
     )
-    return defaults
+    return config_path
 
 
-def _start_collector(temp_dir: Path, port: int) -> tuple[subprocess.Popen[str] | None, list[StepResult], str]:
+def _start_collector(
+    temp_dir: Path, port: int
+) -> tuple[subprocess.Popen[str] | None, list[StepResult], CollectorRuntime | None]:
     results: list[StepResult] = []
     if not _tool_available("go"):
         results.append(_blocked("collector.build", "collector_runtime", "go is required to build the collector"))
-        return None, results, ""
+        return None, results, None
 
     binary = temp_dir / ("loxa-collector.exe" if os.name == "nt" else "loxa-collector")
     build = _run(
@@ -172,16 +191,59 @@ def _start_collector(temp_dir: Path, port: int) -> tuple[subprocess.Popen[str] |
     )
     results.append(build)
     if build.status != "implemented_and_passing":
-        return None, results, ""
+        return None, results, None
+
+    auth_server_secret = "collector-integration-auth-server-secret"
+    ingest_secret = "collector-integration-ingest-secret"
+    admin_secret = "collector-integration-admin-secret"
+    storage_encryption_key = "collector-integration-storage-encryption-key"
+    config_path = temp_dir / "collector.yaml"
+    config_path.write_text(
+        "\n".join(
+            [
+                'version: "1.0"',
+                "auth:",
+                "  enabled: true",
+                '  header: "Authorization"',
+                "  server_secret: ${COLLECTOR_AUTH_SERVER_SECRET}",
+                "  cache_ttl: 1m",
+                "  negative_cache_ttl: 1s",
+                "  keys:",
+                "    - name: integration-ingest",
+                "      key_id: kingest",
+                "      secret_env: COLLECTOR_INGEST_KEY_SECRET",
+                "      kind: sec",
+                "      roles: [collector_ingest_server]",
+                "    - name: integration-admin",
+                "      key_id: kadmin",
+                "      secret_env: COLLECTOR_ADMIN_KEY_SECRET",
+                "      kind: sec",
+                "      roles: [project_admin]",
+                "storage:",
+                "  encryption_key_env: LOXA_STORAGE_ENCRYPTION_KEY",
+                "duckdb:",
+                f"  path: {json.dumps(str(temp_dir / 'collector.duckdb'))}",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
     env = os.environ.copy()
-    env["DUCKDB_PATH"] = str(temp_dir / "collector.duckdb")
+    env.update(
+        {
+            "COLLECTOR_AUTH_SERVER_SECRET": auth_server_secret,
+            "COLLECTOR_INGEST_KEY_SECRET": ingest_secret,
+            "COLLECTOR_ADMIN_KEY_SECRET": admin_secret,
+            "LOXA_STORAGE_ENCRYPTION_KEY": storage_encryption_key,
+        }
+    )
     stdout_file = temp_dir / "collector.stdout.log"
     stderr_file = temp_dir / "collector.stderr.log"
     stdout_handle = stdout_file.open("w", encoding="utf-8")
     stderr_handle = stderr_file.open("w", encoding="utf-8")
     proc = subprocess.Popen(
-        [str(binary), "run", "-c", "configs/loxa.yaml", "--addr", f"127.0.0.1:{port}"],
+        [str(binary), "run", "-c", str(config_path), "--addr", f"127.0.0.1:{port}"],
         cwd=COLLECTOR_ROOT,
         env=env,
         stdout=stdout_handle,
@@ -190,7 +252,15 @@ def _start_collector(temp_dir: Path, port: int) -> tuple[subprocess.Popen[str] |
     )
     stdout_handle.close()
     stderr_handle.close()
-    return proc, results, f"http://127.0.0.1:{port}"
+    return (
+        proc,
+        results,
+        CollectorRuntime(
+            base_url=f"http://127.0.0.1:{port}",
+            ingest_token=f"lx_sec_live_kingest_{ingest_secret}",
+            admin_token=f"lx_sec_live_kadmin_{admin_secret}",
+        ),
+    )
 
 
 def _stop_process(proc: subprocess.Popen[str] | None) -> None:
@@ -210,26 +280,26 @@ def run_collector_smoke() -> list[StepResult]:
     with tempfile.TemporaryDirectory(prefix="loxa-collector-smoke-") as raw_dir:
         temp_dir = Path(raw_dir)
         port = _find_free_port()
-        proc, startup_results, base_url = _start_collector(temp_dir, port)
+        proc, startup_results, collector = _start_collector(temp_dir, port)
         results.extend(startup_results)
-        if proc is None:
+        if proc is None or collector is None:
             return results
         try:
             started = time.perf_counter()
-            healthy = _wait_for_http(base_url + "/health")
+            healthy = _wait_for_http(collector.base_url + "/health")
             results.append(
                 StepResult(
                     id="collector.health",
                     category="collector_runtime",
                     status="implemented_and_passing" if healthy else "implemented_and_failing",
                     duration_s=time.perf_counter() - started,
-                    details={"url": base_url + "/health"},
+                    details={"url": collector.base_url + "/health"},
                 )
             )
             if not healthy:
                 return results
 
-            version_status, version_body = _http_request("GET", base_url + "/version")
+            version_status, version_body = _http_request("GET", collector.base_url + "/version")
             results.append(
                 StepResult(
                     id="collector.version",
@@ -240,14 +310,18 @@ def run_collector_smoke() -> list[StepResult]:
                 )
             )
 
-            status_code, status_body = _http_request("GET", base_url + "/status")
+            unauthorized_status, unauthorized_body = _http_request("GET", collector.base_url + "/status")
             results.append(
                 StepResult(
-                    id="collector.status",
+                    id="collector.unauthenticated_request",
                     category="collector_runtime",
-                    status="implemented_and_passing" if status_code == 200 else "implemented_and_failing",
+                    status=(
+                        "implemented_and_passing"
+                        if unauthorized_status == 401 and unauthorized_body.strip() == '{"error":"unauthorized"}'
+                        else "implemented_and_failing"
+                    ),
                     duration_s=0.0,
-                    details={"response": status_body},
+                    details={"response": unauthorized_body},
                 )
             )
 
@@ -267,9 +341,12 @@ def run_collector_smoke() -> list[StepResult]:
             }
             ingest_status, ingest_body = _http_request(
                 "POST",
-                base_url + "/events",
+                collector.base_url + "/events",
                 body=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Authorization": f"Bearer {collector.ingest_token}",
+                    "Content-Type": "application/json",
+                },
             )
             results.append(
                 StepResult(
@@ -283,11 +360,14 @@ def run_collector_smoke() -> list[StepResult]:
             time.sleep(1.0)
             query_status, query_body = _http_request(
                 "POST",
-                base_url + "/query",
+                collector.base_url + "/query",
                 body=json.dumps({"query": "SELECT raw FROM events ORDER BY timestamp DESC LIMIT 20"}).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Authorization": f"Bearer {collector.admin_token}",
+                    "Content-Type": "application/json",
+                },
             )
-            query_ok = query_status == 200 and marker in query_body
+            query_ok = query_status == 200 and _has_encrypted_raw(query_body)
             results.append(
                 StepResult(
                     id="collector.query",
@@ -318,9 +398,9 @@ def run_cli_flow() -> list[StepResult]:
     with tempfile.TemporaryDirectory(prefix="loxa-cli-flow-") as raw_dir:
         temp_dir = Path(raw_dir)
         port = _find_free_port()
-        collector_proc, startup_results, base_url = _start_collector(temp_dir, port)
+        collector_proc, startup_results, collector = _start_collector(temp_dir, port)
         results.extend(startup_results)
-        if collector_proc is None:
+        if collector_proc is None or collector is None:
             return results
 
         cli_binary = temp_dir / ("loxa.exe" if os.name == "nt" else "loxa")
@@ -330,11 +410,12 @@ def run_cli_flow() -> list[StepResult]:
             _stop_process(collector_proc)
             return results
 
-        defaults = _build_cli_defaults(temp_dir, base_url, "http://127.0.0.1:9312")
+        config_path = _build_cli_config(temp_dir, collector.base_url, "http://127.0.0.1:9312")
         env = os.environ.copy()
-        env["LOXA_CLI_DEFAULTS"] = str(defaults)
+        env["LOXA_CLI_CONFIG"] = str(config_path)
+        env["LOXA_API_KEY"] = collector.admin_token
 
-        if not _wait_for_http(base_url + "/health"):
+        if not _wait_for_http(collector.base_url + "/health"):
             results.append(_blocked("cli.collector", "cli_runtime", "collector did not become healthy", "implemented_and_failing"))
             _stop_process(collector_proc)
             return results
@@ -344,6 +425,7 @@ def run_cli_flow() -> list[StepResult]:
 
         marker = f"cli-flow-{int(time.time())}"
         attrs = json.dumps({"test_marker": marker})
+        env["LOXA_API_KEY"] = collector.ingest_token
         emit = _run(
             "cli.emit",
             "cli_runtime",
@@ -356,15 +438,18 @@ def run_cli_flow() -> list[StepResult]:
         time.sleep(1.0)
         query_status, query_body = _http_request(
             "POST",
-            base_url + "/query",
+            collector.base_url + "/query",
             body=json.dumps({"query": "SELECT raw FROM events ORDER BY timestamp DESC LIMIT 20"}).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Authorization": f"Bearer {collector.admin_token}",
+                "Content-Type": "application/json",
+            },
         )
         results.append(
             StepResult(
                 id="cli.query_roundtrip",
                 category="cli_runtime",
-                status="implemented_and_passing" if query_status == 200 and marker in query_body else "implemented_and_failing",
+                status="implemented_and_passing" if query_status == 200 and _has_encrypted_raw(query_body) else "implemented_and_failing",
                 details={"marker": marker, "response": query_body},
             )
         )
@@ -391,11 +476,16 @@ def run_cortex_full_stack() -> list[StepResult]:
         results[-1].details["reason"] = "docker compose is unavailable"
         return results
 
+    compose_env = os.environ.copy()
+    compose_env.setdefault("POSTGRES_PASSWORD", "loxa-integration-postgres-password")
+    compose_env.setdefault("CORTEX_API_KEYS", "integration:loxa-integration-cortex-api-key:admin")
+
     up = _run(
         "cortex.compose.up",
         "cortex_runtime",
         ["docker", "compose", "-f", "configs/docker-compose.yml", "up", "-d", "--wait"],
         CORTEX_ROOT,
+        env=compose_env,
         timeout_s=120,
     )
     compose_err = (up.stderr or "").lower()
@@ -456,6 +546,7 @@ def run_cortex_full_stack() -> list[StepResult]:
                 "cortex_runtime",
                 ["docker", "compose", "-f", "configs/docker-compose.yml", "down", "--remove-orphans"],
                 CORTEX_ROOT,
+                env=compose_env,
                 ok_returncodes=(0,),
                 timeout_s=60,
             )
@@ -491,17 +582,19 @@ def run_shared_sdk_conformance() -> list[StepResult]:
     with tempfile.TemporaryDirectory(prefix="loxa-shared-conformance-") as raw_dir:
         temp_dir = Path(raw_dir)
         collector_port = _find_free_port()
-        collector_proc, startup_results, base_url = _start_collector(temp_dir, collector_port)
+        collector_proc, startup_results, collector = _start_collector(temp_dir, collector_port)
         results.extend(startup_results)
-        if collector_proc is None:
+        if collector_proc is None or collector is None:
             return results
         try:
-            if not _wait_for_http(base_url + "/health", timeout_s=30):
+            if not _wait_for_http(collector.base_url + "/health", timeout_s=30):
                 results.append(_blocked("sdk.shared_conformance", "sdk_conformance", "collector did not become healthy", "implemented_and_failing"))
                 return results
 
             env = os.environ.copy()
-            env["LOXA_TEST_COLLECTOR_URL"] = base_url
+            env["LOXA_TEST_COLLECTOR_URL"] = collector.base_url
+            env["LOXA_API_KEY"] = collector.ingest_token
+            env["LOXA_COLLECTOR_API_KEY"] = collector.ingest_token
 
             if _tool_available("cargo"):
                 results.append(

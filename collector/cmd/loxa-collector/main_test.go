@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/astraive/loxa/collector/internal/auth"
 	collectorconfig "github.com/astraive/loxa/collector/internal/config"
 	collectorevent "github.com/astraive/loxa/collector/internal/event"
 	"github.com/astraive/loxa/collector/internal/ingest"
@@ -66,6 +67,7 @@ func (s errSink) Close(context.Context) error { return nil }
 
 func testCollectorConfig() collectorConfig {
 	cfg := runtimeConfigFromFile(defaultFileConfig())
+	cfg.authEnabled = false
 	cfg.retryMaxAttempts = 1
 	cfg.retryInitialBackoff = time.Millisecond
 	cfg.retryMaxBackoff = time.Millisecond
@@ -126,6 +128,9 @@ func TestHandleIngestAuthFailure(t *testing.T) {
 	sink := &fakeSink{}
 	cfg := testCollectorConfig()
 	cfg.authEnabled = true
+	cfg.authServerSecret = "test-auth-server-secret"
+	cfg.authCacheTTL = time.Minute
+	cfg.authNegativeCacheTTL = time.Second
 	cfg.storageEncryptionKey = "test-encryption-key-for-e2e-32bytes!"
 	cfg.apiKey = "lx_sec_live_ktest_testsecret"
 	state := &collectorState{
@@ -150,6 +155,58 @@ func TestHandleIngestAuthFailure(t *testing.T) {
 
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("expected 401, got %d", resp.StatusCode)
+	}
+	if got := resp.Header.Get("Content-Type"); !strings.HasPrefix(got, "application/json") {
+		t.Fatalf("expected JSON auth failure content type, got %q", got)
+	}
+	if resp.Header.Get("X-Auth-Failure-Code") != "unauthorized" || resp.Header.Get("X-Auth-Failure-Reason") != "authentication required" {
+		t.Fatalf("unexpected generic auth failure headers: %#v", resp.Header)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read auth failure body: %v", err)
+	}
+	if string(body) != "{\"error\":\"unauthorized\"}\n" {
+		t.Fatalf("unexpected auth failure body: %q", body)
+	}
+}
+
+func TestConfiguredAdminKeyCanReadStatus(t *testing.T) {
+	cfg := testCollectorConfig()
+	cfg.authEnabled = true
+	cfg.authServerSecret = "test-auth-server-secret"
+	cfg.authCacheTTL = time.Minute
+	cfg.authNegativeCacheTTL = time.Second
+	cfg.authKeys = []collectorAuthKey{
+		{
+			name:    "admin",
+			keyID:   "kadmin",
+			secret:  "adminsecret",
+			kind:    auth.KeyKindSecret,
+			roles:   []auth.Role{auth.RoleProjectAdmin},
+		},
+	}
+	state := &collectorState{
+		cfg:         cfg,
+		ingestSink:  &fakeSink{},
+		rateLimiter: rate.NewLimiter(rate.Limit(1000), 1000),
+	}
+	state.ready.Store(true)
+	srv := httptest.NewServer(buildMux(state))
+	defer srv.Close()
+
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/status", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer lx_sec_live_kadmin_adminsecret")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected authenticated project admin to read status, got %d", resp.StatusCode)
 	}
 }
 

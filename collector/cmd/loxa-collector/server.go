@@ -45,6 +45,10 @@ func runCollector(cfg collectorConfig) error {
 		bus             eventbus.Bus
 	)
 
+	if cfg.authEnabled && strings.TrimSpace(cfg.authServerSecret) == "" {
+		return errors.New("auth.enabled requires a resolved auth.server_secret")
+	}
+
 	if cfg.reliabilityMode == "queue" {
 		// Eventbus-based queue mode (pluggable: memory, redis, nats, kafka)
 		busType := cfg.eventBusType
@@ -182,6 +186,9 @@ func runCollector(cfg collectorConfig) error {
 		queryDB:         db,
 		eventBus:        bus,
 	}
+	if err := initializeAuthState(state); err != nil {
+		return err
+	}
 	state.ready.Store(true)
 	state.sinkHealthy.Store(true)
 	state.spoolHealthy.Store(true)
@@ -281,13 +288,7 @@ func runCollector(cfg collectorConfig) error {
 	if cfg.serverConfig.GRPC.Enabled {
 		grpcSrv := serverruntime.NewGRPCServer(cfg.serverConfig.GRPC, state)
 		if cfg.authEnabled {
-			serverSecret := []byte(cfg.storageEncryptionKey)
-			if len(serverSecret) == 0 {
-				log.Fatal().Msg("auth.enabled requires storageEncryptionKey to be set. Configure encryption_key or encryption_key_env in your config file.")
-			}
-			store := newMemoryKeyStoreFromConfig(cfg, serverSecret)
-			cache := auth.NewMemoryKeyCache(60*time.Second, 10*time.Second)
-			grpcSrv.WithAuth(store, cache, serverSecret)
+			grpcSrv.WithAuth(state.keyStore, state.keyCache, state.serverSecret)
 			grpcSrv.WithAllowLocalDevKeys(cfg.authAllowLocalDevKeys)
 			grpcSrv.WithTrustedProxies(trustedCIDRs)
 		}
@@ -296,13 +297,7 @@ func runCollector(cfg collectorConfig) error {
 	if cfg.serverConfig.GraphQL.Enabled {
 		graphqlSrv := serverruntime.NewGraphQLServer(cfg.serverConfig.GraphQL, state)
 		if cfg.authEnabled {
-			serverSecret := []byte(cfg.storageEncryptionKey)
-			if len(serverSecret) == 0 {
-				log.Fatal().Msg("auth.enabled requires storageEncryptionKey to be set. Configure encryption_key or encryption_key_env in your config file.")
-			}
-			store := newMemoryKeyStoreFromConfig(cfg, serverSecret)
-			cache := auth.NewMemoryKeyCache(60*time.Second, 10*time.Second)
-			graphqlSrv.WithAuth(store, cache, serverSecret)
+			graphqlSrv.WithAuth(state.keyStore, state.keyCache, state.serverSecret)
 			graphqlSrv.WithAllowLocalDevKeys(cfg.authAllowLocalDevKeys)
 		}
 		auxServers = append(auxServers, graphqlSrv)
@@ -463,26 +458,13 @@ func reloadCollectorState(state *collectorState) error {
 func buildMux(state *collectorState) *http.ServeMux {
 	tailWSHandler := serverruntime.NewTailWebSocketHandler(state.cfg.serverConfig.HTTP, state)
 
-	// Build auth middleware if enabled
 	var protector publichttp.RouteProtector
 	if state.cfg.authEnabled {
-		serverSecret := []byte(state.cfg.storageEncryptionKey)
-		if len(serverSecret) == 0 {
-			log.Fatal().Msg("auth.enabled requires storageEncryptionKey to be set. Configure encryption_key or encryption_key_env in your config file.")
+		if state.keyStore == nil || state.keyCache == nil || len(state.serverSecret) == 0 {
+			if err := initializeAuthState(state); err != nil {
+				log.Fatal().Err(err).Msg("invalid collector authentication configuration")
+			}
 		}
-		state.serverSecret = serverSecret
-
-		// Create key store from config (backward compat: single apiKey → one KeyRecord)
-		store := newMemoryKeyStoreFromConfig(state.cfg, serverSecret)
-		state.keyStore = store
-		cache := auth.NewMemoryKeyCache(60*time.Second, 10*time.Second)
-		state.keyCache = cache
-
-		// Create shared key rate limiter for middleware and handler event limiting
-		keyRL := auth.NewKeyRateLimiter()
-		state.keyRateLimiter = keyRL
-
-		// Parse trusted proxy CIDRs
 		var trustedCIDRs []*net.IPNet
 		for _, cidr := range state.cfg.trustedProxies {
 			_, ipNet, err := net.ParseCIDR(cidr)
@@ -492,20 +474,37 @@ func buildMux(state *collectorState) *http.ServeMux {
 			trustedCIDRs = append(trustedCIDRs, ipNet)
 		}
 
-		// Create middleware chain
-		authMW := auth.Middleware(store, cache, serverSecret,
+		authMW := auth.Middleware(state.keyStore, state.keyCache, state.serverSecret,
 			auth.WithAllowLocalDevKeys(state.cfg.authAllowLocalDevKeys),
 			auth.WithTrustedProxies(trustedCIDRs),
-			auth.WithRateLimiter(keyRL),
+			auth.WithRateLimiter(state.keyRateLimiter),
 		)
-
-		// Wrap: auth middleware → then per-route permission check
 		protector = func(next http.Handler, perm string) http.Handler {
 			return authMW(auth.RequirePermission(next, auth.Permission(perm)))
 		}
 	}
 
 	return publichttp.BuildMux(state.cfg.ingestPath, state.cfg.healthPath, state.cfg.readyPath, state.cfg.metricsPath, state.cfg.metricsPrometheus, state.metricsHandler(), tailWSHandler, state, protector)
+}
+
+func initializeAuthState(state *collectorState) error {
+	if !state.cfg.authEnabled {
+		return nil
+	}
+	if strings.TrimSpace(state.cfg.authServerSecret) == "" {
+		return errors.New("auth.enabled requires a resolved auth.server_secret")
+	}
+	if len(state.cfg.authKeys) == 0 && strings.TrimSpace(state.cfg.apiKey) == "" {
+		return errors.New("auth.enabled requires at least one configured key or auth.value")
+	}
+	if state.cfg.authCacheTTL <= 0 || state.cfg.authNegativeCacheTTL <= 0 {
+		return errors.New("auth cache TTLs must be positive")
+	}
+	state.serverSecret = []byte(state.cfg.authServerSecret)
+	state.keyStore = newMemoryKeyStoreFromConfig(state.cfg, state.serverSecret)
+	state.keyCache = auth.NewMemoryKeyCache(state.cfg.authCacheTTL, state.cfg.authNegativeCacheTTL)
+	state.keyRateLimiter = auth.NewKeyRateLimiter()
+	return nil
 }
 
 // memoryKeyStore is a simple in-memory KeyStore for backward compatibility
@@ -550,47 +549,48 @@ func (s *memoryKeyStore) RevokeKey(keyID string) error {
 	rec.RevokedAt = &now
 	return nil
 }
-
-// newMemoryKeyStoreFromConfig creates a KeyStore from the collector config.
-// When the old single-key config is used (auth.value), it creates one KeyRecord
-// with the collector_ingest_server role. This preserves backward compatibility.
 func newMemoryKeyStoreFromConfig(cfg collectorConfig, serverSecret []byte) *memoryKeyStore {
-	store := &memoryKeyStore{keys: make(map[string]*auth.KeyRecord)}
-
-	if cfg.apiKey == "" {
-		return store
+	store := &memoryKeyStore{keys: make(map[string]*auth.KeyRecord, len(cfg.authKeys)+1)}
+	for _, key := range cfg.authKeys {
+		store.keys[key.keyID] = &auth.KeyRecord{
+			ID:                   key.name,
+			KeyID:                key.keyID,
+			SecretHash:           auth.HashSecret(key.secret, serverSecret),
+			Kind:                 key.kind,
+			Roles:                append([]auth.Role(nil), key.roles...),
+			AllowedEnvs:          append([]string(nil), key.allowedEnvs...),
+			AllowedServices:      append([]string(nil), key.allowedServices...),
+			AllowedOrigins:       append([]string(nil), key.allowedOrigins...),
+			AllowedIPs:           append([]string(nil), key.allowedIPs...),
+			MaxPayloadBytes:      key.maxPayloadBytes,
+			MaxRequestsPerMinute: key.maxRequestsPerMinute,
+			MaxEventsPerMinute:   key.maxEventsPerMinute,
+		}
+		if store.keys[key.keyID].ID == "" {
+			store.keys[key.keyID].ID = key.keyID
+		}
 	}
 
-	// Parse the key to extract key_id
+	if strings.TrimSpace(cfg.apiKey) == "" {
+		return store
+	}
 	parsed, err := auth.ParseKey(cfg.apiKey)
 	if err != nil {
-		// Legacy key format (not lx_...): treat as a raw secret with a fixed key_id
-		hash := auth.HashSecret(cfg.apiKey, serverSecret)
-		store.keys["legacy"] = &auth.KeyRecord{
-			ID:                   "legacy",
-			KeyID:                "legacy",
-			SecretHash:           hash,
-			Kind:                 auth.KeyKindSecret,
-			Roles:                []auth.Role{auth.RoleIngestServer},
-			MaxPayloadBytes:      int(cfg.maxBodyBytes),
-			MaxRequestsPerMinute: int(cfg.rateLimitRPS) * 60,
-			MaxEventsPerMinute:   int(cfg.rateLimitRPS) * 600,
-		}
 		return store
 	}
-
-	hash := auth.HashSecret(parsed.Secret, serverSecret)
+	if _, configured := store.keys[parsed.KeyID]; configured {
+		return store
+	}
 	store.keys[parsed.KeyID] = &auth.KeyRecord{
 		ID:                   parsed.KeyID,
 		KeyID:                parsed.KeyID,
-		SecretHash:           hash,
+		SecretHash:           auth.HashSecret(parsed.Secret, serverSecret),
 		Kind:                 parsed.Kind,
 		Roles:                []auth.Role{auth.RoleIngestServer},
 		MaxPayloadBytes:      int(cfg.maxBodyBytes),
 		MaxRequestsPerMinute: int(cfg.rateLimitRPS) * 60,
 		MaxEventsPerMinute:   int(cfg.rateLimitRPS) * 600,
 	}
-
 	return store
 }
 

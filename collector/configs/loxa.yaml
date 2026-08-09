@@ -14,10 +14,24 @@ collector:
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────
 auth:
-  enabled: false
+  enabled: true
   header: "X-API-Key"
-  # value_env: "COLLECTOR_API_KEY"       # Load from env instead of file
-
+  server_secret: "${COLLECTOR_AUTH_SERVER_SECRET}"
+  cache_ttl: "5m"
+  negative_cache_ttl: "30s"
+  keys:
+    - name: "collector-ingest"
+      key_id: "kingest"
+      secret_env: "COLLECTOR_INGEST_KEY_SECRET"
+      kind: "sec"
+      roles:
+        - "collector_ingest_server"
+    - name: "collector-admin"
+      key_id: "kadmin"
+      secret_env: "COLLECTOR_ADMIN_KEY_SECRET"
+      kind: "sec"
+      roles:
+        - "project_admin"
 # ─── Rate Limiting ───────────────────────────────────────────────────────────
 rate_limit:
   enabled: true
@@ -34,6 +48,7 @@ routes:
 # ─── Storage ─────────────────────────────────────────────────────────────────
 storage:
   primary: "duckdb"                      # duckdb (only option currently)
+  encryption_key_env: "LOXA_STORAGE_ENCRYPTION_KEY"
 
 # ─── DuckDB ──────────────────────────────────────────────────────────────────
 duckdb:

@@ -20,6 +20,13 @@ func TestNewRequiresDSNWhenDBMissing(t *testing.T) {
 	}
 }
 
+func TestNewRejectsBlankEncryptionKeyWhenRawEncryptionEnabled(t *testing.T) {
+	_, err := New(Config{Table: "events", EncryptRaw: true})
+	if err == nil || !strings.Contains(err.Error(), "encrypt_key") {
+		t.Fatalf("expected encrypted sink with blank key to fail, got %v", err)
+	}
+}
+
 func TestQuoteTableNameRejectsInvalidIdentifier(t *testing.T) {
 	_, err := quoteTableName("events;drop")
 	if err == nil {
@@ -95,6 +102,30 @@ func TestWriteEventRawModeE2E(t *testing.T) {
 	}
 	if got != string(encoded) {
 		t.Fatalf("unexpected raw payload:\nwant: %s\ngot:  %s", string(encoded), got)
+	}
+}
+
+func TestWriteEventEncryptedRawModeE2E(t *testing.T) {
+	db := openSQLiteDB(t)
+	mustExec(t, db, `CREATE TABLE events (raw TEXT)`)
+	s, err := New(Config{
+		DB:         db,
+		Table:      "events",
+		EncryptRaw: true,
+		EncryptKey: "test-storage-encryption-key",
+	})
+	if err != nil {
+		t.Fatalf("new encrypted sink failed: %v", err)
+	}
+	if err := s.WriteEvent(context.Background(), []byte(`{"event_id":"evt-encrypted"}`), nil); err != nil {
+		t.Fatalf("write encrypted event failed: %v", err)
+	}
+	var raw string
+	if err := db.QueryRow(`SELECT raw FROM events`).Scan(&raw); err != nil {
+		t.Fatalf("query encrypted raw event: %v", err)
+	}
+	if !strings.HasPrefix(raw, "enc:") {
+		t.Fatalf("expected encrypted raw event prefix, got %q", raw)
 	}
 }
 

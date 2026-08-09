@@ -163,7 +163,15 @@ func TestMiddleware_MissingHeader(t *testing.T) {
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
-	// X-Auth-Failure-Code is no longer sent to clients (logged server-side only).
+	if got := rec.Header().Get("Content-Type"); got != "application/json" {
+		t.Errorf("Content-Type = %q, want application/json", got)
+	}
+	if rec.Header().Get("X-Auth-Failure-Code") != "unauthorized" || rec.Header().Get("X-Auth-Failure-Reason") != "authentication required" {
+		t.Errorf("unexpected generic auth failure headers: %#v", rec.Header())
+	}
+	if got := rec.Body.String(); got != "{\"error\":\"unauthorized\"}\n" {
+		t.Errorf("body = %q, want unauthorized JSON", got)
+	}
 }
 
 func TestMiddleware_InvalidKey(t *testing.T) {

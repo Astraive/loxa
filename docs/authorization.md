@@ -8,14 +8,14 @@ LOXA uses Role-Based Access Control (RBAC) with Attribute-Based Access Control (
 
 ### Roles Matrix
 
-| Role | events:write | events:read | events:delete | logs:write | logs:read | traces:write | traces:read | metrics:write | metrics:read | heartbeat:write | schema:write | schema:read | pii_audit:read | project:admin |
-|------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| `collector_ingest_public` | x | | | | | | | | | x | | | | |
-| `collector_ingest_server` | x | | | x | | x | | x | | x | | | | |
-| `collector_ingest_enterprise` | x | | | x | | x | | x | | x | | | | |
-| `project_readonly` | | x | | | x | | x | | x | | | x | x | |
-| `project_operator` | | x | | | x | | x | | x | | x | x | x | |
-| `project_admin` | | x | x | | x | | x | | x | | x | x | x | x |
+| Role | events:write | events:read | events:delete | logs:write | logs:read | traces:write | traces:read | metrics:write | metrics:read | heartbeat:write | schema:write | schema:read | pii_audit:read | status:read | project:admin |
+|------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| `collector_ingest_public` | x | | | | | | | | | x | | | | | |
+| `collector_ingest_server` | x | | | x | | x | | x | | x | | | | | |
+| `collector_ingest_enterprise` | x | | | x | | x | | x | | x | | | | | |
+| `project_readonly` | | x | | | x | | x | | x | | | x | x | x | |
+| `project_operator` | | x | | x | | x | | x | | x | x | x | x | |
+| `project_admin` | | x | x | | x | | x | | x | | x | x | x | x | x |
 
 ### Role Definitions
 
@@ -46,21 +46,21 @@ For enterprise customers requiring full ingest with additional capabilities.
 
 For dashboards, support tools, and read-only access to stored data.
 
-- **Permissions**: `events:read`, `logs:read`, `traces:read`, `metrics:read`, `schema:read`, `pii_audit:read`
+- **Permissions**: `events:read`, `logs:read`, `traces:read`, `metrics:read`, `schema:read`, `pii_audit:read`, `status:read`
 - **Key kind**: N/A (control plane keys)
 
 #### `project_operator`
 
 For DevOps and infrastructure automation. Read access plus schema management.
 
-- **Permissions**: `project_readonly` + `schema:write`
+- **Permissions**: `project_readonly` + `schema:write`, including `status:read`
 - **Key kind**: N/A (control plane keys)
 
 #### `project_admin`
 
 Full administrative access. **Does NOT include ingest permissions** — ingest and admin are separate concerns.
 
-- **Permissions**: `events:read`, `events:delete`, `logs:read`, `traces:read`, `metrics:read`, `schema:read`, `schema:write`, `pii_audit:read`, `project:admin`
+- **Permissions**: `events:read`, `events:delete`, `logs:read`, `traces:read`, `metrics:read`, `schema:read`, `schema:write`, `pii_audit:read`, `status:read`, `project:admin`
 - **Key kind**: N/A (control plane keys)
 
 ## Permissions Reference
@@ -80,6 +80,7 @@ Full administrative access. **Does NOT include ingest permissions** — ingest a
 | `schema:write` | Publish/update schemas | DevOps, CI/CD |
 | `schema:read` | Read schemas | Dashboards |
 | `pii_audit:read` | Audit PII fields | Compliance tools |
+| `status:read` | Read collector `/status` | Project roles |
 | `project:admin` | Project-level admin | Admin panel |
 
 ## ABAC Restrictions
@@ -117,7 +118,6 @@ auth:
       max_requests_per_minute: 5000
       max_events_per_minute: 50000
       max_payload_bytes: 524288
-      allow_pii: true
 ```
 
 ### Public Key Restrictions
@@ -136,18 +136,18 @@ Each collector endpoint requires a specific permission:
 
 | Route | Method | Permission | Description |
 |-------|--------|------------|-------------|
-| `/core/events` | `POST` | `events:write` | Ingest events |
-| `/core/events` | `GET` | `events:read` | Query events |
-| `/core/events` | `DELETE` | `events:delete` | Delete events |
-| `/core/logs` | `POST` | `logs:write` | Ingest logs |
-| `/core/traces` | `POST` | `traces:write` | Ingest traces |
-| `/core/tail` | `GET` | `events:read` | Tail live events |
-| `/core/schema/publish` | `POST` | `schema:write` | Publish schemas |
-| `/core/audit/pii` | `POST` | `pii_audit:read` | Audit PII fields |
-| `/core/dlq` | `GET` | `events:read` | List dead-letter queue |
-| `/core/dlq/replay` | `POST` | `events:write` | Replay from DLQ |
-| `/healthz` | `GET` | *(public)* | Health check |
+| `/events` | `POST` | `events:write` | Ingest events |
+| `/query` | `POST` | `events:read` | Query events |
+| `/events` | `DELETE` | `events:delete` | Delete events |
+| `/otlp/logs` | `POST` | `logs:write` | Ingest logs |
+| `/tail` | `GET` | `events:read` | Tail live events |
+| `/schema/publish` | `POST` | `schema:write` | Publish schemas |
+| `/audit/pii` | `POST` | `pii_audit:read` | Audit PII fields |
+| `/dlq` | `GET` | `events:read` | List dead-letter queue |
+| `/dlq/replay` | `POST` | `events:write` | Replay from DLQ |
+| `/health` | `GET` | *(public)* | Health check |
 | `/readyz` | `GET` | *(public)* | Readiness check |
+| `/status` | `GET` | `status:read` | Collector status |
 | `/metrics` | `GET` | `events:read` | Prometheus metrics |
 
 ## Default-Deny Rules

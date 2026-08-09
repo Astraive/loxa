@@ -1,7 +1,9 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,29 +13,30 @@ import (
 )
 
 type Config struct {
-	Collector   CollectorConfig         `yaml:"collector"`
-	Auth        AuthConfig              `yaml:"auth"`
-	RateLimit   RateLimitConfig         `yaml:"rate_limit"`
-	Routes      RoutesConfig            `yaml:"routes"`
-	Storage     StorageConfig           `yaml:"storage"`
-	DuckDB      DuckDBConfig            `yaml:"duckdb"`
-	Retention   RetentionConfig         `yaml:"retention"`
-	Kafka       KafkaConfig             `yaml:"kafka"`
-	Worker      WorkerConfig            `yaml:"worker"`
-	Logging     LoggingConfig           `yaml:"logging"`
-	Metrics     MetricsConfig           `yaml:"metrics"`
-	Reliability ReliabilityConfig       `yaml:"reliability"`
-	Limits      LimitsConfig            `yaml:"limits"`
-	Identity    IdentityConfig          `yaml:"identity"`
-	Privacy     PrivacyConfig           `yaml:"privacy"`
-	Components  ComponentRegistryConfig `yaml:"components"`
-	Retry       RetryConfig             `yaml:"retry"`
-	DeadLetter  DeadLetterConfig        `yaml:"dead_letter"`
-	Fanout      FanoutConfig            `yaml:"fanout"`
-	Dedupe      DedupeConfig            `yaml:"dedupe"`
-	Schema      SchemaGovernanceConfig  `yaml:"schema_governance"`
-	CortexBridge CortexBridgeConfig     `yaml:"cortex_bridge"`
-	EventBus    EventBusConfig          `yaml:"eventbus"`
+	Version       string                  `yaml:"version"`
+	Collector     CollectorConfig         `yaml:"collector"`
+	Auth          AuthConfig              `yaml:"auth"`
+	RateLimit     RateLimitConfig         `yaml:"rate_limit"`
+	Routes        RoutesConfig            `yaml:"routes"`
+	Storage       StorageConfig           `yaml:"storage"`
+	DuckDB        DuckDBConfig            `yaml:"duckdb"`
+	Retention     RetentionConfig         `yaml:"retention"`
+	Kafka         KafkaConfig             `yaml:"kafka"`
+	Worker        WorkerConfig            `yaml:"worker"`
+	Logging       LoggingConfig           `yaml:"logging"`
+	Metrics       MetricsConfig           `yaml:"metrics"`
+	Reliability   ReliabilityConfig       `yaml:"reliability"`
+	Limits        LimitsConfig            `yaml:"limits"`
+	Identity      IdentityConfig          `yaml:"identity"`
+	Privacy       PrivacyConfig           `yaml:"privacy"`
+	Components    ComponentRegistryConfig `yaml:"components"`
+	Retry         RetryConfig             `yaml:"retry"`
+	DeadLetter    DeadLetterConfig        `yaml:"dead_letter"`
+	Fanout        FanoutConfig            `yaml:"fanout"`
+	Dedupe        DedupeConfig            `yaml:"dedupe"`
+	Schema        SchemaGovernanceConfig  `yaml:"schema_governance"`
+	CortexBridge  CortexBridgeConfig      `yaml:"cortex_bridge"`
+	EventBus      EventBusConfig          `yaml:"eventbus"`
 }
 
 type CollectorConfig struct {
@@ -96,11 +99,30 @@ type GraphQLConfig struct {
 }
 
 type AuthConfig struct {
-	Enabled           bool   `yaml:"enabled"`
-	Header            string `yaml:"header"`
-	ValueEnv          string `yaml:"value_env"`
-	Value             string `yaml:"-"`
-	AllowLocalDevKeys bool   `yaml:"allow_local_dev_keys"`
+	Enabled           bool            `yaml:"enabled"`
+	Header            string          `yaml:"header"`
+	ValueEnv          string          `yaml:"value_env"`
+	Value             string          `yaml:"value"`
+	AllowLocalDevKeys bool            `yaml:"allow_local_dev_keys"`
+	ServerSecret      string          `yaml:"server_secret"`
+	CacheTTL          time.Duration   `yaml:"cache_ttl"`
+	NegativeCacheTTL  time.Duration   `yaml:"negative_cache_ttl"`
+	Keys              []AuthKeyConfig `yaml:"keys"`
+}
+
+type AuthKeyConfig struct {
+	Name                 string   `yaml:"name"`
+	KeyID                string   `yaml:"key_id"`
+	SecretEnv            string   `yaml:"secret_env"`
+	Kind                 string   `yaml:"kind"`
+	Roles                []string `yaml:"roles"`
+	AllowedEnvs          []string `yaml:"allowed_envs"`
+	AllowedServices      []string `yaml:"allowed_services"`
+	AllowedOrigins       []string `yaml:"allowed_origins"`
+	AllowedIPs           []string `yaml:"allowed_ips"`
+	MaxPayloadBytes      int      `yaml:"max_payload_bytes"`
+	MaxRequestsPerMinute int      `yaml:"max_requests_per_minute"`
+	MaxEventsPerMinute   int      `yaml:"max_events_per_minute"`
 }
 
 type RateLimitConfig struct {
@@ -461,13 +483,22 @@ func Load(data []byte, cfg *Config) error {
 	return yaml.Unmarshal(data, cfg)
 }
 
-// LoadFile reads and parses a YAML config file into cfg.
+// LoadFile reads and strictly parses one YAML config document into cfg.
 func LoadFile(cfg *Config, path string) error {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("read config file %s: %w", path, err)
 	}
-	if err := yaml.Unmarshal(raw, cfg); err != nil {
+	dec := yaml.NewDecoder(bytes.NewReader(raw))
+	dec.KnownFields(true)
+	if err := dec.Decode(cfg); err != nil {
+		return fmt.Errorf("parse config file %s: %w", path, err)
+	}
+	var extra Config
+	if err := dec.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return fmt.Errorf("parse config file %s: config file must contain a single YAML document", path)
+		}
 		return fmt.Errorf("parse config file %s: %w", path, err)
 	}
 	return nil

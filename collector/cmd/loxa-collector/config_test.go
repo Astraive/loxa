@@ -9,13 +9,34 @@ import (
 	"testing"
 	"time"
 
+	"github.com/astraive/loxa/collector/internal/auth"
 	collectorconfig "github.com/astraive/loxa/collector/internal/config"
 )
+
+func TestMain(m *testing.M) {
+	for key, value := range map[string]string{
+		"COLLECTOR_AUTH_SERVER_SECRET": "test-auth-server-secret",
+		"COLLECTOR_INGEST_KEY_SECRET": "test-ingest-key-secret",
+		"COLLECTOR_ADMIN_KEY_SECRET":  "test-admin-key-secret",
+		"LOXA_STORAGE_ENCRYPTION_KEY": "test-storage-encryption-key",
+	} {
+		if err := os.Setenv(key, value); err != nil {
+			panic(err)
+		}
+	}
+	os.Exit(m.Run())
+}
+
+func validFileConfig() fileConfig {
+	cfg := defaultFileConfig()
+	cfg.Storage.EncryptionKey = "test-storage-encryption-key"
+	return cfg
+}
 
 func TestLoadCollectorConfigFromArgsPrecedence(t *testing.T) {
 	t.Setenv("COLLECTOR_ADDR", ":9001")
 	t.Setenv("DUCKDB_BATCH_SIZE", "20")
-	t.Setenv("COLLECTOR_API_KEY", "env-secret")
+	t.Setenv("COLLECTOR_API_KEY", "lx_sec_live_klegacy_envsecret")
 
 	path := filepath.Join(t.TempDir(), "collector.yaml")
 	raw := `
@@ -48,7 +69,7 @@ duckdb:
 	if cfg.duckDBBatchSize != 30 {
 		t.Fatalf("batch size precedence mismatch: %d", cfg.duckDBBatchSize)
 	}
-	if cfg.apiKey != "env-secret" || !cfg.authEnabled {
+	if cfg.apiKey != "lx_sec_live_klegacy_envsecret" || !cfg.authEnabled {
 		t.Fatalf("expected env API key to enable auth")
 	}
 }
@@ -66,14 +87,18 @@ func TestLoadCollectorConfigFromArgsFailFastInvalidFlag(t *testing.T) {
 	}
 }
 
-func TestLoadCollectorConfigFromArgsExplicitFlagOverridesEnv(t *testing.T) {
-	t.Setenv("COLLECTOR_API_KEY", "env-secret")
-	if _, err := loadCollectorConfigFromArgs([]string{"--api-key="}); err == nil || !strings.Contains(err.Error(), "auth enabled but no API key resolved") {
-		t.Fatalf("expected explicit empty flag to override env and fail validation, got: %v", err)
+func TestLoadCollectorConfigFromArgsExplicitEmptyFlagOverridesEnv(t *testing.T) {
+	t.Setenv("COLLECTOR_API_KEY", "lx_sec_live_klegacy_envsecret")
+	cfg, err := loadCollectorConfigFromArgs([]string{"--api-key="})
+	if err != nil {
+		t.Fatalf("explicit empty legacy key should leave configured auth keys usable: %v", err)
+	}
+	if cfg.apiKey != "" {
+		t.Fatalf("expected explicit empty API key to override env, got %q", cfg.apiKey)
 	}
 }
 
-func TestMergeConfigFileRejectsUnknownFields(t *testing.T) {
+func TestLoadCollectorConfigFromArgsRejectsUnknownFields(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "collector.yaml")
 	raw := `
 collector:
@@ -83,68 +108,148 @@ collector:
 	if err := os.WriteFile(path, []byte(raw), 0o600); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
-	cfg := defaultFileConfig()
-	if err := mergeConfigFile(&cfg, path); err == nil {
-		t.Fatalf("expected unknown field error")
+	if _, err := loadCollectorConfigFromArgs([]string{"-c", path}); err == nil {
+		t.Fatalf("expected active loader to reject an unknown field")
+	}
+}
+
+func TestLoadCollectorConfigFromArgsSecureDefaultsRequireSecrets(t *testing.T) {
+	t.Setenv("COLLECTOR_AUTH_SERVER_SECRET", "")
+	t.Setenv("COLLECTOR_INGEST_KEY_SECRET", "")
+	t.Setenv("COLLECTOR_ADMIN_KEY_SECRET", "")
+	t.Setenv("LOXA_STORAGE_ENCRYPTION_KEY", "")
+	if _, err := loadCollectorConfigFromArgs(nil); err == nil {
+		t.Fatal("expected secure defaults to reject missing credentials and encryption key")
+	}
+}
+
+func TestLoadCollectorConfigFromArgsResolvesConfiguredKeys(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "collector.yaml")
+	raw := `
+auth:
+  enabled: true
+  server_secret: ${COLLECTOR_AUTH_SERVER_SECRET}
+  cache_ttl: 1m
+  negative_cache_ttl: 10s
+  keys:
+    - name: public-ingest
+      key_id: kpublic
+      secret_env: COLLECTOR_INGEST_KEY_SECRET
+      kind: pub
+      roles: [collector_ingest_public]
+      allowed_origins: [https://console.example.test]
+    - name: administrator
+      key_id: kadmin
+      secret_env: COLLECTOR_ADMIN_KEY_SECRET
+      kind: sec
+      roles: [project_admin]
+storage:
+  encryption_key_env: LOXA_STORAGE_ENCRYPTION_KEY
+`
+	if err := os.WriteFile(path, []byte(raw), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	cfg, err := loadCollectorConfigFromArgs([]string{"-c", path})
+	if err != nil {
+		t.Fatalf("load secure config: %v", err)
+	}
+	if cfg.authServerSecret != "test-auth-server-secret" || len(cfg.authKeys) != 2 {
+		t.Fatalf("resolved auth configuration was not carried to runtime: %+v", cfg)
+	}
+	if cfg.authKeys[0].secret != "test-ingest-key-secret" || cfg.authKeys[1].kind != auth.KeyKindSecret {
+		t.Fatalf("configured key secrets or kind were not resolved")
+	}
+}
+
+func TestValidateFileConfigRejectsInvalidConfiguredAuth(t *testing.T) {
+	cfg := validFileConfig()
+	cfg.Auth.Enabled = true
+	cfg.Auth.ServerSecret = "${COLLECTOR_AUTH_SERVER_SECRET}"
+	cfg.Auth.CacheTTL = time.Minute
+	cfg.Auth.NegativeCacheTTL = time.Second
+	cfg.Storage.EncryptionKey = "test-storage-encryption-key"
+	cfg.Auth.Keys = []collectorconfig.AuthKeyConfig{
+		{KeyID: "duplicate", SecretEnv: "COLLECTOR_INGEST_KEY_SECRET", Kind: "sec", Roles: []string{"collector_ingest_server"}},
+		{KeyID: "duplicate", SecretEnv: "COLLECTOR_ADMIN_KEY_SECRET", Kind: "sec", Roles: []string{"not-a-role"}},
+	}
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "must be unique") {
+		t.Fatalf("expected duplicate configured key rejection, got %v", err)
+	}
+	cfg.Auth.Keys = []collectorconfig.AuthKeyConfig{
+		{KeyID: "public", SecretEnv: "COLLECTOR_INGEST_KEY_SECRET", Kind: "pub", Roles: []string{"collector_ingest_public"}},
+	}
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "allowed_origins") {
+		t.Fatalf("expected public origin restriction validation, got %v", err)
+	}
+	cfg.Auth.Keys[0].AllowedOrigins = []string{"https://console.example.test"}
+	cfg.Auth.Keys[0].Roles = []string{"not-a-role"}
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "not recognized") {
+		t.Fatalf("expected configured role validation, got %v", err)
+	}
+	cfg.Auth.Keys[0].KeyID = "invalid_key_id"
+	cfg.Auth.Keys[0].Roles = []string{"collector_ingest_public"}
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "must not contain underscores") {
+		t.Fatalf("expected token-safe key ID validation error, got %v", err)
 	}
 }
 
 func TestValidateFileConfigRejectsInvalidValues(t *testing.T) {
-	cfg := defaultFileConfig()
+	cfg := validFileConfig()
 	cfg.DuckDB.Table = "events;drop"
 	if err := validateFileConfig(cfg); err == nil {
 		t.Fatalf("expected invalid table name error")
 	}
 
-	cfg = defaultFileConfig()
+	cfg = validFileConfig()
 	cfg.Collector.MaxBodyBytes = 0
 	if err := validateFileConfig(cfg); err == nil {
 		t.Fatalf("expected max body validation error")
 	}
 
-	cfg = defaultFileConfig()
+	cfg = validFileConfig()
 	cfg.Auth.Enabled = true
 	cfg.Auth.Value = ""
 	cfg.Auth.ValueEnv = ""
+	cfg.Auth.Keys = nil
 	if err := validateFileConfig(cfg); err == nil {
 		t.Fatalf("expected auth validation error")
 	}
 
-	cfg = defaultFileConfig()
+	cfg = validFileConfig()
 	cfg.Reliability.Mode = "spool"
 	cfg.Reliability.MaxSpoolBytes = 0
 	if err := validateFileConfig(cfg); err == nil {
 		t.Fatalf("expected spool max bytes validation error")
 	}
 
-	cfg = defaultFileConfig()
+	cfg = validFileConfig()
 	cfg.Retry.Enabled = true
 	cfg.Retry.MaxAttempts = 0
 	if err := validateFileConfig(cfg); err == nil {
 		t.Fatalf("expected retry validation error")
 	}
 
-	cfg = defaultFileConfig()
+	cfg = validFileConfig()
 	cfg.DeadLetter.Enabled = true
 	cfg.DeadLetter.Path = ""
 	if err := validateFileConfig(cfg); err == nil {
 		t.Fatalf("expected dlq path validation error")
 	}
 
-	cfg = defaultFileConfig()
+	cfg = validFileConfig()
 	cfg.DuckDB.WriterQueueSize = -1
 	if err := validateFileConfig(cfg); err == nil {
 		t.Fatalf("expected writer queue size validation error")
 	}
 
-	cfg = defaultFileConfig()
+	cfg = validFileConfig()
 	cfg.DuckDB.Export.Enabled = true
 	cfg.DuckDB.Export.Format = "json"
 	if err := validateFileConfig(cfg); err == nil {
 		t.Fatalf("expected export format validation error")
 	}
 
-	cfg = defaultFileConfig()
+	cfg = validFileConfig()
 	cfg.Components.Processors = append(cfg.Components.Processors, "whoops")
 	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "unknown component") {
 		t.Fatalf("expected unknown component validation error, got: %v", err)
@@ -294,7 +399,7 @@ func runConfigCommandCaptureOutput(t *testing.T, args []string) string {
 }
 
 func TestValidateFileConfigFanoutDeliveryPolicy(t *testing.T) {
-	cfg := defaultFileConfig()
+	cfg := validFileConfig()
 	cfg.Fanout.Delivery.Policy = "invalid"
 	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "fanout.delivery.policy") {
 		t.Fatalf("expected fanout policy validation error, got: %v", err)
@@ -302,7 +407,7 @@ func TestValidateFileConfigFanoutDeliveryPolicy(t *testing.T) {
 }
 
 func TestValidateFileConfigFanoutFallbackRequiresOutput(t *testing.T) {
-	cfg := defaultFileConfig()
+	cfg := validFileConfig()
 	cfg.Fanout.Delivery.Fallback.Enabled = true
 	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "requires exactly one enabled fallback output") {
 		t.Fatalf("expected fallback output validation error, got: %v", err)
@@ -310,7 +415,8 @@ func TestValidateFileConfigFanoutFallbackRequiresOutput(t *testing.T) {
 }
 
 func TestValidateFileConfigFanoutOutputValidation(t *testing.T) {
-	cfg := defaultFileConfig()
+	cfg := validFileConfig()
+	cfg.Storage.EncryptionKey = "test-storage-encryption-key"
 	cfg.Fanout.Outputs = []collectorconfig.FanoutOutputConfig{
 		{
 			Name:    "secondary-copy",
@@ -339,7 +445,8 @@ func TestValidateFileConfigFanoutOutputValidation(t *testing.T) {
 }
 
 func TestValidateFileConfigPostgresFanoutOutputValidation(t *testing.T) {
-	cfg := defaultFileConfig()
+	cfg := validFileConfig()
+	cfg.Storage.EncryptionKey = "test-storage-encryption-key"
 	cfg.Fanout.Outputs = []collectorconfig.FanoutOutputConfig{
 		{
 			Name:    "pg-copy",
@@ -359,7 +466,7 @@ func TestValidateFileConfigPostgresFanoutOutputValidation(t *testing.T) {
 }
 
 func TestValidateFileConfigQueueModeRequiresKafka(t *testing.T) {
-	cfg := defaultFileConfig()
+	cfg := validFileConfig()
 	cfg.Reliability.Mode = "queue"
 	cfg.Kafka.Brokers = nil
 	cfg.Kafka.Topic = ""
@@ -369,7 +476,7 @@ func TestValidateFileConfigQueueModeRequiresKafka(t *testing.T) {
 }
 
 func TestValidateFileConfigRejectsInvalidKafkaAcks(t *testing.T) {
-	cfg := defaultFileConfig()
+	cfg := validFileConfig()
 	cfg.Kafka.Acks = "leader"
 	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "kafka.acks") {
 		t.Fatalf("expected kafka.acks validation error, got: %v", err)
@@ -377,7 +484,7 @@ func TestValidateFileConfigRejectsInvalidKafkaAcks(t *testing.T) {
 }
 
 func TestValidateFileConfigRedisDedupeRequiresRedisAddr(t *testing.T) {
-	cfg := defaultFileConfig()
+	cfg := validFileConfig()
 	cfg.Dedupe.Enabled = true
 	cfg.Dedupe.Backend = "redis"
 	cfg.Dedupe.RedisAddr = ""

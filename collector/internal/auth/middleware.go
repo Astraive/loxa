@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net"
 	"net/http"
@@ -107,10 +108,12 @@ func Middleware(store KeyStore, cache *MemoryKeyCache, serverSecret []byte, opts
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ac, errCode, errReason := authenticate(r, store, cache, serverSecret, rateLimiter, mc.allowLocalDevKeys, mc.trustedProxies)
 			if ac == nil {
-				// Log detailed failure reason server-side for diagnostics.
 				slog.Warn("auth_failure", "code", errCode, "reason", errReason, "path", r.URL.Path, "remote", r.RemoteAddr)
-				// Return generic error to client — do not leak internal failure details.
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("X-Auth-Failure-Code", "unauthorized")
+				w.Header().Set("X-Auth-Failure-Reason", "authentication required")
+				w.WriteHeader(http.StatusUnauthorized)
+				_ = json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
 				return
 			}
 

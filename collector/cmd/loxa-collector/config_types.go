@@ -25,6 +25,21 @@ type serverConfig struct {
 	GraphQL serverconfig.GraphQLConfig
 }
 
+type collectorAuthKey struct {
+	name                 string
+	keyID                string
+	secret               string
+	kind                 auth.KeyKind
+	roles                []auth.Role
+	allowedEnvs          []string
+	allowedServices      []string
+	allowedOrigins       []string
+	allowedIPs           []string
+	maxPayloadBytes      int
+	maxRequestsPerMinute int
+	maxEventsPerMinute   int
+}
+
 type collectorConfig struct {
 	configFile              string
 	configArgs              []string
@@ -36,6 +51,10 @@ type collectorConfig struct {
 	serverConfig            serverConfig
 	authEnabled             bool
 	authAllowLocalDevKeys   bool
+	authServerSecret        string
+	authCacheTTL            time.Duration
+	authNegativeCacheTTL    time.Duration
+	authKeys                []collectorAuthKey
 	apiKeyHeader            string
 	apiKey                  string
 	rateLimitEnabled        bool

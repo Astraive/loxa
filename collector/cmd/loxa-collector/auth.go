@@ -10,12 +10,16 @@ import (
 	"strings"
 	"time"
 
+	collectorauth "github.com/astraive/loxa/collector/internal/auth"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 )
 
 func (s *collectorState) isAuthorized(r *http.Request) bool {
 	if !s.cfg.authEnabled {
+		return true
+	}
+	if collectorauth.GetAuthContext(r.Context()) != nil {
 		return true
 	}
 

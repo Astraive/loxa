@@ -32,10 +32,24 @@ collector:
       batch_limit: 10
 
 auth:
-  # SECURITY: Disabled for local dev only. Production MUST enable.
-  enabled: false
+  enabled: true
   header: X-API-Key
-  value_env: COLLECTOR_API_KEY
+  server_secret: ${COLLECTOR_AUTH_SERVER_SECRET}
+  cache_ttl: 5m
+  negative_cache_ttl: 30s
+  keys:
+    - name: collector-ingest
+      key_id: kingest
+      secret_env: COLLECTOR_INGEST_KEY_SECRET
+      kind: sec
+      roles:
+        - collector_ingest_server
+    - name: collector-admin
+      key_id: kadmin
+      secret_env: COLLECTOR_ADMIN_KEY_SECRET
+      kind: sec
+      roles:
+        - project_admin
 
 rate_limit:
   enabled: true
@@ -50,11 +64,7 @@ routes:
 
 storage:
   primary: duckdb
-  # Encryption at rest (AES-256-GCM). Set encryption_key_env to read key from env var.
-  # encryption_key: ""
-  # encryption_key_env: ""
-  encryption_key: ""
-  encryption_key_env: ""
+  encryption_key_env: LOXA_STORAGE_ENCRYPTION_KEY
 
 duckdb:
   path: loxa.db

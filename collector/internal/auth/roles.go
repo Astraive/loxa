@@ -17,6 +17,7 @@ const (
 	PermSchemaWrite    Permission = "schema:write"
 	PermSchemaRead     Permission = "schema:read"
 	PermPIIAuditRead   Permission = "pii_audit:read"
+	PermStatusRead     Permission = "status:read"
 	PermProjectAdmin   Permission = "project:admin"
 )
 
@@ -60,6 +61,7 @@ var rolePermissions = map[Role][]Permission{
 		PermMetricsRead,
 		PermSchemaRead,
 		PermPIIAuditRead,
+		PermStatusRead,
 	},
 	RoleProjectOperator: {
 		PermEventsRead,
@@ -69,6 +71,7 @@ var rolePermissions = map[Role][]Permission{
 		PermSchemaRead,
 		PermSchemaWrite,
 		PermPIIAuditRead,
+		PermStatusRead,
 	},
 	RoleProjectAdmin: {
 		PermEventsRead,
@@ -80,6 +83,7 @@ var rolePermissions = map[Role][]Permission{
 		PermSchemaWrite,
 		PermPIIAuditRead,
 		PermProjectAdmin,
+		PermStatusRead,
 		// Note: project_admin does NOT include ingest permissions.
 		// Ingest keys and admin keys are separate concerns.
 	},

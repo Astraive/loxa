@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -154,9 +155,10 @@ def _run_check(check: Check, verbose: bool) -> CheckResult:
 
 
 def _is_collector_reachable() -> bool:
-    """Check if the collector is reachable at its health endpoint."""
+    """Check the configured Collector's public health endpoint."""
+    base_url = os.environ.get("LOXA_TEST_COLLECTOR_URL", "http://127.0.0.1:9308").rstrip("/")
     try:
-        req = urllib.request.Request("http://127.0.0.1:9308/healthz", method="GET")
+        req = urllib.request.Request(base_url + "/health", method="GET")
         with urllib.request.urlopen(req, timeout=3):
             return True
     except Exception:
