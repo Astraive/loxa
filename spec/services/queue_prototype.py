@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import time
+import uuid
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -32,8 +33,7 @@ class LocalQueue:
 
     def _write_message(self, base: Path, payload: dict[str, Any], prefix: str = "msg") -> str:
         ts = int(time.time() * 1000)
-        suffix = int(time.time() * 1000000) % 1000000
-        name = f"{prefix}-{ts}-{os.getpid()}-{suffix}.json"
+        name = f"{prefix}-{ts}-{os.getpid()}-{uuid.uuid4().hex}.json"
         target = base / name
         target.write_text(json.dumps(payload, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
         return str(target)
