@@ -1,48 +1,48 @@
 import { afterEach, it } from 'node:test';
 import assert from 'node:assert/strict';
-import * as loxa from '../src/index.ts';
+import * as loza from '../src/index.ts';
 
 afterEach(() => {
-  loxa.reset();
+  loza.reset();
 });
 
 it('covers process, group, timer, and stopwatch helpers', async () => {
-  const sink = new loxa.MemorySink();
-  loxa.configure(loxa.test('catalog').withSink(sink));
-  const logger = loxa.createLoxa({ service: 'catalog', sink });
+  const sink = new loza.MemorySink();
+  loza.configure(loza.test('catalog').withSink(sink));
+  const logger = loza.createLoza({ service: 'catalog', sink });
   const ctx = logger.startEvent({ event: 'checkout.request', kind: 'http', route: '/checkout' });
 
-  const process = loxa.process(ctx, 'authorize_payment');
-  process.finish(loxa.string('payment.status', 'approved'));
-  const explicitProcess = loxa.startProcess(ctx, 'reserve_inventory');
-  loxa.finishProcess(explicitProcess, loxa.httpStatus(201));
-  const failedProcess = loxa.startProcess(ctx, 'notify_customer');
-  loxa.finishProcessError(failedProcess, new Error('smtp_down'));
+  const process = loza.process(ctx, 'authorize_payment');
+  process.finish(loza.string('payment.status', 'approved'));
+  const explicitProcess = loza.startProcess(ctx, 'reserve_inventory');
+  loza.finishProcess(explicitProcess, loza.httpStatus(201));
+  const failedProcess = loza.startProcess(ctx, 'notify_customer');
+  loza.finishProcessError(failedProcess, new Error('smtp_down'));
 
-  const grouped = loxa.startGroup(ctx, 'payment_flow_2');
-  loxa.finishGroup(grouped, loxa.string('phase', 'ok'));
-  const group = loxa.startGroup(ctx, 'payment_flow');
-  group.finish(loxa.string('phase', 'done'));
-  const failedGroup = loxa.startGroup(ctx, 'payment_flow_failed');
-  loxa.finishGroupError(failedGroup, new Error('group_err'));
+  const grouped = loza.startGroup(ctx, 'payment_flow_2');
+  loza.finishGroup(grouped, loza.string('phase', 'ok'));
+  const group = loza.startGroup(ctx, 'payment_flow');
+  group.finish(loza.string('phase', 'done'));
+  const failedGroup = loza.startGroup(ctx, 'payment_flow_failed');
+  loza.finishGroupError(failedGroup, new Error('group_err'));
 
-  const timerAlias = loxa.timer(ctx, 'db.alias');
-  loxa.stopTimer(timerAlias, loxa.httpStatus(204));
-  const timer = loxa.startTimer(ctx, 'db.lookup');
-  timer.stop(loxa.string('cache', 'miss'));
+  const timerAlias = loza.timer(ctx, 'db.alias');
+  loza.stopTimer(timerAlias, loza.httpStatus(204));
+  const timer = loza.startTimer(ctx, 'db.lookup');
+  timer.stop(loza.string('cache', 'miss'));
 
-  loxa.withProcess(ctx, 'process.wrap', () => {});
-  loxa.withGroup(ctx, 'group.wrap', () => {});
-  loxa.withTimer(ctx, 'timer.wrap', () => {});
-  const measured = loxa.measure();
+  loza.withProcess(ctx, 'process.wrap', () => {});
+  loza.withGroup(ctx, 'group.wrap', () => {});
+  loza.withTimer(ctx, 'timer.wrap', () => {});
+  const measured = loza.measure();
   assert.ok(measured.elapsed() >= 0);
-  const stopwatch = loxa.stopwatch();
+  const stopwatch = loza.stopwatch();
   assert.ok(stopwatch.elapsed() >= 0);
-  loxa.step(ctx, 'step.wrap', () => {});
-  loxa.phase(ctx, 'phase.wrap', () => {});
-  loxa.span(ctx, 'span.wrap', () => {});
+  loza.step(ctx, 'step.wrap', () => {});
+  loza.phase(ctx, 'phase.wrap', () => {});
+  loza.span(ctx, 'span.wrap', () => {});
 
-  logger.finish(ctx, 'success', loxa.duration('encode.ms', 1));
+  logger.finish(ctx, 'success', loza.duration('encode.ms', 1));
   const encoded = await logger.emit(ctx);
   const payload = JSON.parse(encoded!);
   assert.ok(payload.processes.length >= 4);

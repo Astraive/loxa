@@ -2,12 +2,12 @@
 """Publish contract registry to S3 (prototype).
 
 Requires boto3 available in the runtime and AWS credentials configured via environment
-variables or instance profile. This script uploads generated/registry/loxa-contract.json and
+variables or instance profile. This script uploads generated/registry/loza-contract.json and
 manifest.json to the configured S3 bucket.
 
 Environment variables:
-- LOXA_CONTRACT_BUCKET (required)
-- LOXA_CONTRACT_PREFIX (optional)
+- LOZA_CONTRACT_BUCKET (required)
+- LOZA_CONTRACT_PREFIX (optional)
 - CLOUDFRONT_DISTRIBUTION_ID (optional) - if provided, an invalidation is attempted.
 
 Usage:
@@ -26,7 +26,7 @@ import argparse
 
 def _load_local_registry(spec_root: Path) -> Path:
     registry_dir = spec_root / "generated" / "registry"
-    contract = registry_dir / "loxa-contract.json"
+    contract = registry_dir / "loza-contract.json"
     manifest = registry_dir / "manifest.json"
     if not contract.exists() or not manifest.exists():
         print("Local registry artifact missing. Run publish_contract.py first.")
@@ -48,18 +48,18 @@ def main() -> int:
     spec_root = Path(__file__).resolve().parents[1]
     registry_dir = _load_local_registry(spec_root)
 
-    bucket = os.environ.get("LOXA_CONTRACT_BUCKET")
+    bucket = os.environ.get("LOZA_CONTRACT_BUCKET")
     if not bucket:
-        print("LOXA_CONTRACT_BUCKET must be set to the S3 bucket name")
+        print("LOZA_CONTRACT_BUCKET must be set to the S3 bucket name")
         return 4
-    prefix = os.environ.get("LOXA_CONTRACT_PREFIX", "")
+    prefix = os.environ.get("LOZA_CONTRACT_PREFIX", "")
     if prefix and not prefix.endswith("/"):
         prefix = prefix + "/"
 
     s3 = boto3.client("s3")
 
     uploaded = []
-    for fname in ("loxa-contract.json", "manifest.json"):
+    for fname in ("loza-contract.json", "manifest.json"):
         local = registry_dir / fname
         key = f"{prefix}{fname}"
         print(f"Uploading {local} -> s3://{bucket}/{key}")

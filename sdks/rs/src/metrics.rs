@@ -182,7 +182,7 @@ impl MetricsCollector {
 
     pub fn render_prometheus(&self, namespace: &str) -> String {
         let namespace = if namespace.trim().is_empty() {
-            "loxa_sdk"
+            "loza_sdk"
         } else {
             namespace.trim()
         };
@@ -285,7 +285,7 @@ impl Default for MetricsCollector {
 
 fn push_counter(out: &mut String, namespace: &str, name: &str, value: u64) {
     out.push_str(&format!(
-        "# HELP {namespace}_{name} Auto-generated LOXA metric\n"
+        "# HELP {namespace}_{name} Auto-generated LOZA metric\n"
     ));
     out.push_str(&format!("# TYPE {namespace}_{name} counter\n"));
     out.push_str(&format!("{namespace}_{name} {value}\n"));
@@ -299,7 +299,7 @@ fn push_labeled_counter(
     value: u64,
 ) {
     out.push_str(&format!(
-        "# HELP {namespace}_{name} Auto-generated LOXA metric\n"
+        "# HELP {namespace}_{name} Auto-generated LOZA metric\n"
     ));
     out.push_str(&format!("# TYPE {namespace}_{name} counter\n"));
     out.push_str(&format!(
@@ -320,7 +320,7 @@ fn push_counter_vec(
         return;
     }
     out.push_str(&format!(
-        "# HELP {namespace}_{name} Auto-generated LOXA metric\n"
+        "# HELP {namespace}_{name} Auto-generated LOZA metric\n"
     ));
     out.push_str(&format!("# TYPE {namespace}_{name} counter\n"));
     let mut sorted: Vec<_> = entries.iter().collect();
@@ -336,7 +336,7 @@ fn push_counter_vec(
 
 fn push_gauge(out: &mut String, namespace: &str, name: &str, value: f64) {
     out.push_str(&format!(
-        "# HELP {namespace}_{name} Auto-generated LOXA metric\n"
+        "# HELP {namespace}_{name} Auto-generated LOZA metric\n"
     ));
     out.push_str(&format!("# TYPE {namespace}_{name} gauge\n"));
     out.push_str(&format!("{namespace}_{name} {value}\n"));
@@ -351,7 +351,7 @@ fn push_histogram(
     total: u64,
 ) {
     out.push_str(&format!(
-        "# HELP {namespace}_{name} Auto-generated LOXA metric\n"
+        "# HELP {namespace}_{name} Auto-generated LOZA metric\n"
     ));
     out.push_str(&format!("# TYPE {namespace}_{name} histogram\n"));
     let mut cumulative = 0u64;
@@ -405,29 +405,29 @@ mod tests {
         metrics.set_buffer_capacity(8192);
         metrics.observe_emit_duration(Duration::from_millis(15));
 
-        let rendered = metrics.render_prometheus("loxa");
+        let rendered = metrics.render_prometheus("loza");
 
         // Counters
-        assert!(rendered.contains("loxa_events_created_total 1"));
-        assert!(rendered.contains("loxa_events_emitted_total{status=\"success\"} 1"));
+        assert!(rendered.contains("loza_events_created_total 1"));
+        assert!(rendered.contains("loza_events_emitted_total{status=\"success\"} 1"));
 
         // Dropped with reason labels
-        assert!(rendered.contains("loxa_events_dropped_total{reason=\"queue_full\"} 1"));
-        assert!(rendered.contains("loxa_events_dropped_total{reason=\"sampled\"} 1"));
+        assert!(rendered.contains("loza_events_dropped_total{reason=\"queue_full\"} 1"));
+        assert!(rendered.contains("loza_events_dropped_total{reason=\"sampled\"} 1"));
 
         // Retry with attempt labels
-        assert!(rendered.contains("loxa_retry_total{attempt=\"1\"} 2"));
-        assert!(rendered.contains("loxa_retry_total{attempt=\"2\"} 1"));
+        assert!(rendered.contains("loza_retry_total{attempt=\"1\"} 2"));
+        assert!(rendered.contains("loza_retry_total{attempt=\"2\"} 1"));
 
         // Gauges
-        assert!(rendered.contains("loxa_buffer_size 42"));
-        assert!(rendered.contains("loxa_buffer_capacity 8192"));
+        assert!(rendered.contains("loza_buffer_size 42"));
+        assert!(rendered.contains("loza_buffer_capacity 8192"));
 
         // Histogram
-        assert!(rendered.contains("loxa_emit_duration_seconds_bucket{le=\"0.025\"} 1"));
-        assert!(rendered.contains("loxa_emit_duration_seconds_bucket{le=\"+Inf\"} 1"));
-        assert!(rendered.contains("loxa_emit_duration_seconds_sum"));
-        assert!(rendered.contains("loxa_emit_duration_seconds_count 1"));
+        assert!(rendered.contains("loza_emit_duration_seconds_bucket{le=\"0.025\"} 1"));
+        assert!(rendered.contains("loza_emit_duration_seconds_bucket{le=\"+Inf\"} 1"));
+        assert!(rendered.contains("loza_emit_duration_seconds_sum"));
+        assert!(rendered.contains("loza_emit_duration_seconds_count 1"));
     }
 
     #[test]

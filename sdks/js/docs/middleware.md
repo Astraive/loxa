@@ -7,11 +7,11 @@ JS framework middleware for automatic HTTP event creation. The SDK provides Expr
 Import from the sub-path export:
 
 ```typescript
-import { loxaMiddleware } from 'loxa/middleware/express';
+import { lozaMiddleware } from 'loza/middleware/express';
 import express from 'express';
 
 const app = express();
-app.use(loxaMiddleware({ service: 'my-service' }));
+app.use(lozaMiddleware({ service: 'my-service' }));
 
 app.get('/users/:id', (req, res) => {
   res.json({ id: req.params.id });
@@ -37,7 +37,7 @@ For raw `http.createServer` applications, use the middleware wrapper:
 
 ```typescript
 import http from 'http';
-import { configure, production } from 'loxa';
+import { configure, production } from 'loza';
 
 configure(production('my-service'));
 
@@ -52,7 +52,7 @@ const server = http.createServer((req, res) => {
 The SDK uses Node.js `AsyncLocalStorage` to propagate event context across async operations. This means `getEvent()` works in any async function within the same request:
 
 ```typescript
-import { startEvent, enrich, getEvent, hasEvent, finish, emit } from 'loxa';
+import { startEvent, enrich, getEvent, hasEvent, finish, emit } from 'loza';
 
 async function handleRequest() {
   const ctx = startEvent({ event: 'request', kind: 'http' });
@@ -73,17 +73,17 @@ async function someAsyncWork() {
 
 ### Express
 
-- Middleware is added via `app.use(loxaMiddleware())`.
+- Middleware is added via `app.use(lozaMiddleware())`.
 - Events are emitted after `res.end()` is called.
 - Errors on the response stream trigger `finishError`.
 
 ### Koa (planned)
 
-- Sub-path export: `loxa/middleware/koa`
+- Sub-path export: `loza/middleware/koa`
 
 ### Fastify (planned)
 
-- Sub-path export: `loxa/middleware/fastify`
+- Sub-path export: `loza/middleware/fastify`
 
 ## Sub-Path Exports
 
@@ -113,7 +113,7 @@ All middleware implementations:
 Configure the global logger before adding middleware:
 
 ```typescript
-import { configure, production, httpBatchSink } from 'loxa';
+import { configure, production, httpBatchSink } from 'loza';
 
 configure(
   production('my-service').withSink(

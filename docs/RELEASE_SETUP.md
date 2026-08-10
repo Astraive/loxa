@@ -1,26 +1,26 @@
 # Release Setup
 
-This document describes how to publish a Loxa release.
+This document describes how to publish a Loza release.
 
 ## Overview
 
-Loxa uses a **manual-only** release workflow. Pushing to `main` does NOT trigger publishing. You must explicitly dispatch the `release-publish.yml` workflow with a component list, version, and dry-run flag.
+Loza uses a **manual-only** release workflow. Pushing to `main` does NOT trigger publishing. You must explicitly dispatch the `release-publish.yml` workflow with a component list, version, and dry-run flag.
 
-The release system is manifest-driven. Each component has a YAML manifest (e.g., `collector/loxa.yaml`, `sdks/js/package.json`) that declares its version. The release workflow reads these manifests and publishes only when the requested version matches the manifest version.
+The release system is manifest-driven. Each component has a YAML manifest (e.g., `collector/loza.yaml`, `sdks/js/package.json`) that declares its version. The release workflow reads these manifests and publishes only when the requested version matches the manifest version.
 
 ## Components
 
 | Component | Manifest | Publishes to |
 |-----------|----------|--------------|
-| `collector` | `collector/loxa.yaml` | Docker Hub + GHCR |
-| `cortex` | `cortex/loxa-cortex.yaml` | Docker Hub + GHCR |
-| `cli` | `cli/loxa-cli.yaml` | GitHub Releases (GoReleaser) |
+| `collector` | `collector/loza.yaml` | Docker Hub + GHCR |
+| `cortex` | `cortex/loza-cortex.yaml` | Docker Hub + GHCR |
+| `cli` | `cli/loza-cli.yaml` | GitHub Releases (GoReleaser) |
 | `sdk-js` | `sdks/js/package.json` | npm |
 | `sdk-py` | `sdks/py/pyproject.toml` | PyPI |
 | `sdk-rs` | `sdks/rs/Cargo.toml` | crates.io |
 | `lql` | `lql/lql.yaml` | crates.io |
-| `spec` | `spec/loxa-spec.yaml` | GitHub Releases |
-| `loxa` | `loxa.yaml` | GitHub Release (umbrella) |
+| `spec` | `spec/loza-spec.yaml` | GitHub Releases |
+| `loza` | `loza.yaml` | GitHub Release (umbrella) |
 
 ## How to Publish
 
@@ -30,7 +30,7 @@ Update the version in each component manifest you want to release. All manifests
 
 ```bash
 # Example: bump collector to 0.2.6
-# Edit collector/loxa.yaml → version: "0.2.6"
+# Edit collector/loza.yaml → version: "0.2.6"
 ```
 
 ### 2. Validate manifests locally
@@ -96,7 +96,7 @@ Each component gets a Git tag after successful publishing:
 | sdk-rs | `sdk-rs/v0.2.6` |
 | lql | `lql/v0.2.6` |
 | spec | `spec/v0.2.6` |
-| loxa (umbrella) | `v0.2.6` |
+| loza (umbrella) | `v0.2.6` |
 
 ## Legacy Workflows (removed)
 
@@ -113,7 +113,7 @@ The version in the component's manifest file doesn't match the version you passe
 
 ### "unknown component"
 
-Check the component name against the `release.yaml` registry file. Valid names: `collector`, `cortex`, `cli`, `sdk-js`, `sdk-py`, `sdk-rs`, `lql`, `spec`, `loxa`.
+Check the component name against the `release.yaml` registry file. Valid names: `collector`, `cortex`, `cli`, `sdk-js`, `sdk-py`, `sdk-rs`, `lql`, `spec`, `loza`.
 
 ### Dry run succeeded but real publish failed
 

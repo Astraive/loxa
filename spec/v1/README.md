@@ -1,6 +1,6 @@
-# LOXA Event Schema v1
+# LOZA Event Schema v1
 
-This directory contains the v1 schema definitions for LOXA events.
+This directory contains the v1 schema definitions for LOZA events.
 
 ## Schema Files
 
@@ -8,7 +8,7 @@ This directory contains the v1 schema definitions for LOXA events.
 
 ## Required Fields
 
-All LOXA events MUST include the following fields:
+All LOZA events MUST include the following fields:
 
 - `event_id` (string, UUID): Unique event identifier
 - `event_type` (string): Event type in dot notation (e.g., `user.login`, `api.request`)
@@ -50,10 +50,10 @@ Fields marked with `x-pii` annotations indicate personally identifiable informat
 
 ## Validation
 
-Events can be validated against this schema using standard JSON Schema validators or the LOXA CLI:
+Events can be validated against this schema using standard JSON Schema validators or the LOZA CLI:
 
 ```bash
-loxa schema validate --file event.json --schema-version v1
+loza schema validate --file event.json --schema-version v1
 ```
 
 ## Version

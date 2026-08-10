@@ -86,8 +86,8 @@ func WithRateLimiter(rl *KeyRateLimiter) MiddlewareOption {
 //  5. Check revoked / expired
 //  6. Verify HMAC-SHA256(incoming secret) == stored hash
 //  7. Build AuthContext (org, project, roles, permissions)
-//  8. Check X-Loxa-Env against AllowedEnvs
-//  9. Check X-Loxa-Service against AllowedServices
+//  8. Check X-Loza-Env against AllowedEnvs
+//  9. Check X-Loza-Service against AllowedServices
 //  10. Check Origin against AllowedOrigins (public keys)
 //  11. Check remote IP against AllowedIPs
 //  12. Wrap body with MaxBytesReader if MaxPayloadBytes > 0
@@ -246,7 +246,7 @@ func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, server
 
 	// 9. Check env restriction
 	if len(ac.AllowedEnvs) > 0 {
-		env := r.Header.Get("X-Loxa-Env")
+		env := r.Header.Get("X-Loza-Env")
 		if !contains(ac.AllowedEnvs, env) {
 			return nil, "env_not_allowed", "environment not permitted for this key"
 		}
@@ -254,7 +254,7 @@ func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, server
 
 	// 10. Check service restriction
 	if len(ac.AllowedServices) > 0 {
-		svc := r.Header.Get("X-Loxa-Service")
+		svc := r.Header.Get("X-Loza-Service")
 		if !contains(ac.AllowedServices, svc) {
 			return nil, "service_not_allowed", "service not permitted for this key"
 		}

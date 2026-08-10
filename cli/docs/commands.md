@@ -1,38 +1,38 @@
 # Commands
 
-- `loxa init`
-- `loxa dev`
-- `loxa collector run`
-- `loxa collector version`
-- `loxa collector config print`
-- `loxa collector config validate`
-- `loxa worker run`
-- `loxa worker version`
-- `loxa config print`
-- `loxa config validate`
-- `loxa schema validate`
-- `loxa schema fetch`
-- `loxa emit`
-- `loxa query`
-- `loxa tail`
-- `loxa watch`
-- `loxa status`
-- `loxa sinks`
-- `loxa sinks show <name>`
-- `loxa sinks test <name>`
-- `loxa dlq`
-- `loxa replay`
-- `loxa delete tenant <tenant_id>`
-- `loxa delete user <user_id>`
-- `loxa delete event <event_id>`
-- `loxa audit`
-- `loxa export`
-- `loxa cortex`
-- `loxa incident`
-- `loxa graph`
-- `loxa signatures`
-- `loxa doctor`
-- `loxa debug`
-- `loxa bench`
-- `loxa deploy`
-- `loxa dashboard`
+- `loza init`
+- `loza dev`
+- `loza collector run`
+- `loza collector version`
+- `loza collector config print`
+- `loza collector config validate`
+- `loza worker run`
+- `loza worker version`
+- `loza config print`
+- `loza config validate`
+- `loza schema validate`
+- `loza schema fetch`
+- `loza emit`
+- `loza query`
+- `loza tail`
+- `loza watch`
+- `loza status`
+- `loza sinks`
+- `loza sinks show <name>`
+- `loza sinks test <name>`
+- `loza dlq`
+- `loza replay`
+- `loza delete tenant <tenant_id>`
+- `loza delete user <user_id>`
+- `loza delete event <event_id>`
+- `loza audit`
+- `loza export`
+- `loza cortex`
+- `loza incident`
+- `loza graph`
+- `loza signatures`
+- `loza doctor`
+- `loza debug`
+- `loza bench`
+- `loza deploy`
+- `loza dashboard`

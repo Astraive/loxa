@@ -18,8 +18,8 @@ func buildEvent(params Params, cfg *Config) *Event {
 	ev.state = EventStateCreated // Start in created state per requirement 1.2
 	ev.Timestamp = now
 	ev.StartedAt = params.StartedAt
-	ev.SchemaVersion = LOXA_SPEC_VERSION
-	ev.EventVersion = LOXA_EVENT_VERSION
+	ev.SchemaVersion = LOZA_SPEC_VERSION
+	ev.EventVersion = LOZA_EVENT_VERSION
 
 	// IDs
 	ev.EventID = cfg.IDGen.NewID()
@@ -94,7 +94,7 @@ func buildEvent(params Params, cfg *Config) *Event {
 		_ = ev.AddAttrs([]Attr{SessionID(params.SessionID)})
 	}
 	if cfg.Alias != "" {
-		_ = ev.AddAttrs([]Attr{String("loxa.alias", cfg.Alias)})
+		_ = ev.AddAttrs([]Attr{String("loza.alias", cfg.Alias)})
 	}
 	// Copy custom params into Attrs
 	if len(params.Custom) > 0 {

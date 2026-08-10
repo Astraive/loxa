@@ -71,8 +71,8 @@ func TestAliasEmitsMetadataWithoutChangingService(t *testing.T) {
 		t.Fatalf("expected service api, got %#v", payload["service"])
 	}
 	attrs := payload["attrs"].(map[string]any)
-	loxaMeta := attrs["loxa"].(map[string]any)
-	if loxaMeta["alias"] != "audit" {
-		t.Fatalf("expected loxa.alias audit, got %#v", loxaMeta["alias"])
+	lozaMeta := attrs["loza"].(map[string]any)
+	if lozaMeta["alias"] != "audit" {
+		t.Fatalf("expected loza.alias audit, got %#v", lozaMeta["alias"])
 	}
 }

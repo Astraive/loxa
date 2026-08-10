@@ -1,0 +1,19 @@
+{{- if .Values.schemaService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "loza.fullname" . }}-schema-service
+  labels:
+    {{- include "loza.labels" . | nindent 4 }}
+    app.kubernetes.io/component: schema-service
+spec:
+  type: {{ .Values.schemaService.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "loza.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: schema-service
+  ports:
+    - name: http
+      port: {{ .Values.schemaService.service.port }}
+      targetPort: http
+{{- end }}

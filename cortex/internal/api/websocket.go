@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/astraive/loxa/cortex/internal/middleware"
-	transportcontracts "github.com/astraive/loxa/spec/transport/contracts"
-	"github.com/astraive/loxa/cortex/internal/eventconv"
+	"github.com/astraive/loza/cortex/internal/middleware"
+	transportcontracts "github.com/astraive/loza/spec/transport/contracts"
+	"github.com/astraive/loza/cortex/internal/eventconv"
 	"github.com/gorilla/websocket"
 )
 
@@ -78,7 +78,7 @@ func (s *Server) executeWebSocketAction(ctx context.Context, req transportcontra
 	case "healthz":
 		return map[string]any{"status": "OK", "ready": s.ready}, nil
 	case "ingest_event":
-		event, err := eventconv.FromRawMap(req.Event, "loxa")
+		event, err := eventconv.FromRawMap(req.Event, "loza")
 		if err != nil {
 			return nil, err
 		}

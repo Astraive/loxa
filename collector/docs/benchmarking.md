@@ -59,10 +59,10 @@ go test ./internal/ingest/... -bench=. -benchmem -count=3
 
 Benchmarks are designed to run on a standard development machine. For production-grade benchmarking:
 
-1. Use the `loxa-loadgen` tool to generate realistic traffic:
+1. Use the `loza-loadgen` tool to generate realistic traffic:
 
 ```bash
-go run ./cmd/loxa-loadgen -url http://localhost:9308/ingest -rate 10000 -duration 60s
+go run ./cmd/loza-loadgen -url http://localhost:9308/ingest -rate 10000 -duration 60s
 ```
 
 2. Monitor with Prometheus metrics at `/metrics`.

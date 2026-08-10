@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/astraive/loxa/sdks/go"
-	"github.com/astraive/loxa/sdks/go/sinks/httpbatch"
+	"github.com/astraive/loza/sdks/go"
+	"github.com/astraive/loza/sdks/go/sinks/httpbatch"
 )
 
 func main() {
@@ -18,25 +18,25 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := loxa.Configure(
-		loxa.Production().
+	if err := loza.Configure(
+		loza.Production().
 			WithService("checkout").
 			WithSink(sink),
 	); err != nil {
 		log.Fatal(err)
 	}
-	defer loxa.Shutdown(context.Background())
+	defer loza.Shutdown(context.Background())
 
-	ctx := loxa.StartEvent(context.Background(), loxa.Params{
+	ctx := loza.StartEvent(context.Background(), loza.Params{
 		Event:  "checkout.request",
 		Method: "POST",
 		Path:   "/checkout",
 		Route:  "/checkout",
 	})
-	defer loxa.Emit(ctx)
+	defer loza.Emit(ctx)
 
-	loxa.Enrich(ctx, loxa.String("payment.provider", "stripe"))
-	loxa.Finish(ctx, "success", loxa.Int("status_code", 200))
+	loza.Enrich(ctx, loza.String("payment.provider", "stripe"))
+	loza.Finish(ctx, "success", loza.Int("status_code", 200))
 
 	time.Sleep(500 * time.Millisecond)
 }

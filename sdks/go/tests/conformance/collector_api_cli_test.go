@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func TestCollectorAndCortexClientFamilies(t *testing.T) {
@@ -84,7 +84,7 @@ func TestCollectorAndCortexClientFamilies(t *testing.T) {
 	}))
 	defer collectorServer.Close()
 
-	collectorClient := loxa.NewCollectorClient(loxa.CollectorClientConfig{
+	collectorClient := loza.NewCollectorClient(loza.CollectorClientConfig{
 		Endpoint: collectorServer.URL,
 		Client:   collectorServer.Client(),
 	})
@@ -169,7 +169,7 @@ func TestCollectorAndCortexClientFamilies(t *testing.T) {
 	}))
 	defer cortexServer.Close()
 
-	cortexClient := loxa.NewCortexClient(cortexServer.URL)
+	cortexClient := loza.NewCortexClient(cortexServer.URL)
 	if !cortexClient.Health(context.Background()) {
 		t.Fatalf("expected cortex health")
 	}
@@ -185,16 +185,16 @@ func TestCollectorAndCortexClientFamilies(t *testing.T) {
 	if _, err := cortexClient.IncidentGraph(context.Background(), "inc_123", 1); err != nil {
 		t.Fatalf("cortex incident graph: %v", err)
 	}
-	if err := cortexClient.RecordRemediation(context.Background(), &loxa.Remediation{IncidentID: "inc_123", Action: "restart"}); err != nil {
+	if err := cortexClient.RecordRemediation(context.Background(), &loza.Remediation{IncidentID: "inc_123", Action: "restart"}); err != nil {
 		t.Fatalf("cortex remediation: %v", err)
 	}
-	if err := cortexClient.RecordFeedback(context.Background(), &loxa.RemediationFeedback{RemediationID: "rem_123", IncidentID: "inc_123", Outcome: "success"}); err != nil {
+	if err := cortexClient.RecordFeedback(context.Background(), &loza.RemediationFeedback{RemediationID: "rem_123", IncidentID: "inc_123", Outcome: "success"}); err != nil {
 		t.Fatalf("cortex feedback: %v", err)
 	}
 	if err := cortexClient.IngestBatch(context.Background(), []map[string]any{{"event": "verification"}}); err != nil {
 		t.Fatalf("cortex ingest batch: %v", err)
 	}
-	if err := loxa.ValidateIncidentContext(&loxa.IncidentContext{}); err == nil {
+	if err := loza.ValidateIncidentContext(&loza.IncidentContext{}); err == nil {
 		t.Fatalf("expected incident context validation error")
 	}
 }

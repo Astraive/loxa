@@ -1,4 +1,4 @@
-use ::loxa::*;
+use ::loza::*;
 
 #[test]
 fn test_domain_constructors() {
@@ -342,7 +342,7 @@ fn test_collector_api_stubs() {
     let client = CollectorHttpClient::new("http://localhost:9308");
     // Test client construction and URL formatting without making HTTP calls
     assert_eq!(client.tail_endpoint(), "http://localhost:9308/tail");
-    assert_eq!(client.sdk_name, "loxa-rs");
+    assert_eq!(client.sdk_name, "loza-rs");
     assert_eq!(client.sdk_version, "0.2.6");
     // Envelope building test
     let envelope = client.envelope(&["{\"event\":\"test\"}".to_string()]);

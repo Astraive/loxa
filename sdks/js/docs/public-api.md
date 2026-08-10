@@ -1,14 +1,14 @@
 # Public API
 
-The JS SDK (`loxa`) public API surface, aligned with the cross-language parity manifest at `docs/sdk-parity-manifest.json`.
+The JS SDK (`loza`) public API surface, aligned with the cross-language parity manifest at `docs/sdk-parity-manifest.json`.
 
 ## Module Exports
 
-The SDK exports from `loxa` (main entry) and sub-path exports for middleware:
+The SDK exports from `loza` (main entry) and sub-path exports for middleware:
 
 ```typescript
-import { ... } from 'loxa';
-import { loxaMiddleware } from 'loxa/middleware/express';
+import { ... } from 'loza';
+import { lozaMiddleware } from 'loza/middleware/express';
 ```
 
 ## Lifecycle
@@ -60,7 +60,7 @@ import { loxaMiddleware } from 'loxa/middleware/express';
 ### ConfigBuilder
 
 ```typescript
-import { production, httpBatchSink, sampleErrors } from 'loxa';
+import { production, httpBatchSink, sampleErrors } from 'loza';
 
 const config = production('my-service')
   .withSink(httpBatchSink({ endpoint: 'http://collector:9308/events' }))
@@ -160,10 +160,10 @@ const config = production('my-service')
 
 | Class | Description |
 |-------|-------------|
-| `CortexClient` | Client for the LOXA cortex PCE. |
+| `CortexClient` | Client for the LOZA cortex PCE. |
 
 ## Collector Client
 
 | Class | Description |
 |-------|-------------|
-| `CollectorClient` | Client for the LOXA collector API. |
+| `CollectorClient` | Client for the LOZA collector API. |

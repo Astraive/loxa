@@ -41,7 +41,7 @@ func applyDuplicateFieldPolicy(ev *Event, policy DuplicateFieldPolicy) error {
 		case ErrorOnDuplicate:
 			return &DuplicateFieldError{Key: a.Key}
 		default:
-			return fmt.Errorf("loxa: unknown duplicate field policy %d", policy)
+			return fmt.Errorf("loza: unknown duplicate field policy %d", policy)
 		}
 	}
 

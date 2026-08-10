@@ -1,4 +1,4 @@
-//! cortex-match: High-performance incident shape matching for LOXA Cortex
+//! cortex-match: High-performance incident shape matching for LOZA Cortex
 //!
 //! CPU-heavy pure algorithm work:
 //! - incident shape similarity scoring

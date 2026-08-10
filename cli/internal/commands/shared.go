@@ -6,8 +6,8 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
 )
 
 var validIdentifier = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)

@@ -249,7 +249,7 @@ fn ecs_value(value: Value) -> Value {
 
 fn datadog_value(value: Value) -> Value {
     let mut obj = value.as_object().cloned().unwrap_or_default();
-    obj.insert("ddsource".to_string(), Value::String("loxa".to_string()));
+    obj.insert("ddsource".to_string(), Value::String("loza".to_string()));
     obj.insert(
         "status".to_string(),
         obj.get("level")

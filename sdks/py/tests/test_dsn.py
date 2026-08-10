@@ -1,4 +1,4 @@
-"""Tests for loxa:// DSN parser — runs all 25 shared test vectors."""
+"""Tests for loza:// DSN parser — runs all 25 shared test vectors."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from loxa.core.dsn import LoxaDSN, parse
+from loza.core.dsn import LozaDSN, parse
 
 
 _TEST_CASES_PATH = (
@@ -34,7 +34,7 @@ def test_valid_dsn(case):
     dsn = parse(case["input"])
     expected = case["expected"]
 
-    assert dsn.scheme == expected.get("scheme", "loxa")
+    assert dsn.scheme == expected.get("scheme", "loza")
     assert dsn.host == expected["host"]
     assert dsn.port == expected["port"]
     assert dsn.project == expected["project"]

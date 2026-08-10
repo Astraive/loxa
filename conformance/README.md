@@ -1,6 +1,6 @@
 # Conformance
 
-Central conformance testing for the LOXA monorepo. Validates that all SDKs and components conform to the shared specification.
+Central conformance testing for the LOZA monorepo. Validates that all SDKs and components conform to the shared specification.
 
 ## Quick Start
 

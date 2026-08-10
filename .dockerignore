@@ -16,6 +16,6 @@
 **/*.parquet
 **/*.duckdb
 collector/exports
-collector/loxa-spool
+collector/loza-spool
 spec/.venv
 sdks/js/.tsbuildinfo

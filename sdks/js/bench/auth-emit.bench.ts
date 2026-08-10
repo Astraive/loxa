@@ -1,11 +1,11 @@
 import { bench, describe } from 'vitest';
-import { createLoxa, memorySink } from '../src';
+import { createLoza, memorySink } from '../src';
 
 const API_KEY = 'lx_sec_live_kBenchKey_bench_secret_value';
 
 describe('Emit with Auth', () => {
   const sink = memorySink();
-  const logger = createLoxa({
+  const logger = createLoza({
     service: 'bench',
     sink,
     apiKey: API_KEY,
@@ -31,7 +31,7 @@ describe('Emit with Auth', () => {
 
 describe('Emit Baseline (No Auth)', () => {
   const sink = memorySink();
-  const logger = createLoxa({
+  const logger = createLoza({
     service: 'bench',
     sink,
   });
@@ -45,7 +45,7 @@ describe('Emit Baseline (No Auth)', () => {
 
 describe('Emit with Sampler + Auth', () => {
   const sink = memorySink();
-  const logger = createLoxa({
+  const logger = createLoza({
     service: 'bench',
     sink,
     apiKey: API_KEY,

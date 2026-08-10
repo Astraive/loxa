@@ -31,7 +31,7 @@ reliability:
   mode: queue
 kafka:
   brokers: ["127.0.0.1:9092"]
-  topic: loxa-events
+  topic: loza-events
   acks: all
   enable_idempotence: true
 dedupe:

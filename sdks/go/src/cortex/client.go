@@ -47,7 +47,7 @@ func (c *Client) WithAPIKey(key string) *Client {
 	return c
 }
 
-// WithAuthHeader overrides the auth header name (default: x-loxa-api-key).
+// WithAuthHeader overrides the auth header name (default: x-loza-api-key).
 func (c *Client) WithAuthHeader(header string) *Client {
 	c.authHeader = header
 	return c

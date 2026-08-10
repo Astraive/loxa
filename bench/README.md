@@ -1,6 +1,6 @@
 # Benchmarks
 
-Central benchmark orchestration for the LOXA monorepo. All benchmark results are saved as JSON in `results/`.
+Central benchmark orchestration for the LOZA monorepo. All benchmark results are saved as JSON in `results/`.
 
 ## Quick Start
 

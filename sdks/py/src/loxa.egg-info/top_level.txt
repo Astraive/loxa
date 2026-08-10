@@ -1,2 +1,0 @@
-loxa
-loxa_contract

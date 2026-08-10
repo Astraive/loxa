@@ -5,13 +5,13 @@ import (
 	stdslog "log/slog"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func TestWithGroupBuildsNestedAttrs(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
-	if err := loxa.Configure(cfg); err != nil {
+	sink, store := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
@@ -31,12 +31,12 @@ func TestWithGroupBuildsNestedAttrs(t *testing.T) {
 	}
 }
 
-func findGroup(attrs []loxa.Attr, key string) ([]loxa.Attr, bool) {
+func findGroup(attrs []loza.Attr, key string) ([]loza.Attr, bool) {
 	for _, a := range attrs {
 		if a.Key != key {
 			continue
 		}
-		children, ok := a.Value.([]loxa.Attr)
+		children, ok := a.Value.([]loza.Attr)
 		if ok {
 			return children, true
 		}
@@ -44,7 +44,7 @@ func findGroup(attrs []loxa.Attr, key string) ([]loxa.Attr, bool) {
 	return nil, false
 }
 
-func findString(attrs []loxa.Attr, key string) (string, bool) {
+func findString(attrs []loza.Attr, key string) (string, bool) {
 	for _, a := range attrs {
 		if a.Key != key {
 			continue

@@ -1,10 +1,10 @@
-# LOXA Python SDK
+# LOZA Python SDK
 
 **Status**: STABLE (v0.2.6) - Production-ready, full feature conformance
 
 Full API conformance with specification is complete. See [SDK_CONFORMANCE_CONTRACT.md](../../spec/docs/SDK_CONFORMANCE_CONTRACT.md) for detailed guarantees.
 
-`loxa-py` is a collector-first Python SDK for wide events. It builds one structured event per operation (request, job, queue message, CLI run, cron run), then emits to your log/analytics backend.
+`loza-py` is a collector-first Python SDK for wide events. It builds one structured event per operation (request, job, queue message, CLI run, cron run), then emits to your log/analytics backend.
 
 ## Install
 
@@ -15,20 +15,20 @@ pip install -e .
 ## Quick Start
 
 ```python
-import loxa
+import loza
 
 # Configure the default logger
-loxa.configure(
-    loxa.production("checkout")
+loza.configure(
+    loza.production("checkout")
     .with_collector_endpoint("http://127.0.0.1:9308")
 )
 
 # Lifecycle
-ctx = loxa.start_event(loxa.Params(event="checkout.request", kind="http", method="POST", path="/checkout"))
-loxa.enrich(ctx, loxa.UserID("u_123"), loxa.String("payment.provider", "stripe"))
-loxa.finish(ctx, "success", loxa.Int("status_code", 200))
-loxa.emit(ctx)
-loxa.shutdown()
+ctx = loza.start_event(loza.Params(event="checkout.request", kind="http", method="POST", path="/checkout"))
+loza.enrich(ctx, loza.UserID("u_123"), loza.String("payment.provider", "stripe"))
+loza.finish(ctx, "success", loza.Int("status_code", 200))
+loza.emit(ctx)
+loza.shutdown()
 ```
 
 ## Core Lifecycle API
@@ -36,10 +36,10 @@ loxa.shutdown()
 The main flow: `start_event` -> `enrich` -> `checkpoint` -> `finish`/`finish_error` -> `emit`
 
 ```python
-import loxa
+import loza
 
 # Start an event (returns context carrying the event)
-ctx = loxa.start_event(loxa.Params(
+ctx = loza.start_event(loza.Params(
     event="checkout.request",
     kind="http",
     method="POST",
@@ -48,79 +48,79 @@ ctx = loxa.start_event(loxa.Params(
 ))
 
 # Typed starters
-ctx = loxa.start_http_event(loxa.Params(event="http.request", method="GET", path="/health"))
-ctx = loxa.start_job_event(loxa.Params(event="job.send_email"))
-ctx = loxa.start_queue_event(loxa.Params(event="queue.process"))
-ctx = loxa.start_cli_event(loxa.Params(event="cli.run"))
-ctx = loxa.start_cron_event(loxa.Params(event="cron.tick"))
+ctx = loza.start_http_event(loza.Params(event="http.request", method="GET", path="/health"))
+ctx = loza.start_job_event(loza.Params(event="job.send_email"))
+ctx = loza.start_queue_event(loza.Params(event="queue.process"))
+ctx = loza.start_cli_event(loza.Params(event="cli.run"))
+ctx = loza.start_cron_event(loza.Params(event="cron.tick"))
 
 # Enrich (add attributes)
-loxa.enrich(ctx, loxa.String("user.id", "u_123"), loxa.Int("cart.items", 3))
+loza.enrich(ctx, loza.String("user.id", "u_123"), loza.Int("cart.items", 3))
 
 # Append (alias for enrich)
-loxa.append(ctx, loxa.String("key", "value"))
+loza.append(ctx, loza.String("key", "value"))
 
 # Set (override)
-loxa.set(ctx, loxa.String("status", "processing"))
+loza.set(ctx, loza.String("status", "processing"))
 
 # Merge into group
-loxa.merge(ctx, "payment", loxa.String("provider", "stripe"), loxa.Int("attempt", 1))
+loza.merge(ctx, "payment", loza.String("provider", "stripe"), loza.Int("attempt", 1))
 
 # Delete
-loxa.delete(ctx, "temp_field")
+loza.delete(ctx, "temp_field")
 
 # Get
-val = loxa.get(ctx, "user.id")
-group = loxa.get_group(ctx, "payment")
+val = loza.get(ctx, "user.id")
+group = loza.get_group(ctx, "payment")
 
 # Checkpoint (timeline marker)
-loxa.checkpoint(ctx, "payment_started")
-loxa.checkpoint(ctx, "payment_finished", loxa.String("provider", "stripe"))
+loza.checkpoint(ctx, "payment_started")
+loza.checkpoint(ctx, "payment_finished", loza.String("provider", "stripe"))
 
 # Finish
-loxa.finish(ctx, "success", loxa.Int("status_code", 200))
+loza.finish(ctx, "success", loza.Int("status_code", 200))
 
 # Or finish with error
 try:
     process_payment()
 except Exception as e:
-    loxa.finish_error(ctx, e, loxa.Int("status_code", 500))
+    loza.finish_error(ctx, e, loza.Int("status_code", 500))
 
 # Emit (sends to sink)
-loxa.emit(ctx)
+loza.emit(ctx)
 
 # Flush (force buffered events)
-loxa.flush()
+loza.flush()
 
 # Shutdown (drain pipeline)
-loxa.shutdown()
+loza.shutdown()
 ```
 
 ## Attribute Constructors
 
 ```python
-import loxa
+import loza
 
-loxa.enrich(ctx,
-    loxa.String("user.id", "u_123"),
-    loxa.Int("cart.items", 3),
-    loxa.Int64("big_number", 9999999999),
-    loxa.Float64("price", 49.99),
-    loxa.Bool("premium", True),
-    loxa.Duration("timeout", timedelta(seconds=30)),
-    loxa.Any("metadata", {"key": "value"}),
-    loxa.Null("optional_field"),
+loza.enrich(ctx,
+    loza.String("user.id", "u_123"),
+    loza.Int("cart.items", 3),
+    loza.Int64("big_number", 9999999999),
+    loza.Float64("price", 49.99),
+    loza.Bool("premium", True),
+    loza.Duration("timeout", timedelta(seconds=30)),
+    loza.Any("metadata", {"key": "value"}),
+    loza.Null("optional_field"),
 )
 
 # Groups (nested objects)
-loxa.enrich(ctx,
-    loxa.Group("user",
-        loxa.String("id", "u_123"),
-        loxa.String("email", "user@example.com"),
+loza.enrich(ctx,
+    loza.Group("user",
+        loza.String("id", "u_123"),
+        loza.String("email", "user@example.com"),
     ),
-    loxa.Group("payment",
-        loxa.String("provider", "stripe"),
-        loxa.Int("attempt", 1),
+    loza.Group("payment",
+        loza.String("provider", "stripe"),
+        loza.Int("attempt", 1),
     ),
 )
 ```
@@ -128,63 +128,63 @@ loxa.enrich(ctx,
 Dot keys expand into nested JSON:
 
 ```python
-loxa.String("user.id", "u_123")  # -> {"user": {"id": "u_123"}}
+loza.String("user.id", "u_123")  # -> {"user": {"id": "u_123"}}
 ```
 
 ## Canonical Helpers
 
 ```python
-import loxa
+import loza
 
-loxa.enrich(ctx,
-    loxa.UserID("u_123"),
-    loxa.TenantID("t_456"),
-    loxa.WorkspaceID("w_789"),
-    loxa.OrganizationID("org_abc"),
-    loxa.SessionID("sess_xyz"),
-    loxa.RequestID("req_123"),
-    loxa.TraceID("trace_abc"),
-    loxa.SpanID("span_def"),
-    loxa.FeatureFlag("checkout_v2", "enabled"),
-    loxa.FeatureFlagBool("new_ui", True),
-    loxa.Experiment("pricing_test", "variant_b"),
+loza.enrich(ctx,
+    loza.UserID("u_123"),
+    loza.TenantID("t_456"),
+    loza.WorkspaceID("w_789"),
+    loza.OrganizationID("org_abc"),
+    loza.SessionID("sess_xyz"),
+    loza.RequestID("req_123"),
+    loza.TraceID("trace_abc"),
+    loza.SpanID("span_def"),
+    loza.FeatureFlag("checkout_v2", "enabled"),
+    loza.FeatureFlagBool("new_ui", True),
+    loza.Experiment("pricing_test", "variant_b"),
 )
 ```
 
 ## Business/Domain Helpers
 
 ```python
-import loxa
+import loza
 
-loxa.enrich(ctx,
-    loxa.OrderID("ord_123"),
-    loxa.CartID("cart_456"),
-    loxa.ProductID("prod_789"),
-    loxa.CustomerID("cust_abc"),
-    loxa.Plan("pro"),
-    loxa.Currency("INR"),
-    loxa.Amount(4999),
-    loxa.Country("IN"),
-    loxa.Device("mobile"),
-    loxa.Platform("ios"),
-    loxa.AppVersion("2.1.0"),
+loza.enrich(ctx,
+    loza.OrderID("ord_123"),
+    loza.CartID("cart_456"),
+    loza.ProductID("prod_789"),
+    loza.CustomerID("cust_abc"),
+    loza.Plan("pro"),
+    loza.Currency("INR"),
+    loza.Amount(4999),
+    loza.Country("IN"),
+    loza.Device("mobile"),
+    loza.Platform("ios"),
+    loza.AppVersion("2.1.0"),
 )
 ```
 
 ## Error Helpers
 
 ```python
-import loxa
+import loza
 
 try:
     process()
 except Exception as e:
-    loxa.finish_error(ctx, e,
-        loxa.ErrorType("ValidationError"),
-        loxa.ErrorCode("INVALID_INPUT"),
-        loxa.ErrorMessage(str(e)),
-        loxa.ErrorStack(traceback.format_exc()),
-        loxa.Retryable(False),
+    loza.finish_error(ctx, e,
+        loza.ErrorType("ValidationError"),
+        loza.ErrorCode("INVALID_INPUT"),
+        loza.ErrorMessage(str(e)),
+        loza.ErrorStack(traceback.format_exc()),
+        loza.Retryable(False),
     )
 ```
 
@@ -208,37 +208,37 @@ Error output:
 One-shot events without requiring `StartEvent`:
 
 ```python
-import loxa
+import loza
 
-loxa.info("worker started", queue="emails")
-loxa.error("payment failed", provider="stripe", amount=4999)
+loza.info("worker started", queue="emails")
+loza.error("payment failed", provider="stripe", amount=4999)
 ```
 
 ## Logger Instances
 
 ```python
-import loxa
+import loza
 
 # Default API — configure once, use everywhere
-loxa.configure(loxa.production("checkout").with_collector_endpoint("http://127.0.0.1:9308"))
-loxa.info("server started")
+loza.configure(loza.production("checkout").with_collector_endpoint("http://127.0.0.1:9308"))
+loza.info("server started")
 
 # Custom instance
-logger = loxa.create_loxa(service="checkout-api", collector_endpoint="http://127.0.0.1:9308")
+logger = loza.create_loza(service="checkout-api", collector_endpoint="http://127.0.0.1:9308")
 logger.info("custom instance ready")
 
-# Alias -- same config, loxa.alias metadata
-audit = loxa.alias("audit-service")
+# Alias -- same config, loza.alias metadata
+audit = loza.alias("audit-service")
 audit.info("audit trail started")
 
 # Presets
-cfg = loxa.dev("checkout")       # pretty JSON, stdout, sync, debug level
-cfg = loxa.production("checkout") # compact JSON, stdout, async, info level
-cfg = loxa.test("checkout")       # sync, no sinks, debug level
+cfg = loza.dev("checkout")       # pretty JSON, stdout, sync, debug level
+cfg = loza.production("checkout") # compact JSON, stdout, async, info level
+cfg = loza.test("checkout")       # sync, no sinks, debug level
 
 # Instance methods
-ctx = logger.start_event(loxa.Params(event="checkout.request"))
-logger.enrich(ctx, loxa.String("key", "value"))
+ctx = logger.start_event(loza.Params(event="checkout.request"))
+logger.enrich(ctx, loza.String("key", "value"))
 logger.finish(ctx, "success")
 logger.emit(ctx)
 logger.flush()
@@ -252,52 +252,52 @@ logger.error("failed")
 ## Config API
 
 ```python
-import loxa
+import loza
 
-cfg = loxa.Config(
+cfg = loza.Config(
     service="checkout",
     version="1.2.0",
     environment="prod",
     region="ap-south-1",
-    level=loxa.LevelInfo,
-    sinks=[loxa.StdoutSink()],
-    async_config=loxa.AsyncConfig(enabled=True, queue_size=8192, workers=2),
-    field_naming=loxa.FieldNamingConfig(expand_dot_keys=True),
-    security=loxa.SecurityConfig(max_field_bytes=4096, max_event_bytes=262144),
+    level=loza.LevelInfo,
+    sinks=[loza.StdoutSink()],
+    async_config=loza.AsyncConfig(enabled=True, queue_size=8192, workers=2),
+    field_naming=loza.FieldNamingConfig(expand_dot_keys=True),
+    security=loza.SecurityConfig(max_field_bytes=4096, max_event_bytes=262144),
 )
 
 # Builder style
-cfg = (loxa.production("checkout")
+cfg = (loza.production("checkout")
     .with_version("1.2.0")
     .with_environment("prod")
-    .with_sink(loxa.StdoutSink())
-    .with_sampler(loxa.SampleErrors())
-    .with_redactor(loxa.DefaultRedactor())
+    .with_sink(loza.StdoutSink())
+    .with_sampler(loza.SampleErrors())
+    .with_redactor(loza.DefaultRedactor())
     .with_async(True)
-    .with_duplicate_policy(loxa.LastWins)
+    .with_duplicate_policy(loza.LastWins)
 )
 ```
 
 ## Levels
 
 ```python
-import loxa
+import loza
 
-level = loxa.ParseLevel("info")  # loxa.LevelInfo
+level = loza.ParseLevel("info")  # loza.LevelInfo
 ```
 
 ## Sinks
 
 ```python
-import loxa
+import loza
 
-cfg = loxa.production("checkout").with_sink(loxa.StdoutSink())
-cfg = loxa.production("checkout").with_sink(loxa.FileSink("/var/log/app.log"))
-cfg = loxa.production("checkout").with_sink(loxa.HTTPBatchSink("http://collector:9308/events"))
+cfg = loza.production("checkout").with_sink(loza.StdoutSink())
+cfg = loza.production("checkout").with_sink(loza.FileSink("/var/log/app.log"))
+cfg = loza.production("checkout").with_sink(loza.HTTPBatchSink("http://collector:9308/events"))
 
 # For testing
-sink, store = loxa.MemorySink()
-logger = loxa.create_loxa(service="checkout", sink=sink)
+sink, store = loza.MemorySink()
+logger = loza.create_loza(service="checkout", sink=sink)
 # ... use logger ...
 events = store.events()
 ```
@@ -305,24 +305,24 @@ events = store.events()
 ## Sampling
 
 ```python
-import loxa
+import loza
 from datetime import timedelta
 
-cfg = loxa.production("checkout").with_sampler(loxa.SampleAll())
-cfg = loxa.production("checkout").with_sampler(loxa.SampleRandom(0.01))  # 1% sampling
-cfg = loxa.production("checkout").with_sampler(loxa.SampleErrors())
-cfg = loxa.production("checkout").with_sampler(loxa.SampleSlowRequests(timedelta(milliseconds=500)))
-cfg = loxa.production("checkout").with_sampler(loxa.SampleStatusCodes(500, 502, 503))
-cfg = loxa.production("checkout").with_sampler(loxa.SampleRoutes("/checkout", "/payment"))
-cfg = loxa.production("checkout").with_sampler(loxa.SampleUsers("u_1", "u_2"))
-cfg = loxa.production("checkout").with_sampler(loxa.SampleRateLimited(100.0, 1.0))  # 100 events/sec
+cfg = loza.production("checkout").with_sampler(loza.SampleAll())
+cfg = loza.production("checkout").with_sampler(loza.SampleRandom(0.01))  # 1% sampling
+cfg = loza.production("checkout").with_sampler(loza.SampleErrors())
+cfg = loza.production("checkout").with_sampler(loza.SampleSlowRequests(timedelta(milliseconds=500)))
+cfg = loza.production("checkout").with_sampler(loza.SampleStatusCodes(500, 502, 503))
+cfg = loza.production("checkout").with_sampler(loza.SampleRoutes("/checkout", "/payment"))
+cfg = loza.production("checkout").with_sampler(loza.SampleUsers("u_1", "u_2"))
+cfg = loza.production("checkout").with_sampler(loza.SampleRateLimited(100.0, 1.0))  # 100 events/sec
 
 # Combinators
-cfg = loxa.production("checkout").with_sampler(
-    loxa.AnySampler(
-        loxa.SampleErrors(),
-        loxa.SampleSlowRequests(timedelta(milliseconds=500)),
-        loxa.SampleRandom(0.01),
+cfg = loza.production("checkout").with_sampler(
+    loza.AnySampler(
+        loza.SampleErrors(),
+        loza.SampleSlowRequests(timedelta(milliseconds=500)),
+        loza.SampleRandom(0.01),
     )
 )
 ```
@@ -330,38 +330,38 @@ cfg = loxa.production("checkout").with_sampler(
 ## Redaction
 
 ```python
-import loxa
+import loza
 
-cfg = loxa.production("checkout").with_redactor(loxa.DefaultRedactor())
-cfg = loxa.production("checkout").with_redactor(loxa.RedactKeys("password", "token", "authorization"))
-cfg = loxa.production("checkout").with_redactor(loxa.HashKeys("user.email"))
+cfg = loza.production("checkout").with_redactor(loza.DefaultRedactor())
+cfg = loza.production("checkout").with_redactor(loza.RedactKeys("password", "token", "authorization"))
+cfg = loza.production("checkout").with_redactor(loza.HashKeys("user.email"))
 
 # Compose
-cfg = loxa.production("checkout").with_redactor(
-    loxa.ComposeRedactors(
-        loxa.DefaultRedactor(),
-        loxa.RedactKeys("password", "token"),
-        loxa.HashKeys("user.email"),
+cfg = loza.production("checkout").with_redactor(
+    loza.ComposeRedactors(
+        loza.DefaultRedactor(),
+        loza.RedactKeys("password", "token"),
+        loza.HashKeys("user.email"),
     )
 )
 
 # Mark fields as sensitive
-loxa.enrich(ctx,
-    loxa.SensitiveString("user.email", email),  # auto-redacted
-    loxa.MarkSensitive("credit_card", card_no),
-    loxa.HashString("user.ssn", ssn),
+loza.enrich(ctx,
+    loza.SensitiveString("user.email", email),  # auto-redacted
+    loza.MarkSensitive("credit_card", card_no),
+    loza.HashString("user.ssn", ssn),
 )
 ```
 
 ## Schema
 
 ```python
-import loxa
+import loza
 
-cfg = loxa.production("checkout").with_schema(loxa.DefaultSchema())
-cfg = loxa.production("checkout").with_schema(loxa.FlatSchema())  # good for ClickHouse
-cfg = loxa.production("checkout").with_schema(loxa.OTelLogSchema())
-cfg = loxa.production("checkout").with_schema(loxa.ECSchema())
+cfg = loza.production("checkout").with_schema(loza.DefaultSchema())
+cfg = loza.production("checkout").with_schema(loza.FlatSchema())  # good for ClickHouse
+cfg = loza.production("checkout").with_schema(loza.OTelLogSchema())
+cfg = loza.production("checkout").with_schema(loza.ECSchema())
 
 # Custom schema
 def my_schema(ev):
@@ -373,53 +373,53 @@ def my_schema(ev):
         "fields": ev.attrs(),
     }
 
-cfg = loxa.production("checkout").with_schema(loxa.CustomSchema(my_schema))
+cfg = loza.production("checkout").with_schema(loza.CustomSchema(my_schema))
 ```
 
 ## Duplicate Policy
 
 ```python
-import loxa
+import loza
 
-cfg = loxa.production("checkout").with_duplicate_policy(loxa.CanonicalWins)  # default
-cfg = loxa.production("checkout").with_duplicate_policy(loxa.LastWins)      # user attrs win
-cfg = loxa.production("checkout").with_duplicate_policy(loxa.ErrorOnDuplicate)  # strict
+cfg = loza.production("checkout").with_duplicate_policy(loza.CanonicalWins)  # default
+cfg = loza.production("checkout").with_duplicate_policy(loza.LastWins)      # user attrs win
+cfg = loza.production("checkout").with_duplicate_policy(loza.ErrorOnDuplicate)  # strict
 ```
 
 ## Middleware
 
 ```python
 # Flask
-from loxa.middleware.flask.middleware import LoxaMiddleware
-app.wsgi_app = LoxaMiddleware(app.wsgi_app, service="checkout")
+from loza.middleware.flask.middleware import LozaMiddleware
+app.wsgi_app = LozaMiddleware(app.wsgi_app, service="checkout")
 
 # FastAPI / Starlette (ASGI)
-from loxa.middleware.asgi.middleware import Middleware as AsgiMiddleware
+from loza.middleware.asgi.middleware import Middleware as AsgiMiddleware
 app.add_middleware(AsgiMiddleware, service="checkout")
 
 # Django
-from loxa.middleware.django.middleware import LoxaMiddleware
+from loza.middleware.django.middleware import LozaMiddleware
 # Add to MIDDLEWARE in settings.py
 ```
 
 ## Feature Flags
 
 ```python
-import loxa
+import loza
 
-loxa.enrich(ctx,
-    loxa.FeatureFlag("checkout_v2", "enabled"),
-    loxa.FeatureFlagBool("new_ui", True),
-    loxa.Experiment("pricing_test", "variant_b"),
+loza.enrich(ctx,
+    loza.FeatureFlag("checkout_v2", "enabled"),
+    loza.FeatureFlagBool("new_ui", True),
+    loza.Experiment("pricing_test", "variant_b"),
 )
 ```
 
 ## Security
 
 ```python
-import loxa
+import loza
 
-cfg = loxa.production("checkout").with_security(loxa.SecurityConfig(
+cfg = loza.production("checkout").with_security(loza.SecurityConfig(
     redact_by_default=True,
     allow_pii=False,
     max_field_bytes=4096,
@@ -428,27 +428,27 @@ cfg = loxa.production("checkout").with_security(loxa.SecurityConfig(
     drop_oversized_events=True,
 ))
 
-loxa.enrich(ctx,
-    loxa.SensitiveString("user.email", email),
-    loxa.HashString("user.ssn", ssn),
+loza.enrich(ctx,
+    loza.SensitiveString("user.email", email),
+    loza.HashString("user.ssn", ssn),
 )
 ```
 
 ## Context Helpers
 
 ```python
-import loxa
+import loza
 
-ev, ok = loxa.FromContext(ctx)
-if loxa.HasEvent(ctx):
-    eid = loxa.EventID(ctx)
-    rid = loxa.RequestIDFromContext(ctx)
+ev, ok = loza.FromContext(ctx)
+if loza.HasEvent(ctx):
+    eid = loza.EventID(ctx)
+    rid = loza.RequestIDFromContext(ctx)
 ```
 
 ## Testing
 
 ```python
-from loxa.testkit.helpers import TestLogger, Capture, AssertEvent, AssertRedacted, AssertHasCheckpoint, CapturingLogger
+from loza.testkit.helpers import TestLogger, Capture, AssertEvent, AssertRedacted, AssertHasCheckpoint, CapturingLogger
 
 # Test logger with memory sink
 logger, store = TestLogger("test")
@@ -463,7 +463,7 @@ AssertHasCheckpoint(events[0], "payment_started")
 
 # Context manager
 with CapturingLogger("test") as (logger, store):
-    ctx = logger.start_event(loxa.Params(event="test"))
+    ctx = logger.start_event(loza.Params(event="test"))
     logger.finish(ctx, "success")
     logger.emit(ctx)
 events = store.events()
@@ -490,19 +490,19 @@ python ../../spec/conformance/runner.py --sdk python --group all
 
 | Feature                   | Python               | Go                   | JavaScript           | Rust                 |
 |---------------------------|----------------------|----------------------|----------------------|----------------------|
-| Module facade             | `import loxa`        | `import "loxa"`      | `import loxa`        | `use loxa`           |
-| Configure                 | `loxa.configure()`   | `loxa.Configure()`   | `loxa.configure()`   | `loxa::configure()`  |
-| Start event               | `loxa.start_event()` | `loxa.StartEvent()`  | `loxa.startEvent()`  | `loxa::start_event()`|
-| Enrich                    | `loxa.enrich()`      | `loxa.Enrich()`      | `loxa.enrich()`      | `loxa::enrich()`     |
-| Checkpoint                | `loxa.checkpoint()`  | `loxa.Checkpoint()`  | `loxa.checkpoint()`  | `loxa::checkpoint()` |
-| Finish                    | `loxa.finish()`      | `loxa.Finish()`      | `loxa.finish()`      | `loxa::finish()`     |
-| Emit                      | `loxa.emit()`        | `loxa.Emit()`        | `loxa.emit()`        | `loxa::emit()`       |
-| Shutdown                  | `loxa.shutdown()`    | `loxa.Shutdown()`    | `loxa.shutdown()`    | `loxa::shutdown()`   |
-| Create instance           | `loxa.create_loxa()` | `loxa.NewLogger()`   | `loxa.createLoxa()`  | `loxa::new()`        |
-| Alias                     | `loxa.alias()`       | `loxa.Alias()`       | `loxa.alias()`       | `loxa::alias()`      |
-| String attr               | `loxa.String()`      | `loxa.String()`      | `loxa.string()`      | `loxa::String()`     |
-| Int attr                  | `loxa.Int()`         | `loxa.Int()`         | `loxa.int()`         | `loxa::Int()`        |
-| User ID                   | `loxa.UserID()`      | `loxa.UserID()`      | `loxa.userID()`      | `loxa::UserID()`     |
-| Feature flag              | `loxa.FeatureFlag()` | `loxa.FeatureFlag()` | `loxa.featureFlag()` | `loxa::FeatureFlag()`|
-| Middleware                 | `loxa.middleware.*`  | `loxa/http`          | `loxa/middleware`    | `loxa::middleware`   |
-| Test kit                  | `loxa.testkit`       | `loxa/testkit`       | `loxa/testkit`       | `loxa::testkit`      |
+| Module facade             | `import loza`        | `import "loza"`      | `import loza`        | `use loza`           |
+| Configure                 | `loza.configure()`   | `loza.Configure()`   | `loza.configure()`   | `loza::configure()`  |
+| Start event               | `loza.start_event()` | `loza.StartEvent()`  | `loza.startEvent()`  | `loza::start_event()`|
+| Enrich                    | `loza.enrich()`      | `loza.Enrich()`      | `loza.enrich()`      | `loza::enrich()`     |
+| Checkpoint                | `loza.checkpoint()`  | `loza.Checkpoint()`  | `loza.checkpoint()`  | `loza::checkpoint()` |
+| Finish                    | `loza.finish()`      | `loza.Finish()`      | `loza.finish()`      | `loza::finish()`     |
+| Emit                      | `loza.emit()`        | `loza.Emit()`        | `loza.emit()`        | `loza::emit()`       |
+| Shutdown                  | `loza.shutdown()`    | `loza.Shutdown()`    | `loza.shutdown()`    | `loza::shutdown()`   |
+| Create instance           | `loza.create_loza()` | `loza.NewLogger()`   | `loza.createLoza()`  | `loza::new()`        |
+| Alias                     | `loza.alias()`       | `loza.Alias()`       | `loza.alias()`       | `loza::alias()`      |
+| String attr               | `loza.String()`      | `loza.String()`      | `loza.string()`      | `loza::String()`     |
+| Int attr                  | `loza.Int()`         | `loza.Int()`         | `loza.int()`         | `loza::Int()`        |
+| User ID                   | `loza.UserID()`      | `loza.UserID()`      | `loza.userID()`      | `loza::UserID()`     |
+| Feature flag              | `loza.FeatureFlag()` | `loza.FeatureFlag()` | `loza.featureFlag()` | `loza::FeatureFlag()`|
+| Middleware                 | `loza.middleware.*`  | `loza/http`          | `loza/middleware`    | `loza::middleware`   |
+| Test kit                  | `loza.testkit`       | `loza/testkit`       | `loza/testkit`       | `loza::testkit`      |

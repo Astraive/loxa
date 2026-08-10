@@ -134,4 +134,4 @@ jobs:
         run: make proto
 
       - name: Run queue and Redis integration tests
-        run: go test -tags=integration -run TestCollectorIntegration_ ./cmd/loxa-collector
+        run: go test -tags=integration -run TestCollectorIntegration_ ./cmd/loza-collector

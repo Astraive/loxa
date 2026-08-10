@@ -1,28 +1,28 @@
 #[test]
 fn basic_logging_and_event_facades_work() {
-    let store = loxa::MemorySinkStore::new();
-    let logger = loxa::configure(
-        loxa::Config::dev("capture").with_sink(loxa::SinkConfig::Memory(store.clone())),
+    let store = loza::MemorySinkStore::new();
+    let logger = loza::configure(
+        loza::Config::dev("capture").with_sink(loza::SinkConfig::Memory(store.clone())),
     )
     .expect("configure global logger");
 
-    loxa::notice("notice event");
-    loxa::track("checkout.page_view", &[loxa::string("page", "/checkout")]);
-    let mut audit = loxa::audit("user.login");
+    loza::notice("notice event");
+    loza::track("checkout.page_view", &[loza::string("page", "/checkout")]);
+    let mut audit = loza::audit("user.login");
     let _ = logger.finish(&mut audit, "success");
     let _ = logger.emit(&audit);
-    let mut security = loxa::security("auth.failure");
+    let mut security = loza::security("auth.failure");
     let _ = logger.finish(&mut security, "success");
     let _ = logger.emit(&security);
-    let mut metric = loxa::metric("latency");
-    logger.append(&mut metric, loxa::string("unit", "ms"));
+    let mut metric = loza::metric("latency");
+    logger.append(&mut metric, loza::string("unit", "ms"));
     let _ = logger.finish(&mut metric, "success");
     let _ = logger.emit(&metric);
-    loxa::count("requests", 4);
-    loxa::gauge("cpu", 0.72);
-    loxa::histogram("payload.bytes", 512.0);
-    loxa::breadcrumb("nav.click");
-    loxa::flush();
+    loza::count("requests", 4);
+    loza::gauge("cpu", 0.72);
+    loza::histogram("payload.bytes", 512.0);
+    loza::breadcrumb("nav.click");
+    loza::flush();
 
     let events = store.events();
     assert_eq!(events.len(), 9);

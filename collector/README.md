@@ -1,12 +1,12 @@
-# LOXA Collector
+# LOZA Collector
 
-LOXA Collector is the runtime repository for LOXA ingestion, validation, durability, fanout, worker processing, and deployment assets.
+LOZA Collector is the runtime repository for LOZA ingestion, validation, durability, fanout, worker processing, and deployment assets.
 
 Key binaries:
 
-- `loxa-collector`: HTTP ingest server
-- `loxa-worker`: queue consumer for distributed delivery
-- `loxa-loadgen`: local load generator
+- `loza-collector`: HTTP ingest server
+- `loza-worker`: queue consumer for distributed delivery
+- `loza-loadgen`: local load generator
 
 Contract and SDK:
 
@@ -17,5 +17,5 @@ Contract and SDK:
 Local run example:
 
 ```bash
-go run ./cmd/loxa-collector run -c configs/loxa.local.yaml
+go run ./cmd/loza-collector run -c configs/loza.local.yaml
 ```

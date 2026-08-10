@@ -505,14 +505,14 @@ func LoadFile(cfg *Config, path string) error {
 }
 
 func findDefaultsFile() string {
-	if override := strings.TrimSpace(os.Getenv("LOXA_COLLECTOR_DEFAULTS")); override != "" {
+	if override := strings.TrimSpace(os.Getenv("LOZA_COLLECTOR_DEFAULTS")); override != "" {
 		return override
 	}
 
 	candidates := []string{
-		"loxa-collector.defaults.yaml",
-		filepath.Join("..", "loxa-collector.defaults.yaml"),
-		filepath.Join("..", "..", "loxa-collector.defaults.yaml"),
+		"loza-collector.defaults.yaml",
+		filepath.Join("..", "loza-collector.defaults.yaml"),
+		filepath.Join("..", "..", "loza-collector.defaults.yaml"),
 		filepath.Join(string(filepath.Separator), "app", "config.yaml"),
 	}
 	for _, candidate := range candidates {
@@ -525,12 +525,12 @@ func findDefaultsFile() string {
 	if err == nil {
 		dir := filepath.Dir(exe)
 		for i := 0; i < 5; i++ {
-			candidate := filepath.Join(dir, "loxa-collector.defaults.yaml")
+			candidate := filepath.Join(dir, "loza-collector.defaults.yaml")
 			if _, statErr := os.Stat(candidate); statErr == nil {
 				return candidate
 			}
 			dir = filepath.Dir(dir)
 		}
 	}
-	return "loxa-collector.defaults.yaml"
+	return "loza-collector.defaults.yaml"
 }

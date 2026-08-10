@@ -1,15 +1,15 @@
-// Package loxacli provides build-time metadata for the loxa-cli module.
-package loxacli
+// Package lozacli provides build-time metadata for the loza-cli module.
+package lozacli
 
 import (
 	_ "embed"
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed loxa-cli.yaml
+//go:embed loza-cli.yaml
 var metadataYAML []byte
 
-// Version is the module version read from loxa-cli.yaml at build time.
+// Version is the module version read from loza-cli.yaml at build time.
 var Version = loadVersion()
 
 func loadVersion() string {

@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide walks you through installing the LOXA CLI, configuring it, and running your first commands.
+This guide walks you through installing the LOZA CLI, configuring it, and running your first commands.
 
 ## Install
 
@@ -8,49 +8,49 @@ This guide walks you through installing the LOXA CLI, configuring it, and runnin
 
 ```bash
 cd cli
-go build -o loxa.exe ./cmd/loxa
+go build -o loza.exe ./cmd/loza
 ```
 
 ### Go Install
 
 ```bash
-go install github.com/astraive/loxa/cli/cmd/loxa@latest
+go install github.com/astraive/loza/cli/cmd/loza@latest
 ```
 
 ## Configure
 
-The CLI reads configuration from `loxa-cli.defaults.yaml` in the current directory or the path specified by `--config`. The most important settings are the collector URL and API key.
+The CLI reads configuration from `loza-cli.defaults.yaml` in the current directory or the path specified by `--config`. The most important settings are the collector URL and API key.
 
 ```yaml
 collector:
-  url: https://collector.loxa.dev
+  url: https://collector.loza.dev
 ```
 
 Set the collector URL and API key via environment variables:
 
 ```bash
-export LOXA_COLLECTOR_URL=https://collector.loxa.dev
-export LOXA_API_KEY=lx_sec_live_k_xxx_yyyy
+export LOZA_COLLECTOR_URL=https://collector.loza.dev
+export LOZA_API_KEY=lx_sec_live_k_xxx_yyyy
 ```
 
 ### Authentication
 
-The CLI authenticates with the collector using `Authorization: Bearer <key>`. Set the `LOXA_API_KEY` environment variable.
+The CLI authenticates with the collector using `Authorization: Bearer <key>`. Set the `LOZA_API_KEY` environment variable.
 
 | Env Var | Description |
 |---|---|
-| `LOXA_API_KEY` | Primary ingest API key (works for all services) |
-| `LOXA_COLLECTOR_API_KEY` | Collector-specific key (fallback) |
-| `LOXA_CORTEX_API_KEY` | Cortex-specific key (fallback) |
+| `LOZA_API_KEY` | Primary ingest API key (works for all services) |
+| `LOZA_COLLECTOR_API_KEY` | Collector-specific key (fallback) |
+| `LOZA_CORTEX_API_KEY` | Cortex-specific key (fallback) |
 
 ```bash
 # Production
-export LOXA_API_KEY=lx_sec_live_k_xxx_yyyy
-loxa query "SELECT * FROM events LIMIT 10"
+export LOZA_API_KEY=lx_sec_live_k_xxx_yyyy
+loza query "SELECT * FROM events LIMIT 10"
 
 # Local dev (no auth)
-export LOXA_COLLECTOR_URL=http://localhost:9308
-loxa status
+export LOZA_COLLECTOR_URL=http://localhost:9308
+loza status
 ```
 
 See [Security](../../docs/security.md) for key types and RBAC roles.
@@ -60,7 +60,7 @@ See [Security](../../docs/security.md) for key types and RBAC roles.
 ### Check Health
 
 ```bash
-loxa doctor
+loza doctor
 ```
 
 This runs a series of checks against the configured collector: connectivity, readiness, schema compatibility, and sink status.
@@ -68,7 +68,7 @@ This runs a series of checks against the configured collector: connectivity, rea
 ### View Collector Status
 
 ```bash
-loxa status
+loza status
 ```
 
 Shows the collector's uptime, version, configured sinks, and current event counts.
@@ -76,7 +76,7 @@ Shows the collector's uptime, version, configured sinks, and current event count
 ### Query Events
 
 ```bash
-loxa query "SELECT * FROM events WHERE service = 'payment-service' LIMIT 10"
+loza query "SELECT * FROM events WHERE service = 'payment-service' LIMIT 10"
 ```
 
 Executes a SQL query against the collector's DuckDB storage.
@@ -84,7 +84,7 @@ Executes a SQL query against the collector's DuckDB storage.
 ### Tail Events
 
 ```bash
-loxa tail --service payment-service
+loza tail --service payment-service
 ```
 
 Streams events in real time from the collector. Use `--kind`, `--service`, or `--level` to narrow by event kind, service name, or severity level.
@@ -92,7 +92,7 @@ Streams events in real time from the collector. Use `--kind`, `--service`, or `-
 ### Emit a Test Event
 
 ```bash
-loxa emit sample --kind http_request --outcome success --level info --attrs status_code=200,path=/api/test
+loza emit sample --kind http_request --outcome success --level info --attrs status_code=200,path=/api/test
 ```
 
 Sends a single test event to the collector for validation.

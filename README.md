@@ -1,7 +1,7 @@
-# LOXA
+# LOZA
 
 <p align="center">
-  <img src="http://github.com/Astraive/loxa/blob/main/assets/branding/loxa-horizontal.png?raw=true" alt="Loxa" width="320">
+  <img src="http://github.com/Astraive/loza/blob/main/assets/branding/loza-horizontal.png?raw=true" alt="Loza" width="320">
 </p>
 
 <h3 align="center">
@@ -9,70 +9,70 @@
 </h3>
 
 <p align="center">
-  <a href="https://github.com/astraive/loxa/blob/main/LICENSE">
+  <a href="https://github.com/astraive/loza/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT">
   </a>
-  <a href="https://github.com/astraive/loxa/releases">
+  <a href="https://github.com/astraive/loza/releases">
     <img src="https://img.shields.io/badge/version-v0.2.6-green.svg" alt="Version">
   </a>
   <br>
-  <a href="https://github.com/astraive/loxa/actions/workflows/collector-ci.yml">
-    <img src="https://github.com/astraive/loxa/actions/workflows/collector-ci.yml/badge.svg" alt="Collector CI">
+  <a href="https://github.com/astraive/loza/actions/workflows/collector-ci.yml">
+    <img src="https://github.com/astraive/loza/actions/workflows/collector-ci.yml/badge.svg" alt="Collector CI">
   </a>
-  <a href="https://github.com/astraive/loxa/actions/workflows/sdks-go.yml">
-    <img src="https://github.com/astraive/loxa/actions/workflows/sdks-go.yml/badge.svg" alt="Go SDK CI">
+  <a href="https://github.com/astraive/loza/actions/workflows/sdks-go.yml">
+    <img src="https://github.com/astraive/loza/actions/workflows/sdks-go.yml/badge.svg" alt="Go SDK CI">
   </a>
-  <a href="https://github.com/astraive/loxa/actions/workflows/sdks-py-ci.yml">
-    <img src="https://github.com/astraive/loxa/actions/workflows/sdks-py-ci.yml/badge.svg" alt="Python SDK CI">
+  <a href="https://github.com/astraive/loza/actions/workflows/sdks-py-ci.yml">
+    <img src="https://github.com/astraive/loza/actions/workflows/sdks-py-ci.yml/badge.svg" alt="Python SDK CI">
   </a>
-  <a href="https://github.com/astraive/loxa/actions/workflows/sdks-rs-ci.yml">
-    <img src="https://github.com/astraive/loxa/actions/workflows/sdks-rs-ci.yml/badge.svg" alt="Rust SDK CI">
+  <a href="https://github.com/astraive/loza/actions/workflows/sdks-rs-ci.yml">
+    <img src="https://github.com/astraive/loza/actions/workflows/sdks-rs-ci.yml/badge.svg" alt="Rust SDK CI">
   </a>
-  <a href="https://github.com/Astraive/loxana/actions/workflows/loxana-ci.yml">
-    <img src="https://github.com/Astraive/loxana/actions/workflows/loxana-ci.yml/badge.svg" alt="Loxana CI">
+  <a href="https://github.com/Astraive/lozana/actions/workflows/lozana-ci.yml">
+    <img src="https://github.com/Astraive/lozana/actions/workflows/lozana-ci.yml/badge.svg" alt="Lozana CI">
   </a>
-  <a href="https://hub.docker.com/r/astraive/loxa">
+  <a href="https://hub.docker.com/r/astraive/loza">
   <br>
-    <img src="https://img.shields.io/docker/pulls/astraive/loxa?label=collector%20pulls" alt="Collector Docker Pulls">
+    <img src="https://img.shields.io/docker/pulls/astraive/loza?label=collector%20pulls" alt="Collector Docker Pulls">
   </a>
-  <a href="https://hub.docker.com/r/astraive/loxa-cortex">
-    <img src="https://img.shields.io/docker/pulls/astraive/loxa-cortex?label=cortex%20pulls" alt="Cortex Docker Pulls">
+  <a href="https://hub.docker.com/r/astraive/loza-cortex">
+    <img src="https://img.shields.io/docker/pulls/astraive/loza-cortex?label=cortex%20pulls" alt="Cortex Docker Pulls">
   </a>
 </p>
 
 ---
 
-LOXA is a collector-first wide-event observability stack.
+LOZA is a collector-first wide-event observability stack.
 
-Applications emit canonical structured events through lightweight SDKs to the LOXA Collector. The collector owns the heavy production pipeline: validation, deduplication, durable storage, querying, replay, deletion, and fanout to downstream sinks.
+Applications emit canonical structured events through lightweight SDKs to the LOZA Collector. The collector owns the heavy production pipeline: validation, deduplication, durable storage, querying, replay, deletion, and fanout to downstream sinks.
 
-Cortex adds incident intelligence and graph analysis on top of the event stream. Loxana provides a dashboard for querying, visualization, alerting, and operator workflows.
+Cortex adds incident intelligence and graph analysis on top of the event stream. Lozana provides a dashboard for querying, visualization, alerting, and operator workflows.
 
 The design principle is simple:
 
 > **SDKs stay thin. The collector owns the pipeline.**
 
-## Install Loxa CLI
+## Install Loza CLI
 
 ### macOS / Linux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/astraive/loxa/main/cli/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/astraive/loza/main/cli/install/install.sh | bash
 ```
 
 ### Windows PowerShell
 
 ```powershell
-irm https://raw.githubusercontent.com/astraive/loxa/main/cli/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/astraive/loza/main/cli/install/install.ps1 | iex
 ```
 
 ## Install SDKs
 
 ```bash
-npm install loxa
-pip install loxa
-cargo add loxa
-go get github.com/astraive/loxa/sdks/go
+npm install loza
+pip install loza
+cargo add loza
+go get github.com/astraive/loza/sdks/go
 ```
 
 ## Repository Layout
@@ -88,7 +88,7 @@ go get github.com/astraive/loxa/sdks/go
 │   └── js/      # Lightweight JavaScript/TypeScript SDK using HTTPBatchSink
 ├── cli/         # Local operator CLI
 │   └── install/ # CLI-only install scripts
-├── lql/         # LOXA Query Language compiler / tooling
+├── lql/         # LOZA Query Language compiler / tooling
 ├── spec/        # Shared wire and schema contract
 ├── docs/        # Architecture, configuration, deployment, and security docs
 └── deploy/      # Docker, Kubernetes, and Helm deployment assets
@@ -114,8 +114,8 @@ flowchart TD
     Rs -->|HTTP Batch| Collector
     Js -->|HTTP Batch| Collector
 
-    subgraph Loxa["LOXA Runtime"]
-        Collector["LOXA Collector<br/>Port 9308"]
+    subgraph Loza["LOZA Runtime"]
+        Collector["LOZA Collector<br/>Port 9308"]
         Validate["Validate"]
         Dedupe["Deduplicate"]
         Store["Durable Store"]
@@ -149,8 +149,8 @@ flowchart TD
     Fanout --> S3
     Fanout --> GCS
 
-    Store --> Cortex["LOXA Cortex<br/>Incident Intelligence<br/>Port 9312"]
-    Cortex --> Loxana["Loxana Dashboard<br/>Vite + React"]
+    Store --> Cortex["LOZA Cortex<br/>Incident Intelligence<br/>Port 9312"]
+    Cortex --> Lozana["Lozana Dashboard<br/>Vite + React"]
 ```
 
 ## Collector-First Contract
@@ -220,7 +220,7 @@ The stable operator surface is:
 | [`sdks/rs/`](sdks/rs/)     | Lightweight Rust SDK                                                      |               Rust | [`sdks/rs/README.md`](sdks/rs/README.md)       |
 | [`sdks/js/`](sdks/js/)     | JavaScript / TypeScript SDK                                               |         TypeScript | [`sdks/js/README.md`](sdks/js/README.md)       |
 | [`cli/`](cli/)             | Local operator CLI                                                        |                 Go | [`cli/README.md`](cli/README.md)               |
-| [`lql/`](lql/)             | LOXA Query Language tooling                                               |        Rust / WASM | [`lql/README.md`](lql/README.md)               |
+| [`lql/`](lql/)             | LOZA Query Language tooling                                               |        Rust / WASM | [`lql/README.md`](lql/README.md)               |
 | [`spec/`](spec/)           | Shared wire, schema, and conformance contract                             | Markdown / schemas | [`spec/docs/MVP_CUT.md`](spec/docs/MVP_CUT.md) |
 
 ## Quick Start
@@ -234,9 +234,9 @@ cd collector
 export COLLECTOR_AUTH_SERVER_SECRET="$(openssl rand -hex 32)"
 export COLLECTOR_INGEST_KEY_SECRET="$(openssl rand -hex 24)"
 export COLLECTOR_ADMIN_KEY_SECRET="$(openssl rand -hex 24)"
-export LOXA_STORAGE_ENCRYPTION_KEY="$(openssl rand -hex 32)"
-export LOXA_API_KEY="lx_sec_live_kingest_${COLLECTOR_INGEST_KEY_SECRET}"
-go run ./cmd/loxa-collector run -c configs/loxa.yaml
+export LOZA_STORAGE_ENCRYPTION_KEY="$(openssl rand -hex 32)"
+export LOZA_API_KEY="lx_sec_live_kingest_${COLLECTOR_INGEST_KEY_SECRET}"
+go run ./cmd/loza-collector run -c configs/loza.yaml
 ```
 
 Verify the public health endpoint, then send an authenticated event to the actual ingest route:
@@ -244,7 +244,7 @@ Verify the public health endpoint, then send an authenticated event to the actua
 ```bash
 curl http://127.0.0.1:9308/health
 curl -X POST http://127.0.0.1:9308/events \
-  -H "Authorization: Bearer ${LOXA_API_KEY}" \
+  -H "Authorization: Bearer ${LOZA_API_KEY}" \
   -H 'Content-Type: application/json' \
   -d '[{"event":"checkout.request","service":"checkout"}]'
 ```
@@ -261,60 +261,60 @@ package main
 import (
 	"context"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func main() {
-	loxa.Configure(loxa.Production("checkout").
+	loza.Configure(loza.Production("checkout").
 		WithCollectorEndpoint("http://127.0.0.1:9308"))
-	defer loxa.Shutdown(context.Background())
+	defer loza.Shutdown(context.Background())
 
-	ctx := loxa.StartEvent(context.Background(), loxa.Params{
+	ctx := loza.StartEvent(context.Background(), loza.Params{
 		Event:  "checkout.request",
 		Method: "POST",
 		Path:   "/checkout",
 	})
 
-	loxa.Enrich(ctx, loxa.UserID("u-1"))
-	loxa.Finish(ctx, "success", loxa.Int("status_code", 200))
-	_ = loxa.Emit(ctx)
+	loza.Enrich(ctx, loza.UserID("u-1"))
+	loza.Finish(ctx, "success", loza.Int("status_code", 200))
+	_ = loza.Emit(ctx)
 }
 ```
 
 #### Python
 
 ```python
-import loxa
+import loza
 
-loxa.configure(
-    loxa.production("checkout")
+loza.configure(
+    loza.production("checkout")
     .with_collector_endpoint("http://127.0.0.1:9308")
 )
 
-ctx = loxa.start_event(event="checkout.request", kind="http")
-loxa.enrich(ctx, loxa.UserID("u-1"))
-loxa.finish(ctx, "success", loxa.Int("status_code", 200))
-loxa.emit(ctx)
-loxa.shutdown()
+ctx = loza.start_event(event="checkout.request", kind="http")
+loza.enrich(ctx, loza.UserID("u-1"))
+loza.finish(ctx, "success", loza.Int("status_code", 200))
+loza.emit(ctx)
+loza.shutdown()
 ```
 
 #### Rust
 
 ```rust
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    loxa::configure(
-        loxa::Config::production("checkout")
+    loza::configure(
+        loza::Config::production("checkout")
             .with_collector_endpoint("http://127.0.0.1:9308"),
     )?;
 
-    let mut ctx = loxa::start_event(
-        loxa::Params::new("checkout.request").with_kind("http"),
+    let mut ctx = loza::start_event(
+        loza::Params::new("checkout.request").with_kind("http"),
     );
 
-    loxa::enrich(&mut ctx, loxa::UserID("u-1"));
-    loxa::finish(&mut ctx, "success");
-    loxa::emit(&mut ctx)?;
-    loxa::shutdown();
+    loza::enrich(&mut ctx, loza::UserID("u-1"));
+    loza::finish(&mut ctx, "success");
+    loza::emit(&mut ctx)?;
+    loza::shutdown();
 
     Ok(())
 }
@@ -323,30 +323,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #### JavaScript / TypeScript
 
 ```ts
-import { loxa } from 'loxa';
+import { loza } from 'loza';
 
-loxa.configure(
-  loxa.production('checkout')
+loza.configure(
+  loza.production('checkout')
     .withCollectorEndpoint('http://127.0.0.1:9308')
 );
 
-const ctx = loxa.startEvent({
+const ctx = loza.startEvent({
   event: 'checkout.request',
   kind: 'http',
 });
 
-loxa.enrich(ctx, { 'user.id': 'u-1' });
-loxa.finish(ctx, 'success');
+loza.enrich(ctx, { 'user.id': 'u-1' });
+loza.finish(ctx, 'success');
 
-await loxa.emit(ctx);
-await loxa.shutdown();
+await loza.emit(ctx);
+await loza.shutdown();
 ```
 
 ### 3. Query Stored Events
 
 ```bash
 cd cli
-go run ./cmd/loxa query --sql "SELECT * FROM events LIMIT 10"
+go run ./cmd/loza query --sql "SELECT * FROM events LIMIT 10"
 ```
 
 ## Docker
@@ -356,7 +356,7 @@ go run ./cmd/loxa query --sql "SELECT * FROM events LIMIT 10"
 The collector image is:
 
 ```txt
-astraive/loxa
+astraive/loza
 ```
 
 Run it locally:
@@ -365,8 +365,8 @@ Run it locally:
 docker run --rm \
   -p 9308:9308 \
   -v "$PWD/collector/configs:/configs:ro" \
-  astraive/loxa:latest \
-  run -c /configs/loxa.local.yaml
+  astraive/loza:latest \
+  run -c /configs/loza.local.yaml
 ```
 
 ### Cortex
@@ -374,7 +374,7 @@ docker run --rm \
 The Cortex image is:
 
 ```txt
-astraive/loxa-cortex
+astraive/loza-cortex
 ```
 
 Run it locally:
@@ -382,7 +382,7 @@ Run it locally:
 ```bash
 docker run --rm \
   -p 9312:9312 \
-  astraive/loxa-cortex:latest
+  astraive/loza-cortex:latest
 ```
 
 ### Docker Compose
@@ -411,19 +411,19 @@ flowchart TD
     Staging --> K8s["Kubernetes / Helm"]
     K8s --> Prod["Production"]
 
-    Prod --> Collector["astraive/loxa"]
-    Prod --> Cortex["astraive/loxa-cortex"]
-    Prod --> Dashboard["Loxana Dashboard"]
+    Prod --> Collector["astraive/loza"]
+    Prod --> Cortex["astraive/loza-cortex"]
+    Prod --> Dashboard["Lozana Dashboard"]
 ```
 
 ## SDK Installation
 
 | Language                | Command                                          |
 | ----------------------- | ------------------------------------------------ |
-| Go                      | `go get github.com/astraive/loxa/sdks/go@v0.2.6` |
-| Python                  | `pip install loxa`                               |
-| Rust                    | `cargo add loxa`                                 |
-| JavaScript / TypeScript | `npm install loxa`                               |
+| Go                      | `go get github.com/astraive/loza/sdks/go@v0.2.6` |
+| Python                  | `pip install loza`                               |
+| Rust                    | `cargo add loza`                                 |
+| JavaScript / TypeScript | `npm install loza`                               |
 
 ## Current Status
 
@@ -434,9 +434,9 @@ flowchart TD
 | Rust SDK       | 🟢 Stable      | Collector-capable, full conformance, production-ready                     |
 | JavaScript SDK | 🟢 Stable      | TypeScript-capable, full conformance, production-ready                    |
 | Collector      | 🟢 Stable      | Direct/spool/queue modes, gzip ingestion, query/tail/DLQ/delete endpoints |
-| CLI            | Mixed maturity | Use `loxa maturity` to see per-command status                             |
+| CLI            | Mixed maturity | Use `loza maturity` to see per-command status                             |
 | Cortex         | Beta           | Incident intelligence and graph analysis are active surfaces              |
-| Loxana         | Experimental   | Dashboard UI under active development                                     |
+| Lozana         | Experimental   | Dashboard UI under active development                                     |
 
 For conformance guarantees and required SDK behaviors, see [`spec/docs/SDK_CONFORMANCE_CONTRACT.md`](spec/docs/SDK_CONFORMANCE_CONTRACT.md).
 
@@ -452,7 +452,7 @@ The following are not guaranteed by the current release contract unless claimed 
 
 ## CLI Command Maturity
 
-Use `loxa maturity` to view current command stability levels.
+Use `loza maturity` to view current command stability levels.
 
 | Command     | Maturity     | Notes                                            |
 | ----------- | ------------ | ------------------------------------------------ |
@@ -528,8 +528,8 @@ cd collector && go test ./...
 ## Development
 
 ```bash
-git clone https://github.com/astraive/loxa.git
-cd loxa
+git clone https://github.com/astraive/loza.git
+cd loza
 
 # Collector tests
 cd collector
@@ -588,7 +588,7 @@ Do not open a public issue for security reports.
 
 ## License
 
-LOXA is licensed under the [`MIT License`](LICENSE).
+LOZA is licensed under the [`MIT License`](LICENSE).
 
 ```txt
 MIT License - Copyright (c) 2026 Astraive
@@ -600,9 +600,9 @@ MIT License - Copyright (c) 2026 Astraive
   Built by <a href="https://astraive.com"><strong>Astraive</strong></a>
   &nbsp;&middot;&nbsp;
   <br>
-  <a href="https://github.com/astraive/loxa">GitHub</a>
+  <a href="https://github.com/astraive/loza">GitHub</a>
   &nbsp;&middot;&nbsp;
-  <a href="https://github.com/astraive/loxa/releases">Releases</a>
+  <a href="https://github.com/astraive/loza/releases">Releases</a>
   &nbsp;&middot;&nbsp;
-  <a href="https://github.com/astraive/loxa/issues">Issues</a>
+  <a href="https://github.com/astraive/loza/issues">Issues</a>
 </p>

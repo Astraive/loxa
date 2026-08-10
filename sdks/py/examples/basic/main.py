@@ -1,5 +1,5 @@
-import loxa
+import loza
 
-ctx = loxa.StartEvent(None, loxa.Params(event="example.basic", service="example"))
-loxa.Finish(ctx, "success")
-print(loxa.Emit(ctx))
+ctx = loza.StartEvent(None, loza.Params(event="example.basic", service="example"))
+loza.Finish(ctx, "success")
+print(loza.Emit(ctx))

@@ -1,37 +1,37 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: loxa-stager
+  name: loza-stager
   labels:
     app.kubernetes.io/name: stager
-    app.kubernetes.io/part-of: loxa
+    app.kubernetes.io/part-of: loza
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: stager
-      app.kubernetes.io/part-of: loxa
+      app.kubernetes.io/part-of: loza
   template:
     metadata:
       labels:
         app.kubernetes.io/name: stager
-        app.kubernetes.io/part-of: loxa
+        app.kubernetes.io/part-of: loza
     spec:
       containers:
         - name: stager
-          image: ghcr.io/astraive/loxa-stager:0.2.6
+          image: ghcr.io/astraive/loza-stager:0.2.6
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
-                name: loxa-stager-config
+                name: loza-stager-config
             - secretRef:
-                name: loxa-stager-secrets
+                name: loza-stager-secrets
                 optional: true
           volumeMounts:
             - name: ingest-queue
-              mountPath: /var/loxa/ingest-queue
+              mountPath: /var/loza/ingest-queue
             - name: staging
-              mountPath: /var/loxa/staging
+              mountPath: /var/loza/staging
             - name: health
               mountPath: /app/health
           securityContext:

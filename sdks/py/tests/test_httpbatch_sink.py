@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
-from loxa.sinks.httpbatch import HTTPBatchSink
+from loza.sinks.httpbatch import HTTPBatchSink
 
 
 class _Handler(BaseHTTPRequestHandler):

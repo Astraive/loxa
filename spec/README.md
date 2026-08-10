@@ -1,9 +1,9 @@
-# LOXA Spec
+# LOZA Spec
 
-LOXA Spec defines the shared contract between SDKs and collectors.
+LOZA Spec defines the shared contract between SDKs and collectors.
 
-- `sdks/go`, `sdks/py`, `sdks/rs`, and `sdks/js` emit LOXA events that follow this spec.
-- `collector` accepts LOXA events that follow this spec.
+- `sdks/go`, `sdks/py`, `sdks/rs`, and `sdks/js` emit LOZA events that follow this spec.
+- `collector` accepts LOZA events that follow this spec.
 - This directory is the source of truth for schemas, ingest payload formats, compatibility rules, and wire-level examples.
 
 ## Current Versions
@@ -29,10 +29,10 @@ The specification is now organized under `spec/` with deterministic contract gen
 
 ```
 spec/                          # ← Canonical sources
-│   ├── schemas/json/            # LOXA JSON schemas
-│   ├── openapi/                 # LOXA OpenAPI specs
-│   ├── proto/                   # LOXA protocol buffers
-│   ├── docs/                    # LOXA documentation
+│   ├── schemas/json/            # LOZA JSON schemas
+│   ├── openapi/                 # LOZA OpenAPI specs
+│   ├── proto/                   # LOZA protocol buffers
+│   ├── docs/                    # LOZA documentation
 │   ├── cortex/                  # Cortex specification
 │   │   ├── CORTEX_*.md          # Documentation
 │   │   ├── schemas/json/        # JSON schemas
@@ -43,7 +43,7 @@ spec/                          # ← Canonical sources
 │
 ├── generated/                   # ← Generated artifacts
 │   ├── contract/
-│   │   ├── loxa-contract.json   # Authoritative contract
+│   │   ├── loza-contract.json   # Authoritative contract
 │   │   └── cortex-contract.json # Authoritative contract
 │   ├── go/
 │   ├── python/
@@ -73,27 +73,27 @@ spec/                          # ← Canonical sources
 
 ```bash
 # Validate against v1 schema
-loxa schema validate --file event.json --schema-version v1
+loza schema validate --file event.json --schema-version v1
 
 # Validate from stdin
-echo '{"event_id":"...","event_type":"user.login",...}' | loxa schema validate
+echo '{"event_id":"...","event_type":"user.login",...}' | loza schema validate
 ```
 
 ### View Schema Versions
 
 ```bash
 # List all available schema versions
-loxa schema list
+loza schema list
 
 # Show differences between versions
-loxa schema diff --from v0.0.1 --to v0.0.1
+loza schema diff --from v0.0.1 --to v0.0.1
 ```
 
 ## Schema Overview
 
 ### Required Fields (v1)
 
-All LOXA events must include:
+All LOZA events must include:
 
 - `event_id` (string, UUID): Unique event identifier
 - `event_type` (string): Event type in dot notation (e.g., `user.login`)
@@ -136,9 +136,9 @@ See [compatibility.md](compatibility.md) for details.
 
 ## Generated Contracts
 
-The specification generates authoritative contracts for both Loxa and Cortex:
+The specification generates authoritative contracts for both Loza and Cortex:
 
-### Loxa Contract
+### Loza Contract
 ```json
 {
   "spec_version": "0.0.2",
@@ -162,7 +162,7 @@ The specification generates authoritative contracts for both Loxa and Cortex:
 }
 ```
 
-Generated at: `generated/contract/loxa-contract.json`
+Generated at: `generated/contract/loza-contract.json`
 
 ### Cortex Contract
 ```json
@@ -170,7 +170,7 @@ Generated at: `generated/contract/loxa-contract.json`
   "spec_version": "0.0.2",
   "api_version": "v1",
   "kinds": ["event", "metric", "log", ...],
-  "provenance_types": ["loxa", "collector", "otlp", "jsonl", "manual", "replay"],
+  "provenance_types": ["loza", "collector", "otlp", "jsonl", "manual", "replay"],
   "graph_node_types": ["service", "event", "trace", "span", ...],
   "graph_edge_types": ["depends_on", "same_trace", "parent_span", ...],
   "routes": {
@@ -190,7 +190,7 @@ SDKs and services should consume generated contracts instead of duplicating cons
 import json
 from pathlib import Path
 
-contract = json.loads(Path("generated/contract/loxa-contract.json").read_text())
+contract = json.loads(Path("generated/contract/loza-contract.json").read_text())
 
 # Access contract metadata
 max_size = contract["limits"]["max_event_size_bytes"]
@@ -203,7 +203,7 @@ See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for detailed integration steps.
 ## Key Locations
 
 - `v1/`: Version 1 schema definitions and examples
-- `schema/`: JSON Schema for canonical LOXA events (legacy)
+- `schema/`: JSON Schema for canonical LOZA events (legacy)
 - `openapi/`: Collector ingest API description
 - `examples/`: Event and ingest payload examples
 - `docs/`: Language-neutral contract and compatibility documentation
@@ -220,7 +220,7 @@ See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for detailed integration steps.
 
 ## Versioning
 
-LOXA schemas follow [Semantic Versioning](https://semver.org/):
+LOZA schemas follow [Semantic Versioning](https://semver.org/):
 
 - **MAJOR** (v1 → v2): Breaking changes (field removal, type changes)
 - **MINOR** (v0.0.1): Backward-compatible additions (new optional fields)
@@ -250,10 +250,10 @@ python scripts/check_conformance.py
 
 ```bash
 # Validate schema syntax
-loxa schema validate-schema --file v1/event.schema.json
+loza schema validate-schema --file v1/event.schema.json
 
 # Check backward compatibility
-loxa schema check-compatibility --base v0.0.1 --target v0.0.1
+loza schema check-compatibility --base v0.0.1 --target v0.0.1
 ```
 
 ## License
@@ -262,5 +262,5 @@ See [LICENSE](../LICENSE) file.
 
 ## Contact
 
-- GitHub Issues: https://github.com/astraive/loxa/issues
-- Documentation: https://github.com/astraive/loxa/tree/main/spec/docs
+- GitHub Issues: https://github.com/astraive/loza/issues
+- Documentation: https://github.com/astraive/loza/tree/main/spec/docs

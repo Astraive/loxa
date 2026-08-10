@@ -1,6 +1,6 @@
 # Schema Compatibility Matrix - v1
 
-This document defines the compatibility rules and version coexistence policies for LOXA event schema v1.
+This document defines the compatibility rules and version coexistence policies for LOZA event schema v1.
 
 ## Version Information
 
@@ -11,7 +11,7 @@ This document defines the compatibility rules and version coexistence policies f
 
 ## Semantic Versioning
 
-LOXA schemas follow semantic versioning (MAJOR.MINOR.PATCH):
+LOZA schemas follow semantic versioning (MAJOR.MINOR.PATCH):
 
 - **MAJOR** (v1 → v2): Breaking changes
   - Field removal
@@ -125,13 +125,13 @@ Collectors support multiple validation modes for compatibility:
 
 ```bash
 # Validate event against v1 schema
-loxa schema validate --file event.json --schema-version v1
+loza schema validate --file event.json --schema-version v1
 
 # Check compatibility between versions
-loxa schema diff --from v0.0.1 --to v0.0.1
+loza schema diff --from v0.0.1 --to v0.0.1
 
 # List all schema versions
-loxa schema list
+loza schema list
 ```
 
 ### Golden Test Files
@@ -206,7 +206,7 @@ Collectors use `schema_version` field to:
 
 When deprecating fields:
 
-1. Mark field as deprecated in schema with `x-loxa-deprecated`
+1. Mark field as deprecated in schema with `x-loza-deprecated`
 2. Provide migration path in documentation
 3. Maintain support for 90 days minimum
 4. Log deprecation warnings in collector
@@ -218,8 +218,8 @@ Example:
 {
   "environment": {
     "type": "string",
-    "x-loxa-deprecated": "use deployment.environment",
-    "x-loxa-since": "v1"
+    "x-loza-deprecated": "use deployment.environment",
+    "x-loza-since": "v1"
   }
 }
 ```
@@ -233,5 +233,5 @@ Example:
 ## Contact
 
 For compatibility questions or concerns:
-- GitHub Issues: https://github.com/astraive/loxa/issues
-- Documentation: https://github.com/astraive/loxa/docs
+- GitHub Issues: https://github.com/astraive/loza/issues
+- Documentation: https://github.com/astraive/loza/docs

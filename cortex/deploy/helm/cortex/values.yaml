@@ -8,7 +8,7 @@ fullnameOverride: ""
 replicaCount: 2
 
 image:
-  repository: loxa-cortex
+  repository: loza-cortex
   tag: "0.2.6"
   digest: ""
   pullPolicy: IfNotPresent

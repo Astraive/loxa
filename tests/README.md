@@ -1,6 +1,6 @@
 # Tests
 
-Cross-component and integration tests for the LOXA monorepo.
+Cross-component and integration tests for the LOZA monorepo.
 
 ## Test Categories
 

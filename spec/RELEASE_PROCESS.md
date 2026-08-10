@@ -1,6 +1,6 @@
 # Release Process
 
-This document describes how to create, verify, and publish releases of the LOXA specification.
+This document describes how to create, verify, and publish releases of the LOZA specification.
 
 ## Release Lifecycle
 
@@ -97,12 +97,12 @@ cp -r spec releases/v0.0.1/
 cp -r spec/cortex releases/v0.0.1/
 
 # Copy generated contracts
-cp generated/contract/loxa-contract.json releases/v0.0.1/
+cp generated/contract/loza-contract.json releases/v0.0.1/
 cp generated/contract/cortex-contract.json releases/v0.0.1/
 
 # Create release manifest
 cat > releases/v0.0.1/README.md << 'EOF'
-# LOXA Specification v0.0.1
+# LOZA Specification v0.0.1
 
 Generated: [ISO timestamp]
 Spec Version: 0.0.2
@@ -112,7 +112,7 @@ API Version: v1
 ## Contents
 
 - `spec/` - Canonical specification sources
-- `loxa-contract.json` - Generated Loxa contract
+- `loza-contract.json` - Generated Loza contract
 - `cortex-contract.json` - Generated Cortex contract
 
 ## Verification
@@ -124,7 +124,7 @@ To verify this release:
 sha256sum -c manifest.sha256
 
 # Contract validation
-python -c "import json; json.load(open('loxa-contract.json'))"
+python -c "import json; json.load(open('loza-contract.json'))"
 python -c "import json; json.load(open('cortex-contract.json'))"
 ```
 
@@ -143,7 +143,7 @@ EOF
 cd releases/v0.0.1
 
 # Generate checksums for verification
-sha256sum loxa-contract.json cortex-contract.json > manifest.sha256
+sha256sum loza-contract.json cortex-contract.json > manifest.sha256
 
 # Include checksums in README
 echo "
@@ -164,7 +164,7 @@ cat manifest.sha256 >> README.md
 ```bash
 # Commit changes
 git add codegen/model.py CHANGELOG.md releases/v0.0.1/
-git commit -m "release: loxa-spec v0.0.1
+git commit -m "release: loza-spec v0.0.1
 
 Features:
 - New trace_context field in event schema
@@ -182,7 +182,7 @@ See releases/v0.0.1/ for immutable snapshot.
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 
 # Create annotated tag
-git tag -a v0.0.1 -m "LOXA Spec v0.0.1
+git tag -a v0.0.1 -m "LOZA Spec v0.0.1
 
 Spec Version: 0.0.2
 Event Version: 0.0.2
@@ -198,11 +198,11 @@ git push origin main v0.0.1
 Go to GitHub → Releases → Create Release:
 
 1. Tag: `v0.0.1`
-2. Title: `LOXA Spec v0.0.1`
+2. Title: `LOZA Spec v0.0.1`
 3. Description:
 
 ```markdown
-## LOXA Specification v0.0.1
+## LOZA Specification v0.0.1
 
 See [CHANGELOG.md](CHANGELOG.md) and [releases/v0.0.1/](releases/v0.0.1/) for full details.
 
@@ -218,7 +218,7 @@ See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for path updates if using legacy lo
 
 ### Files
 
-- `loxa-contract.json` - Authoritative contract
+- `loza-contract.json` - Authoritative contract
 - `cortex-contract.json` - Cortex contract
 - Full snapshot in `releases/v0.0.1/`
 ```
@@ -238,7 +238,7 @@ git tag -v v0.0.1
 ls -la releases/v0.0.1/
 
 # Verify contracts are valid JSON
-python -c "import json; json.load(open('releases/v0.0.1/loxa-contract.json'))"
+python -c "import json; json.load(open('releases/v0.0.1/loza-contract.json'))"
 python -c "import json; json.load(open('releases/v0.0.1/cortex-contract.json'))"
 
 # Verify checksums
@@ -253,13 +253,13 @@ Update each SDK to consume new release:
 
 ```bash
 # For Go SDK
-go get github.com/astraive/loxa/sdks/go@v0.0.1
+go get github.com/astraive/loza/sdks/go@v0.0.1
 
 # For Python SDK
-pip install loxa-spec==0.0.2
+pip install loza-spec==0.0.2
 
 # For Rust SDK
-cargo update loxa-spec
+cargo update loza-spec
 ```
 
 ### Update Documentation
@@ -338,5 +338,5 @@ To modify releases (emergency only):
 
 - **Version bumping?** See [semantic versioning](https://semver.org/)
 - **Compatibility?** See [compatibility.md](compatibility.md)
-- **Contract format?** See `generated/contract/loxa-contract.json`
+- **Contract format?** See `generated/contract/loza-contract.json`
 - **Issues?** File an issue with `[release]` tag

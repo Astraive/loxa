@@ -6,7 +6,7 @@
     "event": "request.start",
     "kind": "event",
     "outcome": "success",
-    "provenance": "loxa"
+    "provenance": "loza"
   },
   {
     "event_id": "evt_batch_002",
@@ -15,7 +15,7 @@
     "event": "query.execute",
     "kind": "event",
     "outcome": "success",
-    "provenance": "loxa"
+    "provenance": "loza"
   },
   {
     "event_id": "evt_batch_003",
@@ -24,6 +24,6 @@
     "event": "request.complete",
     "kind": "event",
     "outcome": "success",
-    "provenance": "loxa"
+    "provenance": "loza"
   }
 ]

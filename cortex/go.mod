@@ -1,10 +1,10 @@
-module github.com/astraive/loxa/cortex
+module github.com/astraive/loza/cortex
 
 go 1.25.0
 
 require (
-	github.com/astraive/loxa/gen/go v0.0.0-00010101000000-000000000000
-	github.com/astraive/loxa/spec v0.0.0
+	github.com/astraive/loza/gen/go v0.0.0-00010101000000-000000000000
+	github.com/astraive/loza/spec v0.0.0
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/gorilla/websocket v1.5.3
 	github.com/lib/pq v1.10.9
@@ -17,9 +17,9 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-replace github.com/astraive/loxa/spec => ../spec
+replace github.com/astraive/loza/spec => ../spec
 
-replace github.com/astraive/loxa/gen/go => ../gen/go
+replace github.com/astraive/loza/gen/go => ../gen/go
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

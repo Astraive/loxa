@@ -48,11 +48,11 @@ func TestEmitIncludesContractFieldsAndStructuredAttrs(t *testing.T) {
 		t.Fatalf("unmarshal payload: %v", err)
 	}
 
-	if payload["schema_version"] != LOXA_SPEC_VERSION {
-		t.Fatalf("expected schema_version %q, got %#v", LOXA_SPEC_VERSION, payload["schema_version"])
+	if payload["schema_version"] != LOZA_SPEC_VERSION {
+		t.Fatalf("expected schema_version %q, got %#v", LOZA_SPEC_VERSION, payload["schema_version"])
 	}
-	if payload["event_version"] != LOXA_EVENT_VERSION {
-		t.Fatalf("expected event_version %q, got %#v", LOXA_EVENT_VERSION, payload["event_version"])
+	if payload["event_version"] != LOZA_EVENT_VERSION {
+		t.Fatalf("expected event_version %q, got %#v", LOZA_EVENT_VERSION, payload["event_version"])
 	}
 	if payload["kind"] != "http" {
 		t.Fatalf("expected kind http, got %#v", payload["kind"])

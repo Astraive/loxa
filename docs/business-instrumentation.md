@@ -1,6 +1,6 @@
-# Loxa Business Instrumentation
+# Loza Business Instrumentation
 
-Loxa v0.2.0 treats business instrumentation as a lifecycle, not a log line. Applications describe the full story of a checkout, payment, login, job, webhook, AI agent run, or RAG pipeline, while OpenTelemetry continues to describe distributed trace movement.
+Loza v0.2.0 treats business instrumentation as a lifecycle, not a log line. Applications describe the full story of a checkout, payment, login, job, webhook, AI agent run, or RAG pipeline, while OpenTelemetry continues to describe distributed trace movement.
 
 The canonical lifecycle is:
 
@@ -13,8 +13,8 @@ startEvent -> append/enrich -> checkpoint -> process/group/timer -> finish/finis
 Use the default client for simple applications and examples:
 
 ```ts
-const event = loxa.startEvent({ event: "checkout.request", kind: "http" });
-event.append(loxa.userId(user.id), loxa.int("cart.item_count", items.length));
+const event = loza.startEvent({ event: "checkout.request", kind: "http" });
+event.append(loza.userId(user.id), loza.int("cart.item_count", items.length));
 event.checkpoint("cart_loaded");
 event.finish("success");
 await event.emit();
@@ -22,14 +22,14 @@ await event.emit();
 
 ## Custom Client / Alias
 
-Use `createLoxa` / `create_loxa` / `CreateLoxa` for an independent client with its own config. Use `alias(name)` when you want the same config with logical alias metadata.
+Use `createLoza` / `create_loza` / `CreateLoza` for an independent client with its own config. Use `alias(name)` when you want the same config with logical alias metadata.
 
 ```ts
-const payments = createLoxa({ service: "checkout-api" });
-const audit = loxa.alias("audit");
+const payments = createLoza({ service: "checkout-api" });
+const audit = loza.alias("audit");
 ```
 
-`alias(name)` preserves the parent config and adds `loxa.alias` to emitted events. It does not change `service` and does not mutate the parent client.
+`alias(name)` preserves the parent config and adds `loza.alias` to emitted events. It does not change `service` and does not mutate the parent client.
 
 ## Primitive Choice
 
@@ -46,8 +46,8 @@ const audit = loxa.alias("audit");
 
 | JavaScript | Python | Go | Rust |
 | --- | --- | --- | --- |
-| `createLoxa()` | `create_loxa()` | `CreateLoxa()` | `create_loxa()` |
-| `loxa.info()` | `loxa.info()` | `loxa.Info(ctx)` | `loxa::info()` |
+| `createLoza()` | `create_loza()` | `CreateLoza()` | `create_loza()` |
+| `loza.info()` | `loza.info()` | `loza.Info(ctx)` | `loza::info()` |
 | `logger.info()` | `logger.info()` | `logger.Info(ctx)` | `logger.info()` |
 | `event.process()` | `event.process()` | `event.Process()` | `event.process()` |
 

@@ -193,9 +193,9 @@ func TestGRPCLogIngestServicePushNil(t *testing.T) {
 	assert.Equal(t, int64(0), resp.Accepted)
 }
 
-func TestLoxaIngestServiceIngest(t *testing.T) {
+func TestLozaIngestServiceIngest(t *testing.T) {
 	state := &mockState{ready: true, healthy: true}
-	svc := &loxaIngestSvcServer{state: state}
+	svc := &lozaIngestSvcServer{state: state}
 
 	resp, err := svc.Ingest(context.Background(), &EventBatch{
 		Events: []*Event{
@@ -208,9 +208,9 @@ func TestLoxaIngestServiceIngest(t *testing.T) {
 	assert.Equal(t, int64(2), state.metrics.EventsAccepted)
 }
 
-func TestLoxaIngestServiceIngestStream(t *testing.T) {
+func TestLozaIngestServiceIngestStream(t *testing.T) {
 	state := &mockState{ready: true, healthy: true}
-	svc := &loxaIngestSvcServer{state: state}
+	svc := &lozaIngestSvcServer{state: state}
 	stream := &mockIngestStream{
 		ctx: context.Background(),
 		batches: []*EventBatch{

@@ -10,7 +10,7 @@ import (
 )
 
 // FileConfig is the YAML-serializable representation of SDK configuration.
-// It maps to the loxa.yaml file format.
+// It maps to the loza.yaml file format.
 type FileConfig struct {
 	CollectorURL      string `yaml:"collector_url"`
 	ServiceName       string `yaml:"service_name"`
@@ -28,11 +28,11 @@ type FileConfig struct {
 }
 
 // ErrConfigFileNotFound is returned when no config file is found.
-var ErrConfigFileNotFound = errors.New("loxa: config file not found")
+var ErrConfigFileNotFound = errors.New("loza: config file not found")
 
-// LoadFromFile loads configuration from a loxa.yaml file.
-// If path is empty, it searches for loxa.yaml in the current directory,
-// then in the user's home directory (~/.loxa/loxa.yaml).
+// LoadFromFile loads configuration from a loza.yaml file.
+// If path is empty, it searches for loza.yaml in the current directory,
+// then in the user's home directory (~/.loza/loza.yaml).
 //
 // Returns ErrConfigFileNotFound if no config file is found.
 // Returns a parse error if the file exists but cannot be parsed.
@@ -51,40 +51,40 @@ func LoadFromFile(path string) (FileConfig, error) {
 		if os.IsNotExist(err) {
 			return FileConfig{}, ErrConfigFileNotFound
 		}
-		return FileConfig{}, fmt.Errorf("loxa: read config file %q: %w", path, err)
+		return FileConfig{}, fmt.Errorf("loza: read config file %q: %w", path, err)
 	}
 
 	var fc FileConfig
 	if err := parseYAML(data, &fc); err != nil {
-		return FileConfig{}, fmt.Errorf("loxa: parse config file %q: %w", path, err)
+		return FileConfig{}, fmt.Errorf("loza: parse config file %q: %w", path, err)
 	}
 	return fc, nil
 }
 
-// LoadDefaultsFile loads repo-level SDK defaults from loxa-go.defaults.yaml.
+// LoadDefaultsFile loads repo-level SDK defaults from loza-go.defaults.yaml.
 func LoadDefaultsFile() (FileConfig, error) {
 	path := findDefaultsConfigFile()
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return FileConfig{}, fmt.Errorf("loxa: read defaults file %q: %w", path, err)
+		return FileConfig{}, fmt.Errorf("loza: read defaults file %q: %w", path, err)
 	}
 
 	var fc FileConfig
 	if err := parseYAML(data, &fc); err != nil {
-		return FileConfig{}, fmt.Errorf("loxa: parse defaults file %q: %w", path, err)
+		return FileConfig{}, fmt.Errorf("loza: parse defaults file %q: %w", path, err)
 	}
 	return fc, nil
 }
 
-// findConfigFile searches for loxa.yaml in standard locations.
+// findConfigFile searches for loza.yaml in standard locations.
 func findConfigFile() string {
 	// 1. Current directory
-	if _, err := os.Stat("loxa.yaml"); err == nil {
-		return "loxa.yaml"
+	if _, err := os.Stat("loza.yaml"); err == nil {
+		return "loza.yaml"
 	}
 	// 2. Home directory
 	if home, err := os.UserHomeDir(); err == nil {
-		p := filepath.Join(home, ".loxa", "loxa.yaml")
+		p := filepath.Join(home, ".loza", "loza.yaml")
 		if _, err := os.Stat(p); err == nil {
 			return p
 		}
@@ -93,14 +93,14 @@ func findConfigFile() string {
 }
 
 func findDefaultsConfigFile() string {
-	if override := strings.TrimSpace(os.Getenv("LOXA_GO_DEFAULTS")); override != "" {
+	if override := strings.TrimSpace(os.Getenv("LOZA_GO_DEFAULTS")); override != "" {
 		return override
 	}
 
 	candidates := []string{
-		"loxa-go.defaults.yaml",
-		filepath.Join("..", "loxa-go.defaults.yaml"),
-		filepath.Join("..", "..", "loxa-go.defaults.yaml"),
+		"loza-go.defaults.yaml",
+		filepath.Join("..", "loza-go.defaults.yaml"),
+		filepath.Join("..", "..", "loza-go.defaults.yaml"),
 	}
 	for _, candidate := range candidates {
 		if _, err := os.Stat(candidate); err == nil {
@@ -111,14 +111,14 @@ func findDefaultsConfigFile() string {
 	if exe, err := os.Executable(); err == nil {
 		dir := filepath.Dir(exe)
 		for i := 0; i < 5; i++ {
-			candidate := filepath.Join(dir, "loxa-go.defaults.yaml")
+			candidate := filepath.Join(dir, "loza-go.defaults.yaml")
 			if _, statErr := os.Stat(candidate); statErr == nil {
 				return candidate
 			}
 			dir = filepath.Dir(dir)
 		}
 	}
-	return "loxa-go.defaults.yaml"
+	return "loza-go.defaults.yaml"
 }
 
 // mergeFileConfig applies file-based config values to base, only overriding
@@ -219,7 +219,7 @@ func overlayFileConfig(base, override FileConfig) FileConfig {
 
 // parseYAML parses YAML data into a FileConfig without requiring an external
 // dependency. It uses a simple line-by-line parser for the flat key: value
-// format used by loxa.yaml.
+// format used by loza.yaml.
 //
 // This avoids adding a yaml dependency to the core module. For production use,
 // callers can use LoadFromFileWithYAML which accepts pre-parsed data.
@@ -228,7 +228,7 @@ func parseYAML(data []byte, fc *FileConfig) error {
 }
 
 // parseSimpleYAML parses a simple flat YAML file (key: value pairs only).
-// This handles the loxa.yaml format without requiring an external YAML library.
+// This handles the loza.yaml format without requiring an external YAML library.
 func parseSimpleYAML(content string, fc *FileConfig) error {
 	lines := splitLines(content)
 	for _, line := range lines {

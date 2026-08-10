@@ -21,10 +21,10 @@ const fallbackVersion = "0.2.6"
 
 func loadVersion() string {
 	candidates := []string{
-		"loxa-collector.metadata.yaml",
-		"../loxa-collector.metadata.yaml",
-		"../../loxa-collector.metadata.yaml",
-		"../../../loxa-collector.metadata.yaml",
+		"loza-collector.metadata.yaml",
+		"../loza-collector.metadata.yaml",
+		"../../loza-collector.metadata.yaml",
+		"../../../loza-collector.metadata.yaml",
 	}
 	for _, path := range candidates {
 		data, err := os.ReadFile(path)
@@ -262,7 +262,7 @@ func main() {
 	}
 
 	fmt.Println("========================================")
-	fmt.Printf("LOXA v%s STRESS TEST SUITE\n", loadVersion())
+	fmt.Printf("LOZA v%s STRESS TEST SUITE\n", loadVersion())
 	fmt.Printf("Collector: %s\n", collectorURL)
 	fmt.Printf("Cortex:    %s\n", cortexURL)
 	fmt.Printf("Started:   %s\n", time.Now().Format(time.RFC3339))
@@ -793,6 +793,6 @@ func main() {
 		"error_rate":  float64(totalErrors) / float64(totalReqs) * 100,
 		"tests":       jsonResults,
 	}, "", "  ")
-	os.WriteFile("/e/astraive/loxa/docs/stress-test-results.json", jsonData, 0644)
+	os.WriteFile("/e/astraive/loza/docs/stress-test-results.json", jsonData, 0644)
 	fmt.Println("\nJSON results written to docs/stress-test-results.json")
 }

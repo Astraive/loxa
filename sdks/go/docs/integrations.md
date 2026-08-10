@@ -7,4 +7,4 @@ Supported integrations:
 - `integrations/zerolog`
 - `integrations/otel`
 
-These integrations enrich or bridge into the active LOXA event lifecycle rather than replacing it.
+These integrations enrich or bridge into the active LOZA event lifecycle rather than replacing it.

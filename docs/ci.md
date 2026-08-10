@@ -1,6 +1,6 @@
 # CI Workflows
 
-This document describes all GitHub Actions workflows in the Loxa repository.
+This document describes all GitHub Actions workflows in the Loza repository.
 
 ## CI Workflows (test on push/PR)
 
@@ -88,7 +88,7 @@ Note: `spec-ci.yml` covers the same ground with more depth. This workflow may be
 
 This workflow runs focused tests only for components that actually changed.
 
-### loxa-spec-rollout.yml
+### loza-spec-rollout.yml
 
 **Triggers:** push/PR to `main` when spec rollout files, docker-compose, or spec changes.
 
@@ -122,7 +122,7 @@ This workflow runs focused tests only for components that actually changed.
 
 ### proto-gen.yml
 
-**Triggers:** push/PR when `proto/loxa/core/*.proto` changes; manual dispatch.
+**Triggers:** push/PR when `proto/loza/core/*.proto` changes; manual dispatch.
 
 **Jobs:**
 - **generate** — Regenerates Go protobuf code and verifies it matches what's checked in
@@ -177,16 +177,16 @@ Reusable workflow. Publishes `sdk-rs` to crates.io and `lql` crate (if enabled),
 
 ### publish-github-release.yml
 
-Reusable workflow. Creates umbrella GitHub Release for the `loxa` component.
+Reusable workflow. Creates umbrella GitHub Release for the `loza` component.
 
 ### publish-contract.yml
 
 **Triggers:** manual dispatch; GitHub Release published.
 
 **Jobs:**
-- **publish-contract** — Generates and publishes the LOXA contract to S3/CloudFront
+- **publish-contract** — Generates and publishes the LOZA contract to S3/CloudFront
 
-Requires AWS secrets: `LOXA_CONTRACT_BUCKET`, `LOXA_CONTRACT_PREFIX`, `CLOUDFRONT_DISTRIBUTION_ID`, `AWS_REGION`.
+Requires AWS secrets: `LOZA_CONTRACT_BUCKET`, `LOZA_CONTRACT_PREFIX`, `CLOUDFRONT_DISTRIBUTION_ID`, `AWS_REGION`.
 
 ## Workflow Dependency Graph
 
@@ -198,7 +198,7 @@ release-publish.yml
 ├── publish-js.yml ──────────────── (sdk-js)
 ├── publish-py.yml ──────────────── (sdk-py)
 ├── publish-rs.yml ──────────────── (sdk-rs, lql)
-├── publish-github-release.yml ──── (loxa umbrella)
+├── publish-github-release.yml ──── (loza umbrella)
 └── verify-go-modules.yml ───────── (spec, sdk-go)
 
 release-detect.yml

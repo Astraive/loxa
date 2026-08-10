@@ -20,7 +20,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from bench.dataset import generate_dataset
-from loxa.cortex.engine import Engine
+from loza.cortex.engine import Engine
 
 
 def run_benchmark(cortex_url: str = "http://localhost:9312", seed: int = 42) -> dict:
@@ -34,7 +34,7 @@ def run_benchmark(cortex_url: str = "http://localhost:9312", seed: int = 42) -> 
         dict with benchmark results
     """
     print("=" * 60)
-    print("LOXA Persistent Context Engine Benchmark")
+    print("LOZA Persistent Context Engine Benchmark")
     print("=" * 60)
 
     # Wait for cortex to be ready

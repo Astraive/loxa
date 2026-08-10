@@ -9,7 +9,7 @@ import (
 
 func TestParseSimpleYAML(t *testing.T) {
 	content := `
-# LOXA SDK configuration
+# LOZA SDK configuration
 collector_url: http://localhost:9308
 service_name: my-service
 service_version: 1.2.3
@@ -110,7 +110,7 @@ func TestParseSimpleYAML_InlineComments(t *testing.T) {
 }
 
 func TestLoadFromFile_NotFound(t *testing.T) {
-	_, err := LoadFromFile("/nonexistent/path/loxa.yaml")
+	_, err := LoadFromFile("/nonexistent/path/loza.yaml")
 	if err == nil {
 		t.Error("LoadFromFile() expected error for nonexistent file, got nil")
 	}
@@ -119,7 +119,7 @@ func TestLoadFromFile_NotFound(t *testing.T) {
 func TestLoadFromFile_ValidFile(t *testing.T) {
 	// Create a temp file
 	dir := t.TempDir()
-	path := filepath.Join(dir, "loxa.yaml")
+	path := filepath.Join(dir, "loza.yaml")
 	content := `
 collector_url: http://file-collector:9308
 service_name: file-service
@@ -159,12 +159,12 @@ flush_interval: 3s
 
 func TestLoadDefaultsFile(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "loxa-go.defaults.yaml")
+	path := filepath.Join(dir, "loza-go.defaults.yaml")
 	content := "collector_url: http://defaults:9308\nbatch_size: 123\n"
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
-	t.Setenv("LOXA_GO_DEFAULTS", path)
+	t.Setenv("LOZA_GO_DEFAULTS", path)
 
 	fc, err := LoadDefaultsFile()
 	if err != nil {
@@ -272,14 +272,14 @@ func TestMergeFileConfig_DoesNotOverrideExisting(t *testing.T) {
 
 func TestNewClient_RequiresCollectorURL(t *testing.T) {
 	// Clear env vars that might interfere
-	os.Unsetenv("LOXA_COLLECTOR_URL")
-	os.Unsetenv("LOXA_SERVICE_NAME")
+	os.Unsetenv("LOZA_COLLECTOR_URL")
+	os.Unsetenv("LOZA_SERVICE_NAME")
 	dir := t.TempDir()
-	defaultsPath := filepath.Join(dir, "loxa-go.defaults.yaml")
+	defaultsPath := filepath.Join(dir, "loza-go.defaults.yaml")
 	if err := os.WriteFile(defaultsPath, []byte("service_version: unknown\nenvironment: development\n"), 0o644); err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
-	t.Setenv("LOXA_GO_DEFAULTS", defaultsPath)
+	t.Setenv("LOZA_GO_DEFAULTS", defaultsPath)
 
 	_, err := NewClient(Config{
 		Service: "test-service",
@@ -291,7 +291,7 @@ func TestNewClient_RequiresCollectorURL(t *testing.T) {
 }
 
 func TestNewClient_RequiresServiceName(t *testing.T) {
-	os.Unsetenv("LOXA_SERVICE_NAME")
+	os.Unsetenv("LOZA_SERVICE_NAME")
 
 	_, err := NewClient(Config{
 		CollectorURL: "http://localhost:9308",
@@ -303,8 +303,8 @@ func TestNewClient_RequiresServiceName(t *testing.T) {
 }
 
 func TestNewClient_ValidConfig(t *testing.T) {
-	os.Unsetenv("LOXA_COLLECTOR_URL")
-	os.Unsetenv("LOXA_SERVICE_NAME")
+	os.Unsetenv("LOZA_COLLECTOR_URL")
+	os.Unsetenv("LOZA_SERVICE_NAME")
 
 	sink, _ := MemorySink()
 	client, err := NewClient(Config{
@@ -347,8 +347,8 @@ func TestNewClient_ValidConfig(t *testing.T) {
 }
 
 func TestNewClient_DefaultsToCollectorSinkWhenNoExplicitSink(t *testing.T) {
-	os.Unsetenv("LOXA_COLLECTOR_URL")
-	os.Unsetenv("LOXA_SERVICE_NAME")
+	os.Unsetenv("LOZA_COLLECTOR_URL")
+	os.Unsetenv("LOZA_SERVICE_NAME")
 
 	client, err := NewClient(Config{
 		CollectorURL: "http://localhost:9308",
@@ -368,8 +368,8 @@ func TestNewClient_DefaultsToCollectorSinkWhenNoExplicitSink(t *testing.T) {
 }
 
 func TestNewClient_PreservesExplicitSink(t *testing.T) {
-	os.Unsetenv("LOXA_COLLECTOR_URL")
-	os.Unsetenv("LOXA_SERVICE_NAME")
+	os.Unsetenv("LOZA_COLLECTOR_URL")
+	os.Unsetenv("LOZA_SERVICE_NAME")
 
 	memSink, _ := MemorySink()
 	client, err := NewClient(Config{
@@ -391,15 +391,15 @@ func TestNewClient_PreservesExplicitSink(t *testing.T) {
 }
 
 func TestNewClient_EnvOverridesDefaults(t *testing.T) {
-	os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:9308")
-	os.Setenv("LOXA_SERVICE_NAME", "env-service")
-	os.Setenv("LOXA_SERVICE_VERSION", "3.0.0")
-	os.Setenv("LOXA_ENVIRONMENT", "staging")
+	os.Setenv("LOZA_COLLECTOR_URL", "http://env-collector:9308")
+	os.Setenv("LOZA_SERVICE_NAME", "env-service")
+	os.Setenv("LOZA_SERVICE_VERSION", "3.0.0")
+	os.Setenv("LOZA_ENVIRONMENT", "staging")
 	defer func() {
-		os.Unsetenv("LOXA_COLLECTOR_URL")
-		os.Unsetenv("LOXA_SERVICE_NAME")
-		os.Unsetenv("LOXA_SERVICE_VERSION")
-		os.Unsetenv("LOXA_ENVIRONMENT")
+		os.Unsetenv("LOZA_COLLECTOR_URL")
+		os.Unsetenv("LOZA_SERVICE_NAME")
+		os.Unsetenv("LOZA_SERVICE_VERSION")
+		os.Unsetenv("LOZA_ENVIRONMENT")
 	}()
 
 	sink, _ := MemorySink()
@@ -426,11 +426,11 @@ func TestNewClient_EnvOverridesDefaults(t *testing.T) {
 }
 
 func TestNewClient_CodeOverridesEnv(t *testing.T) {
-	os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:9308")
-	os.Setenv("LOXA_SERVICE_NAME", "env-service")
+	os.Setenv("LOZA_COLLECTOR_URL", "http://env-collector:9308")
+	os.Setenv("LOZA_SERVICE_NAME", "env-service")
 	defer func() {
-		os.Unsetenv("LOXA_COLLECTOR_URL")
-		os.Unsetenv("LOXA_SERVICE_NAME")
+		os.Unsetenv("LOZA_COLLECTOR_URL")
+		os.Unsetenv("LOZA_SERVICE_NAME")
 	}()
 
 	sink, _ := MemorySink()
@@ -453,7 +453,7 @@ func TestNewClient_CodeOverridesEnv(t *testing.T) {
 }
 
 func TestNewClient_FileConfigLoaded(t *testing.T) {
-	// Create a temp loxa.yaml and change to that directory
+	// Create a temp loza.yaml and change to that directory
 	dir := t.TempDir()
 	content := `
 collector_url: http://file-collector:9308
@@ -461,16 +461,16 @@ service_name: file-service
 service_version: 4.0.0
 environment: production
 `
-	if err := os.WriteFile(filepath.Join(dir, "loxa.yaml"), []byte(content), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "loza.yaml"), []byte(content), 0644); err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
 
 	// Clear env vars
-	os.Unsetenv("LOXA_COLLECTOR_URL")
-	os.Unsetenv("LOXA_SERVICE_NAME")
+	os.Unsetenv("LOZA_COLLECTOR_URL")
+	os.Unsetenv("LOZA_SERVICE_NAME")
 
 	// Load file config directly and verify it works
-	fc, err := LoadFromFile(filepath.Join(dir, "loxa.yaml"))
+	fc, err := LoadFromFile(filepath.Join(dir, "loza.yaml"))
 	if err != nil {
 		t.Fatalf("LoadFromFile() error = %v", err)
 	}
@@ -500,13 +500,13 @@ func TestCloseMethod(t *testing.T) {
 
 func TestLoadFromEnv_IntegerParsing(t *testing.T) {
 	// Verify that integer env vars are parsed correctly (not via time.ParseDuration)
-	os.Setenv("LOXA_BATCH_SIZE", "500")
-	os.Setenv("LOXA_MAX_BUFFER_SIZE", "20000")
-	os.Setenv("LOXA_MAX_RETRIES", "10")
+	os.Setenv("LOZA_BATCH_SIZE", "500")
+	os.Setenv("LOZA_MAX_BUFFER_SIZE", "20000")
+	os.Setenv("LOZA_MAX_RETRIES", "10")
 	defer func() {
-		os.Unsetenv("LOXA_BATCH_SIZE")
-		os.Unsetenv("LOXA_MAX_BUFFER_SIZE")
-		os.Unsetenv("LOXA_MAX_RETRIES")
+		os.Unsetenv("LOZA_BATCH_SIZE")
+		os.Unsetenv("LOZA_MAX_BUFFER_SIZE")
+		os.Unsetenv("LOZA_MAX_RETRIES")
 	}()
 
 	cfg := LoadFromEnv(Config{})

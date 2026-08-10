@@ -69,8 +69,8 @@ export function disabled(): Config {
 /**
  * Load config using the 4-layer precedence:
  *   1. Hardcoded defaults (defaultConfig)
- *   2. YAML files (loxa-js.defaults.yaml + user override)
- *   3. Environment variables (including LOXA_DSN)
+ *   2. YAML files (loza-js.defaults.yaml + user override)
+ *   3. Environment variables (including LOZA_DSN)
  *   4. Code-level config (via builder / withOptions)
  *
  * This function implements layers 1-3. Layer 4 is applied by the caller.
@@ -91,8 +91,8 @@ export function fromEnv(): Config {
 
   // Layer 3: Environment variables
   if (typeof process !== 'undefined') {
-    // Parse LOXA_DSN first (sets collectorUrl, environment, service)
-    const dsnRaw = process.env.LOXA_DSN;
+    // Parse LOZA_DSN first (sets collectorUrl, environment, service)
+    const dsnRaw = process.env.LOZA_DSN;
     if (dsnRaw) {
       try {
         const dsn = parseDSN(dsnRaw);
@@ -109,14 +109,14 @@ export function fromEnv(): Config {
     }
 
     // Individual env vars override DSN-derived and file-derived values
-    cfg.service = process.env.LOXA_SERVICE || process.env.SERVICE || cfg.service;
-    cfg.version = process.env.LOXA_VERSION || process.env.VERSION || cfg.version;
-    cfg.environment = process.env.LOXA_ENVIRONMENT || process.env.ENVIRONMENT || cfg.environment;
-    cfg.release = process.env.LOXA_RELEASE || process.env.RELEASE || cfg.release;
-    cfg.namespace = process.env.LOXA_NAMESPACE || process.env.NAMESPACE || cfg.namespace;
-    cfg.collectorUrl = process.env.LOXA_COLLECTOR_URL || process.env.COLLECTOR_URL || cfg.collectorUrl;
-    cfg.apiKey = process.env.LOXA_API_KEY || process.env.API_KEY || cfg.apiKey;
-    cfg.level = process.env.LOXA_LEVEL || process.env.LOG_LEVEL || cfg.level;
+    cfg.service = process.env.LOZA_SERVICE || process.env.SERVICE || cfg.service;
+    cfg.version = process.env.LOZA_VERSION || process.env.VERSION || cfg.version;
+    cfg.environment = process.env.LOZA_ENVIRONMENT || process.env.ENVIRONMENT || cfg.environment;
+    cfg.release = process.env.LOZA_RELEASE || process.env.RELEASE || cfg.release;
+    cfg.namespace = process.env.LOZA_NAMESPACE || process.env.NAMESPACE || cfg.namespace;
+    cfg.collectorUrl = process.env.LOZA_COLLECTOR_URL || process.env.COLLECTOR_URL || cfg.collectorUrl;
+    cfg.apiKey = process.env.LOZA_API_KEY || process.env.API_KEY || cfg.apiKey;
+    cfg.level = process.env.LOZA_LEVEL || process.env.LOG_LEVEL || cfg.level;
   }
   return cfg;
 }
@@ -130,7 +130,7 @@ export function defaultConfig(): Config {
     release: '',
     namespace: '',
     collectorUrl: '',
-    apiKey: (typeof process !== 'undefined' && process.env?.LOXA_API_KEY) || '',
+    apiKey: (typeof process !== 'undefined' && process.env?.LOZA_API_KEY) || '',
     sink: null,
     sinks: [],
     sampler: sampleAll(),

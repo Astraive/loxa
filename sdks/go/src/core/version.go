@@ -13,7 +13,7 @@ var (
 	sdkVersionVal  string
 )
 
-// SDKVersion returns the SDK version from loxa-go.yaml, falling back to
+// SDKVersion returns the SDK version from loza-go.yaml, falling back to
 // the hardcoded default if the file cannot be found or parsed.
 func SDKVersion() string {
 	sdkVersionOnce.Do(func() {
@@ -24,9 +24,9 @@ func SDKVersion() string {
 
 func loadVersion() string {
 	candidates := []string{
-		"loxa-go.yaml",
-		"../loxa-go.yaml",
-		"../../loxa-go.yaml",
+		"loza-go.yaml",
+		"../loza-go.yaml",
+		"../../loza-go.yaml",
 	}
 
 	for _, path := range candidates {

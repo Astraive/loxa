@@ -1,4 +1,4 @@
 #[derive(Clone, Debug, Default)]
-pub struct LoxaLogBridge {
+pub struct LozaLogBridge {
     pub emit_immediate: bool,
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -36,7 +36,7 @@ func StreamInterceptorWithConfig(cfg Config) grpc.StreamServerInterceptor {
 	}
 
 	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		evCtx := loxa.StartEvent(ss.Context(), loxa.Params{
+		evCtx := loza.StartEvent(ss.Context(), loza.Params{
 			Event:  eventName,
 			Method: "grpc",
 			Route:  info.FullMethod,
@@ -44,15 +44,15 @@ func StreamInterceptorWithConfig(cfg Config) grpc.StreamServerInterceptor {
 		})
 
 		wrapped := &wrappedServerStream{ServerStream: ss, ctx: evCtx}
-		if !loxa.PanicRecoveryEnabled() {
+		if !loza.PanicRecoveryEnabled() {
 			err := handler(srv, wrapped)
 			if err != nil {
 				st, _ := status.FromError(err)
-				loxa.FinishError(evCtx, err, loxa.Int("status_code", int(st.Code())))
+				loza.FinishError(evCtx, err, loza.Int("status_code", int(st.Code())))
 			} else {
-				loxa.Finish(evCtx, "success", loxa.Int("status_code", int(codes.OK)))
+				loza.Finish(evCtx, "success", loza.Int("status_code", int(codes.OK)))
 			}
-			_ = loxa.Emit(evCtx)
+			_ = loza.Emit(evCtx)
 			return err
 		}
 
@@ -60,19 +60,19 @@ func StreamInterceptorWithConfig(cfg Config) grpc.StreamServerInterceptor {
 		defer func() {
 			if rec := recover(); rec != nil {
 				err = status.Error(codes.Internal, fmt.Sprintf("panic recovered: %v", rec))
-				loxa.FinishError(evCtx, err, loxa.Int("status_code", int(codes.Internal)))
-				_ = loxa.Emit(evCtx)
+				loza.FinishError(evCtx, err, loza.Int("status_code", int(codes.Internal)))
+				_ = loza.Emit(evCtx)
 			}
 		}()
 
 		err = handler(srv, wrapped)
 		if err != nil {
 			st, _ := status.FromError(err)
-			loxa.FinishError(evCtx, err, loxa.Int("status_code", int(st.Code())))
+			loza.FinishError(evCtx, err, loza.Int("status_code", int(st.Code())))
 		} else {
-			loxa.Finish(evCtx, "success", loxa.Int("status_code", int(codes.OK)))
+			loza.Finish(evCtx, "success", loza.Int("status_code", int(codes.OK)))
 		}
-		_ = loxa.Emit(evCtx)
+		_ = loza.Emit(evCtx)
 		return err
 	}
 }

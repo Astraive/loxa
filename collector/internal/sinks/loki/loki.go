@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	collectorevent "github.com/astraive/loxa/collector/internal/event"
+	collectorevent "github.com/astraive/loza/collector/internal/event"
 )
 
 // Config controls Loki sink behavior.
@@ -88,7 +88,7 @@ func New(cfg Config) (collectorevent.Sink, error) {
 	}
 	cfg.Labels = normalizedLabels(cfg.Labels)
 	if len(cfg.Labels) == 0 {
-		cfg.Labels = map[string]string{"source": "loxa"}
+		cfg.Labels = map[string]string{"source": "loza"}
 	}
 	cfg.Headers = copyStringMap(cfg.Headers)
 

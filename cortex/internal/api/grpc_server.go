@@ -7,19 +7,19 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/astraive/loxa/cortex/internal/config"
-	"github.com/astraive/loxa/cortex/internal/eventbus"
-	"github.com/astraive/loxa/cortex/internal/eventconv"
-	"github.com/astraive/loxa/cortex/internal/graph"
-	"github.com/astraive/loxa/cortex/internal/learner"
-	"github.com/astraive/loxa/cortex/internal/matcher"
-	"github.com/astraive/loxa/cortex/internal/models"
-	"github.com/astraive/loxa/cortex/internal/processor"
-	"github.com/astraive/loxa/cortex/internal/reconstructor"
-	"github.com/astraive/loxa/cortex/internal/redaction"
-	"github.com/astraive/loxa/cortex/internal/storage"
-	"github.com/astraive/loxa/cortex/internal/topology"
-	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
+	"github.com/astraive/loza/cortex/internal/config"
+	"github.com/astraive/loza/cortex/internal/eventbus"
+	"github.com/astraive/loza/cortex/internal/eventconv"
+	"github.com/astraive/loza/cortex/internal/graph"
+	"github.com/astraive/loza/cortex/internal/learner"
+	"github.com/astraive/loza/cortex/internal/matcher"
+	"github.com/astraive/loza/cortex/internal/models"
+	"github.com/astraive/loza/cortex/internal/processor"
+	"github.com/astraive/loza/cortex/internal/reconstructor"
+	"github.com/astraive/loza/cortex/internal/redaction"
+	"github.com/astraive/loza/cortex/internal/storage"
+	"github.com/astraive/loza/cortex/internal/topology"
+	lozav1 "github.com/astraive/loza/gen/go/loza/core"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -27,7 +27,7 @@ import (
 )
 
 type GRPCServer struct {
-	loxav1.UnimplementedCortexServiceServer
+	lozav1.UnimplementedCortexServiceServer
 	config      *config.Config
 	processor   *processor.EventProcessor
 	bus         *eventbus.EventBus
@@ -72,15 +72,15 @@ func NewGRPCServer(cfg *config.Config, stor storage.Storage, redactCfg redaction
 }
 
 func (s *GRPCServer) RegisterServer(server *grpc.Server) {
-	loxav1.RegisterCortexServiceServer(server, s)
+	lozav1.RegisterCortexServiceServer(server, s)
 }
 
-func (s *GRPCServer) Healthz(ctx context.Context, req *loxav1.HealthzRequest) (*loxav1.HealthzResponse, error) {
-	return &loxav1.HealthzResponse{Status: "OK"}, nil
+func (s *GRPCServer) Healthz(ctx context.Context, req *lozav1.HealthzRequest) (*lozav1.HealthzResponse, error) {
+	return &lozav1.HealthzResponse{Status: "OK"}, nil
 }
 
 // IngestEvent processes a single event from the full Event proto message.
-func (s *GRPCServer) IngestEvent(ctx context.Context, req *loxav1.IngestEventRequest) (*loxav1.IngestEventResponse, error) {
+func (s *GRPCServer) IngestEvent(ctx context.Context, req *lozav1.IngestEventRequest) (*lozav1.IngestEventResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "ingest event request is required")
 	}
@@ -97,7 +97,7 @@ func (s *GRPCServer) IngestEvent(ctx context.Context, req *loxav1.IngestEventReq
 		return nil, err
 	}
 
-	return &loxav1.IngestEventResponse{
+	return &lozav1.IngestEventResponse{
 		Status:   "accepted",
 		EventId:  event.ID,
 		Warnings: warnings,
@@ -105,7 +105,7 @@ func (s *GRPCServer) IngestEvent(ctx context.Context, req *loxav1.IngestEventReq
 }
 
 // IngestBatch processes multiple events from the full Event proto messages.
-func (s *GRPCServer) IngestBatch(ctx context.Context, req *loxav1.IngestBatchRequest) (*loxav1.IngestBatchResponse, error) {
+func (s *GRPCServer) IngestBatch(ctx context.Context, req *lozav1.IngestBatchRequest) (*lozav1.IngestBatchResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "ingest batch request is required")
 	}
@@ -128,14 +128,14 @@ func (s *GRPCServer) IngestBatch(ctx context.Context, req *loxav1.IngestBatchReq
 	}
 
 	if len(events) == 0 {
-		return &loxav1.IngestBatchResponse{Status: "empty", Count: 0}, nil
+		return &lozav1.IngestBatchResponse{Status: "empty", Count: 0}, nil
 	}
 
 	if err := s.processor.ProcessBatch(ctx, events); err != nil {
 		return nil, err
 	}
 
-	return &loxav1.IngestBatchResponse{
+	return &lozav1.IngestBatchResponse{
 		Status:   "accepted",
 		Count:    int32(len(events)),
 		Warnings: allWarnings,
@@ -143,7 +143,7 @@ func (s *GRPCServer) IngestBatch(ctx context.Context, req *loxav1.IngestBatchReq
 }
 
 // protoEventToModel converts a proto Event message to a models.Event, extracting all lifecycle fields.
-func protoEventToModel(pe *loxav1.Event) (*models.Event, []string, error) {
+func protoEventToModel(pe *lozav1.Event) (*models.Event, []string, error) {
 	if pe == nil {
 		return nil, nil, status.Error(codes.InvalidArgument, "event is required")
 	}
@@ -333,7 +333,7 @@ func protoEventToModel(pe *loxav1.Event) (*models.Event, []string, error) {
 	return event, nil, nil
 }
 
-func (s *GRPCServer) Reconstruct(ctx context.Context, req *loxav1.ReconstructRequest) (*loxav1.ReconstructResponse, error) {
+func (s *GRPCServer) Reconstruct(ctx context.Context, req *lozav1.ReconstructRequest) (*lozav1.ReconstructResponse, error) {
 	incident, err := s.incidents.Get(ctx, req.IncidentId)
 	if err != nil {
 		return nil, err
@@ -341,19 +341,19 @@ func (s *GRPCServer) Reconstruct(ctx context.Context, req *loxav1.ReconstructReq
 
 	graphView, _ := s.graph.GetIncidentGraph(ctx, req.IncidentId, 3)
 
-	nodes := make([]*loxav1.GraphNode, 0)
-	edges := make([]*loxav1.GraphEdge, 0)
+	nodes := make([]*lozav1.GraphNode, 0)
+	edges := make([]*lozav1.GraphEdge, 0)
 
 	if graphView != nil {
 		for _, n := range graphView.Nodes {
-			nodes = append(nodes, &loxav1.GraphNode{
+			nodes = append(nodes, &lozav1.GraphNode{
 				Id:       n.ID,
 				Service:  n.Label,
 				NodeType: string(n.Type),
 			})
 		}
 		for _, e := range graphView.Edges {
-			edges = append(edges, &loxav1.GraphEdge{
+			edges = append(edges, &lozav1.GraphEdge{
 				From:     e.FromNodeID,
 				To:       e.ToNodeID,
 				EdgeType: string(e.Type),
@@ -361,7 +361,7 @@ func (s *GRPCServer) Reconstruct(ctx context.Context, req *loxav1.ReconstructReq
 		}
 	}
 
-	return &loxav1.ReconstructResponse{
+	return &lozav1.ReconstructResponse{
 		IncidentId:       incident.ID,
 		Status:           incident.Status,
 		Severity:         incident.Severity,
@@ -372,7 +372,7 @@ func (s *GRPCServer) Reconstruct(ctx context.Context, req *loxav1.ReconstructReq
 	}, nil
 }
 
-func (s *GRPCServer) GetGraph(ctx context.Context, req *loxav1.GetGraphRequest) (*loxav1.GetGraphResponse, error) {
+func (s *GRPCServer) GetGraph(ctx context.Context, req *lozav1.GetGraphRequest) (*lozav1.GetGraphResponse, error) {
 	var graphView *models.GraphView
 	var err error
 
@@ -381,18 +381,18 @@ func (s *GRPCServer) GetGraph(ctx context.Context, req *loxav1.GetGraphRequest) 
 	} else if req.IncidentId != "" {
 		graphView, err = s.graph.GetIncidentGraph(ctx, req.IncidentId, int(req.Depth))
 	} else {
-		return &loxav1.GetGraphResponse{}, nil
+		return &lozav1.GetGraphResponse{}, nil
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	nodes := make([]*loxav1.GraphNode, 0, len(graphView.Nodes))
-	edges := make([]*loxav1.GraphEdge, 0, len(graphView.Edges))
+	nodes := make([]*lozav1.GraphNode, 0, len(graphView.Nodes))
+	edges := make([]*lozav1.GraphEdge, 0, len(graphView.Edges))
 
 	for _, n := range graphView.Nodes {
-		nodes = append(nodes, &loxav1.GraphNode{
+		nodes = append(nodes, &lozav1.GraphNode{
 			Id:       n.ID,
 			Service:  n.Label,
 			NodeType: string(n.Type),
@@ -400,17 +400,17 @@ func (s *GRPCServer) GetGraph(ctx context.Context, req *loxav1.GetGraphRequest) 
 	}
 
 	for _, e := range graphView.Edges {
-		edges = append(edges, &loxav1.GraphEdge{
+		edges = append(edges, &lozav1.GraphEdge{
 			From:     e.FromNodeID,
 			To:       e.ToNodeID,
 			EdgeType: string(e.Type),
 		})
 	}
 
-	return &loxav1.GetGraphResponse{Nodes: nodes, Edges: edges}, nil
+	return &lozav1.GetGraphResponse{Nodes: nodes, Edges: edges}, nil
 }
 
-func (s *GRPCServer) RecordFeedback(ctx context.Context, req *loxav1.RecordFeedbackRequest) (*loxav1.RecordFeedbackResponse, error) {
+func (s *GRPCServer) RecordFeedback(ctx context.Context, req *lozav1.RecordFeedbackRequest) (*lozav1.RecordFeedbackResponse, error) {
 	outcomeCode := 200
 	if !req.Success {
 		outcomeCode = 500
@@ -430,10 +430,10 @@ func (s *GRPCServer) RecordFeedback(ctx context.Context, req *loxav1.RecordFeedb
 		return nil, err
 	}
 
-	return &loxav1.RecordFeedbackResponse{Status: "recorded"}, nil
+	return &lozav1.RecordFeedbackResponse{Status: "recorded"}, nil
 }
 
-func (s *GRPCServer) StreamEvents(req *loxav1.StreamEventsRequest, stream loxav1.CortexService_StreamEventsServer) error {
+func (s *GRPCServer) StreamEvents(req *lozav1.StreamEventsRequest, stream lozav1.CortexService_StreamEventsServer) error {
 	filter := req.IncidentId
 
 	log.Info().Str("filter", filter).Msg("Starting event stream")
@@ -463,8 +463,8 @@ func (s *GRPCServer) StartGRPC(addr string, server *grpc.Server) error {
 }
 
 // modelToProtoEvent converts a models.Event to a proto Event for streaming.
-func modelToProtoEvent(event *models.Event) *loxav1.Event {
-	pe := &loxav1.Event{
+func modelToProtoEvent(event *models.Event) *lozav1.Event {
+	pe := &lozav1.Event{
 		EventId:       event.ID,
 		Event:         event.Event,
 		Service:       event.Service,
@@ -490,7 +490,7 @@ func modelToProtoEvent(event *models.Event) *loxav1.Event {
 
 	// HTTP context
 	if event.HTTP != nil {
-		pe.Http = &loxav1.HttpContext{
+		pe.Http = &lozav1.HttpContext{
 			Method:     event.HTTP.Method,
 			Path:       event.HTTP.Path,
 			Route:      event.HTTP.Route,
@@ -504,7 +504,7 @@ func modelToProtoEvent(event *models.Event) *loxav1.Event {
 
 	// Error
 	if event.Error != nil {
-		pe.Error = &loxav1.ErrorContext{
+		pe.Error = &lozav1.ErrorContext{
 			Type:    event.Error.Type,
 			Message: event.Error.Message,
 			Code:    event.Error.Code,
@@ -637,39 +637,39 @@ func modelToProtoEvent(event *models.Event) *loxav1.Event {
 }
 
 // protoLevel converts a level string to the proto enum.
-func protoLevel(level string) loxav1.EventLevel {
+func protoLevel(level string) lozav1.EventLevel {
 	switch level {
 	case "debug":
-		return loxav1.EventLevel_EVENT_LEVEL_DEBUG
+		return lozav1.EventLevel_EVENT_LEVEL_DEBUG
 	case "info":
-		return loxav1.EventLevel_EVENT_LEVEL_INFO
+		return lozav1.EventLevel_EVENT_LEVEL_INFO
 	case "warn", "warning":
-		return loxav1.EventLevel_EVENT_LEVEL_WARN
+		return lozav1.EventLevel_EVENT_LEVEL_WARN
 	case "error":
-		return loxav1.EventLevel_EVENT_LEVEL_ERROR
+		return lozav1.EventLevel_EVENT_LEVEL_ERROR
 	case "notice":
-		return loxav1.EventLevel_EVENT_LEVEL_NOTICE
+		return lozav1.EventLevel_EVENT_LEVEL_NOTICE
 	case "fatal":
-		return loxav1.EventLevel_EVENT_LEVEL_FATAL
+		return lozav1.EventLevel_EVENT_LEVEL_FATAL
 	default:
-		return loxav1.EventLevel_EVENT_LEVEL_UNSPECIFIED
+		return lozav1.EventLevel_EVENT_LEVEL_UNSPECIFIED
 	}
 }
 
 // levelFromProto converts a proto enum back to a lowercase level string.
-func levelFromProto(level loxav1.EventLevel) string {
+func levelFromProto(level lozav1.EventLevel) string {
 	switch level {
-	case loxav1.EventLevel_EVENT_LEVEL_DEBUG:
+	case lozav1.EventLevel_EVENT_LEVEL_DEBUG:
 		return "debug"
-	case loxav1.EventLevel_EVENT_LEVEL_INFO:
+	case lozav1.EventLevel_EVENT_LEVEL_INFO:
 		return "info"
-	case loxav1.EventLevel_EVENT_LEVEL_WARN:
+	case lozav1.EventLevel_EVENT_LEVEL_WARN:
 		return "warn"
-	case loxav1.EventLevel_EVENT_LEVEL_ERROR:
+	case lozav1.EventLevel_EVENT_LEVEL_ERROR:
 		return "error"
-	case loxav1.EventLevel_EVENT_LEVEL_NOTICE:
+	case lozav1.EventLevel_EVENT_LEVEL_NOTICE:
 		return "notice"
-	case loxav1.EventLevel_EVENT_LEVEL_FATAL:
+	case lozav1.EventLevel_EVENT_LEVEL_FATAL:
 		return "fatal"
 	default:
 		return ""
@@ -677,27 +677,27 @@ func levelFromProto(level loxav1.EventLevel) string {
 }
 
 // outcomeFromProto converts a proto enum back to a lowercase outcome string.
-func outcomeFromProto(outcome loxav1.EventOutcome) string {
+func outcomeFromProto(outcome lozav1.EventOutcome) string {
 	switch outcome {
-	case loxav1.EventOutcome_EVENT_OUTCOME_SUCCESS:
+	case lozav1.EventOutcome_EVENT_OUTCOME_SUCCESS:
 		return "success"
-	case loxav1.EventOutcome_EVENT_OUTCOME_ERROR:
+	case lozav1.EventOutcome_EVENT_OUTCOME_ERROR:
 		return "error"
-	case loxav1.EventOutcome_EVENT_OUTCOME_PARTIAL:
+	case lozav1.EventOutcome_EVENT_OUTCOME_PARTIAL:
 		return "partial"
-	case loxav1.EventOutcome_EVENT_OUTCOME_ABANDONED:
+	case lozav1.EventOutcome_EVENT_OUTCOME_ABANDONED:
 		return "abandoned"
-	case loxav1.EventOutcome_EVENT_OUTCOME_RETRIED:
+	case lozav1.EventOutcome_EVENT_OUTCOME_RETRIED:
 		return "retried"
-	case loxav1.EventOutcome_EVENT_OUTCOME_CANCELLED:
+	case lozav1.EventOutcome_EVENT_OUTCOME_CANCELLED:
 		return "cancelled"
-	case loxav1.EventOutcome_EVENT_OUTCOME_TIMEOUT:
+	case lozav1.EventOutcome_EVENT_OUTCOME_TIMEOUT:
 		return "timeout"
-	case loxav1.EventOutcome_EVENT_OUTCOME_SKIPPED:
+	case lozav1.EventOutcome_EVENT_OUTCOME_SKIPPED:
 		return "skipped"
-	case loxav1.EventOutcome_EVENT_OUTCOME_REJECTED:
+	case lozav1.EventOutcome_EVENT_OUTCOME_REJECTED:
 		return "rejected"
-	case loxav1.EventOutcome_EVENT_OUTCOME_QUARANTINED:
+	case lozav1.EventOutcome_EVENT_OUTCOME_QUARANTINED:
 		return "quarantined"
 	default:
 		return ""
@@ -705,77 +705,77 @@ func outcomeFromProto(outcome loxav1.EventOutcome) string {
 }
 
 // kindFromProto converts a proto EventKind enum to a models.EventKind.
-func kindFromProto(kind loxav1.EventKind) models.EventKind {
+func kindFromProto(kind lozav1.EventKind) models.EventKind {
 	switch kind {
-	case loxav1.EventKind_EVENT_KIND_LOG:
+	case lozav1.EventKind_EVENT_KIND_LOG:
 		return models.EventKindLog
-	case loxav1.EventKind_EVENT_KIND_HTTP:
+	case lozav1.EventKind_EVENT_KIND_HTTP:
 		return models.EventKindHTTP
-	case loxav1.EventKind_EVENT_KIND_JOB:
+	case lozav1.EventKind_EVENT_KIND_JOB:
 		return models.EventKindJob
-	case loxav1.EventKind_EVENT_KIND_QUEUE:
+	case lozav1.EventKind_EVENT_KIND_QUEUE:
 		return models.EventKindQueue
-	case loxav1.EventKind_EVENT_KIND_CLI:
+	case lozav1.EventKind_EVENT_KIND_CLI:
 		return models.EventKindCLI
-	case loxav1.EventKind_EVENT_KIND_CRON:
+	case lozav1.EventKind_EVENT_KIND_CRON:
 		return models.EventKindCron
-	case loxav1.EventKind_EVENT_KIND_AGENT:
+	case lozav1.EventKind_EVENT_KIND_AGENT:
 		return models.EventKindAgent
-	case loxav1.EventKind_EVENT_KIND_AI:
+	case lozav1.EventKind_EVENT_KIND_AI:
 		return models.EventKindAI
 	default:
-		return models.EventKindLoxaEvent
+		return models.EventKindLozaEvent
 	}
 }
 
 // protoKind converts a models.EventKind to the proto EventKind enum.
-func protoKind(kind models.EventKind) loxav1.EventKind {
+func protoKind(kind models.EventKind) lozav1.EventKind {
 	switch kind {
 	case models.EventKindLog:
-		return loxav1.EventKind_EVENT_KIND_LOG
+		return lozav1.EventKind_EVENT_KIND_LOG
 	case models.EventKindHTTP:
-		return loxav1.EventKind_EVENT_KIND_HTTP
+		return lozav1.EventKind_EVENT_KIND_HTTP
 	case models.EventKindJob:
-		return loxav1.EventKind_EVENT_KIND_JOB
+		return lozav1.EventKind_EVENT_KIND_JOB
 	case models.EventKindQueue:
-		return loxav1.EventKind_EVENT_KIND_QUEUE
+		return lozav1.EventKind_EVENT_KIND_QUEUE
 	case models.EventKindCLI:
-		return loxav1.EventKind_EVENT_KIND_CLI
+		return lozav1.EventKind_EVENT_KIND_CLI
 	case models.EventKindCron:
-		return loxav1.EventKind_EVENT_KIND_CRON
+		return lozav1.EventKind_EVENT_KIND_CRON
 	case models.EventKindAgent:
-		return loxav1.EventKind_EVENT_KIND_AGENT
+		return lozav1.EventKind_EVENT_KIND_AGENT
 	case models.EventKindAI:
-		return loxav1.EventKind_EVENT_KIND_AI
+		return lozav1.EventKind_EVENT_KIND_AI
 	default:
-		return loxav1.EventKind_EVENT_KIND_EVENT
+		return lozav1.EventKind_EVENT_KIND_EVENT
 	}
 }
 
 // protoOutcome converts an outcome string to the proto enum.
-func protoOutcome(outcome string) loxav1.EventOutcome {
+func protoOutcome(outcome string) lozav1.EventOutcome {
 	switch outcome {
 	case "success":
-		return loxav1.EventOutcome_EVENT_OUTCOME_SUCCESS
+		return lozav1.EventOutcome_EVENT_OUTCOME_SUCCESS
 	case "error":
-		return loxav1.EventOutcome_EVENT_OUTCOME_ERROR
+		return lozav1.EventOutcome_EVENT_OUTCOME_ERROR
 	case "partial":
-		return loxav1.EventOutcome_EVENT_OUTCOME_PARTIAL
+		return lozav1.EventOutcome_EVENT_OUTCOME_PARTIAL
 	case "abandoned":
-		return loxav1.EventOutcome_EVENT_OUTCOME_ABANDONED
+		return lozav1.EventOutcome_EVENT_OUTCOME_ABANDONED
 	case "retried":
-		return loxav1.EventOutcome_EVENT_OUTCOME_RETRIED
+		return lozav1.EventOutcome_EVENT_OUTCOME_RETRIED
 	case "cancelled":
-		return loxav1.EventOutcome_EVENT_OUTCOME_CANCELLED
+		return lozav1.EventOutcome_EVENT_OUTCOME_CANCELLED
 	case "timeout":
-		return loxav1.EventOutcome_EVENT_OUTCOME_TIMEOUT
+		return lozav1.EventOutcome_EVENT_OUTCOME_TIMEOUT
 	case "skipped":
-		return loxav1.EventOutcome_EVENT_OUTCOME_SKIPPED
+		return lozav1.EventOutcome_EVENT_OUTCOME_SKIPPED
 	case "rejected":
-		return loxav1.EventOutcome_EVENT_OUTCOME_REJECTED
+		return lozav1.EventOutcome_EVENT_OUTCOME_REJECTED
 	case "quarantined":
-		return loxav1.EventOutcome_EVENT_OUTCOME_QUARANTINED
+		return lozav1.EventOutcome_EVENT_OUTCOME_QUARANTINED
 	default:
-		return loxav1.EventOutcome_EVENT_OUTCOME_UNSPECIFIED
+		return lozav1.EventOutcome_EVENT_OUTCOME_UNSPECIFIED
 	}
 }

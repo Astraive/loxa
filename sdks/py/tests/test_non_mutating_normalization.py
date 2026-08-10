@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from loxa.generated.spec_contract import build_ingest_envelope, normalize_event_aliases
+from loza.generated.spec_contract import build_ingest_envelope, normalize_event_aliases
 
 
 def _event_with_alias_only() -> dict[str, object]:
@@ -34,7 +34,7 @@ def test_build_ingest_envelope_normalizes_copy_without_mutating_input_event() ->
     payload = _event_with_alias_only()
     original = deepcopy(payload)
 
-    envelope = build_ingest_envelope([payload], "loxa-py", "0.2.0", "checkout")
+    envelope = build_ingest_envelope([payload], "loza-py", "0.2.0", "checkout")
     envelope_event = envelope["events"][0]
 
     assert payload == original

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-import loxa
+import loza
 
 
 def _repo_root() -> Path:
@@ -26,9 +26,9 @@ def _lookup(value: dict[str, Any], path: str) -> Any:
 
 def test_shared_emitted_shape_fixture() -> None:
     fixture = _fixture()
-    logger = loxa.New(loxa.Test(fixture["params"]["service"]))
+    logger = loza.New(loza.Test(fixture["params"]["service"]))
     ctx = logger.start_event(
-        loxa.Params(
+        loza.Params(
             event=fixture["params"]["event"],
             kind=fixture["params"]["kind"],
             service=fixture["params"]["service"],

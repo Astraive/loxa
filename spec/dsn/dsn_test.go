@@ -25,7 +25,7 @@ func TestParse(t *testing.T) {
 		// ── Valid cases ───────────────────────────────────────────────────────
 		{
 			name:      "localhost dev with explicit port and tls=false",
-			input:     "loxa://localhost:9308/demo?tls=false",
+			input:     "loza://localhost:9308/demo?tls=false",
 			valid:     true,
 			host:      "localhost",
 			port:      9308,
@@ -41,7 +41,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:      "localhost default port 9308",
-			input:     "loxa://localhost/demo?tls=false",
+			input:     "loza://localhost/demo?tls=false",
 			valid:     true,
 			host:      "localhost",
 			port:      9308,
@@ -54,7 +54,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:      "prod default tls=true",
-			input:     "loxa://collector.example.com/demo",
+			input:     "loza://collector.example.com/demo",
 			valid:     true,
 			host:      "collector.example.com",
 			port:      443,
@@ -70,7 +70,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:      "custom env and service",
-			input:     "loxa://collector.example.com/demo?env=prod&service=api",
+			input:     "loza://collector.example.com/demo?env=prod&service=api",
 			valid:     true,
 			host:      "collector.example.com",
 			port:      443,
@@ -83,7 +83,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:      "otlp transport",
-			input:     "loxa://collector.example.com/demo?transport=otlp",
+			input:     "loza://collector.example.com/demo?transport=otlp",
 			valid:     true,
 			host:      "collector.example.com",
 			port:      443,
@@ -94,7 +94,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:      "grpc transport",
-			input:     "loxa://collector.example.com/demo?transport=grpc",
+			input:     "loza://collector.example.com/demo?transport=grpc",
 			valid:     true,
 			host:      "collector.example.com",
 			port:      443,
@@ -109,7 +109,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:    "127.0.0.1 defaults to tls=false and port 9308",
-			input:   "loxa://127.0.0.1/demo",
+			input:   "loza://127.0.0.1/demo",
 			valid:   true,
 			host:    "127.0.0.1",
 			port:    9308,
@@ -119,7 +119,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:    "::1 defaults to tls=false and port 9308 (brackets required)",
-			input:   "loxa://[::1]/demo",
+			input:   "loza://[::1]/demo",
 			valid:   true,
 			host:    "::1",
 			port:    9308,
@@ -129,7 +129,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:    "tls=auto keeps localhost default",
-			input:   "loxa://localhost/demo?tls=auto",
+			input:   "loza://localhost/demo?tls=auto",
 			valid:   true,
 			host:    "localhost",
 			port:    9308,
@@ -139,7 +139,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:    "tls=auto keeps remote default",
-			input:   "loxa://collector.example.com/demo?tls=auto",
+			input:   "loza://collector.example.com/demo?tls=auto",
 			valid:   true,
 			host:    "collector.example.com",
 			port:    443,
@@ -149,7 +149,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:    "explicit tls=true on localhost",
-			input:   "loxa://localhost:8443/demo?tls=true",
+			input:   "loza://localhost:8443/demo?tls=true",
 			valid:   true,
 			host:    "localhost",
 			port:    8443,
@@ -159,7 +159,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:    "explicit port 4318 with otlp",
-			input:   "loxa://collector.example.com:4318/backend?env=staging&service=auth&transport=otlp",
+			input:   "loza://collector.example.com:4318/backend?env=staging&service=auth&transport=otlp",
 			valid:   true,
 			host:    "collector.example.com",
 			port:    4318,
@@ -189,57 +189,57 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:  "reject no host",
-			input: "loxa://",
+			input: "loza://",
 			valid: false,
 		},
 		{
 			name:  "reject triple-slash no host",
-			input: "loxa:///project",
+			input: "loza:///project",
 			valid: false,
 		},
 		{
 			name:  "reject no project",
-			input: "loxa://collector.example.com",
+			input: "loza://collector.example.com",
 			valid: false,
 		},
 		{
 			name:  "reject empty project",
-			input: "loxa://collector.example.com/",
+			input: "loza://collector.example.com/",
 			valid: false,
 		},
 		{
 			name:  "reject userinfo (API key in URL)",
-			input: "loxa://key@collector.example.com/demo",
+			input: "loza://key@collector.example.com/demo",
 			valid: false,
 		},
 		{
 			name:  "reject userinfo with password",
-			input: "loxa://user:pass@collector.example.com/demo",
+			input: "loza://user:pass@collector.example.com/demo",
 			valid: false,
 		},
 		{
 			name:  "reject invalid tls value",
-			input: "loxa://collector.example.com/demo?tls=maybe",
+			input: "loza://collector.example.com/demo?tls=maybe",
 			valid: false,
 		},
 		{
 			name:  "reject invalid transport value",
-			input: "loxa://collector.example.com/demo?transport=random",
+			input: "loza://collector.example.com/demo?transport=random",
 			valid: false,
 		},
 		{
 			name:  "reject port 0",
-			input: "loxa://collector.example.com:0/demo",
+			input: "loza://collector.example.com:0/demo",
 			valid: false,
 		},
 		{
 			name:  "reject port above 65535",
-			input: "loxa://collector.example.com:99999/demo",
+			input: "loza://collector.example.com:99999/demo",
 			valid: false,
 		},
 		{
 			name:  "reject non-numeric port",
-			input: "loxa://collector.example.com:abc/demo",
+			input: "loza://collector.example.com:abc/demo",
 			valid: false,
 		},
 	}
@@ -259,8 +259,8 @@ func TestParse(t *testing.T) {
 				t.Fatalf("expected valid DSN for %q, got error: %v", tt.input, err)
 			}
 
-			if dsn.Scheme != "loxa" {
-				t.Errorf("Scheme = %q, want %q", dsn.Scheme, "loxa")
+			if dsn.Scheme != "loza" {
+				t.Errorf("Scheme = %q, want %q", dsn.Scheme, "loza")
 			}
 			if dsn.Host != tt.host {
 				t.Errorf("Host = %q, want %q", dsn.Host, tt.host)
@@ -305,7 +305,7 @@ func TestParse(t *testing.T) {
 }
 
 func TestParseEnvDefault(t *testing.T) {
-	dsn, err := Parse("loxa://localhost/demo?tls=false")
+	dsn, err := Parse("loza://localhost/demo?tls=false")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -314,12 +314,12 @@ func TestParseEnvDefault(t *testing.T) {
 	}
 }
 
-func TestParseSchemeAlwaysLoxa(t *testing.T) {
-	dsn, err := Parse("loxa://localhost/demo?tls=false")
+func TestParseSchemeAlwaysLoza(t *testing.T) {
+	dsn, err := Parse("loza://localhost/demo?tls=false")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if dsn.Scheme != "loxa" {
-		t.Errorf("Scheme = %q, want %q", dsn.Scheme, "loxa")
+	if dsn.Scheme != "loza" {
+		t.Errorf("Scheme = %q, want %q", dsn.Scheme, "loza")
 	}
 }

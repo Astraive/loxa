@@ -18,7 +18,7 @@ func TestPostIngestValidatesEnvelopeBeforeSending(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	payload := []byte(`{"api_version":"v1","source":{"sdk":"loxa-cli","version":"1.0.0","service":"checkout"}}`)
+	payload := []byte(`{"api_version":"v1","source":{"sdk":"loza-cli","version":"1.0.0","service":"checkout"}}`)
 	if err := PostIngest(srv.URL, "application/json", payload); err == nil {
 		t.Fatal("expected invalid envelope to fail validation")
 	}
@@ -45,7 +45,7 @@ func TestPostIngestRetriesRetryableCollectorResponse(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	payload := []byte(`{"api_version":"v1","source":{"sdk":"loxa-cli","version":"1.0.0","service":"checkout"},"events":[{"schema_version":"v1","event_version":"v1","timestamp":"2026-05-12T00:00:00Z","event_id":"evt_1","service":"checkout","event":"checkout.request","kind":"http"}]}`)
+	payload := []byte(`{"api_version":"v1","source":{"sdk":"loza-cli","version":"1.0.0","service":"checkout"},"events":[{"schema_version":"v1","event_version":"v1","timestamp":"2026-05-12T00:00:00Z","event_id":"evt_1","service":"checkout","event":"checkout.request","kind":"http"}]}`)
 	if err := PostIngest(srv.URL, "application/json", payload); err != nil {
 		t.Fatalf("expected retryable ingest to succeed, got %v", err)
 	}

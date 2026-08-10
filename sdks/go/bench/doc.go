@@ -1,2 +1,2 @@
-// Package bench contains LOXA-Go benchmark suites.
+// Package bench contains LOZA-Go benchmark suites.
 package bench

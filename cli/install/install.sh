@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
-REPO="${LOXA_REPO:-astraive/loxa}"
-INSTALL_DIR="${LOXA_INSTALL_DIR:-$HOME/.local/bin}"
+REPO="${LOZA_REPO:-astraive/loza}"
+INSTALL_DIR="${LOZA_INSTALL_DIR:-$HOME/.local/bin}"
 TMP_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -12,7 +12,7 @@ trap cleanup EXIT INT TERM
 
 need() {
   command -v "$1" >/dev/null 2>&1 || {
-    echo "loxa installer requires $1" >&2
+    echo "loza installer requires $1" >&2
     exit 1
   }
 }
@@ -41,28 +41,28 @@ curl -fsSL "$api" -o "$releases"
 cli_line="$(grep -n '"tag_name": "cli/v' "$releases" | head -n 1 | cut -d: -f1)"
 
 if [ -z "$cli_line" ]; then
-  echo "could not find a LOXA CLI release" >&2
+  echo "could not find a LOZA CLI release" >&2
   exit 1
 fi
 
 asset_url="$(
   tail -n +"$cli_line" "$releases" |
-    sed -n 's/.*"browser_download_url": "\(.*loxa_.*_'"$os"'_'"$arch"'\.tar\.gz\)".*/\1/p' |
+    sed -n 's/.*"browser_download_url": "\(.*loza_.*_'"$os"'_'"$arch"'\.tar\.gz\)".*/\1/p' |
     head -n 1
 )"
 
 if [ -z "$asset_url" ]; then
-  echo "could not find a LOXA CLI release asset for $os/$arch" >&2
+  echo "could not find a LOZA CLI release asset for $os/$arch" >&2
   exit 1
 fi
 
 mkdir -p "$INSTALL_DIR"
-curl -fsSL "$asset_url" -o "$TMP_DIR/loxa.tar.gz"
-tar -xzf "$TMP_DIR/loxa.tar.gz" -C "$TMP_DIR"
-install -m 0755 "$TMP_DIR/loxa" "$INSTALL_DIR/loxa"
+curl -fsSL "$asset_url" -o "$TMP_DIR/loza.tar.gz"
+tar -xzf "$TMP_DIR/loza.tar.gz" -C "$TMP_DIR"
+install -m 0755 "$TMP_DIR/loza" "$INSTALL_DIR/loza"
 
-echo "Installed loxa to $INSTALL_DIR/loxa"
+echo "Installed loza to $INSTALL_DIR/loza"
 case ":$PATH:" in
   *":$INSTALL_DIR:"*) ;;
-  *) echo "Add $INSTALL_DIR to PATH to run loxa from any shell." ;;
+  *) echo "Add $INSTALL_DIR to PATH to run loza from any shell." ;;
 esac

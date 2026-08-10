@@ -55,7 +55,7 @@ jobs:
     name: Collector affected tests
     runs-on: ubuntu-latest
     needs: detect
-    if: contains(needs.detect.outputs.changed_components, 'collector') || contains(needs.detect.outputs.changed_components, 'loxa') || needs.detect.outputs.spec_changed == 'true'
+    if: contains(needs.detect.outputs.changed_components, 'collector') || contains(needs.detect.outputs.changed_components, 'loza') || needs.detect.outputs.spec_changed == 'true'
     defaults:
       run:
         working-directory: collector
@@ -83,7 +83,7 @@ jobs:
     name: Cortex affected tests
     runs-on: ubuntu-latest
     needs: detect
-    if: contains(needs.detect.outputs.changed_components, 'cortex') || contains(needs.detect.outputs.changed_components, 'loxa')
+    if: contains(needs.detect.outputs.changed_components, 'cortex') || contains(needs.detect.outputs.changed_components, 'loza')
     defaults:
       run:
         working-directory: cortex
@@ -111,7 +111,7 @@ jobs:
     name: CLI affected tests
     runs-on: ubuntu-latest
     needs: detect
-    if: contains(needs.detect.outputs.changed_components, 'cli') || contains(needs.detect.outputs.changed_components, 'loxa') || needs.detect.outputs.spec_changed == 'true'
+    if: contains(needs.detect.outputs.changed_components, 'cli') || contains(needs.detect.outputs.changed_components, 'loza') || needs.detect.outputs.spec_changed == 'true'
     defaults:
       run:
         working-directory: cli
@@ -126,7 +126,7 @@ jobs:
     name: Spec and SDK conformance checks
     runs-on: ubuntu-latest
     needs: detect
-    if: needs.detect.outputs.spec_changed == 'true' || contains(needs.detect.outputs.changed_components, 'sdk-') || contains(needs.detect.outputs.changed_components, 'loxa')
+    if: needs.detect.outputs.spec_changed == 'true' || contains(needs.detect.outputs.changed_components, 'sdk-') || contains(needs.detect.outputs.changed_components, 'loza')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -169,7 +169,7 @@ jobs:
     name: LQL affected tests
     runs-on: ubuntu-latest
     needs: detect
-    if: contains(needs.detect.outputs.changed_components, 'lql') || contains(needs.detect.outputs.changed_components, 'loxa')
+    if: contains(needs.detect.outputs.changed_components, 'lql') || contains(needs.detect.outputs.changed_components, 'loza')
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

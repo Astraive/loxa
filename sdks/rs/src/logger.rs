@@ -1,5 +1,5 @@
 use crate::{
-    errors::LoxaError,
+    errors::LozaError,
     generated::spec_contract,
     internal::core::{duplicate::resolve_duplicate, duplicate_policy::DuplicatePolicy},
     internal::queue::ByteBatcher,
@@ -44,10 +44,10 @@ impl std::fmt::Debug for Logger {
 
 impl Logger {
     pub fn new(config: Config) -> Self {
-        Self::try_new(config).expect("invalid loxa config")
+        Self::try_new(config).expect("invalid loza config")
     }
 
-    pub fn try_new(config: Config) -> Result<Self, LoxaError> {
+    pub fn try_new(config: Config) -> Result<Self, LozaError> {
         let mut config = config;
         config.validate_result()?;
         install_default_collector_sink(&mut config);
@@ -89,7 +89,7 @@ impl Logger {
         &self.config
     }
 
-    /// Create an immutable child logger that preserves config and emits loxa.alias.
+    /// Create an immutable child logger that preserves config and emits loza.alias.
     pub fn alias(&self, name: impl Into<String>) -> Logger {
         let mut cfg = self.config.clone();
         cfg.alias = name.into();
@@ -116,7 +116,7 @@ impl Logger {
         }
         let mut ctx = EventContext::new(self.config.service.clone(), params);
         if !self.config.alias.is_empty() {
-            ctx.append_attr(Attr::new("loxa.alias", self.config.alias.clone()));
+            ctx.append_attr(Attr::new("loza.alias", self.config.alias.clone()));
         }
         if self.config.include_host && ctx.host.is_none() {
             let host = std::env::var("HOSTNAME").unwrap_or_else(|_| {
@@ -190,7 +190,7 @@ impl Logger {
         &self,
         ctx: &mut EventContext,
         outcome: impl Into<String>,
-    ) -> Result<(), LoxaError> {
+    ) -> Result<(), LozaError> {
         let result = ctx.finish(outcome);
         if result.is_ok() {
             self.metrics.record_event_finished();
@@ -202,7 +202,7 @@ impl Logger {
         &self,
         ctx: &mut EventContext,
         message: impl Into<String>,
-    ) -> Result<(), LoxaError> {
+    ) -> Result<(), LozaError> {
         let result = ctx.finish_error(message);
         if result.is_ok() {
             self.metrics.record_event_finished();
@@ -210,7 +210,7 @@ impl Logger {
         result
     }
 
-    pub fn emit(&self, ctx: &EventContext) -> Result<String, LoxaError> {
+    pub fn emit(&self, ctx: &EventContext) -> Result<String, LozaError> {
         crate::set_current_event(Some(ctx.clone()));
         let result = if self.config.panic_recovery {
             let result =
@@ -224,7 +224,7 @@ impl Logger {
                         .or_else(|| panic.downcast_ref::<String>().cloned())
                         .unwrap_or_else(|| "panic in emit".to_string());
                     self.metrics.record_event_dropped("panic");
-                    Err(LoxaError::Transport(msg))
+                    Err(LozaError::Transport(msg))
                 }
             }
         } else {
@@ -234,7 +234,7 @@ impl Logger {
         result
     }
 
-    fn emit_inner(&self, ctx: &EventContext) -> Result<String, LoxaError> {
+    fn emit_inner(&self, ctx: &EventContext) -> Result<String, LozaError> {
         let started = Instant::now();
         match ctx.lifecycle_state().as_str() {
             crate::event::EVENT_EMITTED => {
@@ -246,7 +246,7 @@ impl Logger {
             | crate::event::EVENT_FAILED_VALIDATION => {
                 self.metrics.record_event_dropped("closed");
                 self.notify_drop("closed");
-                return Err(LoxaError::EventClosed {
+                return Err(LozaError::EventClosed {
                     event_id: ctx.event_id.clone(),
                     state: ctx.lifecycle_state(),
                 });
@@ -281,14 +281,14 @@ impl Logger {
             }
         };
         if self.config.strict && schema_supports_strict_validation(&self.config.schema) {
-            spec_contract::validate_event_value(&payload, true).map_err(LoxaError::Validation)?;
+            spec_contract::validate_event_value(&payload, true).map_err(LozaError::Validation)?;
         }
         let encoded = serde_json::to_string(&payload)?;
         if encoded.len() > self.config.max_event_bytes {
             ctx.mark_validation_failed();
             self.metrics.record_event_dropped("max_event_bytes");
             self.notify_drop("max_event_bytes");
-            return Err(LoxaError::Validation(crate::errors::ValidationError::new(
+            return Err(LozaError::Validation(crate::errors::ValidationError::new(
                 None,
                 "max_event_bytes_exceeded",
                 "event exceeds max_event_bytes".to_string(),
@@ -299,7 +299,7 @@ impl Logger {
                 self.metrics.record_backpressure();
                 self.metrics.record_event_dropped("backpressure");
                 self.notify_drop("backpressure");
-                LoxaError::Transport(format!("delivery_failed for {}: {err}", ctx.event_id))
+                LozaError::Transport(format!("delivery_failed for {}: {err}", ctx.event_id))
             })?;
         } else {
             for configured_sink in &self.config.sinks {
@@ -309,7 +309,7 @@ impl Logger {
                     self.notify_drop("transport");
                     let err_msg = format!("delivery_failed for {}: {err}", ctx.event_id);
                     self.notify_delivery_failed(ctx, &err_msg);
-                    return Err(LoxaError::Transport(err_msg));
+                    return Err(LozaError::Transport(err_msg));
                 }
             }
         }
@@ -320,26 +320,26 @@ impl Logger {
         Ok(encoded)
     }
 
-    pub fn flush(&self) -> Result<(), LoxaError> {
+    pub fn flush(&self) -> Result<(), LozaError> {
         if let Some(runtime) = &self.async_runtime {
-            runtime.flush().map_err(LoxaError::Transport)?;
+            runtime.flush().map_err(LozaError::Transport)?;
         }
         for configured_sink in &self.config.sinks {
             sink::flush_sink(configured_sink)
-                .map_err(|err| LoxaError::Transport(format!("flush failed: {err}")))?;
+                .map_err(|err| LozaError::Transport(format!("flush failed: {err}")))?;
         }
         Ok(())
     }
 
-    pub fn shutdown(&self) -> Result<(), LoxaError> {
+    pub fn shutdown(&self) -> Result<(), LozaError> {
         if let Some(runtime) = &self.async_runtime {
-            runtime.shutdown().map_err(LoxaError::Transport)?;
+            runtime.shutdown().map_err(LozaError::Transport)?;
         } else {
             self.flush()?;
         }
         for configured_sink in &self.config.sinks {
             sink::close_sink(configured_sink)
-                .map_err(|err| LoxaError::Transport(format!("shutdown failed: {err}")))?;
+                .map_err(|err| LozaError::Transport(format!("shutdown failed: {err}")))?;
         }
         Ok(())
     }
@@ -348,31 +348,31 @@ impl Logger {
         self.metrics.clone()
     }
 
-    pub fn debug(&self, message: impl Into<String>) -> Result<String, LoxaError> {
+    pub fn debug(&self, message: impl Into<String>) -> Result<String, LozaError> {
         self.emit_immediate("debug", message)
     }
 
-    pub fn info(&self, message: impl Into<String>) -> Result<String, LoxaError> {
+    pub fn info(&self, message: impl Into<String>) -> Result<String, LozaError> {
         self.emit_immediate("info", message)
     }
 
-    pub fn warn(&self, message: impl Into<String>) -> Result<String, LoxaError> {
+    pub fn warn(&self, message: impl Into<String>) -> Result<String, LozaError> {
         self.emit_immediate("warn", message)
     }
 
-    pub fn error(&self, message: impl Into<String>) -> Result<String, LoxaError> {
+    pub fn error(&self, message: impl Into<String>) -> Result<String, LozaError> {
         self.emit_immediate("error", message)
     }
 
-    pub fn fatal(&self, message: impl Into<String>) -> Result<String, LoxaError> {
+    pub fn fatal(&self, message: impl Into<String>) -> Result<String, LozaError> {
         self.emit_immediate("fatal", message)
     }
 
-    pub fn notice(&self, message: impl Into<String>) -> Result<String, LoxaError> {
+    pub fn notice(&self, message: impl Into<String>) -> Result<String, LozaError> {
         self.emit_immediate("notice", message)
     }
 
-    pub fn breadcrumb(&self, message: impl Into<String>) -> Result<String, LoxaError> {
+    pub fn breadcrumb(&self, message: impl Into<String>) -> Result<String, LozaError> {
         let mut ctx = self.start_event(
             Params::new("log.breadcrumb")
                 .with_kind("log")
@@ -386,10 +386,10 @@ impl Logger {
     pub fn fatal_exit(&self, message: impl Into<String>) -> ! {
         // Emit and flush before exiting, logging any errors to stderr
         if let Err(err) = self.emit_immediate("fatal", message) {
-            eprintln!("loxa: fatal event emit failed: {err}");
+            eprintln!("loza: fatal event emit failed: {err}");
         }
         if let Err(err) = self.flush() {
-            eprintln!("loxa: flush on fatal exit failed: {err}");
+            eprintln!("loza: flush on fatal exit failed: {err}");
         }
         std::process::exit(1)
     }
@@ -398,14 +398,14 @@ impl Logger {
         &self,
         ctx: &mut EventContext,
         reason: impl Into<String>,
-    ) -> Result<(), LoxaError> {
+    ) -> Result<(), LozaError> {
         ctx.outcome = Some("dropped".to_string());
         ctx.partial = true;
         ctx.partial_reason = Some(reason.into());
         Ok(())
     }
 
-    pub fn cancel(&self, ctx: &mut EventContext) -> Result<(), LoxaError> {
+    pub fn cancel(&self, ctx: &mut EventContext) -> Result<(), LozaError> {
         let result = ctx.finish("cancelled");
         if result.is_ok() {
             self.metrics.record_event_finished();
@@ -413,7 +413,7 @@ impl Logger {
         result
     }
 
-    pub fn abandon(&self, ctx: &mut EventContext) -> Result<(), LoxaError> {
+    pub fn abandon(&self, ctx: &mut EventContext) -> Result<(), LozaError> {
         let result = ctx.finish("abandoned");
         if result.is_ok() {
             self.metrics.record_event_finished();
@@ -421,7 +421,7 @@ impl Logger {
         result
     }
 
-    pub fn retry(&self, ctx: &mut EventContext) -> Result<(), LoxaError> {
+    pub fn retry(&self, ctx: &mut EventContext) -> Result<(), LozaError> {
         let result = ctx.finish("retried");
         if result.is_ok() {
             self.metrics.record_event_finished();
@@ -433,7 +433,7 @@ impl Logger {
         &self,
         ctx: &mut EventContext,
         reason: impl Into<String>,
-    ) -> Result<(), LoxaError> {
+    ) -> Result<(), LozaError> {
         let result = ctx.finish("partial");
         if result.is_ok() {
             ctx.partial = true;
@@ -515,7 +515,7 @@ impl Logger {
         self.with_timer(ctx, name, f);
     }
 
-    fn emit_immediate(&self, level: &str, message: impl Into<String>) -> Result<String, LoxaError> {
+    fn emit_immediate(&self, level: &str, message: impl Into<String>) -> Result<String, LozaError> {
         let mut ctx = self.start_event(
             Params::new(format!("log.{level}"))
                 .with_kind("log")
@@ -526,10 +526,10 @@ impl Logger {
         self.emit(&ctx)
     }
 
-    fn validate(&self, ctx: &EventContext) -> Result<(), LoxaError> {
+    fn validate(&self, ctx: &EventContext) -> Result<(), LozaError> {
         if !self.config.strict {
             if let Some(error) = ctx.pending_error() {
-                return Err(LoxaError::Validation(crate::errors::ValidationError::new(
+                return Err(LozaError::Validation(crate::errors::ValidationError::new(
                     None,
                     "pending_error",
                     error,
@@ -538,28 +538,28 @@ impl Logger {
             return Ok(());
         }
         if let Some(error) = ctx.pending_error() {
-            return Err(LoxaError::Validation(crate::errors::ValidationError::new(
+            return Err(LozaError::Validation(crate::errors::ValidationError::new(
                 None,
                 "pending_error",
                 error,
             )));
         }
         if ctx.service.is_empty() {
-            return Err(LoxaError::Validation(crate::errors::ValidationError::new(
+            return Err(LozaError::Validation(crate::errors::ValidationError::new(
                 Some("service"),
                 "required",
                 "strict mode requires a non-empty service".to_string(),
             )));
         }
         if ctx.event.is_empty() {
-            return Err(LoxaError::Validation(crate::errors::ValidationError::new(
+            return Err(LozaError::Validation(crate::errors::ValidationError::new(
                 Some("event"),
                 "required",
                 "strict mode requires a non-empty event".to_string(),
             )));
         }
         if ctx.kind.is_empty() {
-            return Err(LoxaError::Validation(crate::errors::ValidationError::new(
+            return Err(LozaError::Validation(crate::errors::ValidationError::new(
                 Some("kind"),
                 "required",
                 "strict mode requires a non-empty kind".to_string(),
@@ -631,7 +631,7 @@ struct AsyncRuntime {
 }
 
 impl AsyncRuntime {
-    fn new(sinks: Vec<crate::SinkConfig>) -> Result<Self, LoxaError> {
+    fn new(sinks: Vec<crate::SinkConfig>) -> Result<Self, LozaError> {
         let (tx, rx) = mpsc::sync_channel(DEFAULT_ASYNC_QUEUE_SIZE);
         let worker = thread::spawn(move || run_async_worker(rx, sinks));
         Ok(Self {

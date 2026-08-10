@@ -1,0 +1,6 @@
+apiVersion: v2
+name: loza
+description: Deploys loza schema-service and stager components
+type: application
+version: 0.2.6
+appVersion: "0.2.6"

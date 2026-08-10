@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/astraive/loxa/cli/internal/config"
-	"github.com/astraive/loxa/cli/internal/output"
+	"github.com/astraive/loza/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/output"
 )
 
 func captureStdout(t *testing.T, run func() error) (string, error) {
@@ -78,7 +78,7 @@ func TestDLQListHitsCollectorAPI(t *testing.T) {
 }
 
 func TestEmitSampleSendsAPIKeyFromEnv(t *testing.T) {
-	t.Setenv("LOXA_API_KEY", "test-key")
+	t.Setenv("LOZA_API_KEY", "test-key")
 
 	var gotAuth string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -160,8 +160,8 @@ func TestDashboardInstallCopiesCollectorAssets(t *testing.T) {
 	if err := os.MkdirAll(dashboardDir, 0o755); err != nil {
 		t.Fatalf("mkdir dashboard dir: %v", err)
 	}
-	src := filepath.Join(dashboardDir, "loxa-collector.json")
-	if err := os.WriteFile(src, []byte(`{"title":"LOXA Collector"}`), 0o644); err != nil {
+	src := filepath.Join(dashboardDir, "loza-collector.json")
+	if err := os.WriteFile(src, []byte(`{"title":"LOZA Collector"}`), 0o644); err != nil {
 		t.Fatalf("write dashboard asset: %v", err)
 	}
 
@@ -179,7 +179,7 @@ func TestDashboardInstallCopiesCollectorAssets(t *testing.T) {
 	if err := DashboardCommand(cfg, []string{"install"}); err != nil {
 		t.Fatalf("dashboard install: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(tmp, ".loxa-dashboard", "dashboards", "loxa-collector.json")); err != nil {
+	if _, err := os.Stat(filepath.Join(tmp, ".loza-dashboard", "dashboards", "loza-collector.json")); err != nil {
 		t.Fatalf("expected copied dashboard asset: %v", err)
 	}
 }
@@ -199,7 +199,7 @@ func TestDoctorChecksCortexWhenConfigured(t *testing.T) {
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = w.Write([]byte(`{"status":"accepted","accepted":1}`))
 		case "/metrics":
-			_, _ = w.Write([]byte("loxa_collector_events_accepted_total 1\n"))
+			_, _ = w.Write([]byte("loza_collector_events_accepted_total 1\n"))
 		default:
 			t.Fatalf("unexpected collector path %s", r.URL.Path)
 		}
@@ -211,7 +211,7 @@ func TestDoctorChecksCortexWhenConfigured(t *testing.T) {
 		case "/healthz", "/readyz":
 			w.WriteHeader(http.StatusOK)
 		case "/metrics":
-			_, _ = w.Write([]byte("loxa_cortex_events_ingested_total 1\n"))
+			_, _ = w.Write([]byte("loza_cortex_events_ingested_total 1\n"))
 		default:
 			t.Fatalf("unexpected cortex path %s", r.URL.Path)
 		}

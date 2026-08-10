@@ -48,7 +48,7 @@ func TestCollectorWrappedBatchEnvelopeFixture(t *testing.T) {
 		t.Fatalf("marshal input event: %v", err)
 	}
 	sink := &collectorSink{cfg: CollectorSinkConfig{
-		SDKName:    "loxa-go",
+		SDKName:    "loza-go",
 		SDKVersion: "0.2.0",
 		Service:    "checkout",
 	}}
@@ -88,7 +88,7 @@ func TestCollectorWrappedBatchEnvelopeFixture(t *testing.T) {
 }
 
 func TestValidateIngestEnvelopeBytesRejectsMissingEvents(t *testing.T) {
-	raw := []byte(`{"api_version":"v1","source":{"sdk":"loxa-go","version":"0.2.0","service":"checkout"}}`)
+	raw := []byte(`{"api_version":"v1","source":{"sdk":"loza-go","version":"0.2.0","service":"checkout"}}`)
 	if err := ValidateIngestEnvelopeBytes(raw, false); err == nil {
 		t.Fatal("expected missing events envelope to fail validation")
 	}

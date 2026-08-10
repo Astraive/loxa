@@ -1,7 +1,7 @@
-use loxa::{
+use loza::{
     ComposeRedactors, Config, ContextCarrier, ContextSource, HTTPClient, HTTPRequest,
     InjectHTTPHeadersFromCarrier, New, Params, RedactKeys, SampleErrors, SampleNone, SchemaConfig,
-    String as LoxaString,
+    String as LozaString,
 };
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -19,8 +19,8 @@ fn flat_schema_and_redaction_are_real() {
         .with_schema(SchemaConfig::Flat)
         .with_redactor(RedactKeys(&["password"])));
     let mut ctx = logger.start_event(Params::new("checkout.run"));
-    logger.append(&mut ctx, loxa::UserID("u1"));
-    logger.append(&mut ctx, LoxaString("password", "secret"));
+    logger.append(&mut ctx, loza::UserID("u1"));
+    logger.append(&mut ctx, LozaString("password", "secret"));
     let _ = logger.finish(&mut ctx, "success");
 
     let payload: Value = serde_json::from_str(&logger.emit(&ctx).unwrap()).unwrap();
@@ -54,7 +54,7 @@ fn error_sampler_keeps_failed_events() {
 fn checkpoints_are_encoded() {
     let logger = New(Config::test("checkout"));
     let mut ctx = logger.start_event(Params::new("checkpointed"));
-    loxa::CheckpointWithAttrs(&mut ctx, "db_started", &[loxa::String("phase", "db")]);
+    loza::CheckpointWithAttrs(&mut ctx, "db_started", &[loza::String("phase", "db")]);
     let _ = logger.finish(&mut ctx, "success");
 
     let payload: Value = serde_json::from_str(&logger.emit(&ctx).unwrap()).unwrap();
@@ -68,9 +68,9 @@ fn composite_redactors_are_real() {
     let redactor = ComposeRedactors(&[RedactKeys(&["token"]), RedactKeys(&["password"])]);
     let logger = New(Config::test("checkout").with_redactor(redactor));
     let mut ctx = logger.start_event(Params::new("redaction.compose"));
-    logger.append(&mut ctx, LoxaString("message", "hello world"));
-    logger.append(&mut ctx, LoxaString("token", "abc123"));
-    logger.append(&mut ctx, LoxaString("password", "secret456"));
+    logger.append(&mut ctx, LozaString("message", "hello world"));
+    logger.append(&mut ctx, LozaString("token", "abc123"));
+    logger.append(&mut ctx, LozaString("password", "secret456"));
     let _ = logger.finish(&mut ctx, "success");
 
     let payload: Value = serde_json::from_str(&logger.emit(&ctx).unwrap()).unwrap();
@@ -82,10 +82,10 @@ fn composite_redactors_are_real() {
 
 #[test]
 fn duplicate_policy_keep_both_preserves_values() {
-    let logger = New(Config::test("checkout").with_duplicate_policy(loxa::KeepBoth));
+    let logger = New(Config::test("checkout").with_duplicate_policy(loza::KeepBoth));
     let mut ctx = logger.start_event(Params::new("duplicate.keep_both"));
-    logger.append(&mut ctx, LoxaString("tag", "first"));
-    logger.append(&mut ctx, LoxaString("tag", "second"));
+    logger.append(&mut ctx, LozaString("tag", "first"));
+    logger.append(&mut ctx, LozaString("tag", "second"));
     let _ = logger.finish(&mut ctx, "success");
 
     let payload: Value = serde_json::from_str(&logger.emit(&ctx).unwrap()).unwrap();
@@ -96,14 +96,14 @@ fn duplicate_policy_keep_both_preserves_values() {
 
 #[test]
 fn duplicate_policy_error_on_duplicate_fails_emit() {
-    let logger = New(Config::test("checkout").with_duplicate_policy(loxa::ErrorOnDuplicate));
+    let logger = New(Config::test("checkout").with_duplicate_policy(loza::ErrorOnDuplicate));
     let mut ctx = logger.start_event(Params::new("duplicate.error"));
-    logger.append(&mut ctx, LoxaString("tag", "first"));
-    logger.append(&mut ctx, LoxaString("tag", "second"));
+    logger.append(&mut ctx, LozaString("tag", "first"));
+    logger.append(&mut ctx, LozaString("tag", "second"));
     let _ = logger.finish(&mut ctx, "success");
 
     let err = logger.emit(&ctx).expect_err("duplicate emit should fail");
-    assert!(matches!(err, loxa::LoxaError::Validation(v) if v.message.contains("duplicate field")));
+    assert!(matches!(err, loza::LozaError::Validation(v) if v.message.contains("duplicate field")));
 }
 
 #[test]
@@ -135,10 +135,10 @@ fn config_defaults_flow_into_payload() {
 
 #[test]
 fn async_logger_flushes_buffered_events() {
-    let path = temp_file("loxa-rs-async.ndjson");
+    let path = temp_file("loza-rs-async.ndjson");
     let logger = New(Config::test("checkout")
         .with_async(true)
-        .with_sink(loxa::FileSink(path.to_str().expect("temp path"))));
+        .with_sink(loza::FileSink(path.to_str().expect("temp path"))));
     let mut ctx = logger.start_event(Params::new("async.flush"));
     let _ = logger.finish(&mut ctx, "success");
 

@@ -1,6 +1,6 @@
 # Testing
 
-How to run tests, understand test structure, and verify conformance for the LOXA Python SDK.
+How to run tests, understand test structure, and verify conformance for the LOZA Python SDK.
 
 ## Running Tests
 
@@ -55,14 +55,14 @@ sdks/py/tests/
 Capture emitted events in memory for assertions:
 
 ```python
-import loxa
+import loza
 
-sink = loxa.MemorySink()
-logger = loxa.new(loxa.test("my-test").with_sink(sink))
+sink = loza.MemorySink()
+logger = loza.new(loza.test("my-test").with_sink(sink))
 
-ctx = logger.start_event(loxa.Params(event="test.event"))
-loxa.finish(ctx, "success")
-loxa.emit(ctx)
+ctx = logger.start_event(loza.Params(event="test.event"))
+loza.finish(ctx, "success")
+loza.emit(ctx)
 
 events = sink.events()
 assert len(events) == 1
@@ -71,14 +71,14 @@ assert events[0]["event"] == "test.event"
 
 ### Test Config Preset
 
-The `loxa.test()` preset configures:
+The `loza.test()` preset configures:
 - Service name from argument
 - MemorySink
 - SampleAll (no sampling drops)
 - NoopRedactor (no redaction unless explicitly set)
 
 ```python
-cfg = loxa.test("my-test")
+cfg = loza.test("my-test")
 ```
 
 ## Conformance
@@ -98,20 +98,20 @@ Conformance checks include:
 
 ## Writing Tests
 
-Use `MemorySink` and `loxa.test()` for isolated unit tests:
+Use `MemorySink` and `loza.test()` for isolated unit tests:
 
 ```python
-import loxa
+import loza
 
 
 def test_enrich_sets_attributes():
-    sink = loxa.MemorySink()
-    logger = loxa.new(loxa.test("t").with_sink(sink))
+    sink = loza.MemorySink()
+    logger = loza.new(loza.test("t").with_sink(sink))
 
-    ctx = logger.start_event(loxa.Params(event="test.enrich"))
-    loxa.enrich(ctx, loxa.String("key", "value"))
-    loxa.finish(ctx, "success")
-    loxa.emit(ctx)
+    ctx = logger.start_event(loza.Params(event="test.enrich"))
+    loza.enrich(ctx, loza.String("key", "value"))
+    loza.finish(ctx, "success")
+    loza.emit(ctx)
 
     event = sink.events()[0]
     assert event["attrs"]["key"] == "value"

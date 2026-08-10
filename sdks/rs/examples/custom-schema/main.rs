@@ -1,4 +1,4 @@
-use loxa::{Config, New, Params, SchemaConfig};
+use loza::{Config, New, Params, SchemaConfig};
 
 fn main() {
     let logger = New(Config::test("checkout").with_schema(SchemaConfig::Flat));

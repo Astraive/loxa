@@ -11,14 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/astraive/loxa/sdks/go/src/internal/pool"
-	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
+	"github.com/astraive/loza/sdks/go/src/internal/pool"
+	speccontract "github.com/astraive/loza/spec/generated/go/contract"
 )
 
 // Ensure is used (pipeline only).
 var _ = NewPipeline
 
-// Logger is an instance of the LOXA-Go logging pipeline.
+// Logger is an instance of the LOZA-Go logging pipeline.
 type Logger struct {
 	cfg      Config
 	mu       sync.RWMutex
@@ -50,7 +50,7 @@ func (l *Logger) Child(options ...ConfigOption) (*Logger, error) {
 	return New(cfg)
 }
 
-// Alias creates an immutable child logger that preserves config and emits loxa.alias.
+// Alias creates an immutable child logger that preserves config and emits loza.alias.
 func (l *Logger) Alias(name string) (*Logger, error) {
 	return l.Child(WithAlias(name))
 }
@@ -163,7 +163,7 @@ func (l *Logger) makePipelineCfg() PipelineConfig {
 	}
 }
 
-// sinkAdapter wraps a loxa.Sink to satisfy SinkWriter (avoids import cycle).
+// sinkAdapter wraps a loza.Sink to satisfy SinkWriter (avoids import cycle).
 type sinkAdapter struct{ Sink }
 
 func (a *sinkAdapter) WriteEvent(ctx context.Context, encoded []byte, ev *Event) error {
@@ -404,7 +404,7 @@ func (l *Logger) Checkpoint(ctx context.Context, name string, attrs ...Attr) err
 	snapshot.Checkpoints = nil
 	snapshot.logger = nil
 	if err := l.EmitEventWithContext(ctx, snapshot); err != nil {
-		fmt.Fprintf(os.Stderr, "[loxa] checkpoint emit error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "[loza] checkpoint emit error: %v\n", err)
 	}
 	return nil
 }
@@ -612,7 +612,7 @@ func (l *Logger) EmitEventWithContext(ctx context.Context, ev *Event) error {
 		pool.Put(buf)
 		notifyError(err)
 		ev.markValidationFailed()
-		return fmt.Errorf("loxa: encode: %w", err)
+		return fmt.Errorf("loza: encode: %w", err)
 	}
 	if cfg.Security.MaxEventBytes > 0 && len(buf) > cfg.Security.MaxEventBytes && cfg.Security.DropOversizedEvents {
 		pool.Put(buf)
@@ -623,13 +623,13 @@ func (l *Logger) EmitEventWithContext(ctx context.Context, ev *Event) error {
 	if cfg.Strict && cfg.Security.MaxEventBytes > 0 && len(buf) > cfg.Security.MaxEventBytes {
 		pool.Put(buf)
 		ev.markValidationFailed()
-		return fmt.Errorf("loxa: strict mode: event exceeds max_event_bytes (%d > %d)", len(buf), cfg.Security.MaxEventBytes)
+		return fmt.Errorf("loza: strict mode: event exceeds max_event_bytes (%d > %d)", len(buf), cfg.Security.MaxEventBytes)
 	}
 	if cfg.Strict && cfg.ValidateEncoded {
 		if err := speccontract.ValidateEventBytes(bytes.TrimSpace(buf), true); err != nil {
 			pool.Put(buf)
 			ev.markValidationFailed()
-			return fmt.Errorf("loxa: strict mode: generated spec validation failed: %w", err)
+			return fmt.Errorf("loza: strict mode: generated spec validation failed: %w", err)
 		}
 	}
 
@@ -723,10 +723,10 @@ func validateStrictEvent(ev *Event, cfg Config) error {
 	defer ev.MuUnlock()
 
 	if ev.Event == "" {
-		return errors.New("loxa: strict mode: missing event name")
+		return errors.New("loza: strict mode: missing event name")
 	}
 	if ev.Service == "" {
-		return errors.New("loxa: strict mode: missing service")
+		return errors.New("loza: strict mode: missing service")
 	}
 	return validateStrictAttrs(ev.Attrs)
 }
@@ -734,30 +734,30 @@ func validateStrictEvent(ev *Event, cfg Config) error {
 func validateStrictAttrs(attrs []Attr) error {
 	for _, a := range attrs {
 		if a.Key == "" {
-			return errors.New("loxa: strict mode: empty attr key")
+			return errors.New("loza: strict mode: empty attr key")
 		}
 		if !strictAttrKeyPattern.MatchString(a.Key) {
-			return fmt.Errorf("loxa: strict mode: invalid attr key %q", a.Key)
+			return fmt.Errorf("loza: strict mode: invalid attr key %q", a.Key)
 		}
 		if IsCanonical(a.Key) {
-			return fmt.Errorf("loxa: strict mode: custom attr collides with canonical key %q", a.Key)
+			return fmt.Errorf("loza: strict mode: custom attr collides with canonical key %q", a.Key)
 		}
 		switch a.Kind {
 		case KindString, KindInt, KindInt64, KindUint64, KindFloat64, KindBool, KindTime, KindDuration, KindStringer, KindError, KindNull:
 		case KindAny:
 			if _, err := json.Marshal(a.Value); err != nil {
-				return fmt.Errorf("loxa: strict mode: attr %q has non-serializable any value: %w", a.Key, err)
+				return fmt.Errorf("loza: strict mode: attr %q has non-serializable any value: %w", a.Key, err)
 			}
 		case KindGroup:
 			children, ok := a.Value.([]Attr)
 			if !ok {
-				return fmt.Errorf("loxa: strict mode: group attr %q has invalid value type", a.Key)
+				return fmt.Errorf("loza: strict mode: group attr %q has invalid value type", a.Key)
 			}
 			if err := validateStrictAttrs(children); err != nil {
 				return err
 			}
 		default:
-			return fmt.Errorf("loxa: strict mode: unsupported attr kind %d for key %q", a.Kind, a.Key)
+			return fmt.Errorf("loza: strict mode: unsupported attr kind %d for key %q", a.Kind, a.Key)
 		}
 	}
 	return nil
@@ -845,10 +845,10 @@ func (l *Logger) logImmediate(ctx context.Context, level Level, msg, eventName s
 		ev.SetOutcome("error")
 	}
 	if addErr := ev.AddAttrs(attrs); addErr != nil {
-		fmt.Fprintf(os.Stderr, "[loxa] add attrs error: %v\n", addErr)
+		fmt.Fprintf(os.Stderr, "[loza] add attrs error: %v\n", addErr)
 	}
 	if emitErr := l.EmitEventWithContext(ctx, ev); emitErr != nil {
-		fmt.Fprintf(os.Stderr, "[loxa] emit error: %v\n", emitErr)
+		fmt.Fprintf(os.Stderr, "[loza] emit error: %v\n", emitErr)
 	}
 }
 
@@ -1081,7 +1081,7 @@ func Configure(cfg Config) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := old.Shutdown(ctx); err != nil && !errors.Is(err, context.Canceled) {
-			return fmt.Errorf("loxa: drain previous logger: %w", err)
+			return fmt.Errorf("loza: drain previous logger: %w", err)
 		}
 	}
 	return nil

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
+	speccontract "github.com/astraive/loza/spec/generated/go/contract"
 )
 
 func firstExisting(paths ...string) string {
@@ -41,19 +41,19 @@ func ValidateSpecAssets(specRepoPath string) error {
 			filepath.Join(specRepoPath, "openapi", "collector.openapi.yaml"),
 		),
 		firstExisting(
-			filepath.Join(specRepoPath, "spec", "proto", "loxa", "core", "event.proto"),
-			filepath.Join(specRepoPath, "proto", "loxa", "core", "event.proto"),
-			filepath.Join(specRepoPath, "releases", "v1", "proto", "loxa", "core", "event.proto"),
+			filepath.Join(specRepoPath, "spec", "proto", "loza", "core", "event.proto"),
+			filepath.Join(specRepoPath, "proto", "loza", "core", "event.proto"),
+			filepath.Join(specRepoPath, "releases", "v1", "proto", "loza", "core", "event.proto"),
 		),
 		firstExisting(
-			filepath.Join(specRepoPath, "spec", "proto", "loxa", "core", "ingest.proto"),
-			filepath.Join(specRepoPath, "proto", "loxa", "core", "ingest.proto"),
-			filepath.Join(specRepoPath, "releases", "v1", "proto", "loxa", "core", "ingest.proto"),
+			filepath.Join(specRepoPath, "spec", "proto", "loza", "core", "ingest.proto"),
+			filepath.Join(specRepoPath, "proto", "loza", "core", "ingest.proto"),
+			filepath.Join(specRepoPath, "releases", "v1", "proto", "loza", "core", "ingest.proto"),
 		),
 		firstExisting(
-			filepath.Join(specRepoPath, "spec", "proto", "loxa", "core", "collector.proto"),
-			filepath.Join(specRepoPath, "proto", "loxa", "core", "collector.proto"),
-			filepath.Join(specRepoPath, "releases", "v1", "proto", "loxa", "core", "collector.proto"),
+			filepath.Join(specRepoPath, "spec", "proto", "loza", "core", "collector.proto"),
+			filepath.Join(specRepoPath, "proto", "loza", "core", "collector.proto"),
+			filepath.Join(specRepoPath, "releases", "v1", "proto", "loza", "core", "collector.proto"),
 		),
 		filepath.Join(specRepoPath, "generated", "go", "contract", "contract.go"),
 		firstExisting(

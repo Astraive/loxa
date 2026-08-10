@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# run-all.sh -- Run all LOXA conformance tests and aggregate results.
+# run-all.sh -- Run all LOZA conformance tests and aggregate results.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -8,7 +8,7 @@ RESULTS_DIR="$SCRIPT_DIR/results"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$RESULTS_DIR"
 
-echo "=== LOXA Conformance Suite ==="
+echo "=== LOZA Conformance Suite ==="
 echo "Timestamp: $TIMESTAMP"
 echo "Results: $RESULTS_DIR"
 echo ""

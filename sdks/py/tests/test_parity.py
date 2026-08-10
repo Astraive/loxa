@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import loxa
+import loza
 
 
 REQUIRED_DIRS = [
@@ -21,13 +21,13 @@ REQUIRED_DIRS = [
     "internal/pool",
     "internal/safe",
     "libs",
-    "src/loxa/middleware/asgi",
-    "src/loxa/middleware/django",
-    "src/loxa/middleware/fastapi",
-    "src/loxa/middleware/flask",
-    "src/loxa/middleware/starlette",
+    "src/loza/middleware/asgi",
+    "src/loza/middleware/django",
+    "src/loza/middleware/fastapi",
+    "src/loza/middleware/flask",
+    "src/loza/middleware/starlette",
     "packages",
-    "src/loxa/sinks/httpbatch",
+    "src/loza/sinks/httpbatch",
     "storagepath",
     "testkit",
     "tests/conformance",
@@ -50,7 +50,7 @@ def test_public_api_matches_superset_manifest() -> None:
     for key, values in manifest.items():
         if isinstance(values, list) and key not in {"excluded_from_sdk", "sdks"}:
             required.update(values)
-    missing = sorted(name for name in required if not hasattr(loxa, name))
+    missing = sorted(name for name in required if not hasattr(loza, name))
     assert missing == []
 
 

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go/src/libs"
+	"github.com/astraive/loza/sdks/go/src/libs"
 )
 
 type testFlusher struct{ err error }

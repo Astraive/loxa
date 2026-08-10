@@ -24,6 +24,6 @@
     "payment.provider": "stripe",
     "order.id": "ord_83k2"
   },
-  "sdk": { "name": "loxa-go", "version": "0.1.0", "language": "go" },
+  "sdk": { "name": "loza-go", "version": "0.1.0", "language": "go" },
   "collector": { "received_at": "2026-05-22T06:10:42.511Z" }
 }

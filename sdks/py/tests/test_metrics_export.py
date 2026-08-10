@@ -1,22 +1,22 @@
 """Test metrics export from Python SDK (Prometheus format)."""
 import json
-import loxa
+import loza
 
 
 def test_events_emitted_total() -> None:
     """Verify events_emitted_total counter increments."""
-    logger = loxa.New(loxa.Test("test"))
+    logger = loza.New(loza.Test("test"))
 
     # Emit multiple events
-    ctx1 = logger.start_event(loxa.Params(event="event1"))
+    ctx1 = logger.start_event(loza.Params(event="event1"))
     logger.finish(ctx1, "success")
     logger.emit(ctx1)
 
-    ctx2 = logger.start_event(loxa.Params(event="event2"))
+    ctx2 = logger.start_event(loza.Params(event="event2"))
     logger.finish(ctx2, "error")
     logger.emit(ctx2)
 
-    ctx3 = logger.start_event(loxa.Params(event="event3"))
+    ctx3 = logger.start_event(loza.Params(event="event3"))
     logger.finish(ctx3, "success")
     logger.emit(ctx3)
 
@@ -40,9 +40,9 @@ def test_delivery_attempts_recorded() -> None:
             pass
 
     sink = CountingSink()
-    logger = loxa.New(loxa.Test("test").with_sink(sink))
+    logger = loza.New(loza.Test("test").with_sink(sink))
 
-    ctx = logger.start_event(loxa.Params(event="test"))
+    ctx = logger.start_event(loza.Params(event="test"))
     logger.finish(ctx, "success")
     logger.emit(ctx)
 
@@ -53,14 +53,14 @@ def test_delivery_attempts_recorded() -> None:
 def test_sampling_rate_gauge() -> None:
     """Verify sampling rate is tracked."""
     # Create logger with 50% sampling
-    logger = loxa.New(
-        loxa.Test("test").with_sampler(loxa.SampleRandom(0.5))
+    logger = loza.New(
+        loza.Test("test").with_sampler(loza.SampleRandom(0.5))
     )
 
     # Emit multiple events and count how many are sampled
     sampled_count = 0
     for i in range(100):
-        ctx = logger.start_event(loxa.Params(event=f"event_{i}"))
+        ctx = logger.start_event(loza.Params(event=f"event_{i}"))
         logger.finish(ctx, "success")
         payload = logger.emit(ctx)
         if payload:
@@ -88,10 +88,10 @@ def test_sink_latency_recorded() -> None:
             pass
 
     sink = SlowSink()
-    logger = loxa.New(loxa.Test("test").with_sink(sink))
+    logger = loza.New(loza.Test("test").with_sink(sink))
 
     for i in range(5):
-        ctx = logger.start_event(loxa.Params(event=f"event_{i}"))
+        ctx = logger.start_event(loza.Params(event=f"event_{i}"))
         logger.finish(ctx, "success")
         logger.emit(ctx)
 
@@ -101,15 +101,15 @@ def test_sink_latency_recorded() -> None:
 
 def test_rejection_reason_tracked() -> None:
     """Verify rejection reasons are tracked."""
-    logger = loxa.New(loxa.Test("test"))
+    logger = loza.New(loza.Test("test"))
 
     # Emit oversized event that will be dropped/truncated
-    ctx = logger.start_event(loxa.Params(event="large_event"))
+    ctx = logger.start_event(loza.Params(event="large_event"))
 
     # Add large attribute
     huge_value = "x" * 10_000_000
     try:
-        logger.enrich(ctx, loxa.String("huge", huge_value))
+        logger.enrich(ctx, loza.String("huge", huge_value))
     except Exception:
         # Expected to be rejected or truncated
         pass
@@ -125,11 +125,11 @@ def test_rejection_reason_tracked() -> None:
 
 def test_error_event_tracking() -> None:
     """Verify error events are tracked separately."""
-    logger = loxa.New(loxa.Test("test"))
+    logger = loza.New(loza.Test("test"))
 
     # Create error event
-    ctx = logger.start_event(loxa.Params(event="error_test"))
-    logger.enrich(ctx, loxa.String("error_message", "Test error"))
+    ctx = logger.start_event(loza.Params(event="error_test"))
+    logger.enrich(ctx, loza.String("error_message", "Test error"))
     logger.finish(ctx, "error")
     payload = logger.emit(ctx)
 
@@ -141,10 +141,10 @@ def test_error_event_tracking() -> None:
 
 def test_success_event_tracking() -> None:
     """Verify success events are tracked separately."""
-    logger = loxa.New(loxa.Test("test"))
+    logger = loza.New(loza.Test("test"))
 
     # Create success event
-    ctx = logger.start_event(loxa.Params(event="success_test"))
+    ctx = logger.start_event(loza.Params(event="success_test"))
     logger.finish(ctx, "success")
     payload = logger.emit(ctx)
 
@@ -156,11 +156,11 @@ def test_success_event_tracking() -> None:
 
 def test_multiple_outcomes_tracked() -> None:
     """Verify multiple outcomes are tracked in metrics."""
-    logger = loxa.New(loxa.Test("test"))
+    logger = loza.New(loza.Test("test"))
 
     outcomes = ["success", "error", "success", "partial"]
     for outcome in outcomes:
-        ctx = logger.start_event(loxa.Params(event=outcome))
+        ctx = logger.start_event(loza.Params(event=outcome))
         logger.finish(ctx, outcome)
         logger.emit(ctx)
 
@@ -172,11 +172,11 @@ def test_concurrent_emissions_tracked() -> None:
     """Verify concurrent emissions are tracked."""
     import threading
 
-    logger = loxa.New(loxa.Test("test"))
+    logger = loza.New(loza.Test("test"))
     results = []
 
     def emit_event(i):
-        ctx = logger.start_event(loxa.Params(event=f"concurrent_{i}"))
+        ctx = logger.start_event(loza.Params(event=f"concurrent_{i}"))
         logger.finish(ctx, "success")
         payload = logger.emit(ctx)
         results.append(payload)
@@ -194,13 +194,13 @@ def test_concurrent_emissions_tracked() -> None:
 def test_dropped_event_count() -> None:
     """Verify dropped events are counted."""
     # Create logger with none sampler (0% sampling)
-    logger = loxa.New(
-        loxa.Test("test").with_sampler(loxa.SampleNone())
+    logger = loza.New(
+        loza.Test("test").with_sampler(loza.SampleNone())
     )
 
     dropped_count = 0
     for i in range(10):
-        ctx = logger.start_event(loxa.Params(event=f"event_{i}"))
+        ctx = logger.start_event(loza.Params(event=f"event_{i}"))
         logger.finish(ctx, "success")
         payload = logger.emit(ctx)
         if not payload:  # Dropped due to sampling

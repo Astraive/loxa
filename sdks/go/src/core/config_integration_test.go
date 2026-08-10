@@ -42,13 +42,13 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 
 	t.Run("Configuration precedence: code > environment > defaults", func(t *testing.T) {
 		// Set environment variables
-		os.Setenv("LOXA_SERVICE_NAME", "env-service")
-		os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:9308")
-		os.Setenv("LOXA_BATCH_SIZE", "150")
+		os.Setenv("LOZA_SERVICE_NAME", "env-service")
+		os.Setenv("LOZA_COLLECTOR_URL", "http://env-collector:9308")
+		os.Setenv("LOZA_BATCH_SIZE", "150")
 		defer func() {
-			os.Unsetenv("LOXA_SERVICE_NAME")
-			os.Unsetenv("LOXA_COLLECTOR_URL")
-			os.Unsetenv("LOXA_BATCH_SIZE")
+			os.Unsetenv("LOZA_SERVICE_NAME")
+			os.Unsetenv("LOZA_COLLECTOR_URL")
+			os.Unsetenv("LOZA_BATCH_SIZE")
 		}()
 
 		// Code configuration should override environment
@@ -69,7 +69,7 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 	})
 
 	t.Run("Configuration validation on initialization", func(t *testing.T) {
-		// Note: NewClient loads defaults from loxa-go.defaults.yaml which includes
+		// Note: NewClient loads defaults from loza-go.defaults.yaml which includes
 		// a default collector_url, so we need to test validation differently.
 		
 		// Test with invalid values that will fail validation
@@ -215,19 +215,19 @@ func TestSDKConfigurationIntegration(t *testing.T) {
 	t.Run("Environment variable configuration", func(t *testing.T) {
 		// Set all supported environment variables
 		envVars := map[string]string{
-			"LOXA_COLLECTOR_URL":      "http://env-collector:9308",
-			"LOXA_SERVICE_NAME":       "env-service",
-			"LOXA_SERVICE_VERSION":    "3.0.0",
-			"LOXA_ENVIRONMENT":        "testing",
-			"LOXA_TENANT_ID":          "tenant-env",
-			"LOXA_BATCH_SIZE":         "400",
-			"LOXA_FLUSH_INTERVAL":     "20s",
-			"LOXA_MAX_BUFFER_SIZE":    "40000",
-			"LOXA_MAX_RETRIES":        "10",
-			"LOXA_MAX_BACKOFF":        "120s",
-			"LOXA_TIMEOUT":            "60s",
-			"LOXA_CONNECTION_TIMEOUT": "30s",
-			"LOXA_ENABLE_COMPRESSION": "false",
+			"LOZA_COLLECTOR_URL":      "http://env-collector:9308",
+			"LOZA_SERVICE_NAME":       "env-service",
+			"LOZA_SERVICE_VERSION":    "3.0.0",
+			"LOZA_ENVIRONMENT":        "testing",
+			"LOZA_TENANT_ID":          "tenant-env",
+			"LOZA_BATCH_SIZE":         "400",
+			"LOZA_FLUSH_INTERVAL":     "20s",
+			"LOZA_MAX_BUFFER_SIZE":    "40000",
+			"LOZA_MAX_RETRIES":        "10",
+			"LOZA_MAX_BACKOFF":        "120s",
+			"LOZA_TIMEOUT":            "60s",
+			"LOZA_CONNECTION_TIMEOUT": "30s",
+			"LOZA_ENABLE_COMPRESSION": "false",
 		}
 
 		for k, v := range envVars {

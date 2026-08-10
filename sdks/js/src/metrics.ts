@@ -22,7 +22,7 @@ export class MetricsCollector {
     };
   }
 
-  renderPrometheus(namespace = 'loxa_sdk'): string {
+  renderPrometheus(namespace = 'loza_sdk'): string {
     const lines: string[] = [];
     for (const [name, value] of Object.entries(this.counters)) {
       lines.push(`# TYPE ${namespace}_${name} counter`);

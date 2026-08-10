@@ -60,7 +60,7 @@ type SchemaFunc func(event EventView) map[string]any
 // Encode converts map output to NDJSON.
 func (f SchemaFunc) Encode(event EventView) ([]byte, error) {
 	if f == nil {
-		return nil, fmt.Errorf("loxa: schema func is nil")
+		return nil, fmt.Errorf("loza: schema func is nil")
 	}
 	out := f(event)
 	if out == nil {
@@ -81,7 +81,7 @@ func CustomSchema(fn func(EventView) map[string]any) Schema {
 	return SchemaFunc(fn)
 }
 
-// DefaultSchema emits canonical LOXA output shape.
+// DefaultSchema emits canonical LOZA output shape.
 func DefaultSchema() Schema {
 	return SchemaFunc(defaultSchemaMap)
 }
@@ -451,8 +451,8 @@ func (v *readOnlyEventView) Timers() []EventTimer {
 func defaultSchemaMap(ev EventView) map[string]any {
 	out := map[string]any{
 		"timestamp":      ev.Timestamp().UTC().Format(time.RFC3339),
-		"schema_version": firstNonEmpty(ev.SchemaVersion(), LOXA_SPEC_VERSION),
-		"event_version":  firstNonEmpty(ev.EventVersion(), LOXA_EVENT_VERSION),
+		"schema_version": firstNonEmpty(ev.SchemaVersion(), LOZA_SPEC_VERSION),
+		"event_version":  firstNonEmpty(ev.EventVersion(), LOZA_EVENT_VERSION),
 		"event_id":       ev.ID(),
 		"request_id":     ev.RequestID(),
 		"level":          ev.Level().String(),

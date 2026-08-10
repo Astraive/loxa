@@ -1,21 +1,21 @@
-package loxa_test
+package loza_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func TestRunEventSuccess(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	if err := loxa.Configure(loxa.Test().WithSink(sink)); err != nil {
+	sink, store := loza.MemorySink()
+	if err := loza.Configure(loza.Test().WithSink(sink)); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
-	err := loxa.RunEvent(context.Background(), loxa.Params{Event: "run.success"}, func(ctx context.Context) error {
-		_ = loxa.Enrich(ctx, loxa.String("k", "v"))
+	err := loza.RunEvent(context.Background(), loza.Params{Event: "run.success"}, func(ctx context.Context) error {
+		_ = loza.Enrich(ctx, loza.String("k", "v"))
 		return nil
 	})
 	if err != nil {
@@ -31,13 +31,13 @@ func TestRunEventSuccess(t *testing.T) {
 }
 
 func TestRunEventError(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	if err := loxa.Configure(loxa.Test().WithSink(sink)); err != nil {
+	sink, store := loza.MemorySink()
+	if err := loza.Configure(loza.Test().WithSink(sink)); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
 	want := errors.New("boom")
-	err := loxa.RunEvent(context.Background(), loxa.Params{Event: "run.error"}, func(context.Context) error {
+	err := loza.RunEvent(context.Background(), loza.Params{Event: "run.error"}, func(context.Context) error {
 		return want
 	})
 	if !errors.Is(err, want) {
@@ -56,15 +56,15 @@ func TestRunEventError(t *testing.T) {
 }
 
 func TestRunEventPanicRecovered(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
+	sink, store := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
 	cfg.IncludeSource = true
 	cfg.PanicRecovery = true
-	if err := loxa.Configure(cfg); err != nil {
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
-	err := loxa.RunEvent(context.Background(), loxa.Params{Event: "run.panic"}, func(context.Context) error {
+	err := loza.RunEvent(context.Background(), loza.Params{Event: "run.panic"}, func(context.Context) error {
 		panic("panic value")
 	})
 	if err == nil {
@@ -80,10 +80,10 @@ func TestRunEventPanicRecovered(t *testing.T) {
 }
 
 func TestRunEventPanicRecoveryDisabledRepanics(t *testing.T) {
-	sink, _ := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
+	sink, _ := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
 	cfg.PanicRecovery = false
-	if err := loxa.Configure(cfg); err != nil {
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
@@ -92,7 +92,7 @@ func TestRunEventPanicRecoveryDisabledRepanics(t *testing.T) {
 			t.Fatalf("expected panic to propagate when PanicRecovery=false")
 		}
 	}()
-	_ = loxa.RunEvent(context.Background(), loxa.Params{Event: "run.panic"}, func(context.Context) error {
+	_ = loza.RunEvent(context.Background(), loza.Params{Event: "run.panic"}, func(context.Context) error {
 		panic("panic value")
 	})
 }

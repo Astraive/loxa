@@ -1,8 +1,8 @@
 [package]
-name = "loxa-quickstart-rs"
+name = "loza-quickstart-rs"
 version = "0.2.6"
 edition = "2021"
 
 [dependencies]
-loxa = { path = "../../../sdks/rs" }
+loza = { path = "../../../sdks/rs" }
 tokio = { version = "1", features = ["full"] }

@@ -3,7 +3,7 @@ package fiber
 import (
 	"fmt"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 	fiberpkg "github.com/gofiber/fiber/v2"
 )
 
@@ -29,7 +29,7 @@ func MiddlewareWithConfig(cfg Config) fiberpkg.Handler {
 	}
 
 	return func(c *fiberpkg.Ctx) (err error) {
-		ctx := loxa.StartEvent(c.UserContext(), loxa.Params{
+		ctx := loza.StartEvent(c.UserContext(), loza.Params{
 			Event:  eventName,
 			Method: c.Method(),
 			Path:   c.Path(),
@@ -38,15 +38,15 @@ func MiddlewareWithConfig(cfg Config) fiberpkg.Handler {
 
 		defer func() {
 			if rec := recover(); rec != nil {
-				if !loxa.PanicRecoveryEnabled() {
+				if !loza.PanicRecoveryEnabled() {
 					panic(rec)
 				}
 				if c.Response().StatusCode() < fiberpkg.StatusBadRequest {
 					c.Status(fiberpkg.StatusInternalServerError)
 				}
 				err = panicErr{value: rec}
-				loxa.FinishError(ctx, err, loxa.Int("status_code", c.Response().StatusCode()))
-				_ = loxa.Emit(ctx)
+				loza.FinishError(ctx, err, loza.Int("status_code", c.Response().StatusCode()))
+				_ = loza.Emit(ctx)
 			}
 		}()
 
@@ -56,14 +56,14 @@ func MiddlewareWithConfig(cfg Config) fiberpkg.Handler {
 			route = c.Route().Path
 		}
 		if route != "" {
-			loxa.Enrich(ctx, loxa.String("route", route))
+			loza.Enrich(ctx, loza.String("route", route))
 		}
 		if err != nil {
-			loxa.FinishError(ctx, err, loxa.Int("status_code", c.Response().StatusCode()))
+			loza.FinishError(ctx, err, loza.Int("status_code", c.Response().StatusCode()))
 		} else {
-			loxa.Finish(ctx, "success", loxa.Int("status_code", c.Response().StatusCode()))
+			loza.Finish(ctx, "success", loza.Int("status_code", c.Response().StatusCode()))
 		}
-		_ = loxa.Emit(ctx)
+		_ = loza.Emit(ctx)
 		return err
 	}
 }

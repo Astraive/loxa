@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: loxa-collector-config
+  name: loza-collector-config
   labels:
-    app.kubernetes.io/name: loxa-collector
+    app.kubernetes.io/name: loza-collector
     app.kubernetes.io/component: collector
 data:
   config.yaml: |
@@ -47,10 +47,10 @@ data:
 
     storage:
       primary: duckdb
-      encryption_key_env: LOXA_STORAGE_ENCRYPTION_KEY
+      encryption_key_env: LOZA_STORAGE_ENCRYPTION_KEY
 
     duckdb:
-      path: /data/loxa.db
+      path: /data/loza.db
       store_raw: true
       checkpoint_on_shutdown: true
 

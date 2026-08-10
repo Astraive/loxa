@@ -106,7 +106,7 @@ def main():
 
     if not check_collector_available():
         print("SKIP: Collector not running at localhost:9308")
-        print("Start the collector first: cd collector && go run ./cmd/loxa-collector")
+        print("Start the collector first: cd collector && go run ./cmd/loza-collector")
         sys.exit(0)
 
     print("Collector is available. Running equivalence test...")

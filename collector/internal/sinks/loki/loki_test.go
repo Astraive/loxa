@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	collectorevent "github.com/astraive/loxa/collector/internal/event"
+	collectorevent "github.com/astraive/loza/collector/internal/event"
 )
 
 func TestNewRejectsInvalidURL(t *testing.T) {

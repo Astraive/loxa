@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""LOXA SDK Comprehensive Conformance Verification Suite.
+"""LOZA SDK Comprehensive Conformance Verification Suite.
 
 Runs 14 main check categories with expanded subchecks against the Python SDK.
 Each subcheck passes/fails independently with detailed output.
@@ -21,17 +21,17 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-LOXA_SPEC_ROOT = Path(__file__).resolve().parents[1]
-WORKSPACE_ROOT = LOXA_SPEC_ROOT.parent
-LOXA_PY_ROOT = WORKSPACE_ROOT / "sdks" / "py"
+LOZA_SPEC_ROOT = Path(__file__).resolve().parents[1]
+WORKSPACE_ROOT = LOZA_SPEC_ROOT.parent
+LOZA_PY_ROOT = WORKSPACE_ROOT / "sdks" / "py"
 
-# Add loxa-py to path and set CWD so the SDK can find its defaults file
-sys.path.insert(0, str(LOXA_PY_ROOT / "src"))
-os.chdir(LOXA_PY_ROOT)
+# Add loza-py to path and set CWD so the SDK can find its defaults file
+sys.path.insert(0, str(LOZA_PY_ROOT / "src"))
+os.chdir(LOZA_PY_ROOT)
 
-import loxa
-from loxa.generated import spec_contract
-from loxa_contract import CONTRACT as LOXA_CONTRACT
+import loza
+from loza.generated import spec_contract
+from loza_contract import CONTRACT as LOZA_CONTRACT
 
 
 # ── Data Structures ──────────────────────────────────────────────────────────
@@ -67,21 +67,21 @@ class MainCheck:
 
 def _make_logger(service: str = "test-svc", sink=None, sampler=None):
     """Create a logger with MemorySink."""
-    cfg = loxa.Test(service)
+    cfg = loza.Test(service)
     if sink:
         cfg = cfg.with_sink(sink)
     if sampler:
         cfg = cfg.with_sampler(sampler)
-    logger = loxa.New(cfg)
+    logger = loza.New(cfg)
     return logger
 
 
 def _make_event_and_emit(service: str = "test-svc", event: str = "test.event", kind: str = "event", **kw):
     """Create event, finish, emit, return (ctx, payload_dict)."""
     logger = _make_logger(service)
-    ctx = logger.start_event(loxa.Params(event=event, kind=kind, **kw))
-    loxa.Finish(ctx, "success")
-    raw = loxa.Emit(ctx)
+    ctx = logger.start_event(loza.Params(event=event, kind=kind, **kw))
+    loza.Finish(ctx, "success")
+    raw = loza.Emit(ctx)
     return ctx, json.loads(raw)
 
 
@@ -104,7 +104,7 @@ def _check(cat_id: str, num: int, desc: str, fn) -> Subcheck:
 
 def _load_fixture_response(name: str) -> dict | None:
     """Load a collector response fixture, unwrapping the wrapper structure."""
-    fixture = LOXA_SPEC_ROOT / "fixtures" / "collector-responses" / f"{name}.json"
+    fixture = LOZA_SPEC_ROOT / "fixtures" / "collector-responses" / f"{name}.json"
     if not fixture.exists():
         return None
     data = json.loads(fixture.read_text())
@@ -118,73 +118,73 @@ def check_lifecycle() -> MainCheck:
 
     def c01(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         assert ctx.event_state == "created", f"expected created, got {ctx.event_state}"
 
     def c02(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         assert ctx.event_id.startswith("evt_"), f"expected evt_ prefix, got {ctx.event_id}"
         assert len(ctx.event_id) > 10, f"event_id too short: {ctx.event_id}"
 
     def c03(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         assert isinstance(ctx.started_at, datetime), f"expected datetime, got {type(ctx.started_at)}"
 
     def c04(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Enrich(ctx, loxa.String("k", "v"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Enrich(ctx, loza.String("k", "v"))
         assert ctx.event_state == "active", f"expected active, got {ctx.event_state}"
 
     def c05(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Finish(ctx, "success")
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Finish(ctx, "success")
         assert ctx.event_state == "finished", f"expected finished, got {ctx.event_state}"
 
     def c06(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Finish(ctx, "success")
-        payload = json.loads(loxa.Emit(ctx))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Finish(ctx, "success")
+        payload = json.loads(loza.Emit(ctx))
         assert "event_state" in payload, "event_state not in payload"
 
     def c07(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Finish(ctx, "success")
-        r1 = loxa.Emit(ctx)
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Finish(ctx, "success")
+        r1 = loza.Emit(ctx)
         # Some SDKs raise on duplicate emit, others allow it
         try:
-            r2 = loxa.Emit(ctx)
+            r2 = loza.Emit(ctx)
             # If no error, verify the payload is still valid
             assert len(r2) > 0, "second emit returned empty"
-        except (loxa.DuplicateEmitError, loxa.EventClosedError, loxa.EventAlreadyFinishedError):
+        except (loza.DuplicateEmitError, loza.EventClosedError, loza.EventAlreadyFinishedError):
             pass  # Expected behavior in some SDKs
 
     def c08(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Finish(ctx, "success")
-        loxa.Emit(ctx)
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Finish(ctx, "success")
+        loza.Emit(ctx)
         # Some SDKs raise on enrich after emit, others allow it
         try:
-            loxa.Enrich(ctx, loxa.String("k", "v"))
-        except (loxa.EventClosedError, loxa.EventAlreadyFinishedError):
+            loza.Enrich(ctx, loza.String("k", "v"))
+        except (loza.EventClosedError, loza.EventAlreadyFinishedError):
             pass  # Expected behavior in some SDKs
 
     def c09(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Checkpoint(ctx, "step1", loxa.String("k", "v"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Checkpoint(ctx, "step1", loza.String("k", "v"))
         assert len(ctx.checkpoints) == 1, f"expected 1 checkpoint, got {len(ctx.checkpoints)}"
         assert ctx.checkpoints[0]["name"] == "step1", f"expected step1, got {ctx.checkpoints[0].get('name')}"
 
     def c10(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         p1 = ctx.start_process("s1")
         p1.finish()
         p2 = ctx.start_process("s2")
@@ -195,7 +195,7 @@ def check_lifecycle() -> MainCheck:
 
     def c11(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         t = ctx.start_timer("t1")
         time.sleep(0.01)
         t.stop()
@@ -203,62 +203,62 @@ def check_lifecycle() -> MainCheck:
         assert ctx.timers[0]["duration_ms"] >= 0, f"expected >= 0, got {ctx.timers[0]['duration_ms']}"
 
     def c12(sc):
-        sw = loxa.Stopwatch()
+        sw = loza.Stopwatch()
         time.sleep(0.01)
         assert sw.elapsed().total_seconds() > 0, f"expected > 0, got {sw.elapsed().total_seconds()}"
 
     def c13(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Drop(ctx, "timed_out")
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Drop(ctx, "timed_out")
         # Drop finishes the event; verify the state
         assert ctx.event_state in ("emitted", "finished"), f"Drop expected emitted/finished, got {ctx.event_state}"
 
     def c14(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Cancel(ctx, "user_requested")
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Cancel(ctx, "user_requested")
         # Cancel finishes the event; verify the state
         assert ctx.event_state in ("emitted", "finished"), f"Cancel expected emitted/finished, got {ctx.event_state}"
 
     def c15(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Abandon(ctx, "no_response")
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Abandon(ctx, "no_response")
         # Abandon finishes the event with outcome="abandoned"
-        payload = json.loads(loxa.Emit(ctx))
+        payload = json.loads(loza.Emit(ctx))
         assert payload.get("outcome") in ("abandoned", "success"), f"Abandon outcome unexpected: {payload.get('outcome')}"
 
     def c16(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Retry(ctx)
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Retry(ctx)
         # Retry finishes the event automatically; verify it was emitted
         assert ctx.event_state in ("finished", "emitted"), f"expected finished/emitted, got {ctx.event_state}"
 
     def c17(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Partial(ctx, "timeout")
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Partial(ctx, "timeout")
         # Partial finishes event; verify outcome via emit
-        payload = json.loads(loxa.Emit(ctx))
+        payload = json.loads(loza.Emit(ctx))
         assert payload.get("partial") is True or payload.get("outcome") == "partial", f"Partial not reflected: {payload}"
 
     def c18(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        child = loxa.clone_event(ctx)
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        child = loza.clone_event(ctx)
         assert child is not None, "clone_event returned None"
         # clone_event returns a shallow copy; verify it has required fields
         assert hasattr(child, "event_id"), "cloned event missing event_id"
 
     def c19(sc):
         logger = _make_logger()
-        parent = logger.start_event(loxa.Params(event="parent", kind="event"))
-        child = logger.start_event(loxa.Params(event="child", kind="event"))
-        loxa.LinkEvent(parent, child)
+        parent = logger.start_event(loza.Params(event="parent", kind="event"))
+        child = logger.start_event(loza.Params(event="child", kind="event"))
+        loza.LinkEvent(parent, child)
         # Verify parent has link reference (could be on attrs or links field)
-        payload = json.loads(loxa.Emit(parent))
+        payload = json.loads(loza.Emit(parent))
         assert "links" in payload or child.event_id in str(payload), f"link not found in payload"
 
     mc.subchecks = [
@@ -300,11 +300,11 @@ def check_fields() -> MainCheck:
 
     def c03(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         original_id = ctx.event_id
-        loxa.Enrich(ctx, loxa.String("event_id", "override"))
-        loxa.Finish(ctx, "success")
-        payload = json.loads(loxa.Emit(ctx))
+        loza.Enrich(ctx, loza.String("event_id", "override"))
+        loza.Finish(ctx, "success")
+        payload = json.loads(loza.Emit(ctx))
         assert payload["event_id"] == original_id, f"event_id was overridden: {payload['event_id']}"
 
     def c04(sc):
@@ -321,28 +321,28 @@ def check_fields() -> MainCheck:
 
     def c07(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         p = ctx.start_process("step1")
         p.finish(status_code=200)
         assert ctx.processes[0]["status_code"] == 200, f"expected 200, got {ctx.processes[0].get('status_code')}"
 
     def c08(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         g = ctx.start_group("phase1")
         g.finish(status_code=402)
         assert ctx.groups[0]["status_code"] == 402, f"expected 402, got {ctx.groups[0].get('status_code')}"
 
     def c09(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         t = ctx.start_timer("t1")
         t.stop(status_code=200)
         assert ctx.timers[0]["status_code"] == 200, f"expected 200, got {ctx.timers[0].get('status_code')}"
 
     def c10(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         p = ctx.start_process("step1")
         time.sleep(0.01)
         p.finish(status_code=302, gateway="stripe")
@@ -351,7 +351,7 @@ def check_fields() -> MainCheck:
 
     def c11(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         p = ctx.start_process("step1")
         p.finish_error(ValueError("boom"), status_code=500)
         assert ctx.processes[0]["error_message"] == "boom", f"expected boom, got {ctx.processes[0].get('error_message')}"
@@ -428,15 +428,15 @@ def check_wire_format() -> MainCheck:
 
     def c07(sc):
         env = spec_contract.build_ingest_envelope(
-            [{"event": "t"}], "loxa-py", "0.2.0", "test-svc"
+            [{"event": "t"}], "loza-py", "0.2.0", "test-svc"
         )
         assert env["api_version"] == "v1", f"expected v1, got {env.get('api_version')}"
-        assert env["source"]["sdk"] == "loxa-py", f"expected loxa-py, got {env['source'].get('sdk')}"
+        assert env["source"]["sdk"] == "loza-py", f"expected loza-py, got {env['source'].get('sdk')}"
         assert len(env["events"]) == 1, f"expected 1 event, got {len(env['events'])}"
 
     def c08(sc):
         env = spec_contract.build_ingest_envelope(
-            [{"event": "t"}], "loxa-py", "0.2.0", "test-svc"
+            [{"event": "t"}], "loza-py", "0.2.0", "test-svc"
         )
         assert "api_version" in env, "missing api_version"
         assert "source" in env, "missing source"
@@ -473,7 +473,7 @@ def check_wire_format() -> MainCheck:
 
     def c13(sc):
         # Check validation modes via the contract
-        modes = LOXA_CONTRACT.get("validation_modes", {})
+        modes = LOZA_CONTRACT.get("validation_modes", {})
         if not modes:
             sc.detail = "validation_modes not in contract"
             return
@@ -504,55 +504,55 @@ def check_sampling() -> MainCheck:
     mc = MainCheck("SAMPLING", "Sampling Behavior")
 
     def c01(sc):
-        sampler = loxa.SampleAll()
+        sampler = loza.SampleAll()
         assert sampler({}) is True, "SampleAll should always return True"
 
     def c02(sc):
-        sampler = loxa.SampleNone()
+        sampler = loza.SampleNone()
         assert sampler({}) is False, "SampleNone should always return False"
 
     def c03(sc):
-        sampler = loxa.SampleRandom(1.0)
+        sampler = loza.SampleRandom(1.0)
         results = [sampler({}) for _ in range(100)]
         assert all(results), "SampleRandom(1.0) should always return True"
 
     def c04(sc):
-        sampler = loxa.SampleRandom(0.0)
+        sampler = loza.SampleRandom(0.0)
         results = [sampler({}) for _ in range(100)]
         assert not any(results), "SampleRandom(0.0) should always return False"
 
     def c05(sc):
-        sampler = loxa.SampleErrors()
+        sampler = loza.SampleErrors()
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Finish(ctx, "error")
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Finish(ctx, "error")
         assert sampler(ctx) is True, "should sample errors"
 
     def c06(sc):
-        sampler = loxa.SampleErrors()
+        sampler = loza.SampleErrors()
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Finish(ctx, "success")
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Finish(ctx, "success")
         assert sampler(ctx) is False, "should not sample success"
 
     def c07(sc):
-        sampler = loxa.SampleStatusCodes(500, 502, 503)
+        sampler = loza.SampleStatusCodes(500, 502, 503)
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event", status_code=500))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event", status_code=500))
         assert sampler(ctx) is True, "should match 500"
 
     def c08(sc):
-        sampler = loxa.SampleRoutes("/api/test")
+        sampler = loza.SampleRoutes("/api/test")
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event", path="/api/test"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event", path="/api/test"))
         assert sampler(ctx) is True, "should match path"
 
     def c09(sc):
-        sampler = loxa.AnySampler(loxa.SampleNone(), loxa.SampleAll())
+        sampler = loza.AnySampler(loza.SampleNone(), loza.SampleAll())
         assert sampler({}) is True, "AnySampler with SampleAll should return True"
 
     def c10(sc):
-        sampler = loxa.AllSampler(loxa.SampleAll(), loxa.SampleNone())
+        sampler = loza.AllSampler(loza.SampleAll(), loza.SampleNone())
         assert sampler({}) is False, "AllSampler with SampleNone should return False"
 
     mc.subchecks = [
@@ -576,45 +576,45 @@ def check_redaction() -> MainCheck:
     mc = MainCheck("REDACTION", "PII Redaction")
 
     def c01(sc):
-        r = loxa.DefaultRedactor()
+        r = loza.DefaultRedactor()
         result = r({"password": "secret123"})
         assert result["password"] == "[REDACTED]", f"expected [REDACTED], got {result['password']}"
 
     def c02(sc):
-        r = loxa.DefaultRedactor()
+        r = loza.DefaultRedactor()
         result = r({"token": "abc123"})
         assert result["token"] == "[REDACTED]", f"expected [REDACTED], got {result['token']}"
 
     def c03(sc):
-        r = loxa.DefaultRedactor()
+        r = loza.DefaultRedactor()
         result = r({"api_key": "key123"})
         assert result["api_key"] == "[REDACTED]", f"expected [REDACTED], got {result['api_key']}"
 
     def c04(sc):
-        r = loxa.DefaultRedactor()
+        r = loza.DefaultRedactor()
         result = r({"user": "alice"})
         assert result["user"] == "alice", f"expected alice, got {result['user']}"
 
     def c05(sc):
-        r = loxa.RedactKeys("ssn")
+        r = loza.RedactKeys("ssn")
         result = r({"ssn": "123-45-6789"})
         assert result["ssn"] == "[REDACTED]", f"expected [REDACTED], got {result['ssn']}"
 
     def c06(sc):
-        r = loxa.HashKeys("secret")
+        r = loza.HashKeys("secret")
         result = r({"secret": "value"})
         # HashKeys uses sha256 prefix
         assert "sha256:" in result["secret"] or len(result["secret"]) == 64, f"expected hash, got {result['secret']}"
         assert result["secret"] != "value", "should be hashed, not original"
 
     def c07(sc):
-        r = loxa.DropKeys("secret")
+        r = loza.DropKeys("secret")
         result = r({"secret": "val", "keep": "yes"})
         assert "secret" not in result, "secret should be dropped"
         assert result["keep"] == "yes", "keep should be preserved"
 
     def c08(sc):
-        r = loxa.ComposeRedactors(loxa.RedactKeys("a"), loxa.RedactKeys("b"))
+        r = loza.ComposeRedactors(loza.RedactKeys("a"), loza.RedactKeys("b"))
         result = r({"a": "x", "b": "y", "c": "z"})
         assert result["a"] == "[REDACTED]", "a should be redacted"
         assert result["b"] == "[REDACTED]", "b should be redacted"
@@ -640,38 +640,38 @@ def check_delivery() -> MainCheck:
 
     def c01(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Finish(ctx, "success")
-        raw = loxa.Emit(ctx)
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Finish(ctx, "success")
+        raw = loza.Emit(ctx)
         assert len(raw) > 0, "emit() returned empty string"
 
     def c02(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Finish(ctx, "success")
-        raw = loxa.Emit(ctx)
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Finish(ctx, "success")
+        raw = loza.Emit(ctx)
         parsed = json.loads(raw)
         assert isinstance(parsed, dict), f"expected dict, got {type(parsed)}"
 
     def c03(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Finish(ctx, "success")
-        r1 = loxa.Emit(ctx)
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Finish(ctx, "success")
+        r1 = loza.Emit(ctx)
         assert len(r1) > 0, "first emit returned empty"
         # Python SDK allows duplicate emit (no error) - just verify it works
         try:
-            r2 = loxa.Emit(ctx)
+            r2 = loza.Emit(ctx)
             assert len(r2) > 0, "second emit returned empty"
-        except (loxa.DuplicateEmitError, loxa.EventClosedError, loxa.EventAlreadyFinishedError):
+        except (loza.DuplicateEmitError, loza.EventClosedError, loza.EventAlreadyFinishedError):
             pass  # Also acceptable
 
     def c04(sc):
-        sink = loxa.MemorySink()
-        logger = _make_logger(sink=sink, sampler=loxa.SampleNone())
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Finish(ctx, "success")
-        loxa.Emit(ctx)
+        sink = loza.MemorySink()
+        logger = _make_logger(sink=sink, sampler=loza.SampleNone())
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Finish(ctx, "success")
+        loza.Emit(ctx)
         # With SampleNone, the event should still be emitted (sampling is at sink level)
         # The event is still produced, just not delivered to sampled-out sinks
 
@@ -709,35 +709,35 @@ def check_config() -> MainCheck:
     mc = MainCheck("CONFIG", "Configuration")
 
     def c01(sc):
-        cfg = loxa.Test("test-svc")
+        cfg = loza.Test("test-svc")
         assert cfg.environment == "test", f"expected test, got {cfg.environment}"
 
     def c02(sc):
-        cfg = loxa.Dev("test-svc")
+        cfg = loza.Dev("test-svc")
         assert cfg.environment == "development", f"expected development, got {cfg.environment}"
 
     def c03(sc):
-        cfg = loxa.Production("test-svc")
+        cfg = loza.Production("test-svc")
         assert cfg.strict is True, f"expected strict=True, got {cfg.strict}"
 
     def c04(sc):
-        cfg = loxa.Production("test-svc")
+        cfg = loza.Production("test-svc")
         assert cfg.duplicate_policy == "canonical_wins", f"expected canonical_wins, got {cfg.duplicate_policy}"
 
     def c05(sc):
-        cfg = loxa.Test("test-svc").with_service("my-svc")
+        cfg = loza.Test("test-svc").with_service("my-svc")
         assert cfg.service == "my-svc", f"expected my-svc, got {cfg.service}"
 
     def c06(sc):
-        cfg = loxa.Test("test-svc").with_collector_endpoint("http://x:9312")
+        cfg = loza.Test("test-svc").with_collector_endpoint("http://x:9312")
         assert cfg.collector_endpoint == "http://x:9312", f"expected http://x:9312, got {cfg.collector_endpoint}"
 
     def c07(sc):
-        cfg = loxa.Test("test-svc").with_version("2.0.0")
+        cfg = loza.Test("test-svc").with_version("2.0.0")
         assert cfg.version == "2.0.0", f"expected 2.0.0, got {cfg.version}"
 
     def c08(sc):
-        cfg = loxa.Test("test-svc").with_environment("staging")
+        cfg = loza.Test("test-svc").with_environment("staging")
         assert cfg.environment == "staging", f"expected staging, got {cfg.environment}"
 
     mc.subchecks = [
@@ -767,39 +767,39 @@ def check_schemas() -> MainCheck:
         assert "kind" in payload, "missing kind"
 
     def c02(sc):
-        schema = loxa.DefaultSchema()
+        schema = loza.DefaultSchema()
         assert schema is not None, "DefaultSchema() returned None"
 
     def c03(sc):
-        schema = loxa.FlatSchema()
+        schema = loza.FlatSchema()
         assert schema is not None, "FlatSchema() returned None"
 
     def c04(sc):
-        schema = loxa.NestedSchema()
+        schema = loza.NestedSchema()
         assert schema is not None, "NestedSchema() returned None"
 
     def c05(sc):
-        schema = loxa.ECSchema()
+        schema = loza.ECSchema()
         assert schema is not None, "ECSchema() returned None"
 
     def c06(sc):
-        schema = loxa.OTelLogSchema()
+        schema = loza.OTelLogSchema()
         assert schema is not None, "OTelLogSchema() returned None"
 
     def c07(sc):
-        schema = loxa.DatadogSchema()
+        schema = loza.DatadogSchema()
         assert schema is not None, "DatadogSchema() returned None"
 
     def c08(sc):
-        schema = loxa.CustomSchema(lambda v: {"custom": True})
+        schema = loza.CustomSchema(lambda v: {"custom": True})
         assert schema is not None, "CustomSchema() returned None"
 
     def c09(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
-        loxa.Enrich(ctx, loxa.String("a.b.c", 42))
-        loxa.Finish(ctx, "success")
-        payload = json.loads(loxa.Emit(ctx))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
+        loza.Enrich(ctx, loza.String("a.b.c", 42))
+        loza.Finish(ctx, "success")
+        payload = json.loads(loza.Emit(ctx))
         # Dot keys should be preserved or expanded
         attrs = payload.get("attrs", {})
         assert "a.b.c" in attrs or "a" in attrs, f"dot-key not found: {list(attrs.keys())}"
@@ -824,25 +824,25 @@ def check_cortex() -> MainCheck:
     mc = MainCheck("CORTEX", "Cortex Integration")
 
     def c01(sc):
-        client = loxa.CortexClient("http://localhost:9312")
+        client = loza.CortexClient("http://localhost:9312")
         assert client is not None, "CortexClient instantiation failed"
 
     def c02(sc):
-        ctx = loxa.IncidentContext(incident_id="inc_1", timestamp="2026-01-01T00:00:00Z")
+        ctx = loza.IncidentContext(incident_id="inc_1", timestamp="2026-01-01T00:00:00Z")
         assert ctx.incident_id == "inc_1", f"expected inc_1, got {ctx.incident_id}"
 
     def c03(sc):
-        gv = loxa.GraphView(nodes=[{"id": "n1"}], edges=[{"from": "n1", "to": "n2"}])
+        gv = loza.GraphView(nodes=[{"id": "n1"}], edges=[{"from": "n1", "to": "n2"}])
         assert len(gv.nodes) == 1, f"expected 1 node, got {len(gv.nodes)}"
         assert len(gv.edges) == 1, f"expected 1 edge, got {len(gv.edges)}"
 
     def c04(sc):
-        r = loxa.Remediation(remediation_id="r1", incident_id="inc_1", action="scale_up")
+        r = loza.Remediation(remediation_id="r1", incident_id="inc_1", action="scale_up")
         assert r.incident_id == "inc_1", f"expected inc_1, got {r.incident_id}"
         assert r.action == "scale_up", f"expected scale_up, got {r.action}"
 
     def c05(sc):
-        f = loxa.RemediationFeedback(feedback_id="f1", remediation_id="r1", incident_id="inc_1", outcome="success")
+        f = loza.RemediationFeedback(feedback_id="f1", remediation_id="r1", incident_id="inc_1", outcome="success")
         assert f.outcome == "success", f"expected success, got {f.outcome}"
 
     mc.subchecks = [
@@ -894,7 +894,7 @@ def check_collector() -> MainCheck:
         assert resp.status in ("rejected", "partial"), f"expected rejected/partial, got {resp.status}"
 
     def c05(sc):
-        fixture = LOXA_SPEC_ROOT / "fixtures" / "ingest" / "single_event_json.json"
+        fixture = LOZA_SPEC_ROOT / "fixtures" / "ingest" / "single_event_json.json"
         if not fixture.exists():
             sc.detail = f"fixture not found: {fixture}"
             return
@@ -906,7 +906,7 @@ def check_collector() -> MainCheck:
         assert not missing, f"missing required event fields: {missing}"
 
     def c06(sc):
-        fixture = LOXA_SPEC_ROOT / "fixtures" / "ingest" / "wrapped_batch_json.json"
+        fixture = LOZA_SPEC_ROOT / "fixtures" / "ingest" / "wrapped_batch_json.json"
         if not fixture.exists():
             sc.detail = f"fixture not found: {fixture}"
             return
@@ -932,68 +932,68 @@ def check_domain_helpers() -> MainCheck:
     mc = MainCheck("DOMAIN", "Domain Helpers")
 
     def c01(sc):
-        money = loxa.Money("cart.total", 2999, "USD")
+        money = loza.Money("cart.total", 2999, "USD")
         assert money is not None, "Money() returned None"
 
     def c02(sc):
-        pct = loxa.Percent("tax.rate", 8.5)
+        pct = loza.Percent("tax.rate", 8.5)
         assert pct is not None, "Percent() returned None"
 
     def c03(sc):
-        hs = loxa.HTTPStatus("http.status_code", 200)
+        hs = loza.HTTPStatus("http.status_code", 200)
         assert hs is not None, "HTTPStatus(key, value) returned None"
 
     def c04(sc):
-        scode = loxa.StatusCode("status_code", 404)
+        scode = loza.StatusCode("status_code", 404)
         assert scode is not None, "StatusCode(key, value) returned None"
 
     def c05(sc):
-        ec = loxa.ErrorCode("rate_limited")
+        ec = loza.ErrorCode("rate_limited")
         assert ec is not None, "ErrorCode() returned None"
 
     def c06(sc):
-        b = loxa.Bucket("user.ltv", "high")
+        b = loza.Bucket("user.ltv", "high")
         assert b is not None, "Bucket() returned None"
 
     def c07(sc):
-        t = loxa.Tags("t1", "t2")
+        t = loza.Tags("t1", "t2")
         assert t is not None, "Tags() returned None"
 
     def c08(sc):
-        m = loxa.Masked("cc", "411111111111")
+        m = loza.Masked("cc", "411111111111")
         assert m is not None, "Masked() returned None"
 
     def c09(sc):
-        u = loxa.URL("https://example.com?secret=1")
+        u = loza.URL("https://example.com?secret=1")
         assert u is not None, "URL() returned None"
 
     def c10(sc):
-        for fn in (loxa.PaymentID, loxa.SubscriptionID, loxa.InvoiceID, loxa.JobID, loxa.MessageID, loxa.CorrelationID):
+        for fn in (loza.PaymentID, loza.SubscriptionID, loza.InvoiceID, loza.JobID, loza.MessageID, loza.CorrelationID):
             result = fn("id_123")
             assert result is not None, f"{fn.__name__}() returned None"
 
     def c11(sc):
-        for fn in (loxa.CheckoutCartItemCount, loxa.CheckoutCartTotal, loxa.CheckoutPaymentMethod, loxa.CheckoutStatus):
+        for fn in (loza.CheckoutCartItemCount, loza.CheckoutCartTotal, loza.CheckoutPaymentMethod, loza.CheckoutStatus):
             result = fn("val")
             assert result is not None, f"{fn.__name__}() returned None"
 
     def c12(sc):
-        for fn in (loxa.PaymentProvider, loxa.PaymentMethod, loxa.PaymentIntentID, loxa.PaymentFailureCode, loxa.PaymentRetryAttempt):
+        for fn in (loza.PaymentProvider, loza.PaymentMethod, loza.PaymentIntentID, loza.PaymentFailureCode, loza.PaymentRetryAttempt):
             result = fn("val")
             assert result is not None, f"{fn.__name__}() returned None"
 
     def c13(sc):
-        for fn in (loxa.BillingPlan, loxa.BillingSubscriptionID, loxa.BillingInvoiceID, loxa.BillingAmount, loxa.BillingInterval):
+        for fn in (loza.BillingPlan, loza.BillingSubscriptionID, loza.BillingInvoiceID, loza.BillingAmount, loza.BillingInterval):
             result = fn("val")
             assert result is not None, f"{fn.__name__}() returned None"
 
     def c14(sc):
-        for fn in (loxa.AgentName, loxa.AgentProvider, loxa.AgentModel, loxa.AgentRunType, loxa.AgentToolName, loxa.AgentToolOutcome, loxa.AgentInputTokens, loxa.AgentOutputTokens, loxa.AgentCost):
+        for fn in (loza.AgentName, loza.AgentProvider, loza.AgentModel, loza.AgentRunType, loza.AgentToolName, loza.AgentToolOutcome, loza.AgentInputTokens, loza.AgentOutputTokens, loza.AgentCost):
             result = fn("val")
             assert result is not None, f"{fn.__name__}() returned None"
 
     def c15(sc):
-        for fn in (loxa.RAGIndex, loxa.RAGEmbeddingModel, loxa.RAGChunksRetrieved, loxa.RAGTopScore, loxa.RAGQueryHash, loxa.RAGCitationCount, loxa.RAGRetrievalLatency):
+        for fn in (loza.RAGIndex, loza.RAGEmbeddingModel, loza.RAGChunksRetrieved, loza.RAGTopScore, loza.RAGQueryHash, loza.RAGCitationCount, loza.RAGRetrievalLatency):
             result = fn("val")
             assert result is not None, f"{fn.__name__}() returned None"
 
@@ -1024,52 +1024,52 @@ def check_logging_helpers() -> MainCheck:
 
     def c01(sc):
         logger = _make_logger()
-        result = loxa.Notice("test notice message")
+        result = loza.Notice("test notice message")
         assert isinstance(result, str), f"notice() should return str, got {type(result)}"
 
     def c02(sc):
         logger = _make_logger()
-        result = loxa.Event("test.event.name")
+        result = loza.Event("test.event.name")
         assert isinstance(result, str), f"event() should return str, got {type(result)}"
 
     def c03(sc):
         logger = _make_logger()
-        result = loxa.Track("test.track")
+        result = loza.Track("test.track")
         assert isinstance(result, str), f"track() should return str, got {type(result)}"
 
     def c04(sc):
         logger = _make_logger()
-        result = loxa.Audit("test.audit")
+        result = loza.Audit("test.audit")
         assert isinstance(result, str), f"audit() should return str, got {type(result)}"
 
     def c05(sc):
         logger = _make_logger()
-        result = loxa.Security("test.security")
+        result = loza.Security("test.security")
         assert isinstance(result, str), f"security() should return str, got {type(result)}"
 
     def c06(sc):
         logger = _make_logger()
-        result = loxa.Metric("test.metric", 42)
+        result = loza.Metric("test.metric", 42)
         assert isinstance(result, str), f"metric() should return str, got {type(result)}"
 
     def c07(sc):
         logger = _make_logger()
-        result = loxa.Count("test.count", 1)
+        result = loza.Count("test.count", 1)
         assert isinstance(result, str), f"count() should return str, got {type(result)}"
 
     def c08(sc):
         logger = _make_logger()
-        result = loxa.Gauge("test.gauge", 3.14)
+        result = loza.Gauge("test.gauge", 3.14)
         assert isinstance(result, str), f"gauge() should return str, got {type(result)}"
 
     def c09(sc):
         logger = _make_logger()
-        result = loxa.Histogram("test.histogram", 100.0)
+        result = loza.Histogram("test.histogram", 100.0)
         assert isinstance(result, str), f"histogram() should return str, got {type(result)}"
 
     def c10(sc):
         logger = _make_logger()
-        result = loxa.Breadcrumb("test.breadcrumb")
+        result = loza.Breadcrumb("test.breadcrumb")
         assert isinstance(result, str), f"breadcrumb() should return str, got {type(result)}"
 
     mc.subchecks = [
@@ -1094,7 +1094,7 @@ def check_timing() -> MainCheck:
 
     def c01(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         for i in range(3):
             p = ctx.start_process(f"step{i}")
             p.finish()
@@ -1105,7 +1105,7 @@ def check_timing() -> MainCheck:
 
     def c02(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         p = ctx.start_process("step1")
         time.sleep(0.01)
         p.finish()
@@ -1113,7 +1113,7 @@ def check_timing() -> MainCheck:
 
     def c03(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         p = ctx.start_process("step1")
         time.sleep(0.01)
         p.finish()
@@ -1122,7 +1122,7 @@ def check_timing() -> MainCheck:
 
     def c04(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         t = ctx.start_timer("t1")
         time.sleep(0.01)
         t.stop()
@@ -1130,7 +1130,7 @@ def check_timing() -> MainCheck:
 
     def c05(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         g = ctx.start_group("phase1")
         time.sleep(0.01)
         g.finish()
@@ -1138,7 +1138,7 @@ def check_timing() -> MainCheck:
 
     def c06(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         p = ctx.start_process("step1")
         time.sleep(0.01)
         p.finish(status_code=200, gateway="stripe")
@@ -1147,7 +1147,7 @@ def check_timing() -> MainCheck:
 
     def c07(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         p = ctx.start_process("step1")
         p.finish_error(ValueError("boom"), status_code=500)
         assert ctx.processes[0]["error_message"] == "boom"
@@ -1155,20 +1155,20 @@ def check_timing() -> MainCheck:
 
     def c08(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         t = ctx.start_timer("t1")
         t.stop(status_code=200)
         assert ctx.timers[0]["status_code"] == 200
 
     def c09(sc):
         logger = _make_logger()
-        ctx = logger.start_event(loxa.Params(event="t.e", kind="event"))
+        ctx = logger.start_event(loza.Params(event="t.e", kind="event"))
         g = ctx.start_group("phase1")
         g.finish(status_code=402)
         assert ctx.groups[0]["status_code"] == 402
 
     def c10(sc):
-        sw = loxa.Stopwatch()
+        sw = loza.Stopwatch()
         time.sleep(0.01)
         elapsed = sw.elapsed()
         assert elapsed.total_seconds() >= 0.005, f"expected >= 5ms, got {elapsed.total_seconds()*1000:.1f}ms"
@@ -1196,95 +1196,95 @@ def check_parity() -> MainCheck:
     def c01(sc):
         for name in ["StartEvent", "Finish", "Emit", "Enrich", "Append", "Set", "Merge",
                       "Delete", "Get", "GetGroup", "Checkpoint", "Flush", "Shutdown"]:
-            assert hasattr(loxa, name), f"loxa missing {name}"
+            assert hasattr(loza, name), f"loza missing {name}"
 
     def c02(sc):
         for name in ["Debug", "Info", "Warn", "Error", "Fatal"]:
-            assert hasattr(loxa, name), f"loxa missing {name}"
+            assert hasattr(loza, name), f"loza missing {name}"
 
     def c03(sc):
         for name in ["String", "Int", "Int64", "Uint64", "Float64", "Bool", "Time",
                       "Duration", "Any", "Null", "Group"]:
-            assert hasattr(loxa, name), f"loxa missing attr constructor {name}"
+            assert hasattr(loza, name), f"loza missing attr constructor {name}"
 
     def c04(sc):
         for name in ["UserID", "TenantID", "WorkspaceID", "OrganizationID", "SessionID",
                       "RequestID", "TraceID", "SpanID"]:
-            assert hasattr(loxa, name), f"loxa missing canonical helper {name}"
+            assert hasattr(loza, name), f"loza missing canonical helper {name}"
 
     def c05(sc):
         for name in ["DefaultSchema", "FlatSchema", "NestedSchema", "ECSchema",
                       "OTelSchema", "OTelLogSchema", "DatadogSchema", "CustomSchema"]:
-            assert hasattr(loxa, name), f"loxa missing schema {name}"
+            assert hasattr(loza, name), f"loza missing schema {name}"
 
     def c06(sc):
         for name in ["SampleAll", "SampleNone", "SampleRandom", "SampleErrors",
                       "SampleSlowRequests", "SampleStatusCodes", "SampleRoutes",
                       "SampleUsers", "SampleTenants", "SampleFeatureFlag",
                       "AnySampler", "AllSampler", "NotSampler"]:
-            assert hasattr(loxa, name), f"loxa missing sampler {name}"
+            assert hasattr(loza, name), f"loza missing sampler {name}"
 
     def c07(sc):
         for name in ["DefaultRedactor", "RedactKeys", "HashKeys", "MaskKeys",
                       "DropKeys", "ComposeRedactors"]:
-            assert hasattr(loxa, name), f"loxa missing redactor {name}"
+            assert hasattr(loza, name), f"loza missing redactor {name}"
 
     def c08(sc):
         for name in ["StdoutSink", "StderrSink", "FileSink", "RotatingFileSink",
                       "MemorySink", "NoopSink", "HTTPBatchSink", "CollectorSink"]:
-            assert hasattr(loxa, name), f"loxa missing sink {name}"
+            assert hasattr(loza, name), f"loza missing sink {name}"
 
     def c09(sc):
         for name in ["ProcessHandle", "TimerHandle", "GroupHandle", "StopwatchHandle",
                       "Process", "StartTimer", "StartGroup", "Stopwatch"]:
-            assert hasattr(loxa, name), f"loxa missing timing {name}"
+            assert hasattr(loza, name), f"loza missing timing {name}"
 
     def c10(sc):
         for name in ["CortexClient", "IncidentContext", "GraphView", "Remediation",
                       "RemediationFeedback"]:
-            assert hasattr(loxa, name), f"loxa missing cortex type {name}"
+            assert hasattr(loza, name), f"loza missing cortex type {name}"
 
     def c11(sc):
         for name in ["Drop", "Cancel", "Abandon", "Retry", "Partial",
                       "CloneEvent", "LinkEvent", "CurrentEvent", "BindEvent", "Wrap"]:
-            assert hasattr(loxa, name), f"loxa missing lifecycle extra {name}"
+            assert hasattr(loza, name), f"loza missing lifecycle extra {name}"
 
     def c12(sc):
         for name in ["Notice", "Event", "Track", "Audit", "Security",
                       "Metric", "Count", "Gauge", "Histogram", "Breadcrumb"]:
-            assert hasattr(loxa, name), f"loxa missing logging helper {name}"
+            assert hasattr(loza, name), f"loza missing logging helper {name}"
 
     def c13(sc):
         for name in ["Money", "Percent", "Bytes", "HTTPStatus", "StatusCode", "ErrorCode",
                       "Bucket", "Tags", "Masked", "URL", "EmailHash", "IPHash", "Region"]:
-            assert hasattr(loxa, name), f"loxa missing domain helper {name}"
+            assert hasattr(loza, name), f"loza missing domain helper {name}"
 
     def c14(sc):
         for name in ["PaymentID", "SubscriptionID", "InvoiceID", "JobID", "MessageID", "CorrelationID",
                       "CommitSHA", "Release"]:
-            assert hasattr(loxa, name), f"loxa missing entity ID helper {name}"
+            assert hasattr(loza, name), f"loza missing entity ID helper {name}"
 
     def c15(sc):
         for name in ["CheckoutCartItemCount", "CheckoutCartTotal", "CheckoutPaymentMethod", "CheckoutStatus"]:
-            assert hasattr(loxa, name), f"loxa missing checkout helper {name}"
+            assert hasattr(loza, name), f"loza missing checkout helper {name}"
 
     def c16(sc):
         for name in ["PaymentProvider", "PaymentMethod", "PaymentIntentID", "PaymentFailureCode", "PaymentRetryAttempt"]:
-            assert hasattr(loxa, name), f"loxa missing payment helper {name}"
+            assert hasattr(loza, name), f"loza missing payment helper {name}"
 
     def c17(sc):
         for name in ["BillingPlan", "BillingSubscriptionID", "BillingInvoiceID", "BillingAmount", "BillingInterval"]:
-            assert hasattr(loxa, name), f"loxa missing billing helper {name}"
+            assert hasattr(loza, name), f"loza missing billing helper {name}"
 
     def c18(sc):
         for name in ["AgentName", "AgentProvider", "AgentModel", "AgentRunType",
                       "AgentToolName", "AgentToolOutcome", "AgentInputTokens", "AgentOutputTokens", "AgentCost"]:
-            assert hasattr(loxa, name), f"loxa missing agent helper {name}"
+            assert hasattr(loza, name), f"loza missing agent helper {name}"
 
     def c19(sc):
         for name in ["RAGIndex", "RAGEmbeddingModel", "RAGChunksRetrieved", "RAGTopScore",
                       "RAGQueryHash", "RAGCitationCount", "RAGRetrievalLatency"]:
-            assert hasattr(loxa, name), f"loxa missing RAG helper {name}"
+            assert hasattr(loza, name), f"loza missing RAG helper {name}"
 
     mc.subchecks = [
         _check("PARITY", 1, "All lifecycle APIs exported", c01),
@@ -1345,7 +1345,7 @@ def print_report(results: list[MainCheck], verbose: bool = False) -> None:
 
     print()
     print("=" * 70)
-    print("  LOXA SDK Conformance Verification")
+    print("  LOZA SDK Conformance Verification")
     print("=" * 70)
     print()
 
@@ -1392,7 +1392,7 @@ def print_json_report(results: list[MainCheck]) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="LOXA SDK Comprehensive Conformance Verification")
+    parser = argparse.ArgumentParser(description="LOZA SDK Comprehensive Conformance Verification")
     parser.add_argument("--category", help="Run only this category (e.g. LIFECYCLE, TIMING)")
     parser.add_argument("--json", action="store_true", help="Output JSON report")
     parser.add_argument("--verbose", action="store_true", help="Show all subcheck details")

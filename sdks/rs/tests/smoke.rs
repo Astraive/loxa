@@ -1,4 +1,4 @@
-use loxa::{Config, New, Params, LOXA_EVENT_VERSION, LOXA_SPEC_VERSION};
+use loza::{Config, New, Params, LOZA_EVENT_VERSION, LOZA_SPEC_VERSION};
 use serde_json::Value;
 
 #[test]
@@ -17,8 +17,8 @@ fn emit_smoke() {
     let encoded = logger.emit(&ctx).unwrap();
     let payload: Value = serde_json::from_str(&encoded).unwrap();
 
-    assert_eq!(payload["schema_version"], LOXA_SPEC_VERSION);
-    assert_eq!(payload["event_version"], LOXA_EVENT_VERSION);
+    assert_eq!(payload["schema_version"], LOZA_SPEC_VERSION);
+    assert_eq!(payload["event_version"], LOZA_EVENT_VERSION);
     assert_eq!(payload["service"], "test");
     assert_eq!(payload["event"], "test.run");
     assert_eq!(payload["kind"], "cli");

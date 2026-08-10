@@ -4,44 +4,44 @@ import (
 	"context"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func TestSinkQueueFlushAndShutdownHelpers(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	if err := loxa.Configure(loxa.Test().WithSink(sink).WithAsync(false)); err != nil {
+	sink, store := loza.MemorySink()
+	if err := loza.Configure(loza.Test().WithSink(sink).WithAsync(false)); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
-	if err := loxa.Default().Event(context.Background(), "sink.event", loxa.String("family", "sink")); err != nil {
+	if err := loza.Default().Event(context.Background(), "sink.event", loza.String("family", "sink")); err != nil {
 		t.Fatalf("event: %v", err)
 	}
-	if err := loxa.Flush(context.Background()); err != nil {
+	if err := loza.Flush(context.Background()); err != nil {
 		t.Fatalf("flush: %v", err)
 	}
 	if store.Len() == 0 {
 		t.Fatalf("expected sink event to be flushed")
 	}
-	if err := loxa.Drain(context.Background(), sink); err != nil {
+	if err := loza.Drain(context.Background(), sink); err != nil {
 		t.Fatalf("drain: %v", err)
 	}
-	loxa.Pause(sink)
-	loxa.Resume(sink)
-	if got := loxa.QueueSize(sink); got != 0 {
+	loza.Pause(sink)
+	loza.Resume(sink)
+	if got := loza.QueueSize(sink); got != 0 {
 		t.Fatalf("expected empty queue, got %d", got)
 	}
-	if err := loxa.Health(context.Background(), sink); err != nil {
+	if err := loza.Health(context.Background(), sink); err != nil {
 		t.Fatalf("health: %v", err)
 	}
-	if loxa.StdoutSink() == nil {
+	if loza.StdoutSink() == nil {
 		t.Fatalf("expected stdout sink")
 	}
-	if loxa.NoopSink() == nil {
+	if loza.NoopSink() == nil {
 		t.Fatalf("expected noop sink")
 	}
-	if loxa.MultiSink(sink, loxa.NoopSink()) == nil {
+	if loza.MultiSink(sink, loza.NoopSink()) == nil {
 		t.Fatalf("expected multi sink")
 	}
-	if err := loxa.Shutdown(context.Background()); err != nil {
+	if err := loza.Shutdown(context.Background()); err != nil {
 		t.Fatalf("shutdown: %v", err)
 	}
 }

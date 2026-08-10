@@ -1,1 +1,1 @@
-def main(): print("loxa python sdk")
+def main(): print("loza python sdk")

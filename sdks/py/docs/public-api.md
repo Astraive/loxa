@@ -176,4 +176,4 @@ The Python SDK public API surface, aligned with the cross-language parity manife
 
 | Class | Description |
 |-------|-------------|
-| `CortexClient(url)` | Client for the LOXA cortex PCE. |
+| `CortexClient(url)` | Client for the LOZA cortex PCE. |

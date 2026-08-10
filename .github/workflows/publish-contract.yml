@@ -1,4 +1,4 @@
-name: Publish Loxa Contract
+name: Publish Loza Contract
 
 on:
   workflow_dispatch: {}
@@ -32,8 +32,8 @@ jobs:
 
       - name: Publish registry artifact
         env:
-          LOXA_CONTRACT_BUCKET: ${{ secrets.LOXA_CONTRACT_BUCKET }}
-          LOXA_CONTRACT_PREFIX: ${{ secrets.LOXA_CONTRACT_PREFIX }}
+          LOZA_CONTRACT_BUCKET: ${{ secrets.LOZA_CONTRACT_BUCKET }}
+          LOZA_CONTRACT_PREFIX: ${{ secrets.LOZA_CONTRACT_PREFIX }}
           CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |

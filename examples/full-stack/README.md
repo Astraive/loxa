@@ -1,6 +1,6 @@
 # Full Stack Example
 
-Complete observability stack: LOXA Collector + Prometheus + Grafana.
+Complete observability stack: LOZA Collector + Prometheus + Grafana.
 
 ## Components
 

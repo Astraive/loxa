@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"strings"
 
-	loxacli "github.com/astraive/loxa/cli"
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/commands"
-	"github.com/astraive/loxa/cli/internal/config"
-	"github.com/astraive/loxa/cli/internal/output"
+	lozacli "github.com/astraive/loza/cli"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/commands"
+	"github.com/astraive/loza/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/output"
 )
 
-var version = loxacli.Version
+var version = lozacli.Version
 
 var CommandMaturity = map[string]string{
 	"init":        "stable",
@@ -85,7 +85,7 @@ func Run(args []string) error {
 
 	switch args[0] {
 	case "version", "-v", "--version":
-		fmt.Println("loxa version", version)
+		fmt.Println("loza version", version)
 		return nil
 	case "help", "--help", "-h":
 		printHelp()
@@ -168,12 +168,12 @@ func Run(args []string) error {
 	case "debug":
 		return commands.DebugCommand(ctx, cfg, args[1:])
 	default:
-		return fmt.Errorf("unknown command: %s\nRun 'loxa help' for available commands", args[0])
+		return fmt.Errorf("unknown command: %s\nRun 'loza help' for available commands", args[0])
 	}
 }
 
 func printHelp() {
-	output.PrintSection("LOXA CLI v" + version)
+	output.PrintSection("LOZA CLI v" + version)
 	fmt.Println("\nData Plane (collector):")
 	fmt.Println("  emit         Emit events to collector")
 	fmt.Println("  query        Query events via SQL")
@@ -207,11 +207,11 @@ func printHelp() {
 	fmt.Println("\nGlobal Flags:")
 	fmt.Println("  --verbose         Show detailed output")
 	fmt.Println("  --output FORMAT   Output format: json, table, text")
-	fmt.Println("\nUse 'loxa <command> --help' for details")
+	fmt.Println("\nUse 'loza <command> --help' for details")
 }
 
 func printMaturity() {
-	output.PrintSection("LOXA CLI Command Maturity")
+	output.PrintSection("LOZA CLI Command Maturity")
 	for cmd, stability := range CommandMaturity {
 		label := stability
 		switch stability {

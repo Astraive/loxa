@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/cortex/internal/models"
-	"github.com/astraive/loxa/cortex/internal/storage"
+	"github.com/astraive/loza/cortex/internal/models"
+	"github.com/astraive/loza/cortex/internal/storage"
 )
 
 type fakeEventStore struct {

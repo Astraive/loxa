@@ -1,8 +1,8 @@
 [package]
-name = "loxa"
+name = "loza"
 version = "0.2.6"
 edition = "2021"
-description = "Rust LOXA wide-event SDK"
+description = "Rust LOZA wide-event SDK"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

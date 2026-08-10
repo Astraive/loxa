@@ -1,0 +1,20 @@
+name: loza-spec
+kind: spec
+version: 0.2.6
+description: Shared LOZA wire, schema, event, and conformance contract
+license: MIT
+repository: https://github.com/Astraive/loza
+module: github.com/astraive/loza/spec
+
+paths:
+  root: spec
+
+publish:
+  go:
+    owner: astraive
+    tag_prefix: spec/v
+    module: github.com/astraive/loza/spec
+
+  github_release:
+    owner: astraive
+    artifact_prefix: loza-spec

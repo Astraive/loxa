@@ -1,4 +1,4 @@
-import { configure, production, startEvent, enrich, finish, emit, info, createLoxa, alias } from "loxa";
+import { configure, production, startEvent, enrich, finish, emit, info, createLoza, alias } from "loza";
 
 // Default API — configure once, use everywhere
 configure(production("quickstart-demo").withCollectorEndpoint("http://localhost:9308"));
@@ -12,7 +12,7 @@ const result = await emit(ctx);
 console.log(`Event emitted: ${result}`);
 
 // Custom instance
-const logger = createLoxa({ service: "checkout-api", collectorUrl: "http://localhost:9308" });
+const logger = createLoza({ service: "checkout-api", collectorUrl: "http://localhost:9308" });
 logger.info("custom instance ready");
 
 // Alias — same config, different service name

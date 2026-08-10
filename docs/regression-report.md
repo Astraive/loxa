@@ -1,9 +1,9 @@
-# Loxa v0.2.0 Pre-Release Regression Report
+# Loza v0.2.0 Pre-Release Regression Report
 
 **Date:** 2026-05-27
 **Branch:** main
 **Commit:** e6780e6
-**Target:** Local builds (E:\astraive\loxa)
+**Target:** Local builds (E:\astraive\loza)
 **Mode:** Full regression QA
 
 ---
@@ -34,9 +34,9 @@
 - `cli/internal/commands/cortex.go`, `debug.go`, `dev.go`, `export.go`, `keys.go`, `shared.go` -- command updates
 
 ### Collector
-- `collector/cmd/loxa-collector/server.go` -- server changes
+- `collector/cmd/loza-collector/server.go` -- server changes
 - `collector/deploy/docker-compose.memory.yml`, `docker-compose.yml` -- deploy configs
-- `collector/deploy/helm/loxa/templates/deployment-worker.yaml` -- Helm chart
+- `collector/deploy/helm/loza/templates/deployment-worker.yaml` -- Helm chart
 - `collector/go.mod`, `collector/go.sum` -- dependency updates
 - `collector/internal/eventbus/kafka/kafka.go` -- Kafka eventbus changes
 
@@ -57,7 +57,7 @@
 - `sdks/go/src/core/config.go` -- HTTPBatchSink endpoint `/ingest` -> `/events`
 - `sdks/go/src/cortex/client.go` -- default endpoint port 9100 -> 9312
 - `sdks/js/package-lock.json` -- version 0.0.1 -> 0.2.0
-- `sdks/py/src/loxa.egg-info/PKG-INFO` -- version 0.0.2 -> 0.2.0
+- `sdks/py/src/loza.egg-info/PKG-INFO` -- version 0.0.2 -> 0.2.0
 - `sdks/rs/src/config/config.rs` -- `validate()` changed from panic to Result return
 
 ### Spec
@@ -146,7 +146,7 @@ All SDKs produce identical wire-format behavior:
 - cortex_emitted_shape: PASS (all 4)
 - parity: PASS (all 4)
 
-### Loxana (Vite+React)
+### Lozana (Vite+React)
 ```
 PASS: Build clean (8.91s, 3159 modules, 884 KB JS + 76 KB CSS)
 ```
@@ -181,7 +181,7 @@ lql: BUILDS CLEAN
 
 ### 2. Rust SDK: `validate()` signature changed (LOW)
 **Before:** `pub fn validate(&self)` -- panics on error
-**After:** `pub fn validate(&self) -> Result<(), LoxaError>` -- returns Result
+**After:** `pub fn validate(&self) -> Result<(), LozaError>` -- returns Result
 **Impact:** Callers that relied on panic behavior will need to handle the Result.
 **Mitigation:** No callers found in the codebase that use `.validate()` directly.
 
@@ -204,7 +204,7 @@ All skipped tests are infrastructure-dependent (expected):
 - `collector/internal/eventbus/kafka/` -- skips when Kafka not available
 - `collector/internal/eventbus/nats/` -- skips when NATS not available
 - `collector/internal/eventbus/redis/` -- skips when Redis not available
-- `collector/cmd/loxa-collector/load_test.go` -- skips in `-short` mode
+- `collector/cmd/loza-collector/load_test.go` -- skips in `-short` mode
 - `collector/internal/schema/migration_test.go` -- skips when no migration fixtures
 - `cortex/internal/collectorsync/live_integration_test.go` -- skips in `-short` mode
 
@@ -214,7 +214,7 @@ No tests were recently disabled or marked TODO without justification.
 
 ## Proto Definitions
 
-No changes to proto files (`proto/loxa/core/*.proto`). Generated Go files exist in `gen/go/loxa/core/`. No breaking changes detected.
+No changes to proto files (`proto/loza/core/*.proto`). Generated Go files exist in `gen/go/loza/core/`. No breaking changes detected.
 
 ---
 
@@ -252,4 +252,4 @@ No previous regression reports found in `.nstack/`. This is the first regression
 - CLI test output: `.nstack/qa/regression/raw/cli-test-output.txt`
 - Go SDK test output: `.nstack/qa/regression/raw/sdk-go-test-output.txt`
 - Conformance output: `.nstack/qa/regression/raw/conformance-output.txt`
-- Loxana build output: `.nstack/qa/regression/raw/loxana-build-output.txt`
+- Lozana build output: `.nstack/qa/regression/raw/lozana-build-output.txt`

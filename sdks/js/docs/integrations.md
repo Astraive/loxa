@@ -1,31 +1,31 @@
 # Integrations
 
-Logging and tracing integrations for the LOXA JS SDK (`loxa`).
+Logging and tracing integrations for the LOZA JS SDK (`loza`).
 
 ## Logging Framework Bridges
 
-The JS SDK can be used as a structured logging backend. Events follow the LOXA wide-event spec, which includes standard log fields (level, message, timestamp).
+The JS SDK can be used as a structured logging backend. Events follow the LOZA wide-event spec, which includes standard log fields (level, message, timestamp).
 
-### Using LOXA as a Logging Backend
+### Using LOZA as a Logging Backend
 
 ```typescript
-import { loxa } from 'loxa';
+import { loza } from 'loza';
 
 // These create and emit events with the appropriate level
-loxa.info('User signed up', loxa.userId('u-123'), loxa.string('method', 'oauth'));
-loxa.error('Payment failed', loxa.errorCode('PAYMENT_DECLINED'), loxa.string('order_id', 'ord-456'));
+loza.info('User signed up', loza.userId('u-123'), loza.string('method', 'oauth'));
+loza.error('Payment failed', loza.errorCode('PAYMENT_DECLINED'), loza.string('order_id', 'ord-456'));
 ```
 
 ### Bridging console.log
 
-Replace `console.log` with LOXA structured events:
+Replace `console.log` with LOZA structured events:
 
 ```typescript
-import { loxa } from 'loxa';
+import { loza } from 'loza';
 
 function structuredLog(message: string, meta?: Record<string, any>) {
-  const attrs = Object.entries(meta || {}).map(([k, v]) => loxa.string(k, String(v)));
-  loxa.info(message, ...attrs);
+  const attrs = Object.entries(meta || {}).map(([k, v]) => loza.string(k, String(v)));
+  loza.info(message, ...attrs);
 }
 ```
 
@@ -34,7 +34,7 @@ function structuredLog(message: string, meta?: Record<string, any>) {
 The SDK supports OpenTelemetry trace context propagation. When an OTel span is active, the SDK automatically extracts trace IDs:
 
 ```typescript
-import { startEvent, traceId, spanId } from 'loxa';
+import { startEvent, traceId, spanId } from 'loza';
 
 // If OTel context is available, traceId/spanId are auto-populated
 const ctx = startEvent({ event: 'my.operation' });
@@ -48,40 +48,40 @@ The SDK reads:
 
 ## Winston Integration
 
-Create a Winston transport that emits LOXA events:
+Create a Winston transport that emits LOZA events:
 
 ```typescript
 import winston from 'winston';
-import { loxa } from 'loxa';
+import { loza } from 'loza';
 
-const loxaTransport = new winston.transports.Console({
+const lozaTransport = new winston.transports.Console({
   log: (logInfo: any) => {
     const level = logInfo.level;
     const message = logInfo.message;
     const attrs = Object.entries(logInfo).filter(([k]) => !['level', 'message'].includes(k));
-    const loxaAttrs = attrs.map(([k, v]) => loxa.string(k, String(v)));
+    const lozaAttrs = attrs.map(([k, v]) => loza.string(k, String(v)));
 
-    if (level === 'error') loxa.error(message, ...loxaAttrs);
-    else if (level === 'warn') loxa.warn(message, ...loxaAttrs);
-    else loxa.info(message, ...loxaAttrs);
+    if (level === 'error') loza.error(message, ...lozaAttrs);
+    else if (level === 'warn') loza.warn(message, ...lozaAttrs);
+    else loza.info(message, ...lozaAttrs);
   },
 });
 ```
 
 ## Pino Integration
 
-Pino is a popular fast JSON logger for Node.js. Bridge it to LOXA:
+Pino is a popular fast JSON logger for Node.js. Bridge it to LOZA:
 
 ```typescript
 import pino from 'pino';
-import { loxa } from 'loxa';
+import { loza } from 'loza';
 
 const pinoLogger = pino({
   hooks: {
     logMethod(inputArgs: any[], method: any) {
       const [msg, ...rest] = inputArgs;
-      const attrs = rest.map((v: any, i: number) => loxa.string(`extra_${i}`, String(v)));
-      loxa.info(msg, ...attrs);
+      const attrs = rest.map((v: any, i: number) => loza.string(`extra_${i}`, String(v)));
+      loza.info(msg, ...attrs);
       method.apply(this, inputArgs);
     },
   },

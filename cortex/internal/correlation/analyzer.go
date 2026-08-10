@@ -6,8 +6,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/astraive/loxa/cortex/internal/models"
-	"github.com/astraive/loxa/cortex/internal/storage"
+	"github.com/astraive/loza/cortex/internal/models"
+	"github.com/astraive/loza/cortex/internal/storage"
 	"github.com/rs/zerolog/log"
 )
 
@@ -248,7 +248,7 @@ func isAnomaly(event *models.Event) bool {
 	}
 
 	// Check for error-level logs
-	if event.Kind == models.EventKindLog || event.Kind == models.EventKindLoxaEvent {
+	if event.Kind == models.EventKindLog || event.Kind == models.EventKindLozaEvent {
 		if level, ok := event.Raw["level"].(string); ok {
 			if level == "error" || level == "fatal" {
 				return true

@@ -1,10 +1,10 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { createLoxa, HTTPBatchSink, MemorySink, CollectorClient, String as AttrString, Int as AttrInt } from '../src/index.ts';
+import { createLoza, HTTPBatchSink, MemorySink, CollectorClient, String as AttrString, Int as AttrInt } from '../src/index.ts';
 import net from 'node:net';
 
-const COLLECTOR_URL = process.env.LOXA_TEST_COLLECTOR_URL ?? 'http://127.0.0.1:9308';
-const COLLECTOR_API_KEY = process.env.LOXA_API_KEY ?? '';
+const COLLECTOR_URL = process.env.LOZA_TEST_COLLECTOR_URL ?? 'http://127.0.0.1:9308';
+const COLLECTOR_API_KEY = process.env.LOZA_API_KEY ?? '';
 
 async function isCollectorReachable(): Promise<boolean> {
   const url = new URL(COLLECTOR_URL);
@@ -20,7 +20,7 @@ async function isCollectorReachable(): Promise<boolean> {
 
 const describeE2E = (await isCollectorReachable()) ? describe : describe.skip;
 
-describeE2E('E2E: loxa-js → loxa-collector', () => {
+describeE2E('E2E: loza-js → loza-collector', () => {
   it('collector health check', async () => {
     const client = new CollectorClient({ url: COLLECTOR_URL });
     const healthy = await client.health();
@@ -49,7 +49,7 @@ describeE2E('E2E: loxa-js → loxa-collector', () => {
       event_version: 'v1',
       event_id: `e2e-batch-${Date.now()}`,
       timestamp: new Date().toISOString(),
-      service: 'loxa-js-e2e',
+      service: 'loza-js-e2e',
       event: 'test.batch_send',
       kind: 'event',
       level: 'info',
@@ -77,22 +77,22 @@ describeE2E('E2E: loxa-js → loxa-collector', () => {
       },
     });
 
-    const loxa = createLoxa({
-      service: 'loxa-js-e2e',
+    const loza = createLoza({
+      service: 'loza-js-e2e',
       sink,
     });
 
     // Create and emit an event
-    const ctx = loxa.startEvent({
+    const ctx = loza.startEvent({
       event: 'e2e.http_batch',
       kind: 'event',
     });
-    loxa.enrich(ctx,
+    loza.enrich(ctx,
       AttrString('test.id', `e2e-${Date.now()}`),
       AttrInt('test.run', 1),
     );
-    loxa.finish(ctx, 'success');
-    const encoded = await loxa.emit(ctx);
+    loza.finish(ctx, 'success');
+    const encoded = await loza.emit(ctx);
 
     assert.ok(encoded, 'should return encoded JSON');
     console.log('  emitted event:', encoded!.substring(0, 120) + '...');
@@ -121,10 +121,10 @@ describeE2E('E2E: loxa-js → loxa-collector', () => {
       flushIntervalMs: 100,
     });
 
-    const loxa = createLoxa({ service: 'loxa-js-e2e-gzip', sink });
-    const ctx = loxa.startEvent({ event: 'e2e.gzip' });
-    loxa.finish(ctx, 'success');
-    await loxa.emit(ctx);
+    const loza = createLoza({ service: 'loza-js-e2e-gzip', sink });
+    const ctx = loza.startEvent({ event: 'e2e.gzip' });
+    loza.finish(ctx, 'success');
+    await loza.emit(ctx);
 
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -143,10 +143,10 @@ describeE2E('E2E: loxa-js → loxa-collector', () => {
       flushIntervalMs: 100,
     });
 
-    const loxa = createLoxa({ service: 'loxa-js-e2e-ndjson', sink });
-    const ctx = loxa.startEvent({ event: 'e2e.ndjson' });
-    loxa.finish(ctx, 'success');
-    await loxa.emit(ctx);
+    const loza = createLoza({ service: 'loza-js-e2e-ndjson', sink });
+    const ctx = loza.startEvent({ event: 'e2e.ndjson' });
+    loza.finish(ctx, 'success');
+    await loza.emit(ctx);
 
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -168,14 +168,14 @@ describeE2E('E2E: loxa-js → loxa-collector', () => {
       },
     });
 
-    const loxa = createLoxa({ service: 'loxa-js-e2e-batch', sink });
+    const loza = createLoza({ service: 'loza-js-e2e-batch', sink });
 
     // Emit 5 events quickly
     for (let i = 0; i < 5; i++) {
-      const ctx = loxa.startEvent({ event: `e2e.batch.${i}` });
-      loxa.enrich(ctx, AttrInt('index', i));
-      loxa.finish(ctx, 'success');
-      await loxa.emit(ctx);
+      const ctx = loza.startEvent({ event: `e2e.batch.${i}` });
+      loza.enrich(ctx, AttrInt('index', i));
+      loza.finish(ctx, 'success');
+      await loza.emit(ctx);
     }
 
     // Wait for flush

@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
-  title: LOXA Collector API
+  title: LOZA Collector API
   version: v1
   description: |
-    HTTP ingest contract for LOXA-compatible collectors.
+    HTTP ingest contract for LOZA-compatible collectors.
 
     Authentication is typically enforced via an API key header. HTTP is the
     canonical wire contract; gRPC and GraphQL surfaces are expected to expose
@@ -15,12 +15,12 @@ info:
 paths:
   /events:
     post:
-      summary: Ingest LOXA events (canonical path)
+      summary: Ingest LOZA events (canonical path)
       description: |
         Canonical ingest endpoint used by SDKs. Accepts the same payloads
         as /ingest — single event, array, envelope, NDJSON, or gzip.
       parameters:
-        - name: X-LOXA-API-Key
+        - name: X-LOZA-API-Key
           in: header
           required: false
           description: API key header when auth is enabled.
@@ -67,7 +67,7 @@ paths:
       summary: Delete events
       description: Delete events by tenant, user, or event ID.
       parameters:
-        - name: X-LOXA-API-Key
+        - name: X-LOZA-API-Key
           in: header
           required: true
           schema:
@@ -86,7 +86,7 @@ paths:
           description: auth error
   /ingest:
     post:
-      summary: Ingest LOXA events
+      summary: Ingest LOZA events
       description: |
         Accepts a single JSON object, a JSON array, a wrapped `{ "events": [...] }`
         payload, NDJSON, and gzip-compressed equivalents.
@@ -94,7 +94,7 @@ paths:
         Successful responses return a collector response object with
         `accepted`, `rejected`, `invalid`, `deduped`, and per-event `acks`.
       parameters:
-        - name: X-LOXA-API-Key
+        - name: X-LOZA-API-Key
           in: header
           required: false
           description: Example API key header when auth is enabled.
@@ -259,7 +259,7 @@ paths:
       summary: Query stored events
       description: Execute a SQL query against stored events.
       parameters:
-        - name: X-LOXA-API-Key
+        - name: X-LOZA-API-Key
           in: header
           required: true
           schema:
@@ -293,9 +293,9 @@ paths:
   /lql/query:
     post:
       summary: Execute LQL query
-      description: Execute a Loxa Query Language (LQL) query against stored events.
+      description: Execute a Loza Query Language (LQL) query against stored events.
       parameters:
-        - name: X-LOXA-API-Key
+        - name: X-LOZA-API-Key
           in: header
           required: true
           schema:
@@ -362,7 +362,7 @@ paths:
     get:
       summary: List configured sinks
       parameters:
-        - name: X-LOXA-API-Key
+        - name: X-LOZA-API-Key
           in: header
           required: true
           schema:
@@ -383,7 +383,7 @@ paths:
     get:
       summary: List schema versions
       parameters:
-        - name: X-LOXA-API-Key
+        - name: X-LOZA-API-Key
           in: header
           required: true
           schema:
@@ -399,7 +399,7 @@ paths:
     get:
       summary: List dead-letter queue entries
       parameters:
-        - name: X-LOXA-API-Key
+        - name: X-LOZA-API-Key
           in: header
           required: true
           schema:
@@ -426,7 +426,7 @@ paths:
     post:
       summary: Create API key
       parameters:
-        - name: X-LOXA-API-Key
+        - name: X-LOZA-API-Key
           in: header
           required: true
           schema:

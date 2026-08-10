@@ -2,7 +2,7 @@
 
 ## Overview
 
-The LOXA Go SDK implements a strict event lifecycle state machine that ensures predictable and traceable event state transitions. This document describes the state machine implementation, valid transitions, and API methods.
+The LOZA Go SDK implements a strict event lifecycle state machine that ensures predictable and traceable event state transitions. This document describes the state machine implementation, valid transitions, and API methods.
 
 ## Requirements
 
@@ -123,7 +123,7 @@ The following transitions are **rejected** with appropriate errors:
 Creates a new event and returns a context containing the event.
 
 ```go
-ctx := loxa.StartEvent(context.Background(), loxa.Params{
+ctx := loza.StartEvent(context.Background(), loza.Params{
     Event: "user.login",
 })
 ```
@@ -135,9 +135,9 @@ ctx := loxa.StartEvent(context.Background(), loxa.Params{
 Appends attributes to an active event.
 
 ```go
-err := loxa.Enrich(ctx, 
-    loxa.String("user_id", "123"),
-    loxa.String("email", "user@example.com"),
+err := loza.Enrich(ctx,
+    loza.String("user_id", "123"),
+    loza.String("email", "user@example.com"),
 )
 ```
 
@@ -148,9 +148,9 @@ err := loxa.Enrich(ctx,
 Sets or updates attributes on an active event.
 
 ```go
-err := loxa.Set(ctx, 
-    loxa.String("status", "success"),
-    loxa.Int("attempts", 3),
+err := loza.Set(ctx,
+    loza.String("status", "success"),
+    loza.Int("attempts", 3),
 )
 ```
 
@@ -161,8 +161,8 @@ err := loxa.Set(ctx,
 Appends a value to an array field on an active event.
 
 ```go
-err := loxa.Add(ctx, "tags", "important")
-err = loxa.Add(ctx, "tags", "urgent")
+err := loza.Add(ctx, "tags", "important")
+err = loza.Add(ctx, "tags", "urgent")
 // Result: tags = ["important", "urgent"]
 ```
 
@@ -178,8 +178,8 @@ err = loxa.Add(ctx, "tags", "urgent")
 Marks an event as successfully completed.
 
 ```go
-err := loxa.Finish(ctx, "success", 
-    loxa.Int("items_processed", 42),
+err := loza.Finish(ctx, "success",
+    loza.Int("items_processed", 42),
 )
 ```
 
@@ -190,8 +190,8 @@ err := loxa.Finish(ctx, "success",
 Marks an event as failed with error details.
 
 ```go
-err := loxa.FinishError(ctx, someError,
-    loxa.Bool("retryable", true),
+err := loza.FinishError(ctx, someError,
+    loza.Bool("retryable", true),
 )
 ```
 
@@ -202,7 +202,7 @@ err := loxa.FinishError(ctx, someError,
 Sends the finished event to the collector.
 
 ```go
-err := loxa.Emit(ctx)
+err := loza.Emit(ctx)
 ```
 
 **State Transition**: `finished` → `emitting` → `emitted` (or `validation_failed`/`delivery_failed`)
@@ -212,7 +212,7 @@ err := loxa.Emit(ctx)
 Returns the current event state for observability.
 
 ```go
-ev, _ := loxa.FromContext(ctx)
+ev, _ := loza.FromContext(ctx)
 state := ev.State()
 // Returns: EventStateCreated, EventStateActive, etc.
 ```
@@ -264,47 +264,47 @@ package main
 import (
     "context"
     "errors"
-    "github.com/astraive/loxa/sdks/go"
+    "github.com/astraive/loza/sdks/go"
 )
 
 func main() {
     // Configure the SDK
-    cfg := loxa.Dev()
-    if err := loxa.Configure(cfg); err != nil {
+    cfg := loza.Dev()
+    if err := loza.Configure(cfg); err != nil {
         panic(err)
     }
-    defer loxa.Shutdown(context.Background())
+    defer loza.Shutdown(context.Background())
 
     // Start an event (created state)
-    ctx := loxa.StartEvent(context.Background(), loxa.Params{
+    ctx := loza.StartEvent(context.Background(), loza.Params{
         Event: "order.process",
     })
 
     // Enrich the event (transitions to active)
-    loxa.Enrich(ctx,
-        loxa.String("order_id", "ORD-123"),
-        loxa.String("customer_id", "CUST-456"),
+    loza.Enrich(ctx,
+        loza.String("order_id", "ORD-123"),
+        loza.String("customer_id", "CUST-456"),
     )
 
     // Add items to an array
-    loxa.Add(ctx, "items", "ITEM-1")
-    loxa.Add(ctx, "items", "ITEM-2")
+    loza.Add(ctx, "items", "ITEM-1")
+    loza.Add(ctx, "items", "ITEM-2")
 
     // Set additional fields
-    loxa.Set(ctx,
-        loxa.Float64("total", 99.99),
-        loxa.String("currency", "USD"),
+    loza.Set(ctx,
+        loza.Float64("total", 99.99),
+        loza.String("currency", "USD"),
     )
 
     // Finish the event (transitions to finished)
     if err := processOrder(); err != nil {
-        loxa.FinishError(ctx, err)
+        loza.FinishError(ctx, err)
     } else {
-        loxa.Finish(ctx, "success")
+        loza.Finish(ctx, "success")
     }
 
     // Emit the event (transitions to emitting → emitted)
-    if err := loxa.Emit(ctx); err != nil {
+    if err := loza.Emit(ctx); err != nil {
         // Handle emission error
     }
 }
@@ -318,20 +318,20 @@ func processOrder() error {
 ### Error Handling
 
 ```go
-ctx := loxa.StartEvent(context.Background(), loxa.Params{
+ctx := loza.StartEvent(context.Background(), loza.Params{
     Event: "test.event",
 })
 
 // Finish the event
-loxa.Finish(ctx, "success")
+loza.Finish(ctx, "success")
 
 // Emit the event
-loxa.Emit(ctx)
+loza.Emit(ctx)
 
 // Try to modify after emit - will fail
-err := loxa.Enrich(ctx, loxa.String("key", "value"))
+err := loza.Enrich(ctx, loza.String("key", "value"))
 if err != nil {
-    var closed *loxa.EventClosedError
+    var closed *loza.EventClosedError
     if errors.As(err, &closed) {
         // Event is closed, cannot modify
         fmt.Printf("Event %s is in state %s\n", closed.EventID, closed.State)
@@ -339,9 +339,9 @@ if err != nil {
 }
 
 // Try to emit again - will fail
-err = loxa.Emit(ctx)
+err = loza.Emit(ctx)
 if err != nil {
-    var duplicate *loxa.DuplicateEmitError
+    var duplicate *loza.DuplicateEmitError
     if errors.As(err, &duplicate) {
         // Event already emitted
         fmt.Printf("Event %s already emitted\n", duplicate.EventID)

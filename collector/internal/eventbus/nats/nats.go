@@ -1,5 +1,5 @@
 // Package nats implements the NATS JetStream event bus adapter.
-// This is the recommended production default for Loxa.
+// This is the recommended production default for Loza.
 package nats
 
 import (
@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/astraive/loxa/collector/internal/eventbus"
+	"github.com/astraive/loza/collector/internal/eventbus"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -37,22 +37,22 @@ func New(ctx context.Context, cfg eventbus.Config) (eventbus.Bus, error) {
 		nc.URL = nats.DefaultURL
 	}
 	if nc.Stream == "" {
-		nc.Stream = "LOXA"
+		nc.Stream = "LOZA"
 	}
 	if nc.Subject == "" {
 		nc.Subject = cfg.Topic
 	}
 	if nc.Subject == "" {
-		nc.Subject = "loxa.events.raw"
+		nc.Subject = "loza.events.raw"
 	}
 	if nc.Durable == "" {
 		nc.Durable = cfg.ConsumerGroup
 	}
 	if nc.Durable == "" {
-		nc.Durable = "loxa-worker"
+		nc.Durable = "loza-worker"
 	}
 
-	opts := []nats.Option{nats.Name("loxa-collector")}
+	opts := []nats.Option{nats.Name("loza-collector")}
 	if nc.Username != "" && nc.Password != "" {
 		opts = append(opts, nats.UserInfo(nc.Username, nc.Password))
 	}
@@ -211,7 +211,7 @@ func (b *natsBus) Health(_ context.Context) eventbus.Health {
 func (b *natsBus) PublishDLQ(ctx context.Context, original eventbus.Envelope, reason error) error {
 	dlqTopic := b.dlqCfg
 	if dlqTopic == "" {
-		dlqTopic = "loxa.events.dlq"
+		dlqTopic = "loza.events.dlq"
 	}
 	if original.Headers == nil {
 		original.Headers = make(map[string]string)

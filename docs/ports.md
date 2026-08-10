@@ -1,8 +1,8 @@
-# Loxa Port Map
+# Loza Port Map
 
 > All ports are configurable. Values below are canonical defaults.
 
-## Loxa Backend Services
+## Loza Backend Services
 
 | Port | Service | Protocol | Config Key | Env Var |
 |------|---------|----------|------------|---------|
@@ -23,8 +23,8 @@
 
 | Port | Service |
 |------|---------|
-| 3000 | Loxana (dev) |
-| 80 | Loxana (prod/nginx) |
+| 3000 | Lozana (dev) |
+| 80 | Lozana (prod/nginx) |
 
 ## External Infrastructure
 
@@ -41,11 +41,11 @@
 
 ## Configuration
 
-Loxa uses a layered config system. All non-secret values can be set via YAML files, environment variables, or code. Secrets must come from environment variables.
+Loza uses a layered config system. All non-secret values can be set via YAML files, environment variables, or code. Secrets must come from environment variables.
 
 ### 1. Defaults (committed)
 
-`loxa-collector.defaults.yaml`, `loxa-cortex.defaults.yaml`, `loxa-cli.defaults.yaml` — canonical defaults shipped with the project. Do not edit these.
+`loza-collector.defaults.yaml`, `loza-cortex.defaults.yaml`, `loza-cli.defaults.yaml` — canonical defaults shipped with the project. Do not edit these.
 
 ### 2. User config (any file name)
 
@@ -54,11 +54,11 @@ Users can create config files with any name. The SDKs search for standard names 
 **Server components (Collector, Cortex, CLI):**
 
 ```bash
-# Default search: loxa.yaml in current directory
-./loxa-collector run
+# Default search: loza.yaml in current directory
+./loza-collector run
 
 # Custom path via flag
-./loxa-collector run -c /etc/loxa/production.yaml
+./loza-collector run -c /etc/loza/production.yaml
 ./cortex --config /etc/cortex/prod.yaml
 ```
 
@@ -66,30 +66,30 @@ Users can create config files with any name. The SDKs search for standard names 
 
 ```go
 // Go — custom path
-fileCfg, _ := loxa.LoadFromFile("/etc/loxa/prod.yaml")
+fileCfg, _ := loza.LoadFromFile("/etc/loza/prod.yaml")
 ```
 
 ```python
 # Python — custom path via env var
-LOXA_PY_CONFIG=/etc/loxa/prod.yaml python app.py
+LOZA_PY_CONFIG=/etc/loza/prod.yaml python app.py
 ```
 
 ```typescript
 // JS — custom path via env var
-LOXA_JS_CONFIG=/etc/loxa/prod.yaml node app.js
+LOZA_JS_CONFIG=/etc/loza/prod.yaml node app.js
 ```
 
 ```rust
 // Rust — custom path via env var
-LOXA_RS_CONFIG=/etc/loxa/prod.yaml cargo run
+LOZA_RS_CONFIG=/etc/loza/prod.yaml cargo run
 ```
 
 **Docker:**
 
 ```bash
-docker run -v /host/config.yaml:/etc/loxa/config.yaml \
-  -e LOXA_COLLECTOR_CONFIG=/etc/loxa/config.yaml \
-  ghcr.io/astraive/loxa:latest
+docker run -v /host/config.yaml:/etc/loza/config.yaml \
+  -e LOZA_COLLECTOR_CONFIG=/etc/loza/config.yaml \
+  ghcr.io/astraive/loza:latest
 ```
 
 ### 3. Environment variables
@@ -100,11 +100,11 @@ All config values can be overridden via env vars. Secrets must use env vars.
 # Non-secret overrides
 COLLECTOR_SERVER_PORT=9308
 CORTEX_SERVER_PORT=9312
-LOXA_ENVIRONMENT=production
+LOZA_ENVIRONMENT=production
 
 # Secrets (env vars only)
-LOXA_API_KEY=lx_sec_live_xxx
-LOXA_STORAGE_ENCRYPTION_KEY=xxx
+LOZA_API_KEY=lx_sec_live_xxx
+LOZA_STORAGE_ENCRYPTION_KEY=xxx
 CORTEX_POSTGRES_PASSWORD=xxx
 ```
 
@@ -113,36 +113,36 @@ CORTEX_POSTGRES_PASSWORD=xxx
 Highest precedence — overrides everything.
 
 ```go
-loxa.Configure(loxa.Production("checkout").
+loza.Configure(loza.Production("checkout").
     WithCollectorEndpoint("http://localhost:9308").
-    WithAPIKey(os.Getenv("LOXA_API_KEY")))
+    WithAPIKey(os.Getenv("LOZA_API_KEY")))
 ```
 
 ```python
-loxa.configure(loxa.production("checkout")
+loza.configure(loza.production("checkout")
     .with_collector_endpoint("http://localhost:9308")
-    .with_api_key(os.environ["LOXA_API_KEY"]))
+    .with_api_key(os.environ["LOZA_API_KEY"]))
 ```
 
 ```typescript
-loxa.configure(loxa.production('checkout')
+loza.configure(loza.production('checkout')
     .withCollectorEndpoint('http://localhost:9308')
-    .withApiKey(process.env.LOXA_API_KEY!));
+    .withApiKey(process.env.LOZA_API_KEY!));
 ```
 
 ```rust
-loxa::configure(loxa::Config::production("checkout")
+loza::configure(loza::Config::production("checkout")
     .with_collector_endpoint("http://localhost:9308")
-    .with_api_key(std::env::var("LOXA_API_KEY")?));
+    .with_api_key(std::env::var("LOZA_API_KEY")?));
 ```
 
-## loxa:// DSN
+## loza:// DSN
 
-The `loxa://` DSN defaults to port 9308 for localhost:
+The `loza://` DSN defaults to port 9308 for localhost:
 
 ```
-loxa://localhost/my-app          → http://localhost:9308
-loxa://localhost:9999/my-app     → http://localhost:9999
+loza://localhost/my-app          → http://localhost:9308
+loza://localhost:9999/my-app     → http://localhost:9999
 ```
 
-Set via env var: `LOXA_DSN=loxa://localhost/my-app`
+Set via env var: `LOZA_DSN=loza://localhost/my-app`

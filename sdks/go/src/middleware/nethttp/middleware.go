@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 // Config configures the net/http middleware.
@@ -55,15 +55,15 @@ func MiddlewareWithConfig(cfg Config) func(http.Handler) http.Handler {
 				requestBytes = 0
 			}
 
-			customAttrs := []loxa.Attr{
-				loxa.String("scheme", schemeFromRequest(r)),
-				loxa.String("user_agent", r.UserAgent()),
-				loxa.String("remote_ip", clientIP(r, cfg)),
-				loxa.Int64("request_bytes", requestBytes),
+			customAttrs := []loza.Attr{
+				loza.String("scheme", schemeFromRequest(r)),
+				loza.String("user_agent", r.UserAgent()),
+				loza.String("remote_ip", clientIP(r, cfg)),
+				loza.Int64("request_bytes", requestBytes),
 			}
 			customAttrs = append(customAttrs, selectedHeaderAttrs(r, cfg.HeaderAttrs)...)
 
-			ctx := loxa.StartHTTPEvent(r.Context(), loxa.Params{
+			ctx := loza.StartHTTPEvent(r.Context(), loza.Params{
 				Event:     eventName,
 				Kind:      "http",
 				Method:    r.Method,
@@ -82,19 +82,19 @@ func MiddlewareWithConfig(cfg Config) func(http.Handler) http.Handler {
 					if !state.wroteHeader {
 						http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					}
-					loxa.FinishError(ctx, panicErr{value: rec},
-						loxa.Int("status_code", state.statusCode),
-						loxa.Int64("response_bytes", int64(state.bytes)),
+					loza.FinishError(ctx, panicErr{value: rec},
+						loza.Int("status_code", state.statusCode),
+						loza.Int64("response_bytes", int64(state.bytes)),
 					)
-					_ = loxa.Emit(ctx)
+					_ = loza.Emit(ctx)
 					return
 				}
 
-				loxa.Finish(ctx, "success",
-					loxa.Int("status_code", state.statusCode),
-					loxa.Int64("response_bytes", int64(state.bytes)),
+				loza.Finish(ctx, "success",
+					loza.Int("status_code", state.statusCode),
+					loza.Int64("response_bytes", int64(state.bytes)),
 				)
-				_ = loxa.Emit(ctx)
+				_ = loza.Emit(ctx)
 			}()
 
 			next.ServeHTTP(rw, r.WithContext(ctx))
@@ -181,11 +181,11 @@ func remoteAddrIP(addr string) string {
 	return host
 }
 
-func selectedHeaderAttrs(r *http.Request, headers []string) []loxa.Attr {
+func selectedHeaderAttrs(r *http.Request, headers []string) []loza.Attr {
 	if len(headers) == 0 {
 		return nil
 	}
-	attrs := make([]loxa.Attr, 0, len(headers))
+	attrs := make([]loza.Attr, 0, len(headers))
 	for _, h := range headers {
 		name := strings.TrimSpace(h)
 		if name == "" {
@@ -202,7 +202,7 @@ func selectedHeaderAttrs(r *http.Request, headers []string) []loxa.Attr {
 			// skip invalid header names
 			continue
 		}
-		attrs = append(attrs, loxa.String("http.header."+key, value))
+		attrs = append(attrs, loza.String("http.header."+key, value))
 	}
 	return attrs
 }

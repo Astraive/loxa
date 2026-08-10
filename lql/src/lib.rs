@@ -1,9 +1,9 @@
-//! Loxa Query Language (LQL)
+//! Loza Query Language (LQL)
 //!
 //! A Kusto-inspired query language that compiles to DuckDB and ClickHouse SQL.
 //!
 //! ```rust
-//! use loxa_lql::{compile_to_duckdb, compile_to_clickhouse};
+//! use loza_lql::{compile_to_duckdb, compile_to_clickhouse};
 //!
 //! let sql = compile_to_duckdb(r#"from events | where level = "error" | summarize count() by service | sort count desc | limit 10"#).unwrap();
 //! assert!(sql.contains("COUNT(*)"));

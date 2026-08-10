@@ -1,4 +1,4 @@
-// Package eventbus provides a pluggable event bus abstraction for the Loxa collector.
+// Package eventbus provides a pluggable event bus abstraction for the Loza collector.
 // It decouples ingest from delivery, allowing queue mode to use memory, Redis, NATS, or Kafka.
 package eventbus
 
@@ -9,11 +9,11 @@ import (
 	"encoding/json"
 	"time"
 
-	collectorevent "github.com/astraive/loxa/collector/internal/event"
+	collectorevent "github.com/astraive/loza/collector/internal/event"
 )
 
 // Bus is the core event bus interface. All adapters implement this.
-// It is batch-first because Loxa ingestion already supports batches.
+// It is batch-first because Loza ingestion already supports batches.
 type Bus interface {
 	// Publish sends a batch of envelopes to the given topic.
 	Publish(ctx context.Context, topic string, events []Envelope) error

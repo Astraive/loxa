@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	LOXASpecVersion      = "v1"
-	LOXAEventVersion     = "v1"
-	LOXAIngestAPIVersion = "v1"
+	LOZASpecVersion      = "v1"
+	LOZAEventVersion     = "v1"
+	LOZAIngestAPIVersion = "v1"
 	MaxEventBytes        = 65536
 )
 
@@ -89,7 +89,7 @@ var AllowedLevels = set("debug", "info", "notice", "warn", "error", "fatal")
 var AllowedOutcomes = set("success", "error", "partial", "abandoned", "retried", "cancelled", "timeout", "skipped", "rejected", "quarantined", "unknown")
 var AllowedPartialReasons = set("not_finished", "process_exit", "timeout", "panic", "collector_unavailable")
 var AllowedEventStates = set("created", "active", "finished", "emitting", "emitted", "invalid", "dropped", "emit_failed", "spooled", "dlq_written", "failed_validation", "delivery_failed")
-var AllowedSourceSDKs = set("loxa-cli", "loxa-go", "loxa-py", "loxa-rs")
+var AllowedSourceSDKs = set("loza-cli", "loza-go", "loza-py", "loza-rs")
 var AllowedTopLevelFields = set("attrs", "checkpoints", "collector", "delivery_attempts", "deployment", "duration_ms", "environment", "error", "errors", "event", "event_id", "event_state", "event_version", "finished_at", "groups", "http", "incident_id", "kind", "level", "links", "message", "method", "organization", "outcome", "partial", "partial_reason", "path", "pii", "processes", "redaction", "release", "request_id", "resource", "route", "sampling", "schema_version", "sdk", "service", "source", "span_id", "started_at", "status_code", "tenant", "timers", "timestamp", "trace_flags", "trace_id", "user", "version", "workspace")
 var AllowedCollectorStatuses = set("accepted", "partial", "rejected", "invalid", "quarantined")
 var CanonicalFieldSet = AllowedTopLevelFields
@@ -99,7 +99,7 @@ func IsCanonical(key string) bool {
 	return ok
 }
 
-func LooksLikeLoxaEventMap(payload map[string]any) bool {
+func LooksLikeLozaEventMap(payload map[string]any) bool {
 	if payload == nil {
 		return false
 	}
@@ -145,7 +145,7 @@ func BuildIngestEnvelope(sdk, version, service string, events []json.RawMessage)
 	if strings.TrimSpace(service) == "" {
 		service = "unknown"
 	}
-	return IngestEnvelope{APIVersion: LOXAIngestAPIVersion, Source: SourceInfo{SDK: sdk, Version: version, Service: service}, Events: events}
+	return IngestEnvelope{APIVersion: LOZAIngestAPIVersion, Source: SourceInfo{SDK: sdk, Version: version, Service: service}, Events: events}
 }
 
 func MarshalIngestEnvelope(sdk, version, service string, events []json.RawMessage) ([]byte, error) {
@@ -282,8 +282,8 @@ func ValidateEventMapDetailed(payload map[string]any, strict bool) ValidationErr
 			}
 		}
 	}
-	requireEnum(normalized, "schema_version", set(LOXASpecVersion), "unsupported_schema_version", &errs)
-	requireEnum(normalized, "event_version", set(LOXAEventVersion), "unsupported_event_version", &errs)
+	requireEnum(normalized, "schema_version", set(LOZASpecVersion), "unsupported_schema_version", &errs)
+	requireEnum(normalized, "event_version", set(LOZAEventVersion), "unsupported_event_version", &errs)
 	requireString(normalized, "event_id", "missing_event_id", &errs)
 	requireTimestamp(normalized, "timestamp", &errs)
 	requireService(normalized, &errs)

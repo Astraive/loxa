@@ -1,5 +1,5 @@
 pub fn middleware_name() -> &'static str {
-    "loxa-axum"
+    "loza-axum"
 }
 
 #[cfg(feature = "axum")]
@@ -12,12 +12,12 @@ pub mod axum_impl {
     use std::time::Instant;
 
     #[allow(dead_code)]
-    pub struct LoxaLayer {
+    pub struct LozaLayer {
         logger: Arc<Logger>,
         service_name: String,
     }
 
-    impl LoxaLayer {
+    impl LozaLayer {
         pub fn new(logger: Logger, service_name: impl Into<String>) -> Self {
             Self {
                 logger: Arc::new(logger),
@@ -26,7 +26,7 @@ pub mod axum_impl {
         }
     }
 
-    pub async fn loxa_middleware(
+    pub async fn loza_middleware(
         logger: Arc<Logger>,
         service_name: String,
         req: Request,

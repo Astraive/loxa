@@ -48,7 +48,7 @@ type Params struct {
 	StartedAt time.Time
 
 	// ── Custom business context ───────────────────────────────────────────────
-	// Custom holds domain-specific attrs that LOXA-Go does not know in advance.
+	// Custom holds domain-specific attrs that LOZA-Go does not know in advance.
 	// These are copied into Event.Attrs during StartEvent.
 	Custom []Attr
 }
@@ -56,8 +56,8 @@ type Params struct {
 // With returns a copy of p with additional attrs appended to Custom.
 // It enables a builder style:
 //
-//	loxa.Params{Event: "checkout.request"}.With(
-//	    loxa.String("tenant.id", tenantID),
+//	loza.Params{Event: "checkout.request"}.With(
+//	    loza.String("tenant.id", tenantID),
 //	)
 func (p Params) With(attrs ...Attr) Params {
 	p.Custom = append(p.Custom, attrs...)

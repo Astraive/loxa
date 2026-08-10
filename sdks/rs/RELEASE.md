@@ -1,10 +1,10 @@
 # Release Process
 
-This document describes how to publish a new release of the LOXA Rust SDK.
+This document describes how to publish a new release of the LOZA Rust SDK.
 
 ## Prerequisites
 
-- crates.io account with publish access to the `loxa` crate.
+- crates.io account with publish access to the `loza` crate.
 - Rust toolchain installed (stable channel).
 - All tests passing: `cargo test --all`.
 - Clippy clean: `cargo clippy -- -D warnings`.
@@ -22,7 +22,7 @@ Edit `Cargo.toml` to set the new version:
 
 ```toml
 [package]
-name = "loxa"
+name = "loza"
 version = "0.2.0"
 ```
 
@@ -47,14 +47,14 @@ cargo publish             # publish to crates.io
 Create a Git tag following the `rs/vX.Y.Z` convention:
 
 ```bash
-git tag -a rs/v0.2.0 -m "loxa-rs v0.2.0"
+git tag -a rs/v0.2.0 -m "loza-rs v0.2.0"
 git push origin rs/v0.2.0
 ```
 
 ### 6. Create a GitHub Release
 
 ```bash
-gh release create rs/v0.2.0 --title "loxa-rs v0.2.0" --notes-file release-notes.md
+gh release create rs/v0.2.0 --title "loza-rs v0.2.0" --notes-file release-notes.md
 ```
 
 ## Version Policy

@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
-	"github.com/astraive/loxa/cli/internal/output"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/output"
 )
 
 func SinksCommand(ctx context.Context, cfg config.Config, args []string) error {
@@ -22,12 +22,12 @@ func SinksCommand(ctx context.Context, cfg config.Config, args []string) error {
 		return sinksList(ctx, cfg)
 	case "show":
 		if len(args) == 0 {
-			return fmt.Errorf("usage: loxa sinks show <name>")
+			return fmt.Errorf("usage: loza sinks show <name>")
 		}
 		return sinksShow(ctx, cfg, args[0])
 	case "test":
 		if len(args) == 0 {
-			return fmt.Errorf("usage: loxa sinks test <name>")
+			return fmt.Errorf("usage: loza sinks test <name>")
 		}
 		return sinksTest(ctx, cfg, args[0])
 	default:

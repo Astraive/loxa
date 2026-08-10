@@ -1,3 +1,3 @@
 # tests/integration
 
-Implementation lives in the `loxa` Python package; this directory preserves SDK repo parity.
+Implementation lives in the `loza` Python package; this directory preserves SDK repo parity.

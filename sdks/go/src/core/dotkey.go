@@ -13,7 +13,7 @@ type DotNode struct {
 
 // LeafValue carries the typed value of a leaf node.
 type LeafValue struct {
-	Kind  uint8 // matches loxa.Kind
+	Kind  uint8 // matches loza.Kind
 	Value any
 }
 

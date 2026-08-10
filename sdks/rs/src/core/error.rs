@@ -1,4 +1,4 @@
-pub use crate::errors::{LoxaError, ValidationError};
+pub use crate::errors::{LozaError, ValidationError};
 
 use serde_json::{Map, Value};
 

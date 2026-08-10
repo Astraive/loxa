@@ -1,6 +1,6 @@
 # Delivery Semantics
 
-LOXA does not claim impossible network-level exactly-once delivery.
+LOZA does not claim impossible network-level exactly-once delivery.
 
 The canonical wording is:
 

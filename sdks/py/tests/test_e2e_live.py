@@ -1,8 +1,8 @@
-"""End-to-end test: HTTPBatchSink -> live loxa-collector pipeline.
+"""End-to-end test: HTTPBatchSink -> live loza-collector pipeline.
 
-Requires a collector at ``LOXA_TEST_COLLECTOR_URL`` (default
-``http://127.0.0.1:9308``), its ingest token in ``LOXA_API_KEY``, and an
-admin token in ``LOXA_TEST_COLLECTOR_ADMIN_KEY``.
+Requires a collector at ``LOZA_TEST_COLLECTOR_URL`` (default
+``http://127.0.0.1:9308``), its ingest token in ``LOZA_API_KEY``, and an
+admin token in ``LOZA_TEST_COLLECTOR_ADMIN_KEY``.
 """
 import json
 import os
@@ -12,12 +12,12 @@ import urllib.request
 from urllib.parse import urlparse
 import pytest
 
-import loxa
+import loza
 
 
-COLLECTOR_URL = os.getenv("LOXA_TEST_COLLECTOR_URL", "http://127.0.0.1:9308").rstrip("/")
-INGEST_API_KEY = os.getenv("LOXA_API_KEY", "")
-ADMIN_API_KEY = os.getenv("LOXA_TEST_COLLECTOR_ADMIN_KEY", "")
+COLLECTOR_URL = os.getenv("LOZA_TEST_COLLECTOR_URL", "http://127.0.0.1:9308").rstrip("/")
+INGEST_API_KEY = os.getenv("LOZA_API_KEY", "")
+ADMIN_API_KEY = os.getenv("LOZA_TEST_COLLECTOR_ADMIN_KEY", "")
 
 
 def _collector_reachable(url: str = COLLECTOR_URL, timeout: float = 2.0) -> bool:
@@ -37,34 +37,34 @@ def _collector_reachable(url: str = COLLECTOR_URL, timeout: float = 2.0) -> bool
 
 pytestmark = pytest.mark.skipif(
     not _collector_reachable(),
-    reason=f"loxa-collector not running at {COLLECTOR_URL}",
+    reason=f"loza-collector not running at {COLLECTOR_URL}",
 )
 
 
 def test_e2e_collector_pipeline():
     """Send events through HTTPBatchSink and verify collector receives them."""
-    assert INGEST_API_KEY, "LOXA_API_KEY is required for authenticated collector E2E"
-    assert ADMIN_API_KEY, "LOXA_TEST_COLLECTOR_ADMIN_KEY is required for status/query checks"
+    assert INGEST_API_KEY, "LOZA_API_KEY is required for authenticated collector E2E"
+    assert ADMIN_API_KEY, "LOZA_TEST_COLLECTOR_ADMIN_KEY is required for status/query checks"
 
-    print("\n=== E2E Test: HTTPBatchSink -> loxa-collector ===\n")
+    print("\n=== E2E Test: HTTPBatchSink -> loza-collector ===\n")
 
     # 1. Create logger with collector sink
     config = (
-        loxa.Production("e2e-test-service")
+        loza.Production("e2e-test-service")
         .with_collector_endpoint(COLLECTOR_URL)
         .with_api_key(INGEST_API_KEY)
     )
-    logger = loxa.New(config)
+    logger = loza.New(config)
 
     # 2. Emit 3 events
     for i in range(3):
-        ctx = logger.start_event(loxa.Params(
+        ctx = logger.start_event(loza.Params(
             event=f"e2e.test.event_{i}",
             message=f"E2E test event {i}",
             level="info",
         ))
-        logger.enrich(ctx, loxa.String("test_run", "e2e"))
-        logger.enrich(ctx, loxa.Int("sequence", i))
+        logger.enrich(ctx, loza.String("test_run", "e2e"))
+        logger.enrich(ctx, loza.Int("sequence", i))
         logger.finish(ctx, "success")
         logger.emit(ctx)
         print(f"  Sent: e2e.test.event_{i}")
@@ -113,7 +113,7 @@ def test_e2e_collector_pipeline():
         print(f"  DuckDB query skipped: {e}")
 
     # 5. CollectorClient health/ready/version/status
-    from loxa.core.http_client import CollectorClient
+    from loza.core.http_client import CollectorClient
     cc = CollectorClient(f"{COLLECTOR_URL}/events", api_key=ADMIN_API_KEY)
 
     assert cc.health() is True, "collector health check failed"

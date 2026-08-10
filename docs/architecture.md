@@ -1,10 +1,10 @@
-# LOXA Architecture Guide
+# LOZA Architecture Guide
 
 ## System Overview
 
-LOXA is a five-tier event observability system designed for high-volume, reliable event capture and analysis across distributed systems.
+LOZA is a five-tier event observability system designed for high-volume, reliable event capture and analysis across distributed systems.
 
-v0.2.0 positions Loxa as the business event lifecycle layer beside OpenTelemetry traces. The canonical product doc is [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md).
+v0.2.0 positions Loza as the business event lifecycle layer beside OpenTelemetry traces. The canonical product doc is [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md).
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -202,10 +202,10 @@ Undeliverable events are captured with context:
 
 DLQ is queryable and replayable:
 ```bash
-loxa dlq list              # Show DLQ entries
-loxa dlq get <id>          # Get DLQ entry details
-loxa dlq replay <id>       # Replay single entry
-loxa dlq replay --all      # Replay all DLQ entries
+loza dlq list              # Show DLQ entries
+loza dlq get <id>          # Get DLQ entry details
+loza dlq replay <id>       # Replay single entry
+loza dlq replay --all      # Replay all DLQ entries
 ```
 
 ### 7. Control Plane
@@ -245,13 +245,13 @@ CREATE TABLE events (
 ### 9. Monitoring & Observability
 
 **Metrics (Prometheus):**
-- `loxa_collector_ingest_total` - Total events ingested
-- `loxa_collector_ingest_bytes` - Total bytes ingested
-- `loxa_collector_ingest_errors` - Ingest failures
-- `loxa_collector_sink_write_total` - Sink writes
-- `loxa_collector_sink_write_errors` - Sink write failures
-- `loxa_collector_spool_bytes` - Current spool size
-- `loxa_collector_ready` - Readiness indicator (1=ready, 0=not ready)
+- `loza_collector_ingest_total` - Total events ingested
+- `loza_collector_ingest_bytes` - Total bytes ingested
+- `loza_collector_ingest_errors` - Ingest failures
+- `loza_collector_sink_write_total` - Sink writes
+- `loza_collector_sink_write_errors` - Sink write failures
+- `loza_collector_spool_bytes` - Current spool size
+- `loza_collector_ready` - Readiness indicator (1=ready, 0=not ready)
 
 **Audit Logging:**
 ```json
@@ -320,11 +320,11 @@ CREATE TABLE events (
 └────────────────────────────────────────────┘
            ↓
 ┌────────────────────────────────────────────┐
-│ Kafka Topic: loxa-events (3 partitions)    │
+│ Kafka Topic: loza-events (3 partitions)    │
 └────────────────────────────────────────────┘
            ↓
 ┌────────────────────────────────────────────┐
-│ Worker Cluster (loxa-worker)               │
+│ Worker Cluster (loza-worker)               │
 │ ┌─────────┬─────────┬─────────┐           │
 │ │ W1      │ W2      │ W3      │           │
 │ │ Consumer│ Consumer│ Consumer│           │
@@ -366,7 +366,7 @@ Event emission to query (happy path):
 6. Collector returns 202 Accepted to SDK
 
 7. Event available for query:
-   loxa query --sql "SELECT * FROM events WHERE event='user.signup'"
+   loza query --sql "SELECT * FROM events WHERE event='user.signup'"
 
 8. Query hits DuckDB (or read replica)
    Results returned to CLI

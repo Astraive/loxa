@@ -186,10 +186,10 @@ pub const CONTRACT_JSON: &str = r#"{
       \"delivery_failed\"
     ],
     \"source_sdks\": [
-      \"loxa-cli\",
-      \"loxa-go\",
-      \"loxa-py\",
-      \"loxa-rs\"
+      \"loza-cli\",
+      \"loza-go\",
+      \"loza-py\",
+      \"loza-rs\"
     ]
   },
   \"collector_statuses\": [
@@ -391,9 +391,9 @@ pub const CONTRACT_JSON: &str = r#"{
     \"manifest\": \"conformance/manifest.json\"
   }
 }"#;
-pub const LOXA_SPEC_VERSION: &str = "v1";
-pub const LOXA_INGEST_API_VERSION: &str = "v1";
-pub const LOXA_EVENT_VERSION: &str = "v1";
+pub const LOZA_SPEC_VERSION: &str = "v1";
+pub const LOZA_INGEST_API_VERSION: &str = "v1";
+pub const LOZA_EVENT_VERSION: &str = "v1";
 pub const MAX_EVENT_BYTES: usize = 65536;
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ValidationError { pub field: String, pub code: String, pub message: String, #[serde(default)] pub event_id: String, #[serde(default)] pub retryable: bool }

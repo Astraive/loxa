@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	collectorevent "github.com/astraive/loxa/collector/internal/event"
+	collectorevent "github.com/astraive/loza/collector/internal/event"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
@@ -75,7 +75,7 @@ type sink struct {
 
 const (
 	defaultProtocol             = "grpc"
-	defaultLogger               = "loxa-collector"
+	defaultLogger               = "loza-collector"
 	defaultTimeout              = 10 * time.Second
 	defaultRetryInitialInterval = 5 * time.Second
 	defaultRetryMaxInterval     = 30 * time.Second

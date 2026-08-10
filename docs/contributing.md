@@ -1,4 +1,4 @@
-# Contributing to LOXA
+# Contributing to LOZA
 
 ## Development Setup
 

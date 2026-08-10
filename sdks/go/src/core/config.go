@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astraive/loxa/spec/dsn"
+	"github.com/astraive/loza/spec/dsn"
 )
 
 // ── Field naming ──────────────────────────────────────────────────────────────
@@ -23,7 +23,7 @@ type FieldNamingConfig struct {
 // ── Duplicate field policy ────────────────────────────────────────────────────
 
 // DuplicateFieldPolicy controls what happens when a custom Attr has the same
-// key as a canonical field (e.g. loxa.String("service", "x") when service is
+// key as a canonical field (e.g. loza.String("service", "x") when service is
 // already set from Params).
 type DuplicateFieldPolicy int
 
@@ -127,7 +127,7 @@ type DeliveryFailureHandler interface {
 
 // ── Top-level config ──────────────────────────────────────────────────────────
 
-// Config is the top-level LOXA-Go configuration.
+// Config is the top-level LOZA-Go configuration.
 type Config struct {
 	// ── Service identity ──────────────────────────────────────────────────────
 	Service      string
@@ -143,7 +143,7 @@ type Config struct {
 	Insecure bool   // Allow plain HTTP (local dev only). Default: false.
 
 	// ── Collector configuration ───────────────────────────────────────────────
-	CollectorURL string // URL of the LOXA collector (required)
+	CollectorURL string // URL of the LOZA collector (required)
 
 	// ── Batching configuration ────────────────────────────────────────────────
 	BatchSize     int           // Number of events per batch (default: 100)
@@ -195,7 +195,7 @@ type Config struct {
 	Strict bool
 	// ValidateEncoded controls post-encode spec contract validation in strict mode.
 	// Default: true when Strict is true. Set false for custom schemas
-	// (FlatSchema, ECSchema, DatadogSchema) that deviate from LOXA shape.
+	// (FlatSchema, ECSchema, DatadogSchema) that deviate from LOZA shape.
 	ValidateEncoded bool
 
 	// ── ID generation ─────────────────────────────────────────────────────────
@@ -220,7 +220,7 @@ func (c Config) WithService(service string) Config {
 	return c
 }
 
-// WithAlias returns a copy of cfg with the logical loxa.alias metadata set.
+// WithAlias returns a copy of cfg with the logical loza.alias metadata set.
 func (c Config) WithAlias(alias string) Config {
 	c.Alias = alias
 	return c
@@ -599,7 +599,7 @@ func Dev() Config {
 	return Config{
 		Level:             LevelDebug,
 		Environment:       "development",
-		Version:           envOr("LOXA_SERVICE_VERSION", "unknown"),
+		Version:           envOr("LOZA_SERVICE_VERSION", "unknown"),
 		IncludeHost:       true,
 		Encoder:           PrettyJSONEncoder(),
 		Sinks:             []Sink{StdoutSink()},
@@ -641,8 +641,8 @@ func Dev() Config {
 func Production() Config {
 	return Config{
 		Level:             LevelInfo,
-		Environment:       envOr("LOXA_ENV", "production"),
-		Version:           envOr("LOXA_SERVICE_VERSION", "unknown"),
+		Environment:       envOr("LOZA_ENV", "production"),
+		Version:           envOr("LOZA_SERVICE_VERSION", "unknown"),
 		IncludeHost:       true,
 		Encoder:           JSONEncoder(),
 		Sinks:             []Sink{StdoutSink()},
@@ -738,31 +738,31 @@ func envOr(key, def string) string {
 // to the provided config. Environment variables take precedence over the base config
 // but are overridden by explicit code configuration.
 //
-// When LOXA_DSN is set, it is parsed first and sets CollectorURL, Environment,
-// Service, and Insecure. Individual env vars (LOXA_COLLECTOR_URL, etc.) override
+// When LOZA_DSN is set, it is parsed first and sets CollectorURL, Environment,
+// Service, and Insecure. Individual env vars (LOZA_COLLECTOR_URL, etc.) override
 // DSN-derived values when both are present.
 //
 // Supported environment variables:
-//   - LOXA_DSN: loxa:// connection URI (sets CollectorURL, Environment, Service, Insecure)
-//   - LOXA_COLLECTOR_URL: Collector endpoint URL (overrides DSN)
-//   - LOXA_SERVICE_NAME: Service name
-//   - LOXA_SERVICE_VERSION: Service version
-//   - LOXA_ENVIRONMENT: Deployment environment
-//   - LOXA_TENANT_ID: Tenant identifier
-//   - LOXA_BATCH_SIZE: Batch size for event buffering (integer)
-//   - LOXA_FLUSH_INTERVAL: Flush interval duration (e.g., "5s")
-//   - LOXA_MAX_BUFFER_SIZE: Maximum buffer size (integer)
-//   - LOXA_MAX_RETRIES: Maximum retry attempts (integer)
-//   - LOXA_MAX_BACKOFF: Maximum backoff duration (e.g., "30s")
-//   - LOXA_TIMEOUT: Request timeout (e.g., "10s")
-//   - LOXA_CONNECTION_TIMEOUT: Connection timeout (e.g., "5s")
-//   - LOXA_ENABLE_COMPRESSION: Enable compression ("true" or "false")
+//   - LOZA_DSN: loza:// connection URI (sets CollectorURL, Environment, Service, Insecure)
+//   - LOZA_COLLECTOR_URL: Collector endpoint URL (overrides DSN)
+//   - LOZA_SERVICE_NAME: Service name
+//   - LOZA_SERVICE_VERSION: Service version
+//   - LOZA_ENVIRONMENT: Deployment environment
+//   - LOZA_TENANT_ID: Tenant identifier
+//   - LOZA_BATCH_SIZE: Batch size for event buffering (integer)
+//   - LOZA_FLUSH_INTERVAL: Flush interval duration (e.g., "5s")
+//   - LOZA_MAX_BUFFER_SIZE: Maximum buffer size (integer)
+//   - LOZA_MAX_RETRIES: Maximum retry attempts (integer)
+//   - LOZA_MAX_BACKOFF: Maximum backoff duration (e.g., "30s")
+//   - LOZA_TIMEOUT: Request timeout (e.g., "10s")
+//   - LOZA_CONNECTION_TIMEOUT: Connection timeout (e.g., "5s")
+//   - LOZA_ENABLE_COMPRESSION: Enable compression ("true" or "false")
 func LoadFromEnv(base Config) Config {
 	cfg := base
 
 	// Load DSN first (sets CollectorURL, Environment, Service, Insecure).
 	// Individual env vars below can override DSN-derived values.
-	if rawDSN := os.Getenv("LOXA_DSN"); rawDSN != "" {
+	if rawDSN := os.Getenv("LOZA_DSN"); rawDSN != "" {
 		if d, err := dsn.Parse(rawDSN); err == nil {
 			cfg.CollectorURL = d.BaseURL
 			cfg.Environment = d.Env
@@ -775,70 +775,70 @@ func LoadFromEnv(base Config) Config {
 	}
 
 	// Load collector URL (overrides DSN-derived value if both are set)
-	if url := os.Getenv("LOXA_COLLECTOR_URL"); url != "" {
+	if url := os.Getenv("LOZA_COLLECTOR_URL"); url != "" {
 		cfg.CollectorURL = url
 	}
 
 	// Load authentication
-	if apiKey := os.Getenv("LOXA_API_KEY"); apiKey != "" {
+	if apiKey := os.Getenv("LOZA_API_KEY"); apiKey != "" {
 		cfg.APIKey = apiKey
 	}
 
 	// Load service identity
-	if service := os.Getenv("LOXA_SERVICE_NAME"); service != "" {
+	if service := os.Getenv("LOZA_SERVICE_NAME"); service != "" {
 		cfg.Service = service
 	}
-	if version := os.Getenv("LOXA_SERVICE_VERSION"); version != "" {
+	if version := os.Getenv("LOZA_SERVICE_VERSION"); version != "" {
 		cfg.Version = version
 	}
-	if env := os.Getenv("LOXA_ENVIRONMENT"); env != "" {
+	if env := os.Getenv("LOZA_ENVIRONMENT"); env != "" {
 		cfg.Environment = env
 	}
-	if tenantID := os.Getenv("LOXA_TENANT_ID"); tenantID != "" {
+	if tenantID := os.Getenv("LOZA_TENANT_ID"); tenantID != "" {
 		cfg.TenantID = tenantID
 	}
 
 	// Load batching configuration
-	if batchSize := os.Getenv("LOXA_BATCH_SIZE"); batchSize != "" {
+	if batchSize := os.Getenv("LOZA_BATCH_SIZE"); batchSize != "" {
 		if size, err := strconv.Atoi(batchSize); err == nil {
 			cfg.BatchSize = size
 		}
 	}
-	if flushInterval := os.Getenv("LOXA_FLUSH_INTERVAL"); flushInterval != "" {
+	if flushInterval := os.Getenv("LOZA_FLUSH_INTERVAL"); flushInterval != "" {
 		if interval, err := time.ParseDuration(flushInterval); err == nil {
 			cfg.FlushInterval = interval
 		}
 	}
-	if maxBufferSize := os.Getenv("LOXA_MAX_BUFFER_SIZE"); maxBufferSize != "" {
+	if maxBufferSize := os.Getenv("LOZA_MAX_BUFFER_SIZE"); maxBufferSize != "" {
 		if size, err := strconv.Atoi(maxBufferSize); err == nil {
 			cfg.MaxBufferSize = size
 		}
 	}
 
 	// Load retry configuration
-	if maxRetries := os.Getenv("LOXA_MAX_RETRIES"); maxRetries != "" {
+	if maxRetries := os.Getenv("LOZA_MAX_RETRIES"); maxRetries != "" {
 		if retries, err := strconv.Atoi(maxRetries); err == nil {
 			cfg.MaxRetries = retries
 		}
 	}
-	if maxBackoff := os.Getenv("LOXA_MAX_BACKOFF"); maxBackoff != "" {
+	if maxBackoff := os.Getenv("LOZA_MAX_BACKOFF"); maxBackoff != "" {
 		if backoff, err := time.ParseDuration(maxBackoff); err == nil {
 			cfg.MaxBackoff = backoff
 		}
 	}
-	if timeout := os.Getenv("LOXA_TIMEOUT"); timeout != "" {
+	if timeout := os.Getenv("LOZA_TIMEOUT"); timeout != "" {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			cfg.Timeout = t
 		}
 	}
-	if connTimeout := os.Getenv("LOXA_CONNECTION_TIMEOUT"); connTimeout != "" {
+	if connTimeout := os.Getenv("LOZA_CONNECTION_TIMEOUT"); connTimeout != "" {
 		if t, err := time.ParseDuration(connTimeout); err == nil {
 			cfg.ConnectionTimeout = t
 		}
 	}
 
 	// Load compression setting
-	if compression := os.Getenv("LOXA_ENABLE_COMPRESSION"); compression != "" {
+	if compression := os.Getenv("LOZA_ENABLE_COMPRESSION"); compression != "" {
 		cfg.EnableCompression = compression == "true" || compression == "1"
 	}
 
@@ -855,13 +855,13 @@ func validateSDKConfig(cfg Config) error {
 	if strings.TrimSpace(cfg.CollectorURL) == "" {
 		return &ConfigValidationError{
 			Field:   "CollectorURL",
-			Problem: "collector_url is required (set LOXA_COLLECTOR_URL or pass WithCollectorURL)",
+			Problem: "collector_url is required (set LOZA_COLLECTOR_URL or pass WithCollectorURL)",
 		}
 	}
 	if strings.TrimSpace(cfg.Service) == "" {
 		return &ConfigValidationError{
 			Field:   "Service",
-			Problem: "service_name is required (set LOXA_SERVICE_NAME or pass WithService)",
+			Problem: "service_name is required (set LOZA_SERVICE_NAME or pass WithService)",
 		}
 	}
 	return cfg.Validate()
@@ -873,7 +873,7 @@ func validateSDKConfig(cfg Config) error {
 // This implements Requirement 32.1, 32.4, 32.5, 32.6, 32.7, 32.8, 32.9.
 //
 // The cfg parameter represents code-level configuration (highest precedence).
-// Environment variables are loaded automatically. A loxa.yaml file is loaded
+// Environment variables are loaded automatically. A loza.yaml file is loaded
 // from the current directory if present.
 func NewClient(cfg Config) (*Logger, error) {
 	base := Config{
@@ -912,7 +912,7 @@ func NewClient(cfg Config) (*Logger, error) {
 	combinedFileCfg := FileConfig{}
 	defaultsFileCfg, err := LoadDefaultsFile()
 	if err != nil {
-		return nil, fmt.Errorf("loxa: load defaults: %w", err)
+		return nil, fmt.Errorf("loza: load defaults: %w", err)
 	}
 	combinedFileCfg = overlayFileConfig(combinedFileCfg, defaultsFileCfg)
 	if userFileCfg, err := LoadFromFile(""); err == nil {
@@ -934,7 +934,7 @@ func NewClient(cfg Config) (*Logger, error) {
 
 	// Step 4: Validate the final config
 	if err := validateSDKConfig(merged); err != nil {
-		return nil, fmt.Errorf("loxa: invalid configuration: %w", err)
+		return nil, fmt.Errorf("loza: invalid configuration: %w", err)
 	}
 
 	// If no explicit sink was configured, route events to the collector endpoint
@@ -946,10 +946,10 @@ func NewClient(cfg Config) (*Logger, error) {
 			headers["Authorization"] = "Bearer " + merged.APIKey
 		}
 		if merged.Service != "" {
-			headers["X-Loxa-Service"] = merged.Service
+			headers["X-Loza-Service"] = merged.Service
 		}
 		if merged.Environment != "" {
-			headers["X-Loxa-Env"] = merged.Environment
+			headers["X-Loza-Env"] = merged.Environment
 		}
 
 		batchSink, err := HTTPBatchSink(HTTPBatchSinkConfig{
@@ -960,7 +960,7 @@ func NewClient(cfg Config) (*Logger, error) {
 			Gzip:          merged.EnableCompression,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("loxa: initialize httpbatch sink: %w", err)
+			return nil, fmt.Errorf("loza: initialize httpbatch sink: %w", err)
 		}
 		merged.Sinks = []Sink{batchSink}
 		merged.Sink = batchSink

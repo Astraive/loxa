@@ -1,4 +1,4 @@
-"""LOXA Python SDK sampler benchmark.
+"""LOZA Python SDK sampler benchmark.
 
 Measures sampler decision overhead with different sampler types.
 
@@ -16,7 +16,7 @@ import time
 
 sys.path.insert(0, sys.path[0] + "/.." if sys.path[0].endswith("bench") else ".")
 
-import loxa
+import loza
 
 
 def _run_sampler_bench(
@@ -25,16 +25,16 @@ def _run_sampler_bench(
     iterations: int = 10000,
 ) -> dict:
     """Run a single sampler benchmark."""
-    sink = loxa.MemorySink()
-    logger = loxa.new(loxa.test("bench").with_sink(sink).with_sampler(sampler))
+    sink = loza.MemorySink()
+    logger = loza.new(loza.test("bench").with_sink(sink).with_sampler(sampler))
 
     latencies: list[float] = []
 
     for _ in range(iterations):
         t0 = time.perf_counter()
-        ctx = logger.start_event(loxa.Params(event="bench.sampler"))
-        loxa.finish(ctx, "success")
-        loxa.emit(ctx)
+        ctx = logger.start_event(loza.Params(event="bench.sampler"))
+        loza.finish(ctx, "success")
+        loza.emit(ctx)
         latencies.append((time.perf_counter() - t0) * 1_000_000)
 
     latencies.sort()
@@ -53,11 +53,11 @@ def run_sampler_benchmarks(iterations: int = 10000) -> dict:
     results = {}
 
     samplers = [
-        ("sampler_all", loxa.SampleAll()),
-        ("sampler_none", loxa.SampleNone()),
-        ("sampler_random_05", loxa.SampleRandom(0.5)),
-        ("sampler_random_01", loxa.SampleRandom(0.1)),
-        ("sampler_errors", loxa.SampleErrors()),
+        ("sampler_all", loza.SampleAll()),
+        ("sampler_none", loza.SampleNone()),
+        ("sampler_random_05", loza.SampleRandom(0.5)),
+        ("sampler_random_01", loza.SampleRandom(0.1)),
+        ("sampler_errors", loza.SampleErrors()),
     ]
 
     for name, sampler in samplers:
@@ -69,7 +69,7 @@ def run_sampler_benchmarks(iterations: int = 10000) -> dict:
 
 
 if __name__ == "__main__":
-    print("Running LOXA Python SDK sampler benchmarks...")
+    print("Running LOZA Python SDK sampler benchmarks...")
     print()
     results = run_sampler_benchmarks()
     print()

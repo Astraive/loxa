@@ -54,7 +54,7 @@ jobs:
       # - name: Type check (mypy)
       #   run: |
       #     pip install mypy
-      #     mypy src/loxa
+      #     mypy src/loza
 
       # --- Tests ---
 
@@ -79,4 +79,4 @@ jobs:
         run: |
           ls -la dist/
           pip install dist/*.whl --force-reinstall --no-deps
-          python -c "import loxa; print(loxa.__version__ if hasattr(loxa, '__version__') else 'import ok')"
+          python -c "import loza; print(loza.__version__ if hasattr(loza, '__version__') else 'import ok')"

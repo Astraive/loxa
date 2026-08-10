@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the LOXA Rust SDK are documented in this file.
+All notable changes to the LOZA Rust SDK are documented in this file.
 
 ## [0.2.6] - 2026-05-30
 
@@ -24,7 +24,7 @@ All notable changes to the LOXA Rust SDK are documented in this file.
 
 ### Added
 
-- Initial release of the LOXA Rust SDK.
+- Initial release of the LOZA Rust SDK.
 - Core event lifecycle: `start_event` -> `enrich` -> `finish` -> `emit`.
 - Logger with async/sync delivery via configurable sinks.
 - `StdoutSink`, `StderrSink`, `FileSink`, `MemorySink`, `NoopSink`, `HTTPBatchSink`.

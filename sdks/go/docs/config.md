@@ -13,6 +13,6 @@ SDK config controls:
 
 Use presets:
 
-- `loxa.Dev()`
-- `loxa.Production()`
-- `loxa.Test()`
+- `loza.Dev()`
+- `loza.Production()`
+- `loza.Test()`

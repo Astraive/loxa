@@ -1,51 +1,51 @@
-# loxa
+# loza
 
-LOXA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loxa-collector.
+LOZA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loza-collector.
 
 **Status**: STABLE (v0.2.6) - Production-ready, full feature conformance
 
 ## Installation
 
 ```bash
-npm install loxa
+npm install loza
 ```
 
 ## Quick Start
 
 ```typescript
-import { loxa } from 'loxa';
+import { loza } from 'loza';
 
 // Configure
-loxa.configure(
-  loxa.production('checkout')
+loza.configure(
+  loza.production('checkout')
     .withCollectorEndpoint('http://localhost:9308')
 );
 
 // Lifecycle
-const ctx = loxa.startEvent({
+const ctx = loza.startEvent({
   event: 'checkout.request',
   kind: 'http',
   method: 'POST',
   path: '/checkout',
 });
 
-loxa.append(ctx,
-  loxa.userId('u_123'),
-  loxa.cartId('cart_456'),
-  loxa.featureFlag('checkout_v2', 'on'),
+loza.append(ctx,
+  loza.userId('u_123'),
+  loza.cartId('cart_456'),
+  loza.featureFlag('checkout_v2', 'on'),
 );
 
-loxa.checkpoint(ctx, 'payment_started');
+loza.checkpoint(ctx, 'payment_started');
 
 try {
-  loxa.finish(ctx, 'success', loxa.int('status_code', 200));
+  loza.finish(ctx, 'success', loza.int('status_code', 200));
 } catch (err) {
-  loxa.finishError(ctx, err, loxa.retryable(true));
+  loza.finishError(ctx, err, loza.retryable(true));
 } finally {
-  await loxa.emit(ctx);
+  await loza.emit(ctx);
 }
 
-await loxa.shutdown();
+await loza.shutdown();
 ```
 
 ## Core Lifecycle API
@@ -58,7 +58,7 @@ import {
   startCliEvent, startCronEvent,
   append, enrich, set, merge, del, get, getGroup,
   checkpoint, finish, finishError, emit, flush, shutdown,
-} from 'loxa';
+} from 'loza';
 
 // Start an event
 const ctx = startEvent({
@@ -125,7 +125,7 @@ await shutdown();
 import {
   string, int, int64, uint64, float64, bool, time, duration, any, group, nullAttr,
   String, Int, Int64, Uint64, Float64, Bool, Time, Duration, Any, Group, Null,
-} from 'loxa';
+} from 'loza';
 
 enrich(ctx,
   string('user.id', 'u_123'),
@@ -162,7 +162,7 @@ import {
   featureFlag, featureFlagBool, experiment,
   // PascalCase aliases:
   UserID, TenantID, RequestID, TraceID, FeatureFlag, Experiment,
-} from 'loxa';
+} from 'loza';
 
 enrich(ctx,
   userId('u_123'),
@@ -185,7 +185,7 @@ enrich(ctx,
 import {
   orderId, cartId, productId, customerId,
   plan, currency, amount, country, device, platform, appVersion,
-} from 'loxa';
+} from 'loza';
 
 enrich(ctx,
   orderId('ord_123'),
@@ -207,7 +207,7 @@ enrich(ctx,
 ```typescript
 import {
   errorType, errorCode, errorMessage, errorStack, retryable,
-} from 'loxa';
+} from 'loza';
 
 try {
   process();
@@ -225,37 +225,37 @@ try {
 One-shot events without requiring `startEvent`:
 
 ```typescript
-import { loxa } from 'loxa';
+import { loza } from 'loza';
 
-await loxa.info('worker started', loxa.string('queue', 'emails'));
-await loxa.error('payment failed', loxa.string('provider', 'stripe'));
+await loza.info('worker started', loza.string('queue', 'emails'));
+await loza.error('payment failed', loza.string('provider', 'stripe'));
 ```
 
 ## Logger Instances
 
 ```typescript
-import { loxa, createLoxa } from 'loxa';
+import { loza, createLoza } from 'loza';
 
 // Default API — configure once, use everywhere
-loxa.configure(loxa.production('checkout').withCollectorEndpoint('http://127.0.0.1:9308'));
-loxa.info('server started');
+loza.configure(loza.production('checkout').withCollectorEndpoint('http://127.0.0.1:9308'));
+loza.info('server started');
 
 // Custom instance
-const logger = createLoxa({ service: 'checkout-api', collectorUrl: 'http://127.0.0.1:9308' });
+const logger = createLoza({ service: 'checkout-api', collectorUrl: 'http://127.0.0.1:9308' });
 logger.info('custom instance ready');
 
-// Alias -- same config, loxa.alias metadata
-const audit = loxa.alias('audit-service');
+// Alias -- same config, loza.alias metadata
+const audit = loza.alias('audit-service');
 audit.info('audit trail started');
 
 // Presets
-const cfg = loxa.dev('checkout');       // pretty JSON, stdout, sync, debug level
-const cfg2 = loxa.production('checkout'); // compact JSON, stdout, async, info level
-const cfg3 = loxa.test('checkout');       // sync, no sinks, debug level
+const cfg = loza.dev('checkout');       // pretty JSON, stdout, sync, debug level
+const cfg2 = loza.production('checkout'); // compact JSON, stdout, async, info level
+const cfg3 = loza.test('checkout');       // sync, no sinks, debug level
 
 // Instance methods
 const ctx = logger.startEvent({ event: 'checkout.request' });
-logger.enrich(ctx, loxa.string('key', 'value'));
+logger.enrich(ctx, loza.string('key', 'value'));
 logger.finish(ctx, 'success');
 await logger.emit(ctx);
 await logger.flush();
@@ -274,7 +274,7 @@ import {
   stdoutSink, fileSink, memorySink, httpBatchSink,
   sampleAll, sampleErrors, sampleRandom, sampleSlowRequests,
   defaultRedactor, redactKeys, hashKeys, dropKeys,
-} from 'loxa';
+} from 'loza';
 
 const cfg = production('checkout')
   .withVersion('0.0.2')
@@ -288,7 +288,7 @@ const cfg = production('checkout')
 ## Levels
 
 ```typescript
-import { LevelDebug, LevelInfo, LevelWarn, LevelError, LevelFatal, parseLevel } from 'loxa';
+import { LevelDebug, LevelInfo, LevelWarn, LevelError, LevelFatal, parseLevel } from 'loza';
 
 const level = parseLevel('info'); // LevelInfo
 ```
@@ -298,7 +298,7 @@ const level = parseLevel('info'); // LevelInfo
 ```typescript
 import {
   stdoutSink, stderrSink, fileSink, memorySink, noopSink, httpBatchSink,
-} from 'loxa';
+} from 'loza';
 
 const cfg = production('checkout').withSink(stdoutSink());
 const cfg2 = production('checkout').withSink(fileSink('/var/log/app.log'));
@@ -308,7 +308,7 @@ const cfg3 = production('checkout').withSink(httpBatchSink({
 
 // For testing
 const sink = memorySink();
-const logger = createLoxa({ service: 'checkout', sink });
+const logger = createLoza({ service: 'checkout', sink });
 // ... use logger ...
 const events = sink.getEvents();
 ```
@@ -322,7 +322,7 @@ import {
   sampleUsers, sampleTenants, sampleFeatureFlag,
   sampleRateLimited, sampleByHeader,
   anySampler, allSampler, notSampler,
-} from 'loxa';
+} from 'loza';
 
 const cfg = production('checkout').withSampler(sampleAll());
 const cfg2 = production('checkout').withSampler(sampleRandom(0.01));
@@ -347,7 +347,7 @@ const cfg7 = production('checkout').withSampler(
 import {
   defaultRedactor, redactKeys, redactPatterns, hashKeys, maskKeys, dropKeys,
   composeRedactors, sensitiveString, markSensitive, hashString,
-} from 'loxa';
+} from 'loza';
 
 const cfg = production('checkout').withRedactor(defaultRedactor());
 const cfg2 = production('checkout').withRedactor(redactKeys('password', 'token'));
@@ -376,7 +376,7 @@ enrich(ctx,
 import {
   defaultSchema, flatSchema, nestedSchema, otelLogSchema, ecSchema,
   datadogSchema, customSchema,
-} from 'loxa';
+} from 'loza';
 
 const cfg = production('checkout').withSchema(defaultSchema());
 const cfg2 = production('checkout').withSchema(flatSchema());
@@ -399,7 +399,7 @@ const cfg4 = production('checkout').withSchema(
 ```typescript
 import {
   CanonicalWins, UserWins, FirstWins, LastWins, KeepBoth, ErrorOnDuplicate,
-} from 'loxa';
+} from 'loza';
 
 const cfg = production('checkout').withDuplicatePolicy(CanonicalWins);
 const cfg2 = production('checkout').withDuplicatePolicy(LastWins);
@@ -408,7 +408,7 @@ const cfg2 = production('checkout').withDuplicatePolicy(LastWins);
 ## Context Mutation
 
 ```typescript
-import { append, enrich, set, merge, del, get, getGroup } from 'loxa';
+import { append, enrich, set, merge, del, get, getGroup } from 'loza';
 
 append(ctx, string('user.id', 'u_123'), string('cart.id', 'cart_456'));
 enrich(ctx, int('payment.attempt', 1));
@@ -423,15 +423,15 @@ const group = getGroup(ctx, 'payment');
 
 ```typescript
 // Express
-import { loxaMiddleware } from 'loxa/middleware/express';
+import { lozaMiddleware } from 'loza/middleware/express';
 
-app.use(loxaMiddleware({ service: 'checkout' }));
+app.use(lozaMiddleware({ service: 'checkout' }));
 ```
 
 ## Feature Flags
 
 ```typescript
-import { featureFlag, featureFlagBool, experiment } from 'loxa';
+import { featureFlag, featureFlagBool, experiment } from 'loza';
 
 enrich(ctx,
   featureFlag('checkout_v2', 'enabled'),
@@ -443,7 +443,7 @@ enrich(ctx,
 ## Security
 
 ```typescript
-import { sensitiveString, markSensitive, hashString } from 'loxa';
+import { sensitiveString, markSensitive, hashString } from 'loza';
 
 enrich(ctx,
   sensitiveString('user.email', email),
@@ -455,7 +455,7 @@ enrich(ctx,
 ## Context Helpers
 
 ```typescript
-import { getEvent, hasEvent, eventId } from 'loxa';
+import { getEvent, hasEvent, eventId } from 'loza';
 
 const ev = getEvent(ctx);
 if (hasEvent(ctx)) {
@@ -466,7 +466,7 @@ if (hasEvent(ctx)) {
 ## Testing
 
 ```typescript
-import { testLogger, capture, assertEvent, assertRedacted, assertHasCheckpoint } from 'loxa/testkit';
+import { testLogger, capture, assertEvent, assertRedacted, assertHasCheckpoint } from 'loza/testkit';
 
 // Test logger with memory sink
 const { logger, sink } = testLogger();
@@ -487,7 +487,7 @@ assertHasCheckpoint(events[0], 'payment_started');
 ## HTTP Client Instrumentation
 
 ```typescript
-import { wrapHttpClient, newRoundTripper } from 'loxa';
+import { wrapHttpClient, newRoundTripper } from 'loza';
 
 // Wrap fetch or http client
 const client = wrapHttpClient(originalClient);
@@ -511,7 +511,7 @@ python ../../spec/conformance/runner.py --sdk javascript --group all
 ## Architecture
 
 ```
-SDK (`loxa`) -> HTTP -> Collector -> gRPC -> Cortex
+SDK (`loza`) -> HTTP -> Collector -> gRPC -> Cortex
 ```
 
 SDKs are lightweight bridge connectors. Heavy processing (dedup, schema validation, PII redaction, sampling) happens in the collector.

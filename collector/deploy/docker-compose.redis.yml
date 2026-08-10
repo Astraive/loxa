@@ -1,4 +1,4 @@
-# Loxa Collector — Redis Streams eventbus (simple self-hosted)
+# Loza Collector — Redis Streams eventbus (simple self-hosted)
 # Usage: docker compose -f docker-compose.redis.yml up
 services:
   redis:
@@ -17,16 +17,16 @@ services:
     build:
       context: ../..
       dockerfile: collector/deploy/Dockerfile.collector
-    command: ["./loxa-collector", "run", "-c", "/app/build/loxa-collector.yaml"]
+    command: ["./loza-collector", "run", "-c", "/app/build/loza-collector.yaml"]
     ports:
       - "9308:9308"
     volumes:
       - ../../:/app
     environment:
-      LOXA_EVENTBUS: redis
-      LOXA_EVENTBUS_TOPIC: loxa.events.raw
-      LOXA_EVENTBUS_GROUP: loxa-worker
-      LOXA_EVENTBUS_REDIS_ADDR: redis:6379
+      LOZA_EVENTBUS: redis
+      LOZA_EVENTBUS_TOPIC: loza.events.raw
+      LOZA_EVENTBUS_GROUP: loza-worker
+      LOZA_EVENTBUS_REDIS_ADDR: redis:6379
       COLLECTOR_RELIABILITY_MODE: queue
     depends_on:
       redis:
@@ -36,14 +36,14 @@ services:
     build:
       context: ../..
       dockerfile: collector/deploy/Dockerfile.collector
-    command: ["./loxa-worker", "run", "-c", "/app/build/loxa-collector.yaml"]
+    command: ["./loza-worker", "run", "-c", "/app/build/loza-collector.yaml"]
     volumes:
       - ../../:/app
     environment:
-      LOXA_EVENTBUS: redis
-      LOXA_EVENTBUS_TOPIC: loxa.events.raw
-      LOXA_EVENTBUS_GROUP: loxa-worker
-      LOXA_EVENTBUS_REDIS_ADDR: redis:6379
+      LOZA_EVENTBUS: redis
+      LOZA_EVENTBUS_TOPIC: loza.events.raw
+      LOZA_EVENTBUS_GROUP: loza-worker
+      LOZA_EVENTBUS_REDIS_ADDR: redis:6379
       COLLECTOR_RELIABILITY_MODE: queue
     depends_on:
       redis:

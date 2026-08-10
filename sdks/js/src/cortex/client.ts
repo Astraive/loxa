@@ -126,7 +126,7 @@ export function validateFeedback(f: any): void {
   if (!f.outcome) throw new Error('cortex: outcome is required');
 }
 
-/** Client for loxa-cortex HTTP API. */
+/** Client for loza-cortex HTTP API. */
 export class CortexClient {
   private url: string;
   private apiKey: string;

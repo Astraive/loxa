@@ -1,6 +1,6 @@
 # Event Model
 
-Canonical LOXA event fields:
+Canonical LOZA event fields:
 
 - `event_id`
 - `timestamp`

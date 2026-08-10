@@ -1,6 +1,6 @@
 # Examples
 
-Cross-component examples for the LOXA monorepo.
+Cross-component examples for the LOZA monorepo.
 
 | Example | Languages | Description |
 |---------|-----------|-------------|
@@ -13,7 +13,7 @@ Cross-component examples for the LOXA monorepo.
 Each quickstart example requires a running collector:
 
 ```bash
-cd collector && go run ./cmd/loxa-collector run -c configs/loxa.local.yaml
+cd collector && go run ./cmd/loza-collector run -c configs/loza.local.yaml
 ```
 
 Then run the example for your SDK:

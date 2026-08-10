@@ -11,7 +11,7 @@ The Rust crate currently exposes:
 Collector-first guidance:
 
 1. build one event per operation
-2. emit to `loxa-collector` over `/events`
+2. emit to `loza-collector` over `/events`
 3. keep heavy delivery, fanout, durability, and storage concerns in the collector
 
 Implemented Rust-facing modules today:

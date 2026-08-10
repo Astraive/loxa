@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"strings"
 
-	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
+	speccontract "github.com/astraive/loza/spec/generated/go/contract"
 )
 
 const (
-	LOXA_SPEC_VERSION       = speccontract.LOXASpecVersion
-	LOXA_INGEST_API_VERSION = speccontract.LOXAIngestAPIVersion
-	LOXA_EVENT_VERSION      = speccontract.LOXAEventVersion
+	LOZA_SPEC_VERSION       = speccontract.LOZASpecVersion
+	LOZA_INGEST_API_VERSION = speccontract.LOZAIngestAPIVersion
+	LOZA_EVENT_VERSION      = speccontract.LOZAEventVersion
 )
 
 // ValidateIngestEnvelopeBytes validates a runtime envelope payload against the
@@ -29,20 +29,20 @@ func ValidateIngestEnvelopeBytes(raw []byte, strict bool) error {
 func ValidateEventBytes(raw []byte, strict bool) error {
 	var payload map[string]any
 	if err := json.Unmarshal(bytes.TrimSpace(raw), &payload); err != nil {
-		return fmt.Errorf("loxa: event must be valid JSON: %w", err)
+		return fmt.Errorf("loza: event must be valid JSON: %w", err)
 	}
 	if strict {
 		eventName, ok := payload["event"].(string)
 		if !ok || strings.TrimSpace(eventName) == "" {
-			return fmt.Errorf("loxa: event must include a non-empty 'event' field")
+			return fmt.Errorf("loza: event must include a non-empty 'event' field")
 		}
 	}
 	return nil
 }
 
 func validateIngestEnvelopeShape(payload map[string]any) error {
-	if version, ok := payload["api_version"].(string); !ok || strings.TrimSpace(version) != LOXA_INGEST_API_VERSION {
-		return fmt.Errorf("collector envelope must include api_version %q", LOXA_INGEST_API_VERSION)
+	if version, ok := payload["api_version"].(string); !ok || strings.TrimSpace(version) != LOZA_INGEST_API_VERSION {
+		return fmt.Errorf("collector envelope must include api_version %q", LOZA_INGEST_API_VERSION)
 	}
 
 	source, ok := payload["source"].(map[string]any)

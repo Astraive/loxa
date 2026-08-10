@@ -4,7 +4,7 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-import loxa
+import loza
 
 
 class _CollectorHandler(BaseHTTPRequestHandler):
@@ -100,7 +100,7 @@ def test_collector_client_family():
     server = _serve(_CollectorHandler)
     try:
         base = f"http://127.0.0.1:{server.server_address[1]}"
-        cc = loxa.CollectorClient(base + "/events")
+        cc = loza.CollectorClient(base + "/events")
         valid_event = {
             "schema_version": "v1",
             "event_version": "v1",
@@ -141,7 +141,7 @@ def test_collector_client_family():
 
 
 def test_cortex_client_family():
-    cortex = loxa.CortexClient("http://localhost:9312")
+    cortex = loza.CortexClient("http://localhost:9312")
     assert hasattr(cortex, "health")
     assert hasattr(cortex, "ready")
     assert hasattr(cortex, "reconstruct")

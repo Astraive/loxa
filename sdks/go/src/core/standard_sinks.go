@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
+	speccontract "github.com/astraive/loza/spec/generated/go/contract"
 )
 
 // ── stdout / stderr sinks ─────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ func FileSink(path string) (Sink, error) {
 	// #nosec G304
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
-		return nil, fmt.Errorf("loxa: open file sink %q: %w", path, err)
+		return nil, fmt.Errorf("loza: open file sink %q: %w", path, err)
 	}
 	s := &fileSink{f: f}
 	s.writerSink = *newWriterSink("file:"+path, f)
@@ -121,12 +121,12 @@ func (s *rotatingFileSink) open() error {
 	// #nosec G304
 	f, err := os.OpenFile(s.cfg.Path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
-		return fmt.Errorf("loxa: open rotating file %q: %w", s.cfg.Path, err)
+		return fmt.Errorf("loza: open rotating file %q: %w", s.cfg.Path, err)
 	}
 	info, err := f.Stat()
 	if err != nil {
 		_ = f.Close()
-		return fmt.Errorf("loxa: stat rotating file %q: %w", s.cfg.Path, err)
+		return fmt.Errorf("loza: stat rotating file %q: %w", s.cfg.Path, err)
 	}
 	s.f = f
 	s.opened = time.Now()
@@ -151,10 +151,10 @@ func (s *rotatingFileSink) WriteEvent(_ context.Context, encoded []byte, _ *Even
 
 func (s *rotatingFileSink) rotate() error {
 	if s.f == nil {
-		return fmt.Errorf("loxa: rotating file sink %q not open", s.cfg.Path)
+		return fmt.Errorf("loza: rotating file sink %q not open", s.cfg.Path)
 	}
 	if err := s.f.Close(); err != nil {
-		return fmt.Errorf("loxa: close rotating file %q: %w", s.cfg.Path, err)
+		return fmt.Errorf("loza: close rotating file %q: %w", s.cfg.Path, err)
 	}
 	ts := time.Now().Format("20060102-150405")
 	rotated := s.cfg.Path + "." + ts
@@ -162,14 +162,14 @@ func (s *rotatingFileSink) rotate() error {
 		reopenErr := s.open()
 		if reopenErr != nil {
 			return errors.Join(
-				fmt.Errorf("loxa: rotate %q to %q: %w", s.cfg.Path, rotated, err),
-				fmt.Errorf("loxa: reopen %q after failed rotate: %w", s.cfg.Path, reopenErr),
+				fmt.Errorf("loza: rotate %q to %q: %w", s.cfg.Path, rotated, err),
+				fmt.Errorf("loza: reopen %q after failed rotate: %w", s.cfg.Path, reopenErr),
 			)
 		}
-		return fmt.Errorf("loxa: rotate %q to %q: %w", s.cfg.Path, rotated, err)
+		return fmt.Errorf("loza: rotate %q to %q: %w", s.cfg.Path, rotated, err)
 	}
 	if err := s.open(); err != nil {
-		return fmt.Errorf("loxa: reopen %q after rotate: %w", s.cfg.Path, err)
+		return fmt.Errorf("loza: reopen %q after rotate: %w", s.cfg.Path, err)
 	}
 	return nil
 }
@@ -280,7 +280,7 @@ type collectorSink struct {
 
 func CollectorSink(cfg CollectorSinkConfig) (Sink, error) {
 	if strings.TrimSpace(cfg.Endpoint) == "" {
-		return nil, fmt.Errorf("loxa: collector endpoint is required")
+		return nil, fmt.Errorf("loza: collector endpoint is required")
 	}
 	if cfg.Transport == nil {
 		cfg.Transport = NewHTTPTransport(HTTPTransportConfig{
@@ -296,7 +296,7 @@ func CollectorSink(cfg CollectorSinkConfig) (Sink, error) {
 		cfg.Client = cfg.Transport.Client()
 	}
 	if cfg.SDKName == "" {
-		cfg.SDKName = "loxa-go"
+		cfg.SDKName = "loza-go"
 	}
 	if cfg.SDKVersion == "" {
 		cfg.SDKVersion = SDKVersion()
@@ -352,13 +352,13 @@ func (s *collectorSink) WriteEvent(ctx context.Context, encoded []byte, ev *Even
 			return err
 		}
 		if transportResp.StatusCode >= 300 {
-			return fmt.Errorf("loxa: collector returned status %d: %s", transportResp.StatusCode, truncateErrorBody(string(transportResp.Body)))
+			return fmt.Errorf("loza: collector returned status %d: %s", transportResp.StatusCode, truncateErrorBody(string(transportResp.Body)))
 		}
 		if retryable, message := collectorResponseHasRetryableError(transportResp.Body); retryable {
-			return fmt.Errorf("loxa: collector reported retryable error: %s", message)
+			return fmt.Errorf("loza: collector reported retryable error: %s", message)
 		}
 		if failed, message := collectorResponseHasPermanentBatchFailure(transportResp.Body); failed {
-			return fmt.Errorf("loxa: collector reported batch failure: %s", message)
+			return fmt.Errorf("loza: collector reported batch failure: %s", message)
 		}
 		return nil
 	}
@@ -376,13 +376,13 @@ func (s *collectorSink) WriteEvent(ctx context.Context, encoded []byte, ev *Even
 		return readErr
 	}
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("loxa: collector returned status %d: %s", resp.StatusCode, truncateErrorBody(string(raw)))
+		return fmt.Errorf("loza: collector returned status %d: %s", resp.StatusCode, truncateErrorBody(string(raw)))
 	}
 	if retryable, message := collectorResponseHasRetryableError(raw); retryable {
-		return fmt.Errorf("loxa: collector reported retryable error: %s", message)
+		return fmt.Errorf("loza: collector reported retryable error: %s", message)
 	}
 	if failed, message := collectorResponseHasPermanentBatchFailure(raw); failed {
-		return fmt.Errorf("loxa: collector reported batch failure: %s", message)
+		return fmt.Errorf("loza: collector reported batch failure: %s", message)
 	}
 	return nil
 }
@@ -400,7 +400,7 @@ func (s *collectorSink) envelope(encoded []byte, ev *Event) ([]byte, bool) {
 		service = "unknown"
 	}
 	envelope := map[string]any{
-		"api_version": LOXA_INGEST_API_VERSION,
+		"api_version": LOZA_INGEST_API_VERSION,
 		"source": map[string]any{
 			"sdk":     s.cfg.SDKName,
 			"version": s.cfg.SDKVersion,
@@ -507,7 +507,7 @@ type httpBatchSink struct {
 // to the endpoint when BatchSize is reached or FlushInterval elapses.
 func HTTPBatchSink(cfg HTTPBatchSinkConfig) (Sink, error) {
 	if strings.TrimSpace(cfg.Endpoint) == "" {
-		return nil, fmt.Errorf("loxa: httpbatch endpoint is required")
+		return nil, fmt.Errorf("loza: httpbatch endpoint is required")
 	}
 	if cfg.BatchSize <= 0 {
 		cfg.BatchSize = 100

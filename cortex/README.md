@@ -2,7 +2,7 @@
 
 **Status: v0.2.3 STABLE**
 
-Cortex is the control plane for the LOXA observability platform. It provides the Persistent Context Engine (PCE), incident intelligence, causal chain reconstruction, similar incident matching, and remediation learning. Cortex consumes events from the collector, builds service topology graphs, and surfaces actionable incident context to operators.
+Cortex is the control plane for the LOZA observability platform. It provides the Persistent Context Engine (PCE), incident intelligence, causal chain reconstruction, similar incident matching, and remediation learning. Cortex consumes events from the collector, builds service topology graphs, and surfaces actionable incident context to operators.
 
 ## What is Cortex
 
@@ -73,7 +73,7 @@ go build -o cortex.exe ./cmd/server
 ### Run
 
 ```bash
-./cortex.exe -c configs/loxa-cortex.defaults.yaml
+./cortex.exe -c configs/loza-cortex.defaults.yaml
 ```
 
 Or with Docker:
@@ -143,4 +143,4 @@ curl -X POST http://localhost:9312/feedback/remediation \
 
 ## License
 
-Part of the LOXA monorepo. See [LICENSE](../LICENSE) for details.
+Part of the LOZA monorepo. See [LICENSE](../LICENSE) for details.

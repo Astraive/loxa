@@ -1,6 +1,6 @@
 {
   "version": "0.2.6",
-  "package": "loxa",
+  "package": "loza",
   "scope": "lightweight-sdk",
   "stability": "product-parity-v0.2.6",
   "policy": "full-product-method-family",
@@ -33,7 +33,7 @@
     "TryNew",
     "Default",
     "Configure",
-    "CreateLoxa",
+    "CreateLoza",
     "Alias",
     "FromContext",
     "HasEvent",
@@ -125,7 +125,7 @@
   ],
   "method_catalog": {
     "client_creation_and_configuration": [
-      "configure", "createLoxa", "create_loxa", "CreateLoxa", "Loxa", "New",
+      "configure", "createLoza", "create_loza", "CreateLoza", "Loza", "New",
       "production", "development", "test", "disabled", "fromEnv",
       "withService", "withEnvironment", "withRelease", "withNamespace",
       "withEndpoint", "withApiKey", "withSink", "withSampler",

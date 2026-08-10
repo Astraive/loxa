@@ -56,8 +56,8 @@ func TestResolveConfigAppliesDefaults(t *testing.T) {
 	if cfg.Protocol != "grpc" {
 		t.Fatalf("expected default protocol grpc, got %q", cfg.Protocol)
 	}
-	if cfg.Logger != "loxa-collector" {
-		t.Fatalf("expected default logger loxa-collector, got %q", cfg.Logger)
+	if cfg.Logger != "loza-collector" {
+		t.Fatalf("expected default logger loza-collector, got %q", cfg.Logger)
 	}
 	if cfg.Timeout != 10*time.Second {
 		t.Fatalf("expected default timeout 10s, got %s", cfg.Timeout)

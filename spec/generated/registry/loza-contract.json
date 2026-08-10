@@ -1,0 +1,214 @@
+{
+  "spec_version": "v1",
+  "api_version": "v1",
+  "event_version": "v1",
+  "schemas": {
+    "event": "spec/schemas/json/event.schema.json",
+    "event_strict": "spec/schemas/json/event.strict.schema.json",
+    "event_loose": "spec/schemas/json/event.loose.schema.json",
+    "ingest_envelope": "spec/schemas/json/ingest-envelope.schema.json",
+    "collector_response": "spec/schemas/json/collector-response.schema.json"
+  },
+  "required_fields": [
+    "schema_version",
+    "event_version",
+    "event_id",
+    "timestamp",
+    "service",
+    "event",
+    "kind"
+  ],
+  "allowed_top_level_fields": [
+    "attrs",
+    "delivery_attempts",
+    "deployment",
+    "duration_ms",
+    "environment",
+    "error",
+    "event",
+    "event_id",
+    "event_state",
+    "event_version",
+    "http",
+    "kind",
+    "level",
+    "message",
+    "method",
+    "organization",
+    "outcome",
+    "partial",
+    "partial_reason",
+    "path",
+    "pii",
+    "request_id",
+    "resource",
+    "route",
+    "schema_version",
+    "service",
+    "source",
+    "span_id",
+    "status_code",
+    "tenant",
+    "timestamp",
+    "trace_id",
+    "user",
+    "version",
+    "workspace"
+  ],
+  "canonical_fields": [
+    "attrs",
+    "delivery_attempts",
+    "deployment",
+    "duration_ms",
+    "environment",
+    "error",
+    "event",
+    "event_id",
+    "event_state",
+    "event_version",
+    "http",
+    "kind",
+    "level",
+    "message",
+    "method",
+    "organization",
+    "outcome",
+    "partial",
+    "partial_reason",
+    "path",
+    "pii",
+    "request_id",
+    "resource",
+    "route",
+    "schema_version",
+    "service",
+    "source",
+    "span_id",
+    "status_code",
+    "tenant",
+    "timestamp",
+    "trace_id",
+    "user",
+    "version",
+    "workspace"
+  ],
+  "enums": {
+    "schema_versions": [
+      "v1"
+    ],
+    "event_versions": [
+      "v1"
+    ],
+    "kinds": [
+      "event",
+      "http",
+      "job",
+      "queue",
+      "cli",
+      "cron",
+      "log",
+      "checkpoint"
+    ],
+    "levels": [
+      "debug",
+      "info",
+      "warn",
+      "error",
+      "fatal"
+    ],
+    "outcomes": [
+      "success",
+      "error",
+      "timeout",
+      "cancelled",
+      "rejected",
+      "abandoned",
+      "partial",
+      "unknown"
+    ],
+    "partial_reasons": [
+      "not_finished",
+      "process_exit",
+      "timeout",
+      "panic",
+      "collector_unavailable"
+    ],
+    "event_states": [
+      "created",
+      "active",
+      "finished",
+      "emitting",
+      "emitted",
+      "failed_validation",
+      "delivery_failed"
+    ],
+    "source_sdks": [
+      "loza-cli",
+      "loza-go",
+      "loza-py",
+      "loza-rs"
+    ]
+  },
+  "collector_statuses": [
+    "accepted",
+    "partial",
+    "rejected",
+    "invalid"
+  ],
+  "collector_ack_statuses": [
+    "accepted",
+    "rejected",
+    "invalid"
+  ],
+  "aliases": {
+    "event_type": "event"
+  },
+  "alias_policy": {
+    "strict_mode": "reject_before_normalization",
+    "loose_mode": "normalize_then_use"
+  },
+  "strict_mode": {
+    "allow_unknown_top_level_fields": false,
+    "allow_aliases": false,
+    "enforce_required_fields": true,
+    "enforce_enums": true,
+    "enforce_status_codes": true,
+    "enforce_timestamps": true,
+    "normalize_aliases": false
+  },
+  "loose_mode": {
+    "allow_unknown_top_level_fields": true,
+    "allow_aliases": true,
+    "enforce_required_fields": true,
+    "enforce_enums": true,
+    "normalize_aliases": true
+  },
+  "validation_modes": {
+    "strict": {
+      "name": "strict",
+      "description": "Reject unknown fields, aliases, and enforce all constraints",
+      "allow_aliases": false,
+      "allow_unknown_top_level_fields": false
+    },
+    "loose": {
+      "name": "loose",
+      "description": "Accept aliases and some unknown fields, normalize before validation",
+      "allow_aliases": true,
+      "allow_unknown_top_level_fields": true
+    }
+  },
+  "wire_formats": [
+    "json",
+    "jsonl",
+    "protobuf"
+  ],
+  "limits": {
+    "max_event_size_bytes": 65536,
+    "max_batch_events": 1000,
+    "max_batch_size_bytes": 1048576,
+    "max_attrs_depth": 8,
+    "max_attr_key_length": 128,
+    "max_attr_value_length": 4096,
+    "max_error_stack_length": 16384
+  }
+}

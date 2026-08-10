@@ -1,6 +1,6 @@
 # Scripts
 
-CI and release scripts for the LOXA monorepo.
+CI and release scripts for the LOZA monorepo.
 
 | Script | Description |
 |--------|-------------|

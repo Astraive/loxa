@@ -1,4 +1,4 @@
-"""LOXA Python SDK encoder benchmark.
+"""LOZA Python SDK encoder benchmark.
 
 Measures JSON encoding performance with various attribute counts.
 
@@ -16,13 +16,13 @@ import time
 
 sys.path.insert(0, sys.path[0] + "/.." if sys.path[0].endswith("bench") else ".")
 
-import loxa
+import loza
 
 
 def run_encoder_benchmark(iterations: int = 10000) -> dict:
     """Run the encoder benchmark with varying attribute counts."""
-    sink = loxa.MemorySink()
-    logger = loxa.new(loxa.test("bench").with_sink(sink))
+    sink = loza.MemorySink()
+    logger = loza.new(loza.test("bench").with_sink(sink))
 
     results = {}
 
@@ -30,31 +30,31 @@ def run_encoder_benchmark(iterations: int = 10000) -> dict:
         latencies: list[float] = []
 
         for _ in range(iterations):
-            ctx = logger.start_event(loxa.Params(event="bench.encoder"))
+            ctx = logger.start_event(loza.Params(event="bench.encoder"))
 
             if attr_count >= 4:
-                loxa.enrich(ctx,
-                    loxa.String("user.id", "u-abc123"),
-                    loxa.Int("status_code", 200),
-                    loxa.Float64("duration_ms", 42.5),
-                    loxa.Bool("cache_hit", True),
+                loza.enrich(ctx,
+                    loza.String("user.id", "u-abc123"),
+                    loza.Int("status_code", 200),
+                    loza.Float64("duration_ms", 42.5),
+                    loza.Bool("cache_hit", True),
                 )
             if attr_count >= 12:
-                loxa.enrich(ctx,
-                    loxa.String("tenant.id", "tenant-acme"),
-                    loxa.String("session.id", "sess-xyz"),
-                    loxa.String("request.id", "req-789"),
-                    loxa.String("trace.id", "trace-000"),
-                    loxa.String("span.id", "span-111"),
-                    loxa.String("http.method", "GET"),
-                    loxa.String("http.path", "/api/users"),
-                    loxa.String("http.user_agent", "Mozilla/5.0"),
+                loza.enrich(ctx,
+                    loza.String("tenant.id", "tenant-acme"),
+                    loza.String("session.id", "sess-xyz"),
+                    loza.String("request.id", "req-789"),
+                    loza.String("trace.id", "trace-000"),
+                    loza.String("span.id", "span-111"),
+                    loza.String("http.method", "GET"),
+                    loza.String("http.path", "/api/users"),
+                    loza.String("http.user_agent", "Mozilla/5.0"),
                 )
 
-            loxa.finish(ctx, "success")
+            loza.finish(ctx, "success")
 
             t0 = time.perf_counter()
-            loxa.emit(ctx)
+            loza.emit(ctx)
             latencies.append((time.perf_counter() - t0) * 1_000_000)
 
         latencies.sort()
@@ -74,7 +74,7 @@ def run_encoder_benchmark(iterations: int = 10000) -> dict:
 
 
 if __name__ == "__main__":
-    print("Running LOXA Python SDK encoder benchmarks...")
+    print("Running LOZA Python SDK encoder benchmarks...")
     print()
     results = run_encoder_benchmark()
     print()

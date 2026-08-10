@@ -1,10 +1,10 @@
 
-from loxa.core.config import load_layered_config
+from loza.core.config import load_layered_config
 
 
 def test_load_layered_config_defaults_then_user(tmp_path, monkeypatch):
-    defaults = tmp_path / "loxa-py.defaults.yaml"
-    user = tmp_path / ".loxa-py.yaml"
+    defaults = tmp_path / "loza-py.defaults.yaml"
+    user = tmp_path / ".loza-py.yaml"
     defaults.write_text(
         "\n".join(
             [
@@ -21,8 +21,8 @@ def test_load_layered_config_defaults_then_user(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     user.write_text("service: user-service\nlevel: debug\n", encoding="utf-8")
-    monkeypatch.setenv("LOXA_PY_DEFAULTS", str(defaults))
-    monkeypatch.setenv("LOXA_PY_CONFIG", str(user))
+    monkeypatch.setenv("LOZA_PY_DEFAULTS", str(defaults))
+    monkeypatch.setenv("LOZA_PY_CONFIG", str(user))
 
     cfg = load_layered_config()
 

@@ -1,0 +1,8 @@
+collector:
+  addr: ":9308"
+duckdb:
+  path: "loza-spool.db"
+reliability:
+  mode: "spool"
+  spool_dir: "data/spool"
+  spool_file: "spool.ndjson"

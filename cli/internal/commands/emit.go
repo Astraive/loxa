@@ -7,10 +7,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
-	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
-	"github.com/astraive/loxa/cli/internal/version"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
+	speccontract "github.com/astraive/loza/spec/generated/go/contract"
+	"github.com/astraive/loza/cli/internal/version"
 )
 
 func EmitCommand(cfg config.Config, args []string) error {
@@ -19,7 +19,7 @@ func EmitCommand(cfg config.Config, args []string) error {
 	}
 
 	fs := flag.NewFlagSet("emit sample", flag.ContinueOnError)
-	service := fs.String("service", "loxa-cli", "service name")
+	service := fs.String("service", "loza-cli", "service name")
 	eventName := fs.String("event", "sample.event", "event name")
 	kind := fs.String("kind", "cli", "event kind (http, db, rpc, cli, etc.)")
 	outcome := fs.String("outcome", "success", "event outcome (success, error, timeout)")
@@ -39,8 +39,8 @@ func EmitCommand(cfg config.Config, args []string) error {
 	}
 
 	event := map[string]any{
-		"schema_version": speccontract.LOXASpecVersion,
-		"event_version":  speccontract.LOXAEventVersion,
+		"schema_version": speccontract.LOZASpecVersion,
+		"event_version":  speccontract.LOZAEventVersion,
 		"event_id":       fmt.Sprintf("evt_sample_%d", time.Now().UnixNano()),
 		"timestamp":      time.Now().UTC().Format(time.RFC3339Nano),
 		"service":        *service,
@@ -55,7 +55,7 @@ func EmitCommand(cfg config.Config, args []string) error {
 	if err != nil {
 		return err
 	}
-	compactRaw, err := speccontract.MarshalIngestEnvelope("loxa-cli", version.Version, *service, []json.RawMessage{eventRaw})
+	compactRaw, err := speccontract.MarshalIngestEnvelope("loza-cli", version.Version, *service, []json.RawMessage{eventRaw})
 	if err != nil {
 		return err
 	}

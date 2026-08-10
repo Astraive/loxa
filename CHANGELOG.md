@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the LOXA project are documented in this file.
+All notable changes to the LOZA project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/0.2.0/).
 
@@ -50,10 +50,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/0.2.0/).
 - **Docker healthcheck**: Now uses `wget` (installed in image) for reliable health checks
 - **Rust SDK locks**: `RwLock` and `Mutex` now recover from poisoning instead of panicking
 - **Python SDK config**: `with_*` methods return copies instead of mutating originals
-- **Loxana sidebar**: Shows actual collector health status instead of hardcoded "System Online"
-- **Loxana QueryClient**: Created per component mount instead of module-scope singleton
-- **Loxana API requests**: All fetch calls now have 30s timeout with AbortController
-- **Loxana code dedup**: Consolidated duplicate `cn()`, `getApiKey()`, and `Panel` type definitions
+- **Lozana sidebar**: Shows actual collector health status instead of hardcoded "System Online"
+- **Lozana QueryClient**: Created per component mount instead of module-scope singleton
+- **Lozana API requests**: All fetch calls now have 30s timeout with AbortController
+- **Lozana code dedup**: Consolidated duplicate `cn()`, `getApiKey()`, and `Panel` type definitions
 
 ### Fixed
 
@@ -64,8 +64,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/0.2.0/).
 - **flush() timeout (Python SDK)**: Timeout parameter now actually respected
 - **Starlette middleware (Python SDK)**: Uses async HTTP to avoid blocking ASGI worker
 - **Thread-unsafe stats (Python SDK)**: `DeliveryStats` now uses threading lock
-- **Settings URL validation (Loxana)**: Collector URL validated as http/https before saving
-- **ErrorBoundary logging (Loxana)**: `componentDidCatch` now logs errors with component stack
+- **Settings URL validation (Lozana)**: Collector URL validated as http/https before saving
+- **ErrorBoundary logging (Lozana)**: `componentDidCatch` now logs errors with component stack
 
 ## [0.2.5] - 2026-05-28
 
@@ -112,7 +112,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/0.2.0/).
 ### CLI
 - 20+ commands: init, dev, collector, query, tail, schema, emit, bench, deploy, cortex, incident, graph
 - Configuration management with YAML/env/code precedence
-- Load generator via `loxa bench`
+- Load generator via `loza bench`
 
 ### Spec
 - v1 event schema with JSON Schema, OpenAPI, Protobuf definitions

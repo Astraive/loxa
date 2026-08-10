@@ -54,7 +54,7 @@ collector:
 `
 
 	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "loxa.yaml")
+	configFile := filepath.Join(tmpDir, "loza.yaml")
 	err := os.WriteFile(configFile, []byte(yaml), 0644)
 	require.NoError(t, err)
 
@@ -81,7 +81,7 @@ collector:
 }
 
 func TestLoadFileRejectsUnknownFieldsAndAcceptsVersion(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "loxa.yaml")
+	path := filepath.Join(t.TempDir(), "loza.yaml")
 	require.NoError(t, os.WriteFile(path, []byte("version: \"1.0\"\ncollector:\n  unknown: true\n"), 0o600))
 	cfg := Default()
 	err := LoadFile(&cfg, path)
@@ -110,7 +110,7 @@ collector:
 `
 
 	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "loxa.yaml")
+	configFile := filepath.Join(tmpDir, "loza.yaml")
 	err := os.WriteFile(configFile, []byte(yaml), 0644)
 	require.NoError(t, err)
 
@@ -125,7 +125,7 @@ collector:
 
 func TestDefaultLoadsFromDefaultsFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	defaultsPath := filepath.Join(tmpDir, "loxa-collector.defaults.yaml")
+	defaultsPath := filepath.Join(tmpDir, "loza-collector.defaults.yaml")
 	yaml := `
 collector:
   addr: ":9191"
@@ -146,7 +146,7 @@ routes:
 storage:
   primary: duckdb
 duckdb:
-  path: loxa.db
+  path: loza.db
   driver: duckdb
   table: events
   raw_column: raw
@@ -171,7 +171,7 @@ metrics:
   prometheus: true
 reliability:
   mode: direct
-  spool_dir: loxa-spool
+  spool_dir: loza-spool
   spool_file: spool.ndjson
   max_spool_bytes: 1024
   fsync: true
@@ -193,7 +193,7 @@ privacy:
   collector_redaction: true
   emergency_redaction: false
 components:
-  receivers: [loxa_http]
+  receivers: [loza_http]
   processors: [validate]
   exporters: [duckdb]
   extensions: [health]
@@ -205,7 +205,7 @@ retry:
   jitter: false
 dead_letter:
   enabled: false
-  path: loxa-dlq.ndjson
+  path: loza-dlq.ndjson
 fanout:
   outputs: []
   delivery:
@@ -219,10 +219,10 @@ schema_governance:
   mode: off
   schema_version: v1
   event_version: v1
-  quarantine_path: loxa-quarantine.ndjson
+  quarantine_path: loza-quarantine.ndjson
 `
 	require.NoError(t, os.WriteFile(defaultsPath, []byte(yaml), 0o644))
-	t.Setenv("LOXA_COLLECTOR_DEFAULTS", defaultsPath)
+	t.Setenv("LOZA_COLLECTOR_DEFAULTS", defaultsPath)
 
 	cfg := Default()
 	assert.Equal(t, ":9191", cfg.Collector.Addr)

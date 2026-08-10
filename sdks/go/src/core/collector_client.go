@@ -13,7 +13,7 @@ import (
 
 const maxCollectorClientResponseBytes = 10 << 20
 
-// CollectorClient communicates with the LOXA collector REST API.
+// CollectorClient communicates with the LOZA collector REST API.
 type CollectorClient struct {
 	endpoint string
 	apiKey   string

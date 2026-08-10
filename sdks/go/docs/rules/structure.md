@@ -3,11 +3,11 @@ title: Structure — SDK Setup, Middleware, Sinks, Field Limits
 impact: HIGH
 ---
 
-## loxa Structure
+## loza Structure
 
-### Single loxa Instance
+### Single loza Instance
 
-Configure loxa once at startup. Never create multiple instances or call `loxa.Configure()` more than once.
+Configure loza once at startup. Never create multiple instances or call `loza.Configure()` more than once.
 
 ```go
 // main.go — configure once
@@ -15,41 +15,41 @@ package main
 
 import (
     "os"
-    "github.com/yourorg/loxa"
-    "github.com/yourorg/loxa/loxahttp"
+    "github.com/yourorg/loza"
+    "github.com/yourorg/loza/lozahttp"
 )
 
 func main() {
-    loxa.Configure(loxa.Config{
+    loza.Configure(loza.Config{
         Service:     os.Getenv("SERVICE_NAME"),
         Version:     os.Getenv("SERVICE_VERSION"),
         Environment: os.Getenv("ENV"),
         Region:      os.Getenv("AWS_REGION"),
 
-        Encoder: loxa.JSONEncoder(),
-        Sampler: loxa.AnySampler(
-            loxa.SampleErrors(),
-            loxa.SampleSlowRequests(2000 * time.Millisecond),
-            loxa.SampleRandom(0.05),
+        Encoder: loza.JSONEncoder(),
+        Sampler: loza.AnySampler(
+            loza.SampleErrors(),
+            loza.SampleSlowRequests(2000 * time.Millisecond),
+            loza.SampleRandom(0.05),
         ),
-        Redactor: loxa.ComposeRedactors(
-            loxa.DefaultRedactor(),
-            loxa.HashKeys("user.email", "http.client_ip"),
-            loxa.RedactKeys("password", "token", "authorization", "cookie"),
+        Redactor: loza.ComposeRedactors(
+            loza.DefaultRedactor(),
+            loza.HashKeys("user.email", "http.client_ip"),
+            loza.RedactKeys("password", "token", "authorization", "cookie"),
         ),
-        Sinks: []loxa.Sink{
-            loxa.StdoutSink(),
+        Sinks: []loza.Sink{
+            loza.StdoutSink(),
         },
     })
-    defer loxa.Shutdown()
+    defer loza.Shutdown()
 
     r := chi.NewRouter()
-    r.Use(loxahttp.Middleware())
+    r.Use(lozahttp.Middleware())
     // ...
 }
 
-// All other files — just call loxa directly, no import of a configured instance needed
-// loxa.Enrich(ctx, ...) uses the global configured instance
+// All other files — just call loza directly, no import of a configured instance needed
+// loza.Enrich(ctx, ...) uses the global configured instance
 ```
 
 ---
@@ -62,12 +62,12 @@ Handlers are responsible only for business context.
 Framework adapters available:
 
 ```go
-loxahttp.Middleware()               // net/http compatible
-loxachi.Middleware()                // chi
-loxagin.Middleware()                // gin
-loxafiber.Middleware()              // fiber
-loxagrpc.UnaryInterceptor()         // gRPC unary
-loxagrpc.StreamInterceptor()        // gRPC streaming
+lozahttp.Middleware()               // net/http compatible
+lozachi.Middleware()                // chi
+lozagin.Middleware()                // gin
+lozafiber.Middleware()              // fiber
+lozagrpc.UnaryInterceptor()         // gRPC unary
+lozagrpc.StreamInterceptor()        // gRPC streaming
 ```
 
 Fields automatically populated by middleware:
@@ -98,47 +98,47 @@ Fields automatically populated by middleware:
 
 ### Sinks
 
-Configure in `loxa.Config.Sinks`. Multiple sinks run in parallel.
+Configure in `loza.Config.Sinks`. Multiple sinks run in parallel.
 
 ```go
-Sinks: []loxa.Sink{
+Sinks: []loza.Sink{
     // Local / dev
-    loxa.StdoutSink(),
+    loza.StdoutSink(),
 
     // File with rotation
-    loxa.RotatingFileSink(loxa.RotatingFileConfig{
+    loza.RotatingFileSink(loza.RotatingFileConfig{
         Path:       "/var/log/app/events.ndjson",
         MaxSizeMB:  100,
         MaxBackups: 5,
     }),
 
-    // HTTP batch to the LOXA collector
-    loxahttpbatch.New(loxahttpbatch.Config{
-        Endpoint: os.Getenv("LOXA_ENDPOINT"),
-        Headers:  map[string]string{"Authorization": "Bearer " + os.Getenv("LOXA_TOKEN")},
+    // HTTP batch to the LOZA collector
+    lozahttpbatch.New(lozahttpbatch.Config{
+        Endpoint: os.Getenv("LOZA_ENDPOINT"),
+        Headers:  map[string]string{"Authorization": "Bearer " + os.Getenv("LOZA_TOKEN")},
     }),
 }
 ```
 
-Heavy delivery sinks such as Kafka, ClickHouse, Postgres, DuckDB, OTLP, S3, GCS, and Loki belong in `loxa-collector`, not in application SDKs.
+Heavy delivery sinks such as Kafka, ClickHouse, Postgres, DuckDB, OTLP, S3, GCS, and Loki belong in `loza-collector`, not in application SDKs.
 
 ---
 
 ### Local Dev Output
 
-Use `loxa.Dev()` preset in development — prints human-readable events to stdout:
+Use `loza.Dev()` preset in development — prints human-readable events to stdout:
 
 ```go
 if os.Getenv("ENV") == "development" {
-    loxa.Configure(loxa.Dev().WithService(os.Getenv("SERVICE_NAME")))
+    loza.Configure(loza.Dev().WithService(os.Getenv("SERVICE_NAME")))
 } else {
-    loxa.Configure(loxa.Production(). /* ... */ )
+    loza.Configure(loza.Production(). /* ... */ )
 }
 ```
 
 Dev output:
 ```
-loxa checkout.completed error 1247ms
+loza checkout.completed error 1247ms
   request.id=req_1 trace.id=trace_abc
   user.id=user_7 user.plan=premium
   cart.total_cents=15999
@@ -152,12 +152,12 @@ In production it emits structured JSON / OTLP. Same application code, different 
 
 ### Immediate Logs
 
-loxa supports one-shot log events without `StartEvent` for startup messages, background warnings, etc.
+loza supports one-shot log events without `StartEvent` for startup messages, background warnings, etc.
 
 ```go
-loxa.Info("worker started", loxa.String("queue", "emails"))
-loxa.Warn("rate limit approaching", loxa.Int("requests_remaining", 10))
-loxa.Error("sink flush failed", loxa.String("sink", "clickhouse"))
+loza.Info("worker started", loza.String("queue", "emails"))
+loza.Warn("rate limit approaching", loza.Int("requests_remaining", 10))
+loza.Error("sink flush failed", loza.String("sink", "clickhouse"))
 ```
 
 These emit immediately — no `Emit()` needed. Use sparingly; prefer enriching the active wide event.
@@ -166,19 +166,19 @@ These emit immediately — no `Emit()` needed. Use sparingly; prefer enriching t
 
 ### Two Application-Facing Levels Only
 
-loxa exposes only two levels to application code:
+loza exposes only two levels to application code:
 
-- **`loxa.Info` / `loxa.Finish`** — all normal events, including those with `outcome=error`
-- **`loxa.Error`** — SDK-level failures only (sink unavailable, schema panic)
+- **`loza.Info` / `loza.Finish`** — all normal events, including those with `outcome=error`
+- **`loza.Error`** — SDK-level failures only (sink unavailable, schema panic)
 
-Do not reach for `loxa.Debug`, `loxa.Warn`, or `loxa.Trace` in hot paths.
+Do not reach for `loza.Debug`, `loza.Warn`, or `loza.Trace` in hot paths.
 If you want more detail, **add fields to the event** rather than adding log lines.
 
 ---
 
 ### Field Count and Safety Limits
 
-The SDK enforces these by default (configurable via `loxa.SecurityConfig`):
+The SDK enforces these by default (configurable via `loza.SecurityConfig`):
 
 | Limit | Default |
 |-------|---------|

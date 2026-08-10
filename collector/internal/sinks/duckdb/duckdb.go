@@ -12,9 +12,9 @@ import (
 	"time"
 	"math/rand"
 
-	collectorevent "github.com/astraive/loxa/collector/internal/event"
-	"github.com/astraive/loxa/collector/internal/sinks/internal/atrest"
-	"github.com/astraive/loxa/collector/internal/sinks/internal/projection"
+	collectorevent "github.com/astraive/loza/collector/internal/event"
+	"github.com/astraive/loza/collector/internal/sinks/internal/atrest"
+	"github.com/astraive/loza/collector/internal/sinks/internal/projection"
 	"github.com/marcboeker/go-duckdb"
 )
 
@@ -109,7 +109,7 @@ func New(cfg Config) (collectorevent.Sink, error) {
 		return nil, errors.New("duckdb: encrypt_key must not be empty when encrypt_raw is enabled")
 	}
 	if cfg.Table == "" {
-		cfg.Table = "loxa_events"
+		cfg.Table = "loza_events"
 	}
 	if cfg.RawColumn == "" {
 		cfg.RawColumn = "raw"

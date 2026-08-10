@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 // Config controls HTTP batch sink behavior.
@@ -33,7 +33,7 @@ type sink struct {
 }
 
 // New creates an HTTP batch sink.
-func New(cfg Config) (loxa.Sink, error) {
+func New(cfg Config) (loza.Sink, error) {
 	if cfg.URL == "" {
 		return nil, fmt.Errorf("httpbatch: URL is required")
 	}
@@ -62,7 +62,7 @@ func New(cfg Config) (loxa.Sink, error) {
 
 func (s *sink) Name() string { return "httpbatch" }
 
-func (s *sink) WriteEvent(_ context.Context, encoded []byte, _ *loxa.Event) error {
+func (s *sink) WriteEvent(_ context.Context, encoded []byte, _ *loza.Event) error {
 	s.mu.Lock()
 	cp := make([]byte, len(encoded))
 	copy(cp, encoded)
@@ -75,7 +75,7 @@ func (s *sink) WriteEvent(_ context.Context, encoded []byte, _ *loxa.Event) erro
 	return nil
 }
 
-func (s *sink) WriteBatch(ctx context.Context, encoded [][]byte, _ []*loxa.Event) error {
+func (s *sink) WriteBatch(ctx context.Context, encoded [][]byte, _ []*loza.Event) error {
 	if len(encoded) == 0 {
 		return nil
 	}

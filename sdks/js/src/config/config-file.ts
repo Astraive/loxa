@@ -2,9 +2,9 @@
  * YAML-based config file loading for the JS/TS SDK.
  *
  * Implements the 4-layer config precedence:
- *   1. loxa-js.defaults.yaml  (committed SDK defaults)
- *   2. .loxa-js.yaml / loxa.yaml  (user overrides)
- *   3. Environment variables (including LOXA_DSN)
+ *   1. loza-js.defaults.yaml  (committed SDK defaults)
+ *   2. .loza-js.yaml / loza.yaml  (user overrides)
+ *   3. Environment variables (including LOZA_DSN)
  *   4. Code-level config (builder)
  *
  * Uses a simple built-in YAML parser (flat key: value + one level of nesting)
@@ -108,17 +108,17 @@ function getPackageRoot(): string {
 }
 
 /**
- * Find the path to loxa-js.defaults.yaml.
- * Search order: LOXA_JS_DEFAULTS env, cwd, package root.
+ * Find the path to loza-js.defaults.yaml.
+ * Search order: LOZA_JS_DEFAULTS env, cwd, package root.
  */
 function findDefaultsPath(): string | null {
-  const envOverride = process.env.LOXA_JS_DEFAULTS?.trim();
+  const envOverride = process.env.LOZA_JS_DEFAULTS?.trim();
   if (envOverride && existsSync(envOverride)) return envOverride;
 
-  const cwdCandidate = join(process.cwd(), 'loxa-js.defaults.yaml');
+  const cwdCandidate = join(process.cwd(), 'loza-js.defaults.yaml');
   if (existsSync(cwdCandidate)) return cwdCandidate;
 
-  const pkgCandidate = join(getPackageRoot(), 'loxa-js.defaults.yaml');
+  const pkgCandidate = join(getPackageRoot(), 'loza-js.defaults.yaml');
   if (existsSync(pkgCandidate)) return pkgCandidate;
 
   return null;
@@ -126,17 +126,17 @@ function findDefaultsPath(): string | null {
 
 /**
  * Find the path to user config file.
- * Search order: LOXA_JS_CONFIG env, .loxa-js.yaml in cwd, loxa.yaml in cwd.
+ * Search order: LOZA_JS_CONFIG env, .loza-js.yaml in cwd, loza.yaml in cwd.
  */
 function findUserConfigPath(): string | null {
-  const envOverride = process.env.LOXA_JS_CONFIG?.trim();
+  const envOverride = process.env.LOZA_JS_CONFIG?.trim();
   if (envOverride && existsSync(envOverride)) return envOverride;
 
-  const dotCandidate = join(process.cwd(), '.loxa-js.yaml');
+  const dotCandidate = join(process.cwd(), '.loza-js.yaml');
   if (existsSync(dotCandidate)) return dotCandidate;
 
-  const loxaCandidate = join(process.cwd(), 'loxa.yaml');
-  if (existsSync(loxaCandidate)) return loxaCandidate;
+  const lozaCandidate = join(process.cwd(), 'loza.yaml');
+  if (existsSync(lozaCandidate)) return lozaCandidate;
 
   return null;
 }
@@ -207,7 +207,7 @@ export function loadFileConfig(): YamlRecord {
 /**
  * Apply raw YAML config values to a Config object.
  * Only non-empty YAML values are applied (empty/missing fields are skipped).
- * If collector_url is a loxa:// DSN, it is parsed and resolved to an HTTP URL.
+ * If collector_url is a loza:// DSN, it is parsed and resolved to an HTTP URL.
  */
 export function mergeFileConfig(base: Config, raw: YamlRecord): Config {
   const cfg = { ...base };
@@ -238,9 +238,9 @@ export function mergeFileConfig(base: Config, raw: YamlRecord): Config {
   applyBoolean(raw, cfg, 'include_host', 'includeHost');
   applyBoolean(raw, cfg, 'include_runtime', 'includeRuntime');
 
-  // ── Parse collector_url as DSN if it uses loxa:// scheme ───────────────────
+  // ── Parse collector_url as DSN if it uses loza:// scheme ───────────────────
 
-  if (cfg.collectorUrl && cfg.collectorUrl.startsWith('loxa://')) {
+  if (cfg.collectorUrl && cfg.collectorUrl.startsWith('loza://')) {
     try {
       const dsn = parseDSN(cfg.collectorUrl);
       cfg.collectorUrl = dsn.baseURL;
@@ -295,7 +295,7 @@ export function mergeFileConfig(base: Config, raw: YamlRecord): Config {
   }
 
   // ── Top-level max_buffer_size -> async.queueSize ───────────────────────────
-  // The loxa-js.defaults.yaml uses max_buffer_size at the top level,
+  // The loza-js.defaults.yaml uses max_buffer_size at the top level,
   // which maps to async.queueSize in the JS Config interface.
 
   const maxBuf = raw.max_buffer_size;

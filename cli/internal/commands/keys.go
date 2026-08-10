@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
-	"github.com/astraive/loxa/cli/internal/output"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/output"
 )
 
 func KeysCommand(ctx context.Context, cfg config.Config, args []string) error {
@@ -47,7 +47,7 @@ func KeysCommand(ctx context.Context, cfg config.Config, args []string) error {
 		return nil
 	case "revoke":
 		if len(args) < 2 {
-			return fmt.Errorf("usage: loxa keys revoke <id>")
+			return fmt.Errorf("usage: loza keys revoke <id>")
 		}
 		body, err := client.RevokeAPIKey(ctx, cfg.CollectorURL, args[1])
 		if err != nil {
@@ -57,7 +57,7 @@ func KeysCommand(ctx context.Context, cfg config.Config, args []string) error {
 		return nil
 	case "rotate":
 		if len(args) < 2 {
-			return fmt.Errorf("usage: loxa keys rotate <id>")
+			return fmt.Errorf("usage: loza keys rotate <id>")
 		}
 		body, err := client.RotateAPIKey(ctx, cfg.CollectorURL, args[1])
 		if err != nil {

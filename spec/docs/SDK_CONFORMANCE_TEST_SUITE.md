@@ -361,7 +361,7 @@ Verify SDK continues to work
 
 ### Test 7.1: Environment Variable Override
 ```
-Export LOXA_SERVICE=env-service
+Export LOZA_SERVICE=env-service
 Create config with service="struct-service"
 Load config
 Verify service="env-service" (env wins)
@@ -381,7 +381,7 @@ Verify service="struct-service" (struct wins over file)
 ```
 No env var, no struct field, no config file
 Load config
-Verify default service="loxa" (or configured default)
+Verify default service="loza" (or configured default)
 ```
 **Languages**: Go, Python, Rust ✅
 
@@ -481,7 +481,7 @@ For each file in spec/examples/golden/invalid/:
 
 ### Test 10.1: End-to-End Emit and Query
 ```
-1. Start collector (loxa-collector run -c configs/loxa.local.yaml)
+1. Start collector (loza-collector run -c configs/loza.local.yaml)
 2. Create SDK logger pointing to collector
 3. Emit 10 events with known data
 4. Query collector: SELECT * FROM events WHERE event_name='test.e2e'
@@ -563,7 +563,7 @@ python conformance_runner.py --sdk all --group all --verbose
 
 ### Check Command Maturity
 ```bash
-loxa maturity
+loza maturity
 ```
 
 ---

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate LOXA release manifests."""
+"""Validate LOZA release manifests."""
 
 from __future__ import annotations
 
@@ -61,8 +61,8 @@ def validate_native_metadata(component: str, manifest: dict[str, Any], manifest_
         package_json = root / "package.json"
         if package_json.exists():
             package_data = json.loads(package_json.read_text(encoding="utf-8"))
-            if package_data.get("name") != "loxa":
-                errors.append(f"{component}: sdks/js/package.json name must be 'loxa', not {package_data.get('name')!r}")
+            if package_data.get("name") != "loza":
+                errors.append(f"{component}: sdks/js/package.json name must be 'loza', not {package_data.get('name')!r}")
             if package_data.get("version") != version:
                 errors.append(f"{component}: sdks/js/package.json version must match manifest version {version}")
 
@@ -70,8 +70,8 @@ def validate_native_metadata(component: str, manifest: dict[str, Any], manifest_
         pyproject = root / "pyproject.toml"
         if pyproject.exists():
             project = tomllib.loads(pyproject.read_text(encoding="utf-8")).get("project", {})
-            if project.get("name") != "loxa":
-                errors.append(f"{component}: sdks/py/pyproject.toml project.name must be 'loxa'")
+            if project.get("name") != "loza":
+                errors.append(f"{component}: sdks/py/pyproject.toml project.name must be 'loza'")
             if project.get("version") != version:
                 errors.append(f"{component}: sdks/py/pyproject.toml version must match manifest version {version}")
 
@@ -79,8 +79,8 @@ def validate_native_metadata(component: str, manifest: dict[str, Any], manifest_
         cargo_toml = root / "Cargo.toml"
         if cargo_toml.exists():
             package = tomllib.loads(cargo_toml.read_text(encoding="utf-8")).get("package", {})
-            if package.get("name") != "loxa":
-                errors.append(f"{component}: sdks/rs/Cargo.toml package.name must be 'loxa'")
+            if package.get("name") != "loza":
+                errors.append(f"{component}: sdks/rs/Cargo.toml package.name must be 'loza'")
             if package.get("version") != version:
                 errors.append(f"{component}: sdks/rs/Cargo.toml version must match manifest version {version}")
 
@@ -118,8 +118,8 @@ def validate_publish_metadata(component: str, manifest: dict[str, Any], manifest
     if kind == "cli":
         release = publish.get("github_release")
         go = publish.get("go")
-        if not isinstance(release, dict) or release.get("binary") != "loxa":
-            errors.append(f"{component}: publish.github_release.binary must be 'loxa'")
+        if not isinstance(release, dict) or release.get("binary") != "loza":
+            errors.append(f"{component}: publish.github_release.binary must be 'loza'")
         elif release.get("owner") != PUBLISH_OWNER:
             errors.append(f"{component}: publish.github_release.owner must be '{PUBLISH_OWNER}'")
         if not isinstance(go, dict) or not go.get("install"):
@@ -154,20 +154,20 @@ def validate_publish_metadata(component: str, manifest: dict[str, Any], manifest
             npm = publish.get("npm")
             if not isinstance(npm, dict):
                 errors.append(f"{component}: JavaScript SDK requires publish.npm")
-            elif npm.get("package") != "loxa":
-                errors.append(f"{component}: npm package must be 'loxa', not {npm.get('package')!r}")
+            elif npm.get("package") != "loza":
+                errors.append(f"{component}: npm package must be 'loza', not {npm.get('package')!r}")
             elif npm.get("owner") != PUBLISH_OWNER:
                 errors.append(f"{component}: publish.npm.owner must be '{PUBLISH_OWNER}'")
         if language == "python":
             pypi = publish.get("pypi")
-            if not isinstance(pypi, dict) or pypi.get("package") != "loxa":
-                errors.append(f"{component}: PyPI package must be 'loxa'")
+            if not isinstance(pypi, dict) or pypi.get("package") != "loza":
+                errors.append(f"{component}: PyPI package must be 'loza'")
             elif pypi.get("owner") != PUBLISH_OWNER:
                 errors.append(f"{component}: publish.pypi.owner must be '{PUBLISH_OWNER}'")
         if language == "rust":
             crates = publish.get("crates")
-            if not isinstance(crates, dict) or crates.get("package") != "loxa":
-                errors.append(f"{component}: crates.io package must be 'loxa'")
+            if not isinstance(crates, dict) or crates.get("package") != "loza":
+                errors.append(f"{component}: crates.io package must be 'loza'")
             elif crates.get("owner") != PUBLISH_OWNER:
                 errors.append(f"{component}: publish.crates.owner must be '{PUBLISH_OWNER}'")
 

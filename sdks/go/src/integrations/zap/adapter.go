@@ -3,16 +3,16 @@ package zap
 import (
 	"context"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 	"go.uber.org/zap/zapcore"
 )
 
-// AdapterCore wraps a zapcore.Core and mirrors entries into loxa.
+// AdapterCore wraps a zapcore.Core and mirrors entries into loza.
 type AdapterCore struct {
 	zapcore.Core
 }
 
-// Core wraps a base zap core with loxa mirroring.
+// Core wraps a base zap core with loza mirroring.
 func Core(base zapcore.Core) *AdapterCore {
 	return &AdapterCore{Core: base}
 }
@@ -20,18 +20,18 @@ func Core(base zapcore.Core) *AdapterCore {
 // Deprecated: use Core.
 func NewCore(base zapcore.Core) *AdapterCore { return Core(base) }
 
-// Write forwards to the wrapped core and emits to loxa.
+// Write forwards to the wrapped core and emits to loza.
 func (c *AdapterCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 	ctx := context.Background()
 	switch ent.Level {
 	case zapcore.DebugLevel:
-		loxa.DebugContext(ctx, ent.Message, "zap.event")
+		loza.DebugContext(ctx, ent.Message, "zap.event")
 	case zapcore.InfoLevel:
-		loxa.InfoContext(ctx, ent.Message, "zap.event")
+		loza.InfoContext(ctx, ent.Message, "zap.event")
 	case zapcore.WarnLevel:
-		loxa.WarnContext(ctx, ent.Message, "zap.event")
+		loza.WarnContext(ctx, ent.Message, "zap.event")
 	default:
-		loxa.ErrorContext(ctx, ent.Message, nil, "zap.event")
+		loza.ErrorContext(ctx, ent.Message, nil, "zap.event")
 	}
 	return c.Core.Write(ent, fields)
 }

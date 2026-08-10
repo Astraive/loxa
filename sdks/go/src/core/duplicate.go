@@ -1,6 +1,6 @@
 package core
 
-import speccontract "github.com/astraive/loxa/spec/generated/go/contract"
+import speccontract "github.com/astraive/loza/spec/generated/go/contract"
 
 // CanonicalFieldSet is the generated set of top-level canonical JSON field names.
 var CanonicalFieldSet = speccontract.CanonicalFieldSet

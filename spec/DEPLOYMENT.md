@@ -1,15 +1,15 @@
 Containerized deployment and Kubernetes rollout
 
 This repository includes production-ready container assets for:
-- schema-service: serves generated/contract/loxa-contract.json and spec schemas.
+- schema-service: serves generated/contract/loza-contract.json and spec schemas.
 - stager: continuously drains the ingest queue and writes staged partition files.
 
 Docker
 
 Build images from the spec context:
 
-  docker build -f spec/docker/schema-service/Dockerfile -t ghcr.io/astraive/loxa-schema-service:latest spec
-  docker build -f spec/docker/stager/Dockerfile -t ghcr.io/astraive/loxa-stager:latest spec
+  docker build -f spec/docker/schema-service/Dockerfile -t ghcr.io/astraive/loza-schema-service:latest spec
+  docker build -f spec/docker/stager/Dockerfile -t ghcr.io/astraive/loza-stager:latest spec
 
 Run local compose stack:
 
@@ -18,9 +18,9 @@ Run local compose stack:
 The compose stack configures the stager for Kafka by default:
 - STAGER_QUEUE_BACKEND=kafka
 - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-- KAFKA_TOPIC=loxa-events
-- KAFKA_GROUP_ID=loxa-stager
-- KAFKA_DLQ_TOPIC=loxa-events.dlq
+- KAFKA_TOPIC=loza-events
+- KAFKA_GROUP_ID=loza-stager
+- KAFKA_DLQ_TOPIC=loza-events.dlq
 
 Kubernetes manifests (raw YAML)
 
@@ -31,24 +31,24 @@ with the Helm chart.
   kubectl apply -k spec/deploy/k8s
 
 Optional secrets referenced by Deployments:
-- loxa-schema-service-secrets
-- loxa-stager-secrets
+- loza-schema-service-secrets
+- loza-stager-secrets
 
 Helm chart
 
-Canonical chart path: spec/charts/loxa
+Canonical chart path: spec/charts/loza
 
 Install or upgrade:
 
-  helm upgrade --install loxa .\spec\charts\loxa --namespace loxa --create-namespace
+  helm upgrade --install loza .\spec\charts\loza --namespace loza --create-namespace
 
 Override image tags during rollout:
 
-  helm upgrade --install loxa .\spec\charts\loxa --namespace loxa --set schemaService.image.tag=v0.0.1 --set stager.image.tag=v0.0.1
+  helm upgrade --install loza .\spec\charts\loza --namespace loza --set schemaService.image.tag=v0.0.1 --set stager.image.tag=v0.0.1
 
 Render templates without installing:
 
-  helm template loxa .\spec\charts\loxa --namespace loxa
+  helm template loza .\spec\charts\loza --namespace loza
 
 Kafka-backed stager path (Python)
 
@@ -66,7 +66,7 @@ Kafka-backed stager path (Python)
       compress=True,
       retry_policy=RetryPolicy(max_attempts=5, base_delay_seconds=0.2),
       kafka_brokers="localhost:9092",
-      kafka_topic="loxa-events",
-      kafka_group_id="loxa-stager",
-      kafka_dlq_topic="loxa-events.dlq",
+      kafka_topic="loza-events",
+      kafka_group_id="loza-stager",
+      kafka_dlq_topic="loza-events.dlq",
   )

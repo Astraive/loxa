@@ -7,18 +7,18 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/astraive/loxa/sdks/go"
-	loxaslog "github.com/astraive/loxa/sdks/go/integrations/slog"
+	"github.com/astraive/loza/sdks/go"
+	lozaslog "github.com/astraive/loza/sdks/go/integrations/slog"
 )
 
 func main() {
-	_ = loxa.Configure(loxa.Production().WithService("payments"))
-	logger := slog.New(loxaslog.Handler())
+	_ = loza.Configure(loza.Production().WithService("payments"))
+	logger := slog.New(lozaslog.Handler())
 	logger.Info("payment accepted", "order_id", "ord-42", "amount", 4999)
 }
 ```
 
 Use this migration pattern:
 1. Keep existing `slog` usage.
-2. Add LOXA lifecycle events around important operations.
+2. Add LOZA lifecycle events around important operations.
 3. Keep line logs for diagnostics, wide events for analytics.

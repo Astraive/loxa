@@ -6,9 +6,9 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
-	"github.com/astraive/loxa/cli/internal/output"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/output"
 )
 
 func IncidentCommand(ctx context.Context, cfg config.Config, args []string) error {
@@ -20,7 +20,7 @@ func IncidentCommand(ctx context.Context, cfg config.Config, args []string) erro
 		return err
 	}
 	if fs.NArg() == 0 {
-		return fmt.Errorf("usage: loxa incident <id> [--mode fast|deep] [--depth N]")
+		return fmt.Errorf("usage: loza incident <id> [--mode fast|deep] [--depth N]")
 	}
 	incidentID := fs.Arg(0)
 

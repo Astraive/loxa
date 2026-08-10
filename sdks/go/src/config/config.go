@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/astraive/loxa/sdks/go/src/core"
+	"github.com/astraive/loza/sdks/go/src/core"
 )
 
 // Config holds all configuration for a Logger instance.

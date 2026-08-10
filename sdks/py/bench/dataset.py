@@ -67,7 +67,7 @@ def generate_dataset(seed: int = 42) -> dict:
                     seconds=rng.randint(0, 59),
                 )
                 kind = rng.choices(
-                    ["log", "metric", "trace", "loxa_event"],
+                    ["log", "metric", "trace", "loza_event"],
                     weights=[40, 30, 20, 10],
                 )[0]
                 event = _make_event(ts, kind, svc, rng)

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/collector/internal/eventbus"
+	"github.com/astraive/loza/collector/internal/eventbus"
 )
 
 // Tests require a running NATS server. Use build tag for CI.
@@ -27,13 +27,13 @@ func TestNATSRequiresConnection(t *testing.T) {
 func TestNATSBusContract(t *testing.T) {
 	bus, err := New(context.Background(), eventbus.Config{
 		Type:     "nats",
-		Topic:    "loxa.test.events",
-		DLQTopic: "loxa.test.dlq",
+		Topic:    "loza.test.events",
+		DLQTopic: "loza.test.dlq",
 		NATS: eventbus.NATSConfig{
 			URL:     "nats://127.0.0.1:4222",
-			Stream:  "LOXA_TEST",
-			Subject: "loxa.test.events",
-			Durable: "loxa-test-worker",
+			Stream:  "LOZA_TEST",
+			Subject: "loza.test.events",
+			Durable: "loza-test-worker",
 		},
 	})
 	if err != nil {
@@ -50,14 +50,14 @@ func TestNATSBusContract(t *testing.T) {
 		return msg.Ack(ctx)
 	}
 
-	if err := bus.Subscribe(ctx, "loxa.test.events", "loxa-test-worker", handler); err != nil {
+	if err := bus.Subscribe(ctx, "loza.test.events", "loza-test-worker", handler); err != nil {
 		t.Fatalf("subscribe: %v", err)
 	}
 
 	envelopes := []eventbus.Envelope{
 		{ID: "nats-1", Event: "test.event", Timestamp: time.Now(), Body: []byte(`{"x":1}`)},
 	}
-	if err := bus.Publish(ctx, "loxa.test.events", envelopes); err != nil {
+	if err := bus.Publish(ctx, "loza.test.events", envelopes); err != nil {
 		t.Fatalf("publish: %v", err)
 	}
 

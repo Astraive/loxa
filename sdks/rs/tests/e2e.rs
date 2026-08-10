@@ -1,5 +1,5 @@
 // Integration tests for Rust SDK with collector
-use loxa::{Config, New, Params};
+use loza::{Config, New, Params};
 use serde_json::Value;
 
 #[test]

@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewClient_CodeCompressionOverrideWinsOverEnv(t *testing.T) {
-	t.Setenv("LOXA_ENABLE_COMPRESSION", "true")
+	t.Setenv("LOZA_ENABLE_COMPRESSION", "true")
 
 	logger, err := NewClient(
 		ApplyConfig(

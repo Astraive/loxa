@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  LOXA_SPEC_VERSION, LOXA_EVENT_VERSION, ALLOWED_KINDS, ALLOWED_LEVELS,
+  LOZA_SPEC_VERSION, LOZA_EVENT_VERSION, ALLOWED_KINDS, ALLOWED_LEVELS,
   buildIngestEnvelope, isCanonical,
 } from '../src/generated/spec-contract.ts';
 import { Logger } from '../src/core/logger.ts';
@@ -12,8 +12,8 @@ import { String as AttrString } from '../src/core/event.ts';
 
 describe('Spec Conformance', () => {
   it('spec constants match expected values', () => {
-    assert.equal(LOXA_SPEC_VERSION, 'v1');
-    assert.equal(LOXA_EVENT_VERSION, 'v1');
+    assert.equal(LOZA_SPEC_VERSION, 'v1');
+    assert.equal(LOZA_EVENT_VERSION, 'v1');
   });
 
   it('allowed kinds match spec', () => {
@@ -38,11 +38,11 @@ describe('Spec Conformance', () => {
   });
 
   it('buildIngestEnvelope creates valid envelope', () => {
-    const envelope = buildIngestEnvelope('loxa-js', '0.2.0', 'checkout', [
+    const envelope = buildIngestEnvelope('loza-js', '0.2.0', 'checkout', [
       { event_id: 'evt_1', event: 'test' },
     ]);
     assert.equal(envelope.api_version, 'v1');
-    assert.equal(envelope.source.sdk, 'loxa-js');
+    assert.equal(envelope.source.sdk, 'loza-js');
     assert.equal(envelope.source.version, '0.2.0');
     assert.equal(envelope.source.service, 'checkout');
     assert.equal(envelope.events.length, 1);
@@ -50,11 +50,11 @@ describe('Spec Conformance', () => {
 
   it('SDK emits spec-compliant event', async () => {
     const sink = new MemorySink();
-    const loxa = new Logger({ service: 'checkout', sink });
-    const ctx = loxa.startEvent({ event: 'payment.completed' });
-    loxa.enrich(ctx, AttrString('currency', 'USD'));
-    loxa.finish(ctx, 'success');
-    await loxa.emit(ctx);
+    const loza = new Logger({ service: 'checkout', sink });
+    const ctx = loza.startEvent({ event: 'payment.completed' });
+    loza.enrich(ctx, AttrString('currency', 'USD'));
+    loza.finish(ctx, 'success');
+    await loza.emit(ctx);
 
     const payload = JSON.parse(sink.getEvents()[0]);
     assert.equal(payload.schema_version, 'v1');

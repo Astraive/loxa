@@ -89,4 +89,4 @@ jobs:
         if: inputs.dry_run != true
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: gh release create "lql/v${{ inputs.version }}" lql/target/release/lql* --title "LOXA LQL ${{ inputs.version }}" --notes "LOXA LQL release ${{ inputs.version }}"
+        run: gh release create "lql/v${{ inputs.version }}" lql/target/release/lql* --title "LOZA LQL ${{ inputs.version }}" --notes "LOZA LQL release ${{ inputs.version }}"

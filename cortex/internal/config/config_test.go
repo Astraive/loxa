@@ -77,7 +77,7 @@ storage:
   duckdb:
     path: /data/custom.db
 `)
-	path := filepath.Join(dir, "loxa-cortex.yaml")
+	path := filepath.Join(dir, "loza-cortex.yaml")
 	if err := os.WriteFile(path, userYAML, 0o600); err != nil {
 		t.Fatalf("write user config: %v", err)
 	}
@@ -111,7 +111,7 @@ func TestDefaultEnvOverridesUserFile(t *testing.T) {
 	userYAML := []byte(`server:
   port: 7777
 `)
-	path := filepath.Join(dir, "loxa.yaml")
+	path := filepath.Join(dir, "loza.yaml")
 	if err := os.WriteFile(path, userYAML, 0o600); err != nil {
 		t.Fatalf("write user config: %v", err)
 	}
@@ -337,7 +337,7 @@ func TestLoadDefaultPipeline(t *testing.T) {
 	useBundledDefaults(t, defaults)
 
 	dir := t.TempDir()
-	writeConfigFile(t, filepath.Join(dir, "loxa-cortex.yaml"), "server:\n  port: 7777\n")
+	writeConfigFile(t, filepath.Join(dir, "loza-cortex.yaml"), "server:\n  port: 7777\n")
 	changeWorkingDirectory(t, dir)
 	t.Setenv("CORTEX_SERVER_PORT", "8888")
 
@@ -358,7 +358,7 @@ func TestLoadDefaultSkipsProjectManifest(t *testing.T) {
 	useBundledDefaults(t, defaults)
 
 	dir := t.TempDir()
-	writeConfigFile(t, filepath.Join(dir, "loxa.yaml"), "name: loxa\nkind: release\nmodule: github.com/astraive/loxa\n")
+	writeConfigFile(t, filepath.Join(dir, "loza.yaml"), "name: loza\nkind: release\nmodule: github.com/astraive/loza\n")
 	changeWorkingDirectory(t, dir)
 
 	cfg, err := LoadDefault()
@@ -385,7 +385,7 @@ func TestLoadDefaultRejectsInvalidRuntimeOverride(t *testing.T) {
 			defaults := writeBundledDefaults(t)
 			useBundledDefaults(t, defaults)
 			dir := t.TempDir()
-			writeConfigFile(t, filepath.Join(dir, "loxa.yaml"), tc.content)
+			writeConfigFile(t, filepath.Join(dir, "loza.yaml"), tc.content)
 			changeWorkingDirectory(t, dir)
 
 			_, err := LoadDefault()

@@ -172,7 +172,7 @@ export function goldenTest(path: string, eventJson: string): boolean {
 }
 
 export function conformanceSuite(): { name: string; status: 'available' } {
-  return { name: 'loxa-js-conformance', status: 'available' };
+  return { name: 'loza-js-conformance', status: 'available' };
 }
 
 function getNestedValue(obj: any, path: string): any {

@@ -153,7 +153,7 @@ def _wait_for_http(url: str, *, timeout_s: float = 20.0) -> bool:
 
 
 def _build_cli_config(temp_dir: Path, collector_url: str, cortex_url: str) -> Path:
-    config_path = temp_dir / "loxa-cli.yaml"
+    config_path = temp_dir / "loza-cli.yaml"
     config_path.write_text(
         "\n".join(
             [
@@ -161,10 +161,10 @@ def _build_cli_config(temp_dir: Path, collector_url: str, cortex_url: str) -> Pa
                 f"cortex_repo_path: {CORTEX_ROOT.as_posix()}",
                 f"spec_repo_path: {SPEC_ROOT.as_posix()}",
                 f"collector_url: {collector_url}",
-                "duckdb_path: loxa.db",
-                "spool_dir: loxa-spool",
+                "duckdb_path: loza.db",
+                "spool_dir: loza-spool",
                 "spool_file: spool.ndjson",
-                "dlq_path: loxa-dlq.ndjson",
+                "dlq_path: loza-dlq.ndjson",
                 "cortex:",
                 f"  url: {cortex_url}",
             ]
@@ -182,11 +182,11 @@ def _start_collector(
         results.append(_blocked("collector.build", "collector_runtime", "go is required to build the collector"))
         return None, results, None
 
-    binary = temp_dir / ("loxa-collector.exe" if os.name == "nt" else "loxa-collector")
+    binary = temp_dir / ("loza-collector.exe" if os.name == "nt" else "loza-collector")
     build = _run(
         "collector.build",
         "collector_runtime",
-        ["go", "build", "-o", str(binary), "./cmd/loxa-collector"],
+        ["go", "build", "-o", str(binary), "./cmd/loza-collector"],
         COLLECTOR_ROOT,
     )
     results.append(build)
@@ -220,7 +220,7 @@ def _start_collector(
                 "      kind: sec",
                 "      roles: [project_admin]",
                 "storage:",
-                "  encryption_key_env: LOXA_STORAGE_ENCRYPTION_KEY",
+                "  encryption_key_env: LOZA_STORAGE_ENCRYPTION_KEY",
                 "duckdb:",
                 f"  path: {json.dumps(str(temp_dir / 'collector.duckdb'))}",
             ]
@@ -235,7 +235,7 @@ def _start_collector(
             "COLLECTOR_AUTH_SERVER_SECRET": auth_server_secret,
             "COLLECTOR_INGEST_KEY_SECRET": ingest_secret,
             "COLLECTOR_ADMIN_KEY_SECRET": admin_secret,
-            "LOXA_STORAGE_ENCRYPTION_KEY": storage_encryption_key,
+            "LOZA_STORAGE_ENCRYPTION_KEY": storage_encryption_key,
         }
     )
     stdout_file = temp_dir / "collector.stdout.log"
@@ -277,7 +277,7 @@ def _stop_process(proc: subprocess.Popen[str] | None) -> None:
 
 def run_collector_smoke() -> list[StepResult]:
     results: list[StepResult] = []
-    with tempfile.TemporaryDirectory(prefix="loxa-collector-smoke-") as raw_dir:
+    with tempfile.TemporaryDirectory(prefix="loza-collector-smoke-") as raw_dir:
         temp_dir = Path(raw_dir)
         port = _find_free_port()
         proc, startup_results, collector = _start_collector(temp_dir, port)
@@ -395,7 +395,7 @@ def run_cli_flow() -> list[StepResult]:
     if not _tool_available("go"):
         return [_blocked("cli.build", "cli_runtime", "go is required to build the CLI")]
 
-    with tempfile.TemporaryDirectory(prefix="loxa-cli-flow-") as raw_dir:
+    with tempfile.TemporaryDirectory(prefix="loza-cli-flow-") as raw_dir:
         temp_dir = Path(raw_dir)
         port = _find_free_port()
         collector_proc, startup_results, collector = _start_collector(temp_dir, port)
@@ -403,8 +403,8 @@ def run_cli_flow() -> list[StepResult]:
         if collector_proc is None or collector is None:
             return results
 
-        cli_binary = temp_dir / ("loxa.exe" if os.name == "nt" else "loxa")
-        build = _run("cli.build", "cli_runtime", ["go", "build", "-o", str(cli_binary), "./cmd/loxa"], CLI_ROOT)
+        cli_binary = temp_dir / ("loza.exe" if os.name == "nt" else "loza")
+        build = _run("cli.build", "cli_runtime", ["go", "build", "-o", str(cli_binary), "./cmd/loza"], CLI_ROOT)
         results.append(build)
         if build.status != "implemented_and_passing":
             _stop_process(collector_proc)
@@ -412,8 +412,8 @@ def run_cli_flow() -> list[StepResult]:
 
         config_path = _build_cli_config(temp_dir, collector.base_url, "http://127.0.0.1:9312")
         env = os.environ.copy()
-        env["LOXA_CLI_CONFIG"] = str(config_path)
-        env["LOXA_API_KEY"] = collector.admin_token
+        env["LOZA_CLI_CONFIG"] = str(config_path)
+        env["LOZA_API_KEY"] = collector.admin_token
 
         if not _wait_for_http(collector.base_url + "/health"):
             results.append(_blocked("cli.collector", "cli_runtime", "collector did not become healthy", "implemented_and_failing"))
@@ -425,7 +425,7 @@ def run_cli_flow() -> list[StepResult]:
 
         marker = f"cli-flow-{int(time.time())}"
         attrs = json.dumps({"test_marker": marker})
-        env["LOXA_API_KEY"] = collector.ingest_token
+        env["LOZA_API_KEY"] = collector.ingest_token
         emit = _run(
             "cli.emit",
             "cli_runtime",
@@ -477,8 +477,8 @@ def run_cortex_full_stack() -> list[StepResult]:
         return results
 
     compose_env = os.environ.copy()
-    compose_env.setdefault("POSTGRES_PASSWORD", "loxa-integration-postgres-password")
-    compose_env.setdefault("CORTEX_API_KEYS", "integration:loxa-integration-cortex-api-key:admin")
+    compose_env.setdefault("POSTGRES_PASSWORD", "loza-integration-postgres-password")
+    compose_env.setdefault("CORTEX_API_KEYS", "integration:loza-integration-cortex-api-key:admin")
 
     up = _run(
         "cortex.compose.up",
@@ -543,7 +543,7 @@ def run_cortex_full_stack() -> list[StepResult]:
                 _run(
                     "collector.cortex_bridge",
                     "cortex_runtime",
-                    ["go", "test", "./cmd/loxa-collector", "-count=1", "-run", "TestCortexBridge"],
+                    ["go", "test", "./cmd/loza-collector", "-count=1", "-run", "TestCortexBridge"],
                     COLLECTOR_ROOT,
                     timeout_s=180,
                 )
@@ -590,7 +590,7 @@ def run_shared_sdk_conformance() -> list[StepResult]:
     if not _tool_available("node"):
         return [_blocked("sdk.shared_conformance", "sdk_conformance", "node is unavailable")]
 
-    with tempfile.TemporaryDirectory(prefix="loxa-shared-conformance-") as raw_dir:
+    with tempfile.TemporaryDirectory(prefix="loza-shared-conformance-") as raw_dir:
         temp_dir = Path(raw_dir)
         collector_port = _find_free_port()
         collector_proc, startup_results, collector = _start_collector(temp_dir, collector_port)
@@ -603,10 +603,10 @@ def run_shared_sdk_conformance() -> list[StepResult]:
                 return results
 
             env = os.environ.copy()
-            env["LOXA_TEST_COLLECTOR_URL"] = collector.base_url
-            env["LOXA_API_KEY"] = collector.ingest_token
-            env["LOXA_COLLECTOR_API_KEY"] = collector.ingest_token
-            env["LOXA_TEST_COLLECTOR_ADMIN_KEY"] = collector.admin_token
+            env["LOZA_TEST_COLLECTOR_URL"] = collector.base_url
+            env["LOZA_API_KEY"] = collector.ingest_token
+            env["LOZA_COLLECTOR_API_KEY"] = collector.ingest_token
+            env["LOZA_TEST_COLLECTOR_ADMIN_KEY"] = collector.admin_token
 
             if _tool_available("cargo"):
                 results.append(
@@ -852,7 +852,7 @@ def build_matrix(results: list[StepResult]) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run platform-safe LOXA verification flows and emit a machine-readable matrix.")
+    parser = argparse.ArgumentParser(description="Run platform-safe LOZA verification flows and emit a machine-readable matrix.")
     parser.add_argument(
         "--flow",
         choices=("collector_smoke", "cli_flow", "cortex_full_stack", "sdk_collector_e2e", "matrix"),

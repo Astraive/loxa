@@ -1,5 +1,5 @@
 {
-  "name": "loxa-quickstart-js",
+  "name": "loza-quickstart-js",
   "version": "0.2.6",
   "private": true,
   "type": "module",
@@ -7,6 +7,6 @@
     "start": "node --loader ts-node/esm src/main.ts"
   },
   "dependencies": {
-    "loxa": "workspace:*"
+    "loza": "workspace:*"
   }
 }

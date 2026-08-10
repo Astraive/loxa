@@ -1,10 +1,10 @@
 package server
 
-import loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
+import lozav1 "github.com/astraive/loza/gen/go/loza/core"
 
-type CollectorStatusRequest = loxav1.CollectorStatusRequest
-type CollectorStatusResponse = loxav1.CollectorStatusResponse
-type EventBatch = loxav1.RawEventBatch
-type Event = loxav1.RawEvent
-type EventAck = loxav1.EventAck
-type PushResponse = loxav1.PushResponse
+type CollectorStatusRequest = lozav1.CollectorStatusRequest
+type CollectorStatusResponse = lozav1.CollectorStatusResponse
+type EventBatch = lozav1.RawEventBatch
+type Event = lozav1.RawEvent
+type EventAck = lozav1.EventAck
+type PushResponse = lozav1.PushResponse

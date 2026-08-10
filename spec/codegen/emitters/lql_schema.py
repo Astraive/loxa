@@ -1,7 +1,7 @@
 """Emitter: generate lql/src/schema.rs from the spec contract.
 
 This ensures the LQL crate's schema module stays in sync with the canonical
-Loxa event fields defined in the spec.
+Loza event fields defined in the spec.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from typing import Any
 
 
 def render_lql_schema(contract: dict[str, Any]) -> str:
-    """Generate a Rust module for the Loxa event schema used by LQL."""
+    """Generate a Rust module for the Loza event schema used by LQL."""
     fields = contract.get("canonical_fields", [])
     enums = contract.get("enums", {})
 
@@ -20,7 +20,7 @@ def render_lql_schema(contract: dict[str, Any]) -> str:
         "",
         "use std::collections::HashMap;",
         "",
-        "/// Metadata for a single field in the Loxa event schema.",
+        "/// Metadata for a single field in the Loza event schema.",
         "#[derive(Debug, Clone)]",
         "pub struct FieldInfo {",
         "    pub name: &'static str,",
@@ -40,7 +40,7 @@ def render_lql_schema(contract: dict[str, Any]) -> str:
         "    Object,",
         "}",
         "",
-        "/// The full Loxa event schema, used for validation and column mapping.",
+        "/// The full Loza event schema, used for validation and column mapping.",
         "pub struct Schema {",
         "    pub table: &'static str,",
         "    pub fields: Vec<FieldInfo>,",
@@ -68,7 +68,7 @@ def render_lql_schema(contract: dict[str, Any]) -> str:
     lines.append("")
     lines.append("    /// Create the default ClickHouse schema.")
     lines.append("    pub fn clickhouse_default() -> Self {")
-    lines.append("        Self { table: \"loxa_events\", fields: build_fields() }")
+    lines.append("        Self { table: \"loza_events\", fields: build_fields() }")
     lines.append("    }")
     lines.append("")
     lines.append("    /// Check if a field name exists in the schema.")

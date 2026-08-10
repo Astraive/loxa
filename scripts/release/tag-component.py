@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create component-specific LOXA release tags safely."""
+"""Create component-specific LOZA release tags safely."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ except ImportError:  # pragma: no cover
 ROOT = Path(__file__).resolve().parents[2]
 
 DEFAULT_PREFIXES = {
-    "loxa": "v",
+    "loza": "v",
     "spec": "spec/v",
     "collector": "collector/v",
     "cortex": "cortex/v",

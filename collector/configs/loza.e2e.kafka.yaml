@@ -1,0 +1,16 @@
+collector:
+  addr: ":9308"
+eventbus:
+  type: kafka
+  topic: loza-events
+  consumer_group: loza-e2e-test
+  kafka:
+    brokers:
+      - "127.0.0.1:9092"
+    topic: loza-events
+    acks: "all"
+    enable_idempotence: true
+reliability:
+  mode: "queue"
+dedupe:
+  enabled: false

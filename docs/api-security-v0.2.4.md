@@ -1,7 +1,7 @@
-# API Security Audit Report -- Loxa v0.2.4
+# API Security Audit Report -- Loza v0.2.4
 
 **Date**: 2026-05-28
-**Scope**: All API endpoints across collector, cortex, CLI, LQL, SDKs, Loxana, eventbus, spec
+**Scope**: All API endpoints across collector, cortex, CLI, LQL, SDKs, Lozana, eventbus, spec
 **Methodology**: Manual code review of all source files, OWASP API Security Top 10 2023 mapping
 **Auditor**: API Security Specialist Agent
 
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-Loxa v0.2.4 demonstrates strong security engineering with defense-in-depth across authentication, authorization, input validation, and rate limiting. The codebase shows clear evidence of iterative security hardening from v0.2.0 through v0.2.3. This audit identified **1 CRITICAL**, **3 HIGH**, **6 MEDIUM**, and **5 LOW** findings.
+Loza v0.2.4 demonstrates strong security engineering with defense-in-depth across authentication, authorization, input validation, and rate limiting. The codebase shows clear evidence of iterative security hardening from v0.2.0 through v0.2.3. This audit identified **1 CRITICAL**, **3 HIGH**, **6 MEDIUM**, and **5 LOW** findings.
 
 ---
 
@@ -29,7 +29,7 @@ Loxa v0.2.4 demonstrates strong security engineering with defense-in-depth acros
 | 10 | MEDIUM | Info Leak | Various handlers | err.Error() returned directly to clients in some handlers | API3:2023 |
 | 11 | LOW | Version | GET /version | Exact version exposed publicly | API3:2023 |
 | 12 | LOW | Replay | POST /replay | 10MB body limit exceeds standard 1MB | API4:2023 |
-| 13 | LOW | Loxana | Frontend build | API key embedded in Vite build output | API2:2023 |
+| 13 | LOW | Lozana | Frontend build | API key embedded in Vite build output | API2:2023 |
 | 14 | LOW | PRAGMA | POST /query, /lql/query | PRAGMA table_info/database_list allowed, leaks schema | API3:2023 |
 | 15 | LOW | Audit | Auth middleware | AuditLogger defined but not wired into middleware | API4:2023 |
 
@@ -39,7 +39,7 @@ Loxa v0.2.4 demonstrates strong security engineering with defense-in-depth acros
 
 ### Finding 1: CRITICAL -- Blueprint DuckDB Type Injection
 
-**File**: `E:/astraive/loxa/loxa/collector/cmd/loxa-collector/schema_audit_handlers.go`, lines 419-436
+**File**: `E:/astraive/loza/loza/collector/cmd/loza-collector/schema_audit_handlers.go`, lines 419-436
 
 **Description**: The `applyBlueprint` function validates the base DuckDB type against an allowlist, but for parameterized types (e.g., `VARCHAR(256)`), only the part before the parenthesis is checked. The full user-provided type string is interpolated directly into SQL.
 
@@ -70,8 +70,8 @@ if !safeTypePattern.MatchString(typ) {
 
 ### Finding 2: HIGH -- Status Endpoint Auth Bypass
 
-**File**: `E:/astraive/loxa/loxa/collector/server/http/server.go`, line 92
-**File**: `E:/astraive/loxa/loxa/collector/cmd/loxa-collector/public_handlers.go`, line 12
+**File**: `E:/astraive/loza/loza/collector/server/http/server.go`, line 92
+**File**: `E:/astraive/loza/loza/collector/cmd/loza-collector/public_handlers.go`, line 12
 
 **Description**: The `/status` endpoint is registered as a public route (no `protector` wrapper), but the handler calls `s.isAuthorized(r)` which uses the legacy single-key auth path. When auth is enabled with the new key store (multiple keys), `s.cfg.apiKey` may be empty, causing `authorizeAPIKey` to return `true` unconditionally.
 
@@ -94,9 +94,9 @@ func (s *collectorState) authorizeAPIKey(r *http.Request) bool {
 
 ### Finding 3: HIGH -- Collector GraphQL Missing Depth Limit
 
-**File**: `E:/astraive/loxa/loxa/collector/internal/server/graphql.go`
+**File**: `E:/astraive/loza/loza/collector/internal/server/graphql.go`
 
-**Description**: The collector's GraphQL endpoint blocks introspection queries but has no query depth limiting. The cortex GraphQL (`E:/astraive/loxa/loxa/cortex/internal/api/graphql_server.go`, line 24) properly implements `maxGraphQLDepth = 10`, but the collector has no equivalent.
+**Description**: The collector's GraphQL endpoint blocks introspection queries but has no query depth limiting. The cortex GraphQL (`E:/astraive/loza/loza/cortex/internal/api/graphql_server.go`, line 24) properly implements `maxGraphQLDepth = 10`, but the collector has no equivalent.
 
 **Impact**: While the collector GraphQL schema is simple (health, ready, metrics), the lack of depth limiting is a defense-in-depth gap. If more complex queries are added in the future, this becomes a resource exhaustion vector.
 
@@ -113,8 +113,8 @@ if queryDepth(req.Query) > 10 {
 
 ### Finding 4: HIGH -- WebSocket IPv6 Origin Bypass
 
-**File**: `E:/astraive/loxa/loxa/collector/internal/server/websocket.go`, lines 51-53, 69-71
-**File**: `E:/astraive/loxa/loxa/cortex/internal/api/websocket.go`, lines 32-34
+**File**: `E:/astraive/loza/loza/collector/internal/server/websocket.go`, lines 51-53, 69-71
+**File**: `E:/astraive/loza/loza/cortex/internal/api/websocket.go`, lines 32-34
 
 **Description**: The WebSocket origin allowlist checks for `http://localhost`, `http://127.0.0.1`, and their port variants, but does not cover IPv6 localhost (`http://[::1]` or `http://[::1]:PORT`). Modern browsers and tools may use IPv6 localhost.
 
@@ -138,8 +138,8 @@ origin == "http://[::1]" || strings.HasPrefix(origin, "http://[::1]:")
 
 ### Finding 5: MEDIUM -- Missing HSTS Header
 
-**File**: `E:/astraive/loxa/loxa/collector/cmd/loxa-collector/security_headers.go`
-**File**: `E:/astraive/loxa/loxa/cortex/internal/middleware/security.go`
+**File**: `E:/astraive/loza/loza/collector/cmd/loza-collector/security_headers.go`
+**File**: `E:/astraive/loza/loza/cortex/internal/middleware/security.go`
 
 **Description**: Neither the collector nor cortex set the `Strict-Transport-Security` header. For HTTPS deployments, this leaves clients vulnerable to SSL stripping attacks.
 
@@ -153,8 +153,8 @@ w.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains
 
 ### Finding 6: MEDIUM -- Deprecated X-XSS-Protection Header
 
-**File**: `E:/astraive/loxa/loxa/collector/cmd/loxa-collector/security_headers.go`, line 12
-**File**: `E:/astraive/loxa/loxa/cortex/internal/middleware/security.go`, line 9
+**File**: `E:/astraive/loza/loza/collector/cmd/loza-collector/security_headers.go`, line 12
+**File**: `E:/astraive/loza/loza/cortex/internal/middleware/security.go`, line 9
 
 **Description**: The `X-XSS-Protection: 1; mode=block` header is deprecated and can introduce vulnerabilities in older versions of Internet Explorer. Modern best practice is to omit it or set to `0` and rely on CSP.
 
@@ -168,7 +168,7 @@ w.Header().Set("X-XSS-Protection", "0")
 
 ### Finding 7: MEDIUM -- ReadyZ Leaks Error Details
 
-**File**: `E:/astraive/loxa/loxa/cortex/internal/api/server.go`, lines 228-235
+**File**: `E:/astraive/loza/loza/cortex/internal/api/server.go`, lines 228-235
 
 **Description**: The cortex `/readyz` endpoint returns `checks["storage"] = err.Error()` which could leak database connection strings, hostnames, or internal error details.
 
@@ -189,8 +189,8 @@ checks["storage"] = "connection failed"
 
 ### Finding 8: MEDIUM -- DuckDB Connection Pool Safety Guard Gap
 
-**File**: `E:/astraive/loxa/loxa/collector/cmd/loxa-collector/control_handlers.go`, lines 209-214
-**File**: `E:/astraive/loxa/loxa/collector/cmd/loxa-collector/lql_handler.go`, lines 79-84
+**File**: `E:/astraive/loza/loza/collector/cmd/loza-collector/control_handlers.go`, lines 209-214
+**File**: `E:/astraive/loza/loza/collector/cmd/loza-collector/lql_handler.go`, lines 79-84
 
 **Description**: The `SET enable_external_access=false` command is connection-scoped in DuckDB. If the `sql.DB` connection pool assigns a different connection for the subsequent query, the safety guard may not apply. This is a known DuckDB gotcha.
 
@@ -202,7 +202,7 @@ checks["storage"] = "connection failed"
 
 ### Finding 9: MEDIUM -- Collector GraphQL No Body Size Limit
 
-**File**: `E:/astraive/loxa/loxa/collector/internal/server/graphql.go`, line 121
+**File**: `E:/astraive/loza/loza/collector/internal/server/graphql.go`, line 121
 
 **Description**: The collector GraphQL handler reads the request body without a size limit:
 
@@ -242,8 +242,8 @@ writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "query_fail
 
 ### Finding 11: LOW -- Public Version Exposure
 
-**File**: `E:/astraive/loxa/loxa/collector/cmd/loxa-collector/public_handlers.go`, line 21
-**File**: `E:/astraive/loxa/loxa/cortex/internal/api/server.go`, line 254
+**File**: `E:/astraive/loza/loza/collector/cmd/loza-collector/public_handlers.go`, line 21
+**File**: `E:/astraive/loza/loza/cortex/internal/api/server.go`, line 254
 
 **Description**: The `/version` endpoint is public and returns exact version strings. This aids attackers in targeting known vulnerabilities for specific versions.
 
@@ -253,7 +253,7 @@ writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "query_fail
 
 ### Finding 12: LOW -- Replay Endpoint Large Body Limit
 
-**File**: `E:/astraive/loxa/loxa/collector/cmd/loxa-collector/control_handlers.go`, line 273
+**File**: `E:/astraive/loza/loza/collector/cmd/loza-collector/control_handlers.go`, line 273
 
 **Description**: The `/replay` endpoint reads up to 10MB (`10<<20`), which is 10x larger than the standard 1MB limit used by other handlers.
 
@@ -261,14 +261,14 @@ writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "query_fail
 
 ---
 
-### Finding 13: LOW -- Loxana API Key in Build Output
+### Finding 13: LOW -- Lozana API Key in Build Output
 
-**File**: `E:/astraive/loxa/loxana/src/lib/api/client.ts`, line 4
+**File**: `E:/astraive/loza/lozana/src/lib/api/client.ts`, line 4
 
-**Description**: The Loxana frontend reads `VITE_LOXA_API_KEY` from environment variables. Vite embeds these at build time into the JavaScript bundle, making the API key visible to anyone who inspects the built assets.
+**Description**: The Lozana frontend reads `VITE_LOZA_API_KEY` from environment variables. Vite embeds these at build time into the JavaScript bundle, making the API key visible to anyone who inspects the built assets.
 
 ```typescript
-const API_KEY = import.meta.env.VITE_LOXA_API_KEY || "";
+const API_KEY = import.meta.env.VITE_LOZA_API_KEY || "";
 ```
 
 **Impact**: Low -- this is a client-side SPA where the API key is inherently exposed. The key should be scoped to read-only permissions.
@@ -277,7 +277,7 @@ const API_KEY = import.meta.env.VITE_LOXA_API_KEY || "";
 
 ### Finding 14: LOW -- PRAGMA Commands Allowed in Query Endpoints
 
-**File**: `E:/astraive/loxa/loxa/collector/cmd/loxa-collector/control_handlers.go`, line 483
+**File**: `E:/astraive/loza/loza/collector/cmd/loza-collector/control_handlers.go`, line 483
 
 **Description**: The `isReadOnlyQuery` function allows `PRAGMA table_info` and `PRAGMA database_list`, which can leak database schema and structure information.
 
@@ -285,14 +285,14 @@ const API_KEY = import.meta.env.VITE_LOXA_API_KEY || "";
 for _, prefix := range []string{"select", "with", "show", "describe", "pragma table_info", "pragma database_list"} {
 ```
 
-**Impact**: Low -- this is intentional for the Loxana dashboard but expands the information disclosure surface.
+**Impact**: Low -- this is intentional for the Lozana dashboard but expands the information disclosure surface.
 
 ---
 
 ### Finding 15: LOW -- Audit Logger Not Wired Into Auth Middleware
 
-**File**: `E:/astraive/loxa/loxa/collector/internal/auth/audit.go`
-**File**: `E:/astraive/loxa/loxa/collector/internal/auth/middleware.go`
+**File**: `E:/astraive/loza/loza/collector/internal/auth/audit.go`
+**File**: `E:/astraive/loza/loza/collector/internal/auth/middleware.go`
 
 **Description**: The `AuditLogger` interface and `SlogAuditLogger` implementation are defined but not wired into the auth middleware. Auth failures are logged via `logAuthFailure` (simple JSON log), but the structured audit events (`AuditKeyAuthenticated`, `AuditKeyFailed`, etc.) are never emitted.
 
@@ -392,7 +392,7 @@ The following security controls are well-implemented and deserve recognition:
 | OWASP Category | Status | Findings |
 |----------------|--------|----------|
 | API1:2023 - Broken Object Level Authorization | Partial | #2 (status endpoint auth bypass) |
-| API2:2023 - Broken Authentication | Good | #13 (Loxana key in build -- inherent to SPA) |
+| API2:2023 - Broken Authentication | Good | #13 (Lozana key in build -- inherent to SPA) |
 | API3:2023 - Broken Object Property Level Authorization | Good | #7, #10, #11, #14 (info leakage) |
 | API4:2023 - Unrestricted Resource Consumption | Partial | #3, #9, #12 (missing limits) |
 | API5:2023 - Broken Function Level Authorization | Good | RBAC properly enforced on all admin endpoints |
@@ -422,7 +422,7 @@ The following security controls are well-implemented and deserve recognition:
 
 ### Low Priority (P3 -- next release cycle)
 
-6. **Findings 11-15**: Version exposure, replay limits, Loxana key handling, PRAGMA controls, audit logger wiring.
+6. **Findings 11-15**: Version exposure, replay limits, Lozana key handling, PRAGMA controls, audit logger wiring.
 
 ---
 
@@ -440,7 +440,7 @@ The following security controls are well-implemented and deserve recognition:
 | Cortex GraphQL | 1 file | 1 endpoint | 0 |
 | Cortex WebSocket | 1 file | 1 endpoint | 1 |
 | Cortex Auth | 3 files | Middleware chain | 0 |
-| Loxana Frontend | 2 files | API client | 1 |
+| Lozana Frontend | 2 files | API client | 1 |
 | SDKs | 2 files | Client libraries | 0 |
 | Config/Deploy | 2 files | .env templates | 0 |
 
@@ -458,4 +458,4 @@ The following security controls are well-implemented and deserve recognition:
 ---
 
 *Report generated by API Security Specialist Agent*
-*Loxa v0.2.4 -- 2026-05-28*
+*Loza v0.2.4 -- 2026-05-28*

@@ -4,7 +4,7 @@ Run the collector:
 
 ```bash
 cd collector
-go run ./cmd/loxa-collector run -c configs/loxa.local.yaml
+go run ./cmd/loza-collector run -c configs/loza.local.yaml
 ```
 
 Run a Go app that emits with the HTTP batch sink:

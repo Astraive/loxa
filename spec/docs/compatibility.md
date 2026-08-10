@@ -11,9 +11,9 @@ Compatibility is defined at the contract level:
 
 | Contract | Version |
 |---|---|
-| `LOXA_SPEC_VERSION` | `v1` |
-| `LOXA_INGEST_API_VERSION` | `v1` |
-| `LOXA_EVENT_VERSION` | `v1` |
+| `LOZA_SPEC_VERSION` | `v1` |
+| `LOZA_INGEST_API_VERSION` | `v1` |
+| `LOZA_EVENT_VERSION` | `v1` |
 
 All shipping SDKs and collectors should emit `schema_version: "v1"` and
 `event_version: "v1"` and validate against the golden fixtures under

@@ -6,7 +6,7 @@ import (
 )
 
 // ErrInvalidConfig is returned when configuration validation fails.
-var ErrInvalidConfig = errors.New("loxa: invalid config")
+var ErrInvalidConfig = errors.New("loza: invalid config")
 
 // ErrorInfo is the structured representation of an error attached to an event.
 type ErrorInfo struct {
@@ -90,33 +90,33 @@ func (e *ConfigValidationError) Unwrap() error { return ErrInvalidConfig }
 
 func (e *DuplicateFieldError) Error() string {
 	if e == nil || e.Key == "" {
-		return "loxa: duplicate canonical field attr"
+		return "loza: duplicate canonical field attr"
 	}
-	return fmt.Sprintf("loxa: duplicate canonical field attr %q", e.Key)
+	return fmt.Sprintf("loza: duplicate canonical field attr %q", e.Key)
 }
 
 func (e *DuplicateEmitError) Error() string {
 	if e == nil || e.EventID == "" {
-		return "loxa: duplicate emit"
+		return "loza: duplicate emit"
 	}
-	return fmt.Sprintf("loxa: duplicate emit for event %q", e.EventID)
+	return fmt.Sprintf("loza: duplicate emit for event %q", e.EventID)
 }
 
 func (e *EventClosedError) Error() string {
 	if e == nil {
-		return "loxa: event is closed"
+		return "loza: event is closed"
 	}
 	if e.EventID == "" {
-		return fmt.Sprintf("loxa: event is closed in state %q", e.State)
+		return fmt.Sprintf("loza: event is closed in state %q", e.State)
 	}
-	return fmt.Sprintf("loxa: event %q is closed in state %q", e.EventID, e.State)
+	return fmt.Sprintf("loza: event %q is closed in state %q", e.EventID, e.State)
 }
 
 func (e *EventAlreadyFinishedError) Error() string {
 	if e == nil || e.EventID == "" {
-		return "loxa: event already finished"
+		return "loza: event already finished"
 	}
-	return fmt.Sprintf("loxa: event %q already finished", e.EventID)
+	return fmt.Sprintf("loza: event %q already finished", e.EventID)
 }
 
 // DefaultErrorExtractor is the built-in extractor used when none is configured.

@@ -28,10 +28,10 @@ skills-lock.json
 *.local
 *.local.*
 
-.loxa/
-**/.loxa/
-.loxa-cli.yaml
-**/.loxa-cli.yaml
+.loza/
+**/.loza/
+.loza-cli.yaml
+**/.loza-cli.yaml
 
 # =============================================================================
 # OS files
@@ -134,7 +134,7 @@ target/
 # =============================================================================
 # Local / experimental app
 # =============================================================================
-loxana/
+lozana/
 # Local database files
 *.duckdb
 *.duckdb.wal

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# run-all.sh -- Run all LOXA benchmark suites and aggregate results.
+# run-all.sh -- Run all LOZA benchmark suites and aggregate results.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -9,7 +9,7 @@ TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 
 mkdir -p "$RESULTS_DIR"
 
-echo "=== LOXA Benchmark Suite ==="
+echo "=== LOZA Benchmark Suite ==="
 echo "Timestamp: $TIMESTAMP"
 echo "Results: $RESULTS_DIR"
 echo ""
@@ -161,7 +161,7 @@ fi
 # ============================================================
 echo ""
 echo "=========================================="
-echo "  LOXA Benchmark Results Summary"
+echo "  LOZA Benchmark Results Summary"
 echo "=========================================="
 echo "  Passed:  $PASSED"
 echo "  Failed:  $FAILED"

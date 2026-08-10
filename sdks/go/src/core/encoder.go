@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/astraive/loxa/sdks/go/src/internal/jsonenc"
-	"github.com/astraive/loxa/sdks/go/src/internal/pool"
+	"github.com/astraive/loza/sdks/go/src/internal/jsonenc"
+	"github.com/astraive/loza/sdks/go/src/internal/pool"
 )
 
 // TimeFormat controls how timestamps are serialised.
@@ -45,8 +45,8 @@ func (e *JSONEventEncoder) EncodeEvent(dst []byte, ev *Event) ([]byte, error) {
 		ts = time.Now()
 	}
 	w.AppendStringField("timestamp", e.formatTime(ts))
-	w.AppendStringField("schema_version", firstNonEmpty(ev.SchemaVersion, LOXA_SPEC_VERSION))
-	w.AppendStringField("event_version", firstNonEmpty(ev.EventVersion, LOXA_EVENT_VERSION))
+	w.AppendStringField("schema_version", firstNonEmpty(ev.SchemaVersion, LOZA_SPEC_VERSION))
+	w.AppendStringField("event_version", firstNonEmpty(ev.EventVersion, LOZA_EVENT_VERSION))
 
 	// 2. event_id
 	if ev.EventID != "" {

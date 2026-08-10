@@ -1,6 +1,6 @@
 # SDK Completion Matrix
 
-This matrix is the authoritative stable-v1 completion bar for the LOXA emission SDKs:
+This matrix is the authoritative stable-v1 completion bar for the LOZA emission SDKs:
 
 - Go SDK (`sdks/go`)
 - Python SDK (`sdks/py`)
@@ -25,7 +25,7 @@ The scope is intentionally **collector-first**. SDKs emit canonical events and d
 | Collector integration | Required | Required | Required | Required | Conformance `collector_integration` |
 | Cortex-consumable emitted shape | Required | Required | Required | Required | Conformance `cortex_emitted_shape` |
 | Stable public API parity vs superset manifest | Required | Required | Required | Required | Conformance `parity` |
-| `CreateLoxa()` factory | N/A (uses `New`) | Required | Required | Required | Conformance `parity` |
+| `CreateLoza()` factory | N/A (uses `New`) | Required | Required | Required | Conformance `parity` |
 | `Alias("name")` sugar | Required | Required | Required | Required | Conformance `parity` |
 
 ## Excluded From SDK Scope

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Detect LOXA components whose manifest version increased."""
+"""Detect LOZA components whose manifest version increased."""
 
 from __future__ import annotations
 

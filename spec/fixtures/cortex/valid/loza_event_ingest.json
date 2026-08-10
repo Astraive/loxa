@@ -1,0 +1,10 @@
+{
+  "event_id": "evt_cortex_001",
+  "timestamp": "2026-05-18T01:44:00Z",
+  "service": "api-server",
+  "event": "user.login",
+  "kind": "event",
+  "level": "info",
+  "outcome": "success",
+  "provenance": "loza"
+}

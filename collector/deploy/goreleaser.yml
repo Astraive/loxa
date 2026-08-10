@@ -1,11 +1,11 @@
-project_name: loxa
+project_name: loza
 version: 0.2.6
 archives:
   - format: tar.gz
 builds:
-  - id: loxa-collector
-    dir: ./cmd/loxa-collector
-    binary: loxa-collector
+  - id: loza-collector
+    dir: ./cmd/loza-collector
+    binary: loza-collector
     env:
       - CGO_ENABLED=1
     goos:
@@ -15,9 +15,9 @@ builds:
     goarch:
       - amd64
       - arm64
-  - id: loxa-worker
-    dir: ./cmd/loxa-worker
-    binary: loxa-worker
+  - id: loza-worker
+    dir: ./cmd/loza-worker
+    binary: loza-worker
     goos:
       - linux
       - windows
@@ -25,9 +25,9 @@ builds:
     goarch:
       - amd64
       - arm64
-  - id: loxa
-    dir: ./cmd/loxa
-    binary: loxa
+  - id: loza
+    dir: ./cmd/loza
+    binary: loza
     goos:
       - linux
       - windows
@@ -35,9 +35,9 @@ builds:
     goarch:
       - amd64
       - arm64
-  - id: loxa-loadgen
-    dir: ./cmd/loxa-loadgen
-    binary: loxa-loadgen
+  - id: loza-loadgen
+    dir: ./cmd/loza-loadgen
+    binary: loza-loadgen
     goos:
       - linux
       - windows
@@ -46,7 +46,7 @@ builds:
       - amd64
       - arm64
 dockers:
-  - image: astraive/loxa
+  - image: astraive/loza
     dockerfile: Dockerfile
     goos: linux
     goarch:
@@ -63,5 +63,5 @@ changelog:
 release:
   github:
     owner: Astraive
-    name: loxa
+    name: loza
   draft: true

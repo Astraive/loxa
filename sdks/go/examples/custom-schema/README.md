@@ -1,9 +1,9 @@
 # Custom Schema Example
 
 ```go
-cfg := loxa.Production().
+cfg := loza.Production().
 	WithService("checkout").
-	WithSchema(loxa.CustomSchema(func(v loxa.EventView) map[string]any {
+	WithSchema(loza.CustomSchema(func(v loza.EventView) map[string]any {
 		return map[string]any{
 			"ts":         v.Timestamp(),
 			"event_name": v.Event(),

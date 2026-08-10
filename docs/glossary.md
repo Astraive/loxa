@@ -2,12 +2,12 @@
 
 | Term | Definition | Component |
 |------|-----------|-----------|
-| Canonical Event | A normalized event structure where all SDKs produce the same field names and types regardless of language, enforced by the loxa spec schema. | Spec, SDKs |
+| Canonical Event | A normalized event structure where all SDKs produce the same field names and types regardless of language, enforced by the loza spec schema. | Spec, SDKs |
 | Canonical Wins | A redaction policy where canonical fields (service, event_name, duration_ms, etc.) are silently dropped from the attributes map at emit time to prevent duplication. | SDKs |
 | Collector-First | Architecture pattern where SDKs emit events to the collector over HTTP rather than writing directly to storage sinks, enabling centralized PII policy, fanout, and delivery guarantees. | Collector, SDKs |
 | Conformance | A test suite in `spec/conformance/` that validates all 4 SDKs against 12 groups of behavioral checks (48 total), ensuring cross-language parity. | Spec |
 | Direct Mode | A delivery mode where the collector writes events to sinks synchronously during the ingest request path, offering lowest latency but no buffering. | Collector |
-| DLQ (Dead Letter Queue) | A persistent queue for events that failed all retry attempts across all sinks, queryable via `loxa dlq list` and replayable via `loxa dlq replay`. | Collector |
+| DLQ (Dead Letter Queue) | A persistent queue for events that failed all retry attempts across all sinks, queryable via `loza dlq list` and replayable via `loza dlq replay`. | Collector |
 | Fanout | The collector mechanism that routes each accepted event to all configured sinks simultaneously (DuckDB, Kafka, ClickHouse, Postgres, Loki, OTLP, S3, GCS). | Collector |
 | Ingest Envelope | The wire format for POST /ingest requests, defined in `spec/contracts/ingest-envelope.schema.json`, wrapping one or more events with metadata. | Spec, Collector |
 | PCE (Persistent Context Engine) | The cortex subsystem that maintains long-lived context across events, enabling incident reconstruction, causal chains, service graphs, and remediation learning. | Cortex |

@@ -5,8 +5,8 @@ This folder is a **read-only compatibility mirror** of conformance fixtures and 
 ## Canonical Source
 The authoritative conformance fixtures live in:
 ```
-fixtures/loxa/valid/
-fixtures/loxa/invalid/
+fixtures/loza/valid/
+fixtures/loza/invalid/
 fixtures/cortex/valid/
 fixtures/cortex/invalid/
 ```
@@ -19,4 +19,4 @@ Changes to this folder should be kept in sync with the canonical fixtures direct
 
 ## File Mapping
 - Files in this folder correspond to subset of fixtures used for testing conformance.
-- For new fixtures, add them to `fixtures/loxa/` or `fixtures/cortex/` instead.
+- For new fixtures, add them to `fixtures/loza/` or `fixtures/cortex/` instead.

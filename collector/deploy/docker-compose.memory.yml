@@ -1,17 +1,17 @@
-# Loxa Collector — memory eventbus (default, for local dev/testing)
+# Loza Collector — memory eventbus (default, for local dev/testing)
 # Usage: docker compose -f docker-compose.memory.yml up
 services:
   collector:
     build:
       context: ../..
       dockerfile: collector/deploy/Dockerfile.collector
-    command: ["./loxa-collector", "run", "-c", "/app/build/loxa-collector.yaml"]
+    command: ["./loza-collector", "run", "-c", "/app/build/loza-collector.yaml"]
     ports:
       - "9308:9308"
     volumes:
       - ../:/app
     environment:
-      LOXA_EVENTBUS: memory
+      LOZA_EVENTBUS: memory
       COLLECTOR_RELIABILITY_MODE: direct
 
   sample-app:

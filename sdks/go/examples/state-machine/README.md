@@ -1,10 +1,10 @@
 # Event State Machine Example
 
-This example demonstrates the LOXA event state machine and lifecycle management.
+This example demonstrates the LOZA event state machine and lifecycle management.
 
 ## Overview
 
-The LOXA SDK implements a strict event lifecycle state machine with the following states:
+The LOZA SDK implements a strict event lifecycle state machine with the following states:
 
 - **created**: Initial state when event is created
 - **active**: Event is being enriched with data
@@ -79,7 +79,7 @@ created → active → finished → emitting → emitted
 ## Expected Output
 
 ```
-=== LOXA Event State Machine Demo ===
+=== LOZA Event State Machine Demo ===
 
 Example 1: Complete Event Lifecycle
 1. Initial state: created

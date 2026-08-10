@@ -383,17 +383,17 @@ impl Config {
     /// Validate the configuration, returning an error on failure.
     ///
     /// # Errors
-    /// Returns `LoxaError::Validation` if any configuration field is invalid.
-    pub fn validate(&self) -> Result<(), crate::errors::LoxaError> {
+    /// Returns `LozaError::Validation` if any configuration field is invalid.
+    pub fn validate(&self) -> Result<(), crate::errors::LozaError> {
         self.validate_result()
     }
 
-    pub fn validate_result(&self) -> Result<(), crate::errors::LoxaError> {
+    pub fn validate_result(&self) -> Result<(), crate::errors::LozaError> {
         if !matches!(
             self.level.as_str(),
             "debug" | "info" | "warn" | "error" | "fatal"
         ) {
-            return Err(crate::errors::LoxaError::Validation(
+            return Err(crate::errors::LozaError::Validation(
                 crate::errors::ValidationError::new(
                     None,
                     "unsupported_level",
@@ -402,7 +402,7 @@ impl Config {
             ));
         }
         if self.max_event_bytes == 0 {
-            return Err(crate::errors::LoxaError::Validation(
+            return Err(crate::errors::LozaError::Validation(
                 crate::errors::ValidationError::new(
                     None,
                     "invalid_max_event_bytes",
@@ -411,7 +411,7 @@ impl Config {
             ));
         }
         if self.strict && self.service.is_empty() {
-            return Err(crate::errors::LoxaError::Validation(
+            return Err(crate::errors::LozaError::Validation(
                 crate::errors::ValidationError::new(
                     Some("service"),
                     "required",
@@ -476,7 +476,7 @@ pub(crate) fn load_layered_file_config() -> Result<FileConfig, std::io::Error> {
 
 /// Create a Logger with 4-layer config precedence: defaults -> file -> env -> code.
 #[allow(dead_code)]
-pub fn new_client(code_config: Config) -> Result<crate::Logger, crate::errors::LoxaError> {
+pub fn new_client(code_config: Config) -> Result<crate::Logger, crate::errors::LozaError> {
     // Step 1: Start with hardcoded defaults
     let base = Config::base();
 
@@ -499,11 +499,11 @@ pub fn new_client(code_config: Config) -> Result<crate::Logger, crate::errors::L
             api_key: if !merged.api_key.is_empty() {
                 Some(merged.api_key.clone())
             } else {
-                std::env::var("LOXA_API_KEY")
+                std::env::var("LOZA_API_KEY")
                     .ok()
                     .filter(|s| !s.is_empty())
                     .or_else(|| {
-                        std::env::var("LOXA_COLLECTOR_API_KEY")
+                        std::env::var("LOZA_COLLECTOR_API_KEY")
                             .ok()
                             .filter(|s| !s.is_empty())
                     })
@@ -627,7 +627,7 @@ fn load_file_config(path: impl AsRef<Path>) -> Result<FileConfig, std::io::Error
 }
 
 fn find_defaults_config_file() -> Result<PathBuf, std::io::Error> {
-    if let Ok(value) = std::env::var("LOXA_RS_DEFAULTS") {
+    if let Ok(value) = std::env::var("LOZA_RS_DEFAULTS") {
         let trimmed = value.trim();
         if !trimmed.is_empty() {
             return Ok(PathBuf::from(trimmed));
@@ -635,24 +635,24 @@ fn find_defaults_config_file() -> Result<PathBuf, std::io::Error> {
     }
     let cwd = std::env::current_dir()?;
     Ok([
-        cwd.join("loxa-rs.defaults.yaml"),
-        cwd.join("../loxa-rs.defaults.yaml"),
-        cwd.join("../../loxa-rs.defaults.yaml"),
+        cwd.join("loza-rs.defaults.yaml"),
+        cwd.join("../loza-rs.defaults.yaml"),
+        cwd.join("../../loza-rs.defaults.yaml"),
     ]
     .into_iter()
     .find(|candidate| candidate.exists())
-    .unwrap_or_else(|| cwd.join("loxa-rs.defaults.yaml")))
+    .unwrap_or_else(|| cwd.join("loza-rs.defaults.yaml")))
 }
 
 fn find_user_config_file() -> Option<PathBuf> {
-    if let Ok(value) = std::env::var("LOXA_RS_CONFIG") {
+    if let Ok(value) = std::env::var("LOZA_RS_CONFIG") {
         let trimmed = value.trim();
         if !trimmed.is_empty() {
             return Some(PathBuf::from(trimmed));
         }
     }
     let cwd = std::env::current_dir().ok()?;
-    [cwd.join(".loxa-rs.yaml"), cwd.join("loxa.yaml")]
+    [cwd.join(".loza-rs.yaml"), cwd.join("loza.yaml")]
         .into_iter()
         .find(|candidate| candidate.exists())
 }

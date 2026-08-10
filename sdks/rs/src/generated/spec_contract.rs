@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::collections::BTreeSet;
 
-pub const LOXA_SPEC_VERSION: &str = "v1";
-pub const LOXA_INGEST_API_VERSION: &str = "v1";
-pub const LOXA_EVENT_VERSION: &str = "v1";
+pub const LOZA_SPEC_VERSION: &str = "v1";
+pub const LOZA_INGEST_API_VERSION: &str = "v1";
+pub const LOZA_EVENT_VERSION: &str = "v1";
 pub const MAX_EVENT_BYTES: usize = 65536;
 pub const MAX_BATCH_EVENTS: usize = 1000;
 pub const MAX_BATCH_SIZE_BYTES: usize = 1048576;
@@ -288,7 +288,7 @@ pub fn is_canonical(key: &str) -> bool {
     CANONICAL_FIELDS.contains(&key)
 }
 
-pub fn looks_like_loxa_event(payload: &Map<String, Value>) -> bool {
+pub fn looks_like_loza_event(payload: &Map<String, Value>) -> bool {
     payload.contains_key("schema_version")
         || payload.contains_key("event_version")
         || payload.contains_key("event")
@@ -343,7 +343,7 @@ pub fn build_ingest_envelope(
         })
         .collect();
     json!({
-        "api_version": LOXA_INGEST_API_VERSION,
+        "api_version": LOZA_INGEST_API_VERSION,
         "source": {
             "sdk": sdk_name,
             "version": sdk_version,
@@ -425,8 +425,8 @@ pub fn validate_event_value(
             }
         }
     }
-    require_enum(&normalized, "schema_version", &[LOXA_SPEC_VERSION])?;
-    require_enum(&normalized, "event_version", &[LOXA_EVENT_VERSION])?;
+    require_enum(&normalized, "schema_version", &[LOZA_SPEC_VERSION])?;
+    require_enum(&normalized, "event_version", &[LOZA_EVENT_VERSION])?;
     require_non_empty_string(&normalized, "event_id")?;
     require_rfc3339(&normalized, "timestamp")?;
     require_service(&normalized)?;

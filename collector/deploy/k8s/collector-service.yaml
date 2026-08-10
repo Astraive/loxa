@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: loxa-collector
+  name: loza-collector
   labels:
-    app.kubernetes.io/name: loxa-collector
+    app.kubernetes.io/name: loza-collector
     app.kubernetes.io/component: collector
 spec:
   type: ClusterIP
@@ -13,5 +13,5 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app.kubernetes.io/name: loxa-collector
+    app.kubernetes.io/name: loza-collector
     app.kubernetes.io/component: collector

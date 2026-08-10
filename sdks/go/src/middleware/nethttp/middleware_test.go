@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func TestMiddlewarePanicBeforeWriteReturns500AndErrorEvent(t *testing.T) {
@@ -240,16 +240,16 @@ func TestResponseWriterPreservesOptionalInterfaceContracts(t *testing.T) {
 	}
 }
 
-func configureMemoryStore(t *testing.T) *loxa.MemorySinkStore {
+func configureMemoryStore(t *testing.T) *loza.MemorySinkStore {
 	t.Helper()
-	sink, store := loxa.MemorySink()
-	if err := loxa.Configure(loxa.Test().WithSink(sink)); err != nil {
+	sink, store := loza.MemorySink()
+	if err := loza.Configure(loza.Test().WithSink(sink)); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 	return store
 }
 
-func singleEvent(t *testing.T, store *loxa.MemorySinkStore) *loxa.Event {
+func singleEvent(t *testing.T, store *loza.MemorySinkStore) *loza.Event {
 	t.Helper()
 	if store.Len() != 1 {
 		t.Fatalf("expected 1 event, got %d", store.Len())
@@ -257,7 +257,7 @@ func singleEvent(t *testing.T, store *loxa.MemorySinkStore) *loxa.Event {
 	return store.Events()[0]
 }
 
-func mustInt64Attr(t *testing.T, ev *loxa.Event, key string) int64 {
+func mustInt64Attr(t *testing.T, ev *loza.Event, key string) int64 {
 	t.Helper()
 	v, ok := ev.Get(key)
 	if !ok {

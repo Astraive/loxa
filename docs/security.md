@@ -6,10 +6,10 @@
 Go SDK
   |  HTTPS
   |  Authorization: Bearer lx_sec_live_k_xxx_yyyy
-  |  X-Loxa-Service: checkout-api
-  |  X-Loxa-Env: prod
+  |  X-Loza-Service: checkout-api
+  |  X-Loza-Env: prod
   v
-loxa-collector (data plane)
+loza-collector (data plane)
   |  validates API key (with cache)
   |  attaches org/project/key context
   |  enforces per-route RBAC permission
@@ -17,7 +17,7 @@ loxa-collector (data plane)
   |  rate limits per key
   |  redacts/enriches
   v
-loxa-cortex / sinks
+loza-cortex / sinks
 ```
 
 ## Key Types
@@ -43,15 +43,15 @@ loxa-cortex / sinks
 
 ```go
 // Production
-client := loxa.New(loxa.Config{
-    Endpoint: "https://collector.loxa.dev",
-    APIKey:   os.Getenv("LOXA_API_KEY"),
+client := loza.New(loza.Config{
+    Endpoint: "https://collector.loza.dev",
+    APIKey:   os.Getenv("LOZA_API_KEY"),
     Service:  "checkout-service",
     Env:      "prod",
 })
 
 // Local dev
-client := loxa.New(loxa.Config{
+client := loza.New(loza.Config{
     Endpoint: "http://localhost:9308",
     APIKey:   "lx_local_dev_mydevtoken",
     Service:  "test-service",

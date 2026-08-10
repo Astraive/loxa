@@ -1,13 +1,13 @@
 # Basic
 
-Minimal LOXA SDK setup:
+Minimal LOZA SDK setup:
 
 ```go
-_ = loxa.Configure(loxa.Production().WithService("checkout"))
-defer loxa.Shutdown(context.Background())
+_ = loza.Configure(loza.Production().WithService("checkout"))
+defer loza.Shutdown(context.Background())
 
-ctx := loxa.StartEvent(context.Background(), loxa.Params{Event: "checkout.request"})
-defer loxa.Emit(ctx)
+ctx := loza.StartEvent(context.Background(), loza.Params{Event: "checkout.request"})
+defer loza.Emit(ctx)
 
-loxa.Finish(ctx, "success")
+loza.Finish(ctx, "success")
 ```

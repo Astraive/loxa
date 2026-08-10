@@ -6,9 +6,9 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
-	"github.com/astraive/loxa/cli/internal/output"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/output"
 )
 
 func GraphCommand(ctx context.Context, cfg config.Config, args []string) error {
@@ -19,7 +19,7 @@ func GraphCommand(ctx context.Context, cfg config.Config, args []string) error {
 		return err
 	}
 	if fs.NArg() < 2 {
-		return fmt.Errorf("usage: loxa graph <service|incident> <name|id> [--depth N]")
+		return fmt.Errorf("usage: loza graph <service|incident> <name|id> [--depth N]")
 	}
 
 	graphType := fs.Arg(0)

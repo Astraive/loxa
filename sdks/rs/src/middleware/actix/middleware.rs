@@ -1,5 +1,5 @@
 pub fn middleware_name() -> &'static str {
-    "loxa-actix"
+    "loza-actix"
 }
 
 #[cfg(feature = "actix")]
@@ -11,12 +11,12 @@ pub mod actix_impl {
     use std::sync::Arc;
     use std::time::Instant;
 
-    pub struct LoxaMiddleware {
+    pub struct LozaMiddleware {
         logger: Arc<Logger>,
         service_name: String,
     }
 
-    impl LoxaMiddleware {
+    impl LozaMiddleware {
         pub fn new(logger: Logger, service_name: impl Into<String>) -> Self {
             Self {
                 logger: Arc::new(logger),
@@ -25,7 +25,7 @@ pub mod actix_impl {
         }
     }
 
-    impl<S, B> Transform<S, ServiceRequest> for LoxaMiddleware
+    impl<S, B> Transform<S, ServiceRequest> for LozaMiddleware
     where
         S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
         S::Future: 'static,
@@ -33,12 +33,12 @@ pub mod actix_impl {
     {
         type Response = ServiceResponse<B>;
         type Error = Error;
-        type Transform = LoxaService<S>;
+        type Transform = LozaService<S>;
         type InitError = ();
         type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
         fn new_transform(&self, service: S) -> Self::Future {
-            ok(LoxaService {
+            ok(LozaService {
                 service,
                 logger: self.logger.clone(),
                 service_name: self.service_name.clone(),
@@ -46,13 +46,13 @@ pub mod actix_impl {
         }
     }
 
-    pub struct LoxaService<S> {
+    pub struct LozaService<S> {
         service: S,
         logger: Arc<Logger>,
         service_name: String,
     }
 
-    impl<S, B> Service<ServiceRequest> for LoxaService<S>
+    impl<S, B> Service<ServiceRequest> for LozaService<S>
     where
         S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
         S::Future: 'static,

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Astraive/loxa/schema/collector-response.schema.json",
-  "title": "LOXA Collector Response",
+  "$id": "https://github.com/Astraive/loza/schema/collector-response.schema.json",
+  "title": "LOZA Collector Response",
   "type": "object",
   "required": ["request_id", "status", "accepted", "rejected"],
   "properties": {

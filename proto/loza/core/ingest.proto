@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package loza.core;
+
+option go_package = "github.com/astraive/loza/gen/go/loza/core;lozacore";
+
+service LogIngest {
+  rpc Push(RawEventBatch) returns (PushResponse);
+}
+
+service LozaIngest {
+  rpc Ingest(RawEventBatch) returns (PushResponse);
+  rpc IngestStream(stream RawEventBatch) returns (PushResponse);
+}
+
+message RawEventBatch {
+  repeated RawEvent events = 1;
+}
+
+message RawEvent {
+  string raw_json = 1;
+}
+
+message EventAck {
+  string event_id = 1;
+  string status = 2;
+  bool retryable = 3;
+  string reason = 4;
+}
+
+message PushResponse {
+  int64 accepted = 1;
+  int64 rejected = 2;
+  int64 invalid = 3;
+  int64 deduped = 4;
+  string error_message = 5;
+  repeated EventAck acks = 6;
+}

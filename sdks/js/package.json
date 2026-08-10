@@ -1,8 +1,8 @@
 {
-  "name": "loxa",
+  "name": "loza",
   "type": "module",
   "version": "0.2.6",
-  "description": "LOXA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loxa-collector",
+  "description": "LOZA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loza-collector",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -21,7 +21,7 @@
     "lint": "tsc --noEmit"
   },
   "keywords": [
-    "loxa",
+    "loza",
     "wide-event",
     "observability",
     "structured-logging"

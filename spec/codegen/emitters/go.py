@@ -24,9 +24,9 @@ import (
 )
 
 const (
-\tLOXASpecVersion      = "{contract["spec_version"]}"
-\tLOXAEventVersion     = "{contract["event_version"]}"
-\tLOXAIngestAPIVersion = "{contract["api_version"]}"
+\tLOZASpecVersion      = "{contract["spec_version"]}"
+\tLOZAEventVersion     = "{contract["event_version"]}"
+\tLOZAIngestAPIVersion = "{contract["api_version"]}"
 \tMaxEventBytes        = {contract["limits"]["max_event_size_bytes"]}
 )
 
@@ -113,7 +113,7 @@ func IsCanonical(key string) bool {{
 \treturn ok
 }}
 
-func LooksLikeLoxaEventMap(payload map[string]any) bool {{
+func LooksLikeLozaEventMap(payload map[string]any) bool {{
 \tif payload == nil {{
 \t\treturn false
 \t}}
@@ -159,7 +159,7 @@ func BuildIngestEnvelope(sdk, version, service string, events []json.RawMessage)
 \tif strings.TrimSpace(service) == "" {{
 \t\tservice = "unknown"
 \t}}
-\treturn IngestEnvelope{{APIVersion: LOXAIngestAPIVersion, Source: SourceInfo{{SDK: sdk, Version: version, Service: service}}, Events: events}}
+\treturn IngestEnvelope{{APIVersion: LOZAIngestAPIVersion, Source: SourceInfo{{SDK: sdk, Version: version, Service: service}}, Events: events}}
 }}
 
 func MarshalIngestEnvelope(sdk, version, service string, events []json.RawMessage) ([]byte, error) {{
@@ -296,8 +296,8 @@ func ValidateEventMapDetailed(payload map[string]any, strict bool) ValidationErr
 \t\t\t}}
 \t\t}}
 \t}}
-\trequireEnum(normalized, "schema_version", set(LOXASpecVersion), "unsupported_schema_version", &errs)
-\trequireEnum(normalized, "event_version", set(LOXAEventVersion), "unsupported_event_version", &errs)
+\trequireEnum(normalized, "schema_version", set(LOZASpecVersion), "unsupported_schema_version", &errs)
+\trequireEnum(normalized, "event_version", set(LOZAEventVersion), "unsupported_event_version", &errs)
 \trequireString(normalized, "event_id", "missing_event_id", &errs)
 \trequireTimestamp(normalized, "timestamp", &errs)
 \trequireService(normalized, &errs)

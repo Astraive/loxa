@@ -1034,7 +1034,7 @@ const file_internal_proto_cortex_proto_rawDesc = "" +
 	"\vReconstruct\x12\x1d.cortex.v1.ReconstructRequest\x1a\x1e.cortex.v1.ReconstructResponse\x12C\n" +
 	"\bGetGraph\x12\x1a.cortex.v1.GetGraphRequest\x1a\x1b.cortex.v1.GetGraphResponse\x12U\n" +
 	"\x0eRecordFeedback\x12 .cortex.v1.RecordFeedbackRequest\x1a!.cortex.v1.RecordFeedbackResponse\x12Q\n" +
-	"\fStreamEvents\x12\x1e.cortex.v1.StreamEventsRequest\x1a\x1f.cortex.v1.StreamEventsResponse0\x01B7Z5github.com/astraive/loxa/cortex/internal/proto/cortexv1b\x06proto3"
+	"\fStreamEvents\x12\x1e.cortex.v1.StreamEventsRequest\x1a\x1f.cortex.v1.StreamEventsResponse0\x01B7Z5github.com/astraive/loza/cortex/internal/proto/cortexv1b\x06proto3"
 
 var (
 	file_internal_proto_cortex_proto_rawDescOnce sync.Once

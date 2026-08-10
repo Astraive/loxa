@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	internalserver "github.com/astraive/loxa/collector/internal/server"
+	internalserver "github.com/astraive/loza/collector/internal/server"
 )
 
 func New(cfg internalserver.HTTPConfig, state internalserver.State) *internalserver.HTTPServer {
@@ -150,7 +150,7 @@ func BuildMux(ingestPath, healthPath, readyPath, metricsPath string, metricsEnab
 		}
 	}
 
-	if v := strings.ToLower(strings.TrimSpace(os.Getenv("LOXA_ENABLE_PPROF"))); v == "1" || v == "true" {
+	if v := strings.ToLower(strings.TrimSpace(os.Getenv("LOZA_ENABLE_PPROF"))); v == "1" || v == "true" {
 		registerPprof(mux)
 	}
 	return mux

@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/astraive/loxa/collector/internal/auth"
+	"github.com/astraive/loza/collector/internal/auth"
 	"github.com/graphql-go/graphql"
 )
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/collector/internal/eventbus"
+	"github.com/astraive/loza/collector/internal/eventbus"
 )
 
 func TestBusContract(t *testing.T) {

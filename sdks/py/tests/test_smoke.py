@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from loxa import Config, LOXA_EVENT_VERSION, LOXA_SPEC_VERSION, MemorySink, Params, new
+from loza import Config, LOZA_EVENT_VERSION, LOZA_SPEC_VERSION, MemorySink, Params, new
 
 
 def test_emit_smoke() -> None:
@@ -17,8 +17,8 @@ def test_emit_smoke() -> None:
     encoded = logger.emit(ctx)
 
     payload = json.loads(encoded)
-    assert payload["schema_version"] == LOXA_SPEC_VERSION
-    assert payload["event_version"] == LOXA_EVENT_VERSION
+    assert payload["schema_version"] == LOZA_SPEC_VERSION
+    assert payload["event_version"] == LOZA_EVENT_VERSION
     assert payload["service"] == "test"
     assert payload["event"] == "test.run"
     assert payload["kind"] == "cli"

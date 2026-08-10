@@ -1,4 +1,4 @@
-use loxa::{Config, New, Params, SampleErrors};
+use loza::{Config, New, Params, SampleErrors};
 
 pub fn sample_error_once() -> String {
     let logger = New(Config::test("bench").with_sampler(SampleErrors()));

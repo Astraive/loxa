@@ -3,18 +3,18 @@ from __future__ import annotations
 import json
 import time
 
-import loxa
+import loza
 
 
 def test_process_group_timer_helpers():
-    logger, sink = loxa.TestLogger()
-    ctx = logger.start_event(loxa.Params(event="test.timing"))
+    logger, sink = loza.TestLogger()
+    ctx = logger.start_event(loza.Params(event="test.timing"))
 
-    p = loxa.with_process(ctx, "step1")
+    p = loza.with_process(ctx, "step1")
     p.finish()
-    g = loxa.with_group(ctx, "phase1")
+    g = loza.with_group(ctx, "phase1")
     g.finish()
-    t = loxa.with_timer(ctx, "timer1")
+    t = loza.with_timer(ctx, "timer1")
     t.stop()
 
     logger.finish(ctx, "success")
@@ -26,20 +26,20 @@ def test_process_group_timer_helpers():
 
 
 def test_measure_step_phase_span_helpers():
-    logger, sink = loxa.TestLogger()
-    ctx = logger.start_event(loxa.Params(event="test.spq"))
+    logger, sink = loza.TestLogger()
+    ctx = logger.start_event(loza.Params(event="test.spq"))
 
-    result = loxa.measure(ctx, "op1", lambda x: x * 2, 21)
+    result = loza.measure(ctx, "op1", lambda x: x * 2, 21)
     assert result == 42
 
-    p = loxa.step(ctx, "step1")
+    p = loza.step(ctx, "step1")
     p.finish()
-    g = loxa.phase(ctx, "phase1")
+    g = loza.phase(ctx, "phase1")
     g.finish()
-    t = loxa.span(ctx, "span1")
+    t = loza.span(ctx, "span1")
     t.stop()
 
-    sw = loxa.stopwatch()
+    sw = loza.stopwatch()
     time.sleep(0.01)
     assert sw.elapsed().total_seconds() > 0
 

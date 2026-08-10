@@ -11,8 +11,8 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-LOXA_SPEC_ROOT = Path(__file__).resolve().parents[1]
-WORKSPACE_ROOT = LOXA_SPEC_ROOT.parent
+LOZA_SPEC_ROOT = Path(__file__).resolve().parents[1]
+WORKSPACE_ROOT = LOZA_SPEC_ROOT.parent
 
 # TS loader import hook — works on Node 18+ (replaces --experimental-strip-types which requires Node 22.6+)
 _TS_IMPORT_FLAG = (
@@ -156,7 +156,7 @@ def _run_check(check: Check, verbose: bool) -> CheckResult:
 
 def _is_collector_reachable() -> bool:
     """Check the configured Collector's public health endpoint."""
-    base_url = os.environ.get("LOXA_TEST_COLLECTOR_URL", "http://127.0.0.1:9308").rstrip("/")
+    base_url = os.environ.get("LOZA_TEST_COLLECTOR_URL", "http://127.0.0.1:9308").rstrip("/")
     try:
         req = urllib.request.Request(base_url + "/health", method="GET")
         with urllib.request.urlopen(req, timeout=3):
@@ -166,9 +166,9 @@ def _is_collector_reachable() -> bool:
 
 
 def _is_python_sdk_installed() -> bool:
-    """Check if the loxa Python SDK can be imported."""
+    """Check if the loza Python SDK can be imported."""
     result = subprocess.run(
-        [sys.executable, "-c", "import loxa"],
+        [sys.executable, "-c", "import loza"],
         capture_output=True,
         text=True,
     )
@@ -243,7 +243,7 @@ def _print_json(results: list[CheckResult]) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run grouped LOXA SDK conformance checks.")
+    parser = argparse.ArgumentParser(description="Run grouped LOZA SDK conformance checks.")
     parser.add_argument("--sdk", choices=("all", "go", "python", "rust", "javascript"), default="all")
     parser.add_argument("--group", choices=("all", *_all_groups()), default="all")
     parser.add_argument("--verbose", action="store_true")

@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	collectorevent "github.com/astraive/loxa/collector/internal/event"
-	"github.com/astraive/loxa/collector/internal/validation"
+	collectorevent "github.com/astraive/loza/collector/internal/event"
+	"github.com/astraive/loza/collector/internal/validation"
 	"github.com/redis/go-redis/v9"
 )
 

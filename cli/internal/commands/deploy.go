@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
 )
 
 func DeployCommand(cfg config.Config, args []string) error {
@@ -35,7 +35,7 @@ func DeployCommand(cfg config.Config, args []string) error {
 
 func deployAssets(cfg config.Config, kind string, args []string) error {
 	fs := flag.NewFlagSet("deploy "+kind, flag.ContinueOnError)
-	outDir := fs.String("out", filepath.Join(".", ".loxa-deploy", kind), "output directory")
+	outDir := fs.String("out", filepath.Join(".", ".loza-deploy", kind), "output directory")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -48,9 +48,9 @@ func deployAssets(cfg config.Config, kind string, args []string) error {
 	case "compose":
 		src = filepath.Join(deployRoot, "docker-compose.yml")
 	case "k8s":
-		src = filepath.Join(deployRoot, "loxa-collector.yaml")
+		src = filepath.Join(deployRoot, "loza-collector.yaml")
 	case "helm":
-		src = filepath.Join(deployRoot, "helm", "loxa")
+		src = filepath.Join(deployRoot, "helm", "loza")
 	default:
 		return fmt.Errorf("unsupported deploy asset kind: %s", kind)
 	}

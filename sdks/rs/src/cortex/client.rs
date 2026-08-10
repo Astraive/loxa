@@ -19,7 +19,7 @@ impl CortexClient {
         Self {
             endpoint: endpoint.into().trim_end_matches('/').to_string(),
             api_key: None,
-            auth_header: "x-loxa-api-key".to_string(),
+            auth_header: "x-loza-api-key".to_string(),
             timeout: Duration::from_secs(10),
         }
     }

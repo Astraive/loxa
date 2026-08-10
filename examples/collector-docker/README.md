@@ -1,6 +1,6 @@
 # Collector Docker Example
 
-Runs the LOXA collector with DuckDB storage and optional Grafana dashboards.
+Runs the LOZA collector with DuckDB storage and optional Grafana dashboards.
 
 ## Usage
 

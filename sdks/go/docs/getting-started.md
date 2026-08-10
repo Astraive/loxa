@@ -1,23 +1,23 @@
 # Getting Started
 
-A 5-minute quickstart for the LOXA Go SDK. By the end you will have a working application that creates, enriches, finishes, and emits a wide-event.
+A 5-minute quickstart for the LOZA Go SDK. By the end you will have a working application that creates, enriches, finishes, and emits a wide-event.
 
 ## Default Client
 
-Use package-level `loxa.<Method>(ctx, ...)` calls for quick starts and single-client applications.
+Use package-level `loza.<Method>(ctx, ...)` calls for quick starts and single-client applications.
 
 ## Custom Client / Alias
 
-Use `loxa.CreateLoxa(config)` for an independent client, `loxa.New(config)` as the idiomatic Go alias, and `loxa.Alias("name")` for a same-config child that emits `loxa.alias`.
+Use `loza.CreateLoza(config)` for an independent client, `loza.New(config)` as the idiomatic Go alias, and `loza.Alias("name")` for a same-config child that emits `loza.alias`.
 
 ## Cross-Language Parity
 
-Go maps to the v0.0.2 parity family as package-level `loxa`, `CreateLoxa`, `New`, and user-defined variables such as `logger.Info(ctx, ...)`.
+Go maps to the v0.0.2 parity family as package-level `loza`, `CreateLoza`, `New`, and user-defined variables such as `logger.Info(ctx, ...)`.
 
 ## Install
 
 ```bash
-go get github.com/astraive/loxa/sdks/go@latest
+go get github.com/astraive/loza/sdks/go@latest
 ```
 
 ## Full Working Example
@@ -29,38 +29,38 @@ import (
 	"context"
 	"fmt"
 
-	loxa "github.com/astraive/loxa/sdks/go"
+	loza "github.com/astraive/loza/sdks/go"
 )
 
 func main() {
 	// 1. Configure the global logger for development.
-	loxa.Configure(loxa.Dev().WithService("checkout-service"))
+	loza.Configure(loza.Dev().WithService("checkout-service"))
 
 	// 2. Start an event.
-	ctx := loxa.StartEvent(context.Background(), loxa.Params{
+	ctx := loza.StartEvent(context.Background(), loza.Params{
 		Event: "checkout.request",
 		Kind:  "http",
 	})
 
 	// 3. Enrich with attributes.
-	loxa.Enrich(ctx,
-		loxa.UserID("u-abc123"),
-		loxa.TenantID("tenant-acme"),
-		loxa.String("cart.id", "cart-42"),
-		loxa.Int("item_count", 3),
+	loza.Enrich(ctx,
+		loza.UserID("u-abc123"),
+		loza.TenantID("tenant-acme"),
+		loza.String("cart.id", "cart-42"),
+		loza.Int("item_count", 3),
 	)
 
 	// 4. Finish the event with an outcome.
-	loxa.Finish(ctx, "success", loxa.Int("status_code", 200))
+	loza.Finish(ctx, "success", loza.Int("status_code", 200))
 
 	// 5. Emit the event to the configured sink.
-	if err := loxa.Emit(ctx); err != nil {
+	if err := loza.Emit(ctx); err != nil {
 		fmt.Printf("emit error: %v\n", err)
 	}
 
 	// 6. Flush any buffered events and shut down.
-	loxa.Flush(context.Background())
-	loxa.Shutdown(context.Background())
+	loza.Flush(context.Background())
+	loza.Shutdown(context.Background())
 }
 ```
 
@@ -68,48 +68,48 @@ func main() {
 
 | Step | Function | Purpose |
 |------|----------|---------|
-| Configure | `loxa.Configure(cfg)` | Sets the global logger with service name, sink, sampler, and redactor. |
-| StartEvent | `loxa.StartEvent(ctx, params)` | Creates a new `EventContext` with a UUIDv7 event ID and initial metadata. |
-| Enrich | `loxa.Enrich(ctx, attrs...)` | Adds typed attributes to the event. Attributes are merged into the event map. |
-| Finish | `loxa.Finish(ctx, outcome, attrs...)` | Marks the event as finished, records the outcome, and calculates duration. |
-| Emit | `loxa.Emit(ctx)` | Serializes the event and sends it to the configured sink. |
-| Flush | `loxa.Flush(ctx)` | Flushes any buffered events in async sinks. |
-| Shutdown | `loxa.Shutdown(ctx)` | Shuts down the logger, flushing remaining events. |
+| Configure | `loza.Configure(cfg)` | Sets the global logger with service name, sink, sampler, and redactor. |
+| StartEvent | `loza.StartEvent(ctx, params)` | Creates a new `EventContext` with a UUIDv7 event ID and initial metadata. |
+| Enrich | `loza.Enrich(ctx, attrs...)` | Adds typed attributes to the event. Attributes are merged into the event map. |
+| Finish | `loza.Finish(ctx, outcome, attrs...)` | Marks the event as finished, records the outcome, and calculates duration. |
+| Emit | `loza.Emit(ctx)` | Serializes the event and sends it to the configured sink. |
+| Flush | `loza.Flush(ctx)` | Flushes any buffered events in async sinks. |
+| Shutdown | `loza.Shutdown(ctx)` | Shuts down the logger, flushing remaining events. |
 
 ## Connecting to a Collector
 
-In production, send events to the LOXA collector with authentication:
+In production, send events to the LOZA collector with authentication:
 
 ```go
-loxa.Configure(
-	loxa.Production().
+loza.Configure(
+	loza.Production().
 		WithService("checkout-service").
-		WithAPIKey(os.Getenv("LOXA_API_KEY")).
-		WithCollectorEndpoint("https://collector.loxa.dev").
-		WithSampler(loxa.SampleErrors()),
+		WithAPIKey(os.Getenv("LOZA_API_KEY")).
+		WithCollectorEndpoint("https://collector.loza.dev").
+		WithSampler(loza.SampleErrors()),
 )
 ```
 
-The SDK automatically sets `Authorization: Bearer <key>`, `X-Loxa-Service`, and `X-Loxa-Env` headers.
+The SDK automatically sets `Authorization: Bearer <key>`, `X-Loza-Service`, and `X-Loza-Env` headers.
 
 ### Authentication
 
 | Config Field | Env Var | Description |
 |---|---|---|
-| `APIKey` | `LOXA_API_KEY` | Ingest API key (`lx_sec_live_k_xxx_yyyy`) |
+| `APIKey` | `LOZA_API_KEY` | Ingest API key (`lx_sec_live_k_xxx_yyyy`) |
 | `Insecure` | -- | Allow plain HTTP (local dev only) |
 
 ```go
 // Production (HTTPS required)
-loxa.Configure(
-	loxa.Production().
+loza.Configure(
+	loza.Production().
 		WithService("my-service").
 		WithAPIKey("lx_sec_live_k_xxx_yyyy"),
 )
 
 // Local dev (HTTP allowed)
-loxa.Configure(
-	loxa.Dev().
+loza.Configure(
+	loza.Dev().
 		WithService("my-service").
 		WithAPIKey("lx_local_dev_mytoken").
 		WithInsecure(true),
@@ -120,64 +120,64 @@ See [Security](../../docs/security.md) for key types, RBAC roles, and ABAC restr
 
 ## Custom Instances
 
-Use `loxa.CreateLoxa` when you need an isolated logger that does not share the global default. Each instance has its own config, sinks, and buffers.
+Use `loza.CreateLoza` when you need an isolated logger that does not share the global default. Each instance has its own config, sinks, and buffers.
 
 ```go
 // Create an independent logger.
-logger, err := loxa.CreateLoxa(loxa.Config{
+logger, err := loza.CreateLoza(loza.Config{
 	Service:     "payment-api",
-	CollectorURL: "https://collector.loxa.dev",
-	APIKey:      os.Getenv("LOXA_API_KEY"),
+	CollectorURL: "https://collector.loza.dev",
+	APIKey:      os.Getenv("LOZA_API_KEY"),
 })
 if err != nil {
 	log.Fatal(err)
 }
 
 // Use the instance the same way as the global API.
-ctx := logger.StartEvent(context.Background(), loxa.Params{
+ctx := logger.StartEvent(context.Background(), loza.Params{
 	Event: "payment.charge",
 	Kind:  "http",
 })
 
-logger.Enrich(ctx, loxa.String("payment.provider", "stripe"))
+logger.Enrich(ctx, loza.String("payment.provider", "stripe"))
 logger.Finish(ctx, "success")
 logger.Emit(ctx)
 ```
 
-`loxa.New` is an idiomatic Go alias for `loxa.CreateLoxa` -- both do the same thing:
+`loza.New` is an idiomatic Go alias for `loza.CreateLoza` -- both do the same thing:
 
 ```go
-logger, err := loxa.New(loxa.Config{Service: "api"})
+logger, err := loza.New(loza.Config{Service: "api"})
 ```
 
 ## Aliases
 
-Use `loxa.Alias` to create a second logger that inherits the default logger's config and emits `loxa.alias` metadata. This is useful for emitting events on behalf of a logical subsystem without duplicating configuration.
+Use `loza.Alias` to create a second logger that inherits the default logger's config and emits `loza.alias` metadata. This is useful for emitting events on behalf of a logical subsystem without duplicating configuration.
 
 ```go
 // Create an alias from the global default.
-audit, err := loxa.Alias("audit")
+audit, err := loza.Alias("audit")
 if err != nil {
 	log.Fatal(err)
 }
 
 // Use the alias -- same API as the default logger.
-ctx := audit.StartEvent(context.Background(), loxa.Params{
+ctx := audit.StartEvent(context.Background(), loza.Params{
 	Event: "audit.record",
 	Kind:  "job",
 })
 
-audit.Enrich(ctx, loxa.String("action", "user.delete"))
+audit.Enrich(ctx, loza.String("action", "user.delete"))
 audit.Finish(ctx, "success")
 audit.Emit(ctx)
 ```
 
-The key difference between `CreateLoxa` and `Alias`:
+The key difference between `CreateLoza` and `Alias`:
 
 | Factory | Config Source | Use Case |
 |---------|-------------|----------|
-| `loxa.CreateLoxa(cfg)` | Fully independent config | Different sinks, samplers, or endpoints |
-| `loxa.Alias("name")` | Inherits default logger config plus `loxa.alias` | Same infrastructure, logical alias metadata |
+| `loza.CreateLoza(cfg)` | Fully independent config | Different sinks, samplers, or endpoints |
+| `loza.Alias("name")` | Inherits default logger config plus `loza.alias` | Same infrastructure, logical alias metadata |
 
 ## Immediate Logging
 
@@ -185,29 +185,29 @@ For events that do not need the full start/enrich/finish/emit lifecycle, use the
 
 ```go
 // Package-level (uses the global default logger).
-loxa.Info("server started", loxa.String("addr", ":8080"))
-loxa.Warn("high memory usage", loxa.Float64("usage_mb", 512.0))
-loxa.Error("connection failed", loxa.String("host", "db.example.com"))
+loza.Info("server started", loza.String("addr", ":8080"))
+loza.Warn("high memory usage", loza.Float64("usage_mb", 512.0))
+loza.Error("connection failed", loza.String("host", "db.example.com"))
 
 // On a custom instance.
-logger, _ := loxa.New(loxa.Config{Service: "api"})
+logger, _ := loza.New(loza.Config{Service: "api"})
 logger.Info("ready to serve")
 ```
 
 ## Cross-Language Parity
 
-The Go SDK mirrors the same API pattern across all LOXA SDKs:
+The Go SDK mirrors the same API pattern across all LOZA SDKs:
 
 | Operation | Go | JavaScript | Python | Rust |
 |-----------|----|------------|--------|------|
-| Configure | `loxa.Configure(cfg)` | `loxa.configure(cfg)` | `loxa.configure(cfg)` | `loxa::configure(cfg)` |
-| Start Event | `loxa.StartEvent(ctx, p)` | `loxa.startEvent(p)` | `loxa.start_event(p)` | `loxa::start_event(p)` |
-| Enrich | `loxa.Enrich(ctx, ...)` | `loxa.enrich(...)` | `loxa.enrich(...)` | `loxa::enrich(...)` |
-| Finish | `loxa.Finish(ctx, ...)` | `loxa.finish(...)` | `loxa.finish(...)` | `loxa::finish(...)` |
-| Emit | `loxa.Emit(ctx)` | `loxa.emit()` | `loxa.emit()` | `loxa::emit()` |
-| Info (immediate) | `loxa.Info(msg, ...)` | `loxa.info(msg, ...)` | `loxa.info(msg, ...)` | `loxa::info(msg, ...)` |
-| Custom Instance | `loxa.CreateLoxa(cfg)` | `createLoxa(cfg)` | `loxa.create_loxa(cfg)` | `loxa::create_loxa(cfg)` |
-| Alias | `loxa.Alias("name")` | `loxa.alias("name")` | `loxa.alias("name")` | `loxa::alias("name")` |
+| Configure | `loza.Configure(cfg)` | `loza.configure(cfg)` | `loza.configure(cfg)` | `loza::configure(cfg)` |
+| Start Event | `loza.StartEvent(ctx, p)` | `loza.startEvent(p)` | `loza.start_event(p)` | `loza::start_event(p)` |
+| Enrich | `loza.Enrich(ctx, ...)` | `loza.enrich(...)` | `loza.enrich(...)` | `loza::enrich(...)` |
+| Finish | `loza.Finish(ctx, ...)` | `loza.finish(...)` | `loza.finish(...)` | `loza::finish(...)` |
+| Emit | `loza.Emit(ctx)` | `loza.emit()` | `loza.emit()` | `loza::emit()` |
+| Info (immediate) | `loza.Info(msg, ...)` | `loza.info(msg, ...)` | `loza.info(msg, ...)` | `loza::info(msg, ...)` |
+| Custom Instance | `loza.CreateLoza(cfg)` | `createLoza(cfg)` | `loza.create_loza(cfg)` | `loza::create_loza(cfg)` |
+| Alias | `loza.Alias("name")` | `loza.alias("name")` | `loza.alias("name")` | `loza::alias("name")` |
 
 ## Event Lifecycle
 

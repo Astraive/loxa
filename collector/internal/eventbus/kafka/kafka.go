@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/astraive/loxa/collector/internal/eventbus"
+	"github.com/astraive/loza/collector/internal/eventbus"
 	"github.com/rs/zerolog/log"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -41,13 +41,13 @@ func New(_ context.Context, cfg eventbus.Config) (eventbus.Bus, error) {
 		kc.Topic = cfg.Topic
 	}
 	if kc.Topic == "" {
-		kc.Topic = "loxa.events.raw"
+		kc.Topic = "loza.events.raw"
 	}
 	if kc.ConsumerGroup == "" {
 		kc.ConsumerGroup = cfg.ConsumerGroup
 	}
 	if kc.ConsumerGroup == "" {
-		kc.ConsumerGroup = "loxa-worker"
+		kc.ConsumerGroup = "loza-worker"
 	}
 
 	opts := []kgo.Opt{
@@ -277,7 +277,7 @@ func (b *kafkaBus) Health(ctx context.Context) eventbus.Health {
 func (b *kafkaBus) PublishDLQ(ctx context.Context, original eventbus.Envelope, reason error) error {
 	dlqTopic := b.dlqCfg
 	if dlqTopic == "" {
-		dlqTopic = "loxa.events.dlq"
+		dlqTopic = "loza.events.dlq"
 	}
 	if original.Headers == nil {
 		original.Headers = make(map[string]string)

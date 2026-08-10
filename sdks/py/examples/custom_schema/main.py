@@ -1,2 +1,2 @@
-import loxa
-logger = loxa.New(loxa.Test("example").with_schema(loxa.FlatSchema()))
+import loza
+logger = loza.New(loza.Test("example").with_schema(loza.FlatSchema()))

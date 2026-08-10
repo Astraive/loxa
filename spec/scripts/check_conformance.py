@@ -303,7 +303,7 @@ def main() -> int:
     _validate_fail(invalid_collector_response, collector_validator, "collector_response_invalid")
     _validate_ingest_fixtures(ingest_envelopes, ingest_validator, loose_validator)
     _validate_ingest_invalid(invalid_ingest, ingest_validator)
-    contract_path = (spec_root / "generated" / "contract" / "loxa-contract.json").resolve()
+    contract_path = (spec_root / "generated" / "contract" / "loza-contract.json").resolve()
     max_event_bytes = 65536
     if contract_path.exists():
         contract_payload = _load_json(contract_path)

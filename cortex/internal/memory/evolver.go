@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astraive/loxa/cortex/internal/models"
-	"github.com/astraive/loxa/cortex/internal/storage"
-	"github.com/astraive/loxa/cortex/internal/topology"
+	"github.com/astraive/loza/cortex/internal/models"
+	"github.com/astraive/loza/cortex/internal/storage"
+	"github.com/astraive/loza/cortex/internal/topology"
 	"github.com/rs/zerolog/log"
 )
 

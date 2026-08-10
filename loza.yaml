@@ -1,0 +1,16 @@
+name: loza
+kind: release
+version: 0.2.6
+description: Umbrella LOZA repository release
+license: MIT
+repository: https://github.com/Astraive/loza
+module: github.com/astraive/loza
+
+paths:
+  root: .
+
+publish:
+  github_release:
+    tag_prefix: v
+    title_prefix: LOZA
+    owner: astraive

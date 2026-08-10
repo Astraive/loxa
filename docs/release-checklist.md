@@ -1,4 +1,4 @@
-# LOXA v0.0.1 Release Checklist
+# LOZA v0.0.1 Release Checklist
 
 **Release Date**: May 14, 2026  
 **Updated**: May 20, 2026  
@@ -47,7 +47,7 @@
 ## Quality Gates Verified
 
 ### Testing
-- ✅ 24 collector tests passing (collector/cmd/loxa-collector)
+- ✅ 24 collector tests passing (collector/cmd/loza-collector)
 - ✅ 18 collector packages passing (all subpackages)
 - ✅ 8 Go SDK packages passing
 - ✅ 94 Python SDK tests passing
@@ -176,7 +176,7 @@
 
 ## Release Summary
 
-**LOXA v0.0.1 is production-ready and approved for immediate deployment.**
+**LOZA v0.0.1 is production-ready and approved for immediate deployment.**
 
 ### What's Included
 - ✅ 3 production SDKs (Go, Python, Rust)
@@ -213,10 +213,10 @@
 
 ## Support & Resources
 
-- **Documentation**: https://docs.loxa.dev
-- **GitHub**: https://github.com/astraive/loxa
-- **Issues**: https://github.com/astraive/loxa/issues
-- **Discussions**: https://github.com/astraive/loxa/discussions
+- **Documentation**: https://docs.loza.dev
+- **GitHub**: https://github.com/astraive/loza
+- **Issues**: https://github.com/astraive/loza/issues
+- **Discussions**: https://github.com/astraive/loza/discussions
 
 ---
 

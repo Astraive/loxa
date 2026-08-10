@@ -1,4 +1,4 @@
-# LOXA Program TODO (P0-P17)
+# LOZA Program TODO (P0-P17)
 
 Status key: `[x]` done, `[-]` in progress, `[ ]` planned.
 
@@ -10,15 +10,15 @@ Status key: `[x]` done, `[-]` in progress, `[ ]` planned.
 - [-] `P5` Middleware hardening + framework docs
 - [-] `P6` OTLP/Loki/Prometheus/Grafana integrations
 - [x] `P7` Multi-sink fanout delivery policies
-- [ ] `P8` Durable queue mode + `loxa-worker`
+- [ ] `P8` Durable queue mode + `loza-worker`
 - [ ] `P9` ClickHouse/S3/GCS/Parquet strategy
 - [ ] `P10` Schema governance and validation modes
 - [ ] `P11` Security/privacy/tenant controls
 - [ ] `P12` Deployment packaging (images/helm/k8s)
-- [ ] `P13` Top-level `loxa` CLI
+- [ ] `P13` Top-level `loza` CLI
 - [ ] `P14` DX examples, recipes, migration guides
 - [ ] `P15` Performance/load tooling and reports
-- [ ] `P16` LOXA self-observability
+- [ ] `P16` LOZA self-observability
 - [ ] `P17` Packaging/versioning compatibility contracts
 
 ## Current Sprint Focus

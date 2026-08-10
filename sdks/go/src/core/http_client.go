@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type loxaRoundTripper struct {
+type lozaRoundTripper struct {
 	base http.RoundTripper
 }
 
@@ -17,10 +17,10 @@ func NewRoundTripper(base http.RoundTripper) http.RoundTripper {
 	if base == nil {
 		base = http.DefaultTransport
 	}
-	return &loxaRoundTripper{base: base}
+	return &lozaRoundTripper{base: base}
 }
 
-// WrapHTTPClient wraps an existing client with LOXA outbound instrumentation.
+// WrapHTTPClient wraps an existing client with LOZA outbound instrumentation.
 func WrapHTTPClient(client *http.Client) *http.Client {
 	if client == nil {
 		client = &http.Client{}
@@ -30,7 +30,7 @@ func WrapHTTPClient(client *http.Client) *http.Client {
 	return &cp
 }
 
-func (rt *loxaRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (rt *lozaRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	start := time.Now()
 	ctx := req.Context()
 	if sc := trace.SpanContextFromContext(ctx); sc.IsValid() {

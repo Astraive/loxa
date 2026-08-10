@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 	echopkg "github.com/labstack/echo/v4"
 )
 
@@ -32,7 +32,7 @@ func MiddlewareWithConfig(cfg Config) echopkg.MiddlewareFunc {
 	return func(next echopkg.HandlerFunc) echopkg.HandlerFunc {
 		return func(c echopkg.Context) (err error) {
 			req := c.Request()
-			ctx := loxa.StartEvent(req.Context(), loxa.Params{
+			ctx := loza.StartEvent(req.Context(), loza.Params{
 				Event:  eventName,
 				Method: req.Method,
 				Path:   req.URL.Path,
@@ -42,26 +42,26 @@ func MiddlewareWithConfig(cfg Config) echopkg.MiddlewareFunc {
 
 			defer func() {
 				if rec := recover(); rec != nil {
-					if !loxa.PanicRecoveryEnabled() {
+					if !loza.PanicRecoveryEnabled() {
 						panic(rec)
 					}
 					if !c.Response().Committed {
 						_ = c.NoContent(http.StatusInternalServerError)
 					}
 					err = panicErr{value: rec}
-					loxa.FinishError(ctx, err, loxa.Int("status_code", c.Response().Status))
-					_ = loxa.Emit(ctx)
+					loza.FinishError(ctx, err, loza.Int("status_code", c.Response().Status))
+					_ = loza.Emit(ctx)
 				}
 			}()
 
 			err = next(c)
 			if err != nil {
 				c.Error(err)
-				loxa.FinishError(ctx, err, loxa.Int("status_code", c.Response().Status))
+				loza.FinishError(ctx, err, loza.Int("status_code", c.Response().Status))
 			} else {
-				loxa.Finish(ctx, "success", loxa.Int("status_code", c.Response().Status))
+				loza.Finish(ctx, "success", loza.Int("status_code", c.Response().Status))
 			}
-			_ = loxa.Emit(ctx)
+			_ = loza.Emit(ctx)
 			return err
 		}
 	}

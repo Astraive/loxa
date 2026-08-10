@@ -1,0 +1,13 @@
+{{- if .Values.schemaService.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "loza.fullname" . }}-schema-service
+  labels:
+    {{- include "loza.labels" . | nindent 4 }}
+    app.kubernetes.io/component: schema-service
+data:
+  {{- range $key, $value := .Values.schemaService.config }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}

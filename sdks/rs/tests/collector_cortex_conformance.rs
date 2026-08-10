@@ -1,4 +1,4 @@
-use loxa::{Config, New, Params, SinkConfig};
+use loza::{Config, New, Params, SinkConfig};
 use serde_json::Value;
 use std::io::{Read, Write};
 use std::net::TcpListener;
@@ -24,7 +24,7 @@ fn collector_sink_rejects_partial_invalid_batch() {
     });
 
     let endpoint = format!("http://{addr}/events");
-    let logger = New(Config::test("checkout").with_sink(loxa::HttpBatchSink(&endpoint)));
+    let logger = New(Config::test("checkout").with_sink(loza::HttpBatchSink(&endpoint)));
     let mut ctx = logger.start_event(Params::new("checkout.collector").with_kind("cli"));
     logger.finish(&mut ctx, "success").expect("finish event");
     let err = logger

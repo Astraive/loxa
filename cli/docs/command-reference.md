@@ -1,12 +1,12 @@
 # Command Reference
 
-Full reference for all LOXA CLI commands.
+Full reference for all LOZA CLI commands.
 
 ## Global Flags
 
 | Flag | Description |
 |---|---|
-| `--config` | Path to config file (default: `loxa-cli.defaults.yaml`) |
+| `--config` | Path to config file (default: `loza-cli.defaults.yaml`) |
 | `--verbose` | Enable verbose logging |
 | `--output` | Output format: `text`, `json`, `yaml` (default: `text`) |
 | `--no-color` | Disable colored output |
@@ -15,12 +15,12 @@ Full reference for all LOXA CLI commands.
 
 ## Setup Commands
 
-### loxa init
+### loza init
 
-Initialize a new LOXA workspace. Creates a default config file and validates the environment.
+Initialize a new LOZA workspace. Creates a default config file and validates the environment.
 
 ```bash
-loxa init
+loza init
 ```
 
 **Flags**
@@ -33,17 +33,17 @@ loxa init
 **Example**
 
 ```bash
-loxa init --dir ./my-project
+loza init --dir ./my-project
 ```
 
 ---
 
-### loxa dev
+### loza dev
 
 Start a local development environment with collector, Cortex, and a DuckDB backend.
 
 ```bash
-loxa dev
+loza dev
 ```
 
 **Flags**
@@ -52,24 +52,24 @@ loxa dev
 |---|---|
 | `--port` | Collector port (default: 9308) |
 | `--cortex-port` | Cortex port (default: 9312) |
-| `--db` | DuckDB file path (default: `loxa-local.db`) |
+| `--db` | DuckDB file path (default: `loza-local.db`) |
 
 **Example**
 
 ```bash
-loxa dev --port 9308 --cortex-port 9312
+loza dev --port 9308 --cortex-port 9312
 ```
 
 ---
 
 ## Collector Commands
 
-### loxa collector run
+### loza collector run
 
 Run the collector binary.
 
 ```bash
-loxa collector run
+loza collector run
 ```
 
 **Flags**
@@ -81,43 +81,43 @@ loxa collector run
 **Example**
 
 ```bash
-loxa collector run -c configs/loxa.local.yaml
+loza collector run -c configs/loza.local.yaml
 ```
 
 ---
 
-### loxa collector version
+### loza collector version
 
 Print the collector version.
 
 ```bash
-loxa collector version
+loza collector version
 ```
 
 ---
 
-### loxa collector config print
+### loza collector config print
 
 Print the resolved collector configuration.
 
 ```bash
-loxa collector config print
+loza collector config print
 ```
 
 **Example**
 
 ```bash
-loxa collector config print --output json
+loza collector config print --output json
 ```
 
 ---
 
-### loxa collector config validate
+### loza collector config validate
 
 Validate a collector config file.
 
 ```bash
-loxa collector config validate
+loza collector config validate
 ```
 
 **Flags**
@@ -129,19 +129,19 @@ loxa collector config validate
 **Example**
 
 ```bash
-loxa collector config validate -c configs/loxa.local.yaml
+loza collector config validate -c configs/loza.local.yaml
 ```
 
 ---
 
 ## Worker Commands
 
-### loxa worker run
+### loza worker run
 
 Run the queue worker for distributed delivery.
 
 ```bash
-loxa worker run
+loza worker run
 ```
 
 **Flags**
@@ -153,57 +153,57 @@ loxa worker run
 **Example**
 
 ```bash
-loxa worker run -c configs/loxa.queue.kafka.yaml
+loza worker run -c configs/loza.queue.kafka.yaml
 ```
 
 ---
 
-### loxa worker version
+### loza worker version
 
 Print the worker version.
 
 ```bash
-loxa worker version
+loza worker version
 ```
 
 ---
 
 ## Config Commands
 
-### loxa config print
+### loza config print
 
 Print the resolved CLI configuration.
 
 ```bash
-loxa config print
+loza config print
 ```
 
 **Example**
 
 ```bash
-loxa config print --output yaml
+loza config print --output yaml
 ```
 
 ---
 
-### loxa config validate
+### loza config validate
 
 Validate the CLI configuration file.
 
 ```bash
-loxa config validate
+loza config validate
 ```
 
 ---
 
 ## Schema Commands
 
-### loxa schema validate
+### loza schema validate
 
 Validate an event payload against the registered schema.
 
 ```bash
-loxa schema validate
+loza schema validate
 ```
 
 **Flags**
@@ -217,18 +217,18 @@ loxa schema validate
 **Example**
 
 ```bash
-cat event.json | loxa schema validate --stdin
-loxa schema validate --file event.json --schema v2
+cat event.json | loza schema validate --stdin
+loza schema validate --file event.json --schema v2
 ```
 
 ---
 
-### loxa schema fetch
+### loza schema fetch
 
 Fetch the current schema from the collector.
 
 ```bash
-loxa schema fetch
+loza schema fetch
 ```
 
 **Flags**
@@ -241,19 +241,19 @@ loxa schema fetch
 **Example**
 
 ```bash
-loxa schema fetch --output schema.json --version v2
+loza schema fetch --output schema.json --version v2
 ```
 
 ---
 
 ## Emit Commands
 
-### loxa emit
+### loza emit
 
 Send a single event to the collector.
 
 ```bash
-loxa emit
+loza emit
 ```
 
 **Flags**
@@ -269,22 +269,22 @@ loxa emit
 **Example**
 
 ```bash
-loxa emit --service payment-service --type http_request \
+loza emit --service payment-service --type http_request \
   --attr status_code=500 --attr path=/api/charge --attr latency_ms=4500
 
-echo '{"service":"test","event_type":"custom"}' | loxa emit --stdin
+echo '{"service":"test","event_type":"custom"}' | loza emit --stdin
 ```
 
 ---
 
 ## Query Commands
 
-### loxa query
+### loza query
 
 Execute a SQL query against the collector's DuckDB storage.
 
 ```bash
-loxa query "SQL_STATEMENT"
+loza query "SQL_STATEMENT"
 ```
 
 **Flags**
@@ -297,18 +297,18 @@ loxa query "SQL_STATEMENT"
 **Example**
 
 ```bash
-loxa query "SELECT service, count(*) FROM events GROUP BY service ORDER BY count(*) DESC"
-loxa query "SELECT * FROM events WHERE timestamp > now() - interval '1 hour'" --output json
+loza query "SELECT service, count(*) FROM events GROUP BY service ORDER BY count(*) DESC"
+loza query "SELECT * FROM events WHERE timestamp > now() - interval '1 hour'" --output json
 ```
 
 ---
 
-### loxa tail
+### loza tail
 
 Stream events in real time from the collector.
 
 ```bash
-loxa tail
+loza tail
 ```
 
 **Flags**
@@ -323,18 +323,18 @@ loxa tail
 **Example**
 
 ```bash
-loxa tail --service payment-service --since 5m
-loxa tail --type http_request --filter status_code=500
+loza tail --service payment-service --since 5m
+loza tail --type http_request --filter status_code=500
 ```
 
 ---
 
-### loxa watch
+### loza watch
 
 Watch events and display real-time statistics.
 
 ```bash
-loxa watch
+loza watch
 ```
 
 **Flags**
@@ -347,58 +347,58 @@ loxa watch
 **Example**
 
 ```bash
-loxa watch --interval 2s --service payment-service
+loza watch --interval 2s --service payment-service
 ```
 
 ---
 
 ## Status Commands
 
-### loxa status
+### loza status
 
 Show collector status: uptime, version, sinks, event counts.
 
 ```bash
-loxa status
+loza status
 ```
 
 **Example**
 
 ```bash
-loxa status --output json
+loza status --output json
 ```
 
 ---
 
-### loxa sinks
+### loza sinks
 
 List configured sinks and their status. Supports explicit subcommands:
-- `loxa sinks list`
-- `loxa sinks show <name>`
-- `loxa sinks test <name>`
+- `loza sinks list`
+- `loza sinks show <name>`
+- `loza sinks test <name>`
 
 ```bash
-loxa sinks
+loza sinks
 ```
 
 **Example**
 
 ```bash
-loxa sinks --output json
+loza sinks --output json
 ```
 
 ```bash
-loxa sinks test duckdb
+loza sinks test duckdb
 ```
 
 ---
 
-### loxa doctor
+### loza doctor
 
 Run health checks against the collector.
 
 ```bash
-loxa doctor
+loza doctor
 ```
 
 Checks: connectivity, readiness, schema compatibility, sink health, DLQ status.
@@ -406,19 +406,19 @@ Checks: connectivity, readiness, schema compatibility, sink health, DLQ status.
 **Example**
 
 ```bash
-loxa doctor --verbose
+loza doctor --verbose
 ```
 
 ---
 
 ## DLQ Commands
 
-### loxa dlq
+### loza dlq
 
 Inspect the Dead Letter Queue.
 
 ```bash
-loxa dlq
+loza dlq
 ```
 
 **Flags**
@@ -431,17 +431,17 @@ loxa dlq
 **Example**
 
 ```bash
-loxa dlq --limit 50 --output json
+loza dlq --limit 50 --output json
 ```
 
 ---
 
-### loxa replay
+### loza replay
 
 Replay events from the Dead Letter Queue.
 
 ```bash
-loxa replay
+loza replay
 ```
 
 **Flags**
@@ -455,70 +455,70 @@ loxa replay
 **Example**
 
 ```bash
-loxa replay --all
-loxa replay --id dlq-001
+loza replay --all
+loza replay --id dlq-001
 ```
 
 ---
 
 ## GDPR Commands
 
-### loxa delete tenant
+### loza delete tenant
 
 Delete all data for a tenant.
 
 ```bash
-loxa delete tenant <tenant_id>
+loza delete tenant <tenant_id>
 ```
 
 **Example**
 
 ```bash
-loxa delete tenant acme-corp
+loza delete tenant acme-corp
 ```
 
 ---
 
-### loxa delete user
+### loza delete user
 
 Delete all data for a user.
 
 ```bash
-loxa delete user <user_id>
+loza delete user <user_id>
 ```
 
 **Example**
 
 ```bash
-loxa delete user user-12345
+loza delete user user-12345
 ```
 
 ---
 
-### loxa delete event
+### loza delete event
 
 Delete a specific event.
 
 ```bash
-loxa delete event <event_id>
+loza delete event <event_id>
 ```
 
 **Example**
 
 ```bash
-loxa delete event evt-abc123
+loza delete event evt-abc123
 ```
 
 ---
 
 ## Audit Commands
 
-### loxa audit
+### loza audit
 
 Run a PII audit on stored events.
 
 ```bash
-loxa audit
+loza audit
 ```
 
 **Flags**
@@ -532,17 +532,17 @@ loxa audit
 **Example**
 
 ```bash
-loxa audit --service payment-service --since 30d --output json
+loza audit --service payment-service --since 30d --output json
 ```
 
 ---
 
-### loxa export
+### loza export
 
 Export events from the collector.
 
 ```bash
-loxa export
+loza export
 ```
 
 **Flags**
@@ -558,19 +558,19 @@ loxa export
 **Example**
 
 ```bash
-loxa export --output events.json --format json --service payment-service --since 7d
+loza export --output events.json --format json --service payment-service --since 7d
 ```
 
 ---
 
 ## Cortex Commands
 
-### loxa cortex
+### loza cortex
 
 Query the Cortex control plane.
 
 ```bash
-loxa cortex
+loza cortex
 ```
 
 **Flags**
@@ -581,12 +581,12 @@ loxa cortex
 
 ---
 
-### loxa incident
+### loza incident
 
 Reconstruct an incident.
 
 ```bash
-loxa incident <incident_id>
+loza incident <incident_id>
 ```
 
 **Flags**
@@ -599,17 +599,17 @@ loxa incident <incident_id>
 **Example**
 
 ```bash
-loxa incident inc-001 --mode deep --output json
+loza incident inc-001 --mode deep --output json
 ```
 
 ---
 
-### loxa graph
+### loza graph
 
 Query the service graph.
 
 ```bash
-loxa graph <service>
+loza graph <service>
 ```
 
 **Flags**
@@ -622,17 +622,17 @@ loxa graph <service>
 **Example**
 
 ```bash
-loxa graph payment-service --depth 5 --output json
+loza graph payment-service --depth 5 --output json
 ```
 
 ---
 
-### loxa signatures
+### loza signatures
 
 Search for similar incident signatures.
 
 ```bash
-loxa signatures
+loza signatures
 ```
 
 **Flags**
@@ -647,19 +647,19 @@ loxa signatures
 **Example**
 
 ```bash
-loxa signatures --symptoms "timeout,5xx_spike" --services "payment-service" --limit 5
+loza signatures --symptoms "timeout,5xx_spike" --services "payment-service" --limit 5
 ```
 
 ---
 
 ## Debug Commands
 
-### loxa debug
+### loza debug
 
 Debug utilities for troubleshooting.
 
 ```bash
-loxa debug
+loza debug
 ```
 
 **Flags**
@@ -672,17 +672,17 @@ loxa debug
 **Example**
 
 ```bash
-loxa debug --dump-config --output json
+loza debug --dump-config --output json
 ```
 
 ---
 
-### loxa bench
+### loza bench
 
 Run benchmarks against the collector.
 
 ```bash
-loxa bench
+loza bench
 ```
 
 **Flags**
@@ -696,19 +696,19 @@ loxa bench
 **Example**
 
 ```bash
-loxa bench --rate 10000 --duration 60s --connections 50
+loza bench --rate 10000 --duration 60s --connections 50
 ```
 
 ---
 
 ## Deploy Commands
 
-### loxa deploy
+### loza deploy
 
-Deploy LOXA components.
+Deploy LOZA components.
 
 ```bash
-loxa deploy
+loza deploy
 ```
 
 **Flags**
@@ -721,17 +721,17 @@ loxa deploy
 **Example**
 
 ```bash
-loxa deploy --target k8s --component collector
+loza deploy --target k8s --component collector
 ```
 
 ---
 
-### loxa dashboard
+### loza dashboard
 
-Open or manage the LOXA dashboard.
+Open or manage the LOZA dashboard.
 
 ```bash
-loxa dashboard
+loza dashboard
 ```
 
 **Flags**
@@ -744,19 +744,19 @@ loxa dashboard
 **Example**
 
 ```bash
-loxa dashboard --port 8080 --open
+loza dashboard --port 8080 --open
 ```
 
 ---
 
 ## Maturity Command
 
-### loxa maturity
+### loza maturity
 
-Display the maturity status of each LOXA component.
+Display the maturity status of each LOZA component.
 
 ```bash
-loxa maturity
+loza maturity
 ```
 
 Shows the version, status, and feature completeness of the collector, cortex, CLI, and SDKs.

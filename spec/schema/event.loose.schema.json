@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Astraive/loxa/spec/schemas/json/event.loose.schema.json",
-  "title": "LOXA Event (Loose)",
+  "$id": "https://github.com/Astraive/loza/spec/schemas/json/event.loose.schema.json",
+  "title": "LOZA Event (Loose)",
   "$ref": "./event.schema.json"
 }

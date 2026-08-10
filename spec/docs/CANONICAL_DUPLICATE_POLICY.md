@@ -160,9 +160,9 @@ Similar rules apply to nested user and tenant objects.
 
 ### Go SDK
 ```go
-loxa.Configure(loxa.Production().
+loza.Configure(loza.Production().
     WithService("api").
-    WithDuplicateFieldPolicy(loxa.CanonicalWins))
+    WithDuplicateFieldPolicy(loza.CanonicalWins))
 ```
 
 ### Python SDK
@@ -179,7 +179,7 @@ Config::production("api")
 
 ### CLI/Collector
 ```yaml
-# loxa-collector.yaml
+# loza-collector.yaml
 SDK:
   DuplicateFieldPolicy: canonical_wins  # canonical_wins | attr_wins | error
 ```
@@ -315,10 +315,10 @@ logger.Emit(ctx)
 
 ### Example 3: Strict Mode (Error Policy)
 ```go
-client, _ := loxa.New(loxa.Config{
+client, _ := loza.New(loza.Config{
     Service: "api",
     Sink:    sink,
-    DuplicateFieldPolicy: loxa.ErrorPolicy,
+    DuplicateFieldPolicy: loza.ErrorPolicy,
 })
 
 ctx := logger.StartEvent(Params{Event: "test"})

@@ -9,10 +9,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/astraive/loxa/cortex/internal/eventconv"
-	"github.com/astraive/loxa/cortex/internal/models"
-	"github.com/astraive/loxa/cortex/internal/redaction"
-	"github.com/astraive/loxa/cortex/internal/storage"
+	"github.com/astraive/loza/cortex/internal/eventconv"
+	"github.com/astraive/loza/cortex/internal/models"
+	"github.com/astraive/loza/cortex/internal/redaction"
+	"github.com/astraive/loza/cortex/internal/storage"
 	"github.com/rs/zerolog/log"
 )
 

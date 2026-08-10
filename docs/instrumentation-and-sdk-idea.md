@@ -1,4 +1,4 @@
-# Loxa Instrumentation + Full Product Idea Doc
+# Loza Instrumentation + Full Product Idea Doc
 
 ## Recommended file
 
@@ -6,7 +6,7 @@
 
 ## One-line idea
 
-Loxa is a collector-first business observability stack for wide events, lifecycle instrumentation, durable ingestion, safe enrichment, cross-language SDK parity, and queryable production telemetry.
+Loza is a collector-first business observability stack for wide events, lifecycle instrumentation, durable ingestion, safe enrichment, cross-language SDK parity, and queryable production telemetry.
 
 It should not be “just logs,” “just traces,” or “just span attributes.” It should be the layer where application developers describe what actually happened in the business flow, while OpenTelemetry describes where the request moved through the system.
 
@@ -14,14 +14,14 @@ It should not be “just logs,” “just traces,” or “just span attributes.
 
 # 1. Core positioning
 
-## What Loxa is
+## What Loza is
 
-Loxa is a structured event lifecycle system.
+Loza is a structured event lifecycle system.
 
 It lets developers write code like this:
 
 ```ts
-const event = loxa.startEvent({
+const event = loza.startEvent({
   event: "checkout.request",
   kind: "http",
   route: "/checkout",
@@ -79,17 +79,17 @@ deletion
 cross-SDK conformance
 ```
 
-## What Loxa is not
+## What Loza is not
 
-Loxa is not only a logging SDK.
+Loza is not only a logging SDK.
 
-Loxa is not a replacement for OpenTelemetry.
+Loza is not a replacement for OpenTelemetry.
 
-Loxa is not a metrics-only system.
+Loza is not a metrics-only system.
 
-Loxa is not a vendor-specific wrapper around `console.log`.
+Loza is not a vendor-specific wrapper around `console.log`.
 
-Loxa is the business event layer that sits beside traces, logs, and metrics.
+Loza is the business event layer that sits beside traces, logs, and metrics.
 
 ---
 
@@ -104,7 +104,7 @@ Which span failed?
 What trace connects this request across systems?
 ```
 
-## Loxa answers
+## Loza answers
 
 ```txt
 What business event happened?
@@ -126,17 +126,17 @@ Application
   ├─ OpenTelemetry spans
   │    └─ distributed tracing
   │
-  └─ Loxa SDK
+  └─ Loza SDK
        └─ collector-first business-wide events
              ↓
-        Loxa Collector
+        Loza Collector
              ├─ ingest / validation / redaction / policy
              ├─ auth / API keys / RBAC
              ├─ sampling / dedupe / queueing / DLQ / replay
              ├─ query / tail / delete / sink fanout
              └─ durable delivery control plane
              ↓
-        Loxa Cortex
+        Loza Cortex
              ├─ reconstruction
              ├─ graph / topology
              ├─ remediation feedback
@@ -148,9 +148,9 @@ Application
 
 # 3. Product thesis
 
-The main Loxa thesis:
+The main Loza thesis:
 
-> Developers already know what happened in their app, but current observability tools force them to scatter that knowledge across logs, spans, metrics, random attributes, and ad-hoc JSON blobs. Loxa gives them one lifecycle-native, schema-aware, collector-governed way to describe the full business story.
+> Developers already know what happened in their app, but current observability tools force them to scatter that knowledge across logs, spans, metrics, random attributes, and ad-hoc JSON blobs. Loza gives them one lifecycle-native, schema-aware, collector-governed way to describe the full business story.
 
 The strongest use cases are:
 
@@ -175,7 +175,7 @@ The product should feel like:
 Stripe-level DX for business observability.
 OpenTelemetry-friendly, not OpenTelemetry-hostile.
 Collector-first like real infra.
-SDK-simple around `loxa`.
+SDK-simple around `loza`.
 Wide-event-native like modern event analytics.
 ```
 
@@ -183,7 +183,7 @@ Wide-event-native like modern event analytics.
 
 # 4. Core event lifecycle
 
-The canonical Loxa lifecycle should be:
+The canonical Loza lifecycle should be:
 
 ```txt
 startEvent
@@ -291,7 +291,7 @@ Every SDK should normalize to the same collector payload.
   "timers": [],
   "links": [],
   "sdk": {
-    "name": "loxa-js",
+    "name": "loza-js",
     "version": "0.1.0",
     "language": "javascript"
   },
@@ -512,7 +512,7 @@ Use it when you need a duration before deciding whether to attach it as an attr,
 
 ## 6.9 Link
 
-A link connects one Loxa event to another event, trace, span, job, message, request, or external ID.
+A link connects one Loza event to another event, trace, span, job, message, request, or external ID.
 
 Examples:
 
@@ -558,7 +558,7 @@ Cross-event relationship? link.
 
 ```ts
 app.post("/checkout", async (req, res) => {
-  const event = loxa.startEvent({
+  const event = loza.startEvent({
     event: "checkout.request",
     kind: "http",
     method: "POST",
@@ -616,7 +616,7 @@ app.post("/checkout", async (req, res) => {
 ## 8.2 Payment retry flow
 
 ```ts
-const event = loxa.startEvent({
+const event = loza.startEvent({
   event: "payment.retry",
   kind: "job",
 });
@@ -658,7 +658,7 @@ try {
 ## 8.3 Auth login
 
 ```ts
-const event = loxa.startEvent({
+const event = loza.startEvent({
   event: "auth.login.request",
   kind: "http",
   method: "POST",
@@ -689,7 +689,7 @@ try {
 ## 8.4 Background job
 
 ```ts
-await loxa.runEvent({ event: "job.invoice_generate", kind: "job" }, async event => {
+await loza.runEvent({ event: "job.invoice_generate", kind: "job" }, async event => {
   event.set("job.id", job.id);
   event.set("tenant.id", job.tenantId);
 
@@ -712,7 +712,7 @@ await loxa.runEvent({ event: "job.invoice_generate", kind: "job" }, async event 
 ## 8.5 AI agent run
 
 ```ts
-await loxa.runEvent({ event: "agent.run", kind: "agent" }, async event => {
+await loza.runEvent({ event: "agent.run", kind: "agent" }, async event => {
   event.merge({
     "agent.name": "checkout-support-agent",
     "agent.provider": "openai",
@@ -749,7 +749,7 @@ await loxa.runEvent({ event: "agent.run", kind: "agent" }, async event => {
 ## 8.6 RAG pipeline
 
 ```ts
-await loxa.runEvent({ event: "rag.query", kind: "ai" }, async event => {
+await loza.runEvent({ event: "rag.query", kind: "ai" }, async event => {
   event.set("rag.index", "docs-v3");
   event.set("rag.embedding_model", "text-embedding-3-large");
 
@@ -938,22 +938,22 @@ Do not remove SDK redaction completely. The collector is the authority, but the 
 
 # 12. OpenTelemetry bridge
 
-Loxa should integrate with OpenTelemetry without copying everything into spans.
+Loza should integrate with OpenTelemetry without copying everything into spans.
 
 ## Recommended behavior
 
-When an active OTel span exists, Loxa should:
+When an active OTel span exists, Loza should:
 
 ```txt
 read trace_id
 read span_id
 read trace_flags/sample state
-set these on the Loxa event
-add loxa.event_id to the span
+set these on the Loza event
+add loza.event_id to the span
 optionally add safe allowlisted attrs to the span
 ```
 
-## Do not copy all Loxa attrs to OTel
+## Do not copy all Loza attrs to OTel
 
 Wide events can have many business fields. Copying all of them to span attributes can cause:
 
@@ -968,16 +968,16 @@ vendor lock-in
 ## Recommended config
 
 ```ts
-loxa.configure(
+loza.configure(
   {
     service: "checkout",
     environment: "production",
     otelBridge: {
       mode: "link",
       spanAttributeAllowlist: [
-        "loxa.event_id",
-        "loxa.event",
-        "loxa.outcome",
+        "loza.event_id",
+        "loza.event",
+        "loza.outcome",
         "cart.item_count",
         "checkout.payment_method",
         "payment.provider",
@@ -1179,57 +1179,57 @@ Payload tenant fields should not override authenticated tenant by default.
 
 # 16. Cross-language parity
 
-Loxa should feel like the same product in every language.
+Loza should feel like the same product in every language.
 
 ## Required model
 
 ```txt
 Default/global client:
-  loxa.<method>()
+  loza.<method>()
 
 Optional custom client:
-  createLoxa / create_loxa / CreateLoxa
+  createLoza / create_loza / CreateLoza
 
 Optional same-config alias:
-  loxa.alias("name")
+  loza.alias("name")
 ```
 
 Documentation rule:
 
 ```txt
-Official examples should import and use only loxa.
+Official examples should import and use only loza.
 Custom client names are user-defined and optional.
-No exported SDK singleton other than `loxa` should be documented.
+No exported SDK singleton other than `loza` should be documented.
 ```
 
 ## Language mapping
 
 | Concept                | JS/TS                    | Python        | Go               | Rust              |
 | ---------------------- | ------------------------ | ------------- | ---------------- | ----------------- |
-| Official import/facade | `import { loxa } ...`    | `import loxa` | `package loxa`   | `loxa::info()`    |
-| Default usage          | `loxa.info()`            | `loxa.info()` | `loxa.Info(ctx)` | `loxa::info()`    |
-| Optional factory       | `createLoxa()`           | `create_loxa()` | `CreateLoxa()` | `create_loxa()`   |
-| Optional constructor   | `new Loxa()`             | `new()`       | `New()`          | `New()` / `TryNew()` |
-| Optional alias         | `loxa.alias()`           | `loxa.alias()` | `loxa.Alias()` | `loxa::alias()`   |
+| Official import/facade | `import { loza } ...`    | `import loza` | `package loza`   | `loza::info()`    |
+| Default usage          | `loza.info()`            | `loza.info()` | `loza.Info(ctx)` | `loza::info()`    |
+| Optional factory       | `createLoza()`           | `create_loza()` | `CreateLoza()` | `create_loza()`   |
+| Optional constructor   | `new Loza()`             | `new()`       | `New()`          | `New()` / `TryNew()` |
+| Optional alias         | `loza.alias()`           | `loza.alias()` | `loza.Alias()` | `loza::alias()`   |
 
 ## Go rule
 
 Go should support both:
 
 ```go
-client, _ := loxa.CreateLoxa(loxa.Config{Service: "api"})
+client, _ := loza.CreateLoza(loza.Config{Service: "api"})
 ```
 
 and:
 
 ```go
-client, _ := loxa.New(loxa.Config{Service: "api"})
+client, _ := loza.New(loza.Config{Service: "api"})
 ```
 
-But `CreateLoxa` should be documented as the cross-language parity constructor, and `New` should be the idiomatic Go alias.
+But `CreateLoza` should be documented as the cross-language parity constructor, and `New` should be the idiomatic Go alias.
 
 ```txt
-CreateLoxa == New
+CreateLoza == New
 ```
 
 ## Public implementation verification
@@ -1239,15 +1239,15 @@ The public implementation should be described from exported entrypoints, not fro
 ```txt
 Collector is the ingest, query, tail, delete, DLQ, replay, schema, and sink control plane.
 Cortex is the reconstruction, graph, feedback, GraphQL, and WebSocket intelligence plane.
-SDK docs should lead with `loxa`, then mention factories as secondary.
+SDK docs should lead with `loza`, then mention factories as secondary.
 ```
 
 Important verification notes:
 
-1. JS/TS exports helper constructors like `string`, `int`, `money`, and `userId` from the package root, but they are not methods on the default `loxa` instance.
-2. Python should be documented as `import loxa`.
-3. Go root exports `CreateLoxa` and `New`, but the default product story should still begin with `loxa.Info(...)`, `loxa.StartEvent(...)`, and other package-level functions.
-4. Rust intentionally does not re-export the `Logger` type. Public guidance should use `loxa::default()`, `loxa::create_loxa(...)`, `loxa::alias(...)`, and `loxa::start_event(...)`.
+1. JS/TS exports helper constructors like `string`, `int`, `money`, and `userId` from the package root, but they are not methods on the default `loza` instance.
+2. Python should be documented as `import loza`.
+3. Go root exports `CreateLoza` and `New`, but the default product story should still begin with `loza.Info(...)`, `loza.StartEvent(...)`, and other package-level functions.
+4. Rust intentionally does not re-export the `Logger` type. Public guidance should use `loza::default()`, `loza::create_loza(...)`, `loza::alias(...)`, and `loza::start_event(...)`.
 5. Framework integrations are often module or subpackage exports, not root helper names.
 
 ---
@@ -1259,8 +1259,8 @@ This section defines the full API family. Not every method must ship on day one,
 ## 17.1 Client creation and configuration
 
 1. `configure(config)` — configure the global client.
-2. `createLoxa(config)` / `create_loxa(config)` / `CreateLoxa(config)` — create independent client.
-3. `new Loxa(config)` / `new(config)` / `New(config)` / `New(config)` — optional idiomatic constructor.
+2. `createLoza(config)` / `create_loza(config)` / `CreateLoza(config)` — create independent client.
+3. `new Loza(config)` / `new(config)` / `New(config)` / `New(config)` — optional idiomatic constructor.
 4. `production(service)` — production preset.
 5. `development(service)` — development preset.
 6. `test(service)` — test preset.
@@ -1346,7 +1346,7 @@ This section defines the full API family. Not every method must ship on day one,
 77. `measure(name, fn)` — local measurement helper.
 78. `step(ctx, name, fn, attrs?)` — sugar over process.
 79. `phase(ctx, name, fn, attrs?)` — sugar over group.
-80. `span(ctx, name, fn, attrs?)` — local span-like block, Loxa-owned.
+80. `span(ctx, name, fn, attrs?)` — local span-like block, Loza-owned.
 
 ## 17.5 Typed attribute helpers
 
@@ -1509,7 +1509,7 @@ The full list is intentionally huge. The first production SDK should ship a smal
 
 ```txt
 configure
-createLoxa / create_loxa / CreateLoxa
+createLoza / create_loza / CreateLoza
 alias
 info
 warn
@@ -1592,8 +1592,8 @@ jobs helper pack
 | Concept      | JS/TS         | Python         | Go            | Rust           |
 | ------------ | ------------- | -------------- | ------------- | -------------- |
 | Configure    | `configure`   | `configure`    | `Configure`   | `configure`    |
-| Factory      | `createLoxa`  | `create_loxa`  | `CreateLoxa`  | `create_loxa`  |
-| Constructor  | `new Loxa`    | `new`          | `New`         | `New` / `TryNew` |
+| Factory      | `createLoza`  | `create_loza`  | `CreateLoza`  | `create_loza`  |
+| Constructor  | `new Loza`    | `new`          | `New`         | `New` / `TryNew` |
 | Alias        | `alias`       | `alias`        | `Alias`       | `alias`        |
 | Info         | `info`        | `info`         | `Info`        | `info`         |
 | Warn         | `warn`        | `warn`         | `Warn`        | `warn`         |
@@ -1625,11 +1625,11 @@ Keep collector payloads identical.
 # 20. Recommended JS/TS API shape
 
 ```ts
-import { loxa } from "@loxa/js";
+import { loza } from "@loza/js";
 
-await loxa.info("server started");
+await loza.info("server started");
 
-const event = loxa.startEvent({
+const event = loza.startEvent({
   event: "checkout.request",
   kind: "http",
   method: "POST",
@@ -1651,20 +1651,20 @@ await event.emit();
 Important:
 
 ```txt
-JS/TS should document `loxa` as the only official import.
-Named factories like `createLoxa` are secondary.
-Attr helpers such as `string`, `int`, `money`, and `userId` are package exports, not methods on the default `loxa` instance.
+JS/TS should document `loza` as the only official import.
+Named factories like `createLoza` are secondary.
+Attr helpers such as `string`, `int`, `money`, and `userId` are package exports, not methods on the default `loza` instance.
 ```
 
 Recommended exports:
 
 ```ts
-export const loxa: LoxaClient;
-export function createLoxa(config?: LoxaConfig): LoxaClient;
-export class Loxa implements LoxaClient {}
+export const loza: LozaClient;
+export function createLoza(config?: LozaConfig): LozaClient;
+export class Loza implements LozaClient {}
 
-export type LoxaClient = {
-  alias(name: string): LoxaClient;
+export type LozaClient = {
+  alias(name: string): LozaClient;
   info(message: string, attrs?: Attrs): void;
   warn(message: string, attrs?: Attrs): void;
   error(error: Error | string, attrs?: Attrs): void;
@@ -1681,12 +1681,12 @@ export type LoxaClient = {
 # 21. Recommended Python API shape
 
 ```py
-import loxa
+import loza
 
-loxa.info("server started")
+loza.info("server started")
 
-ctx = loxa.start_event(
-    loxa.Params(
+ctx = loza.start_event(
+    loza.Params(
         event="checkout.request",
         kind="http",
         method="POST",
@@ -1694,15 +1694,15 @@ ctx = loxa.start_event(
     )
 )
 
-loxa.append(
+loza.append(
     ctx,
-    loxa.UserID("u_123"),
-    loxa.Int("cart.item_count", 3),
-    loxa.Money("cart.total", 129999, "INR"),
+    loza.UserID("u_123"),
+    loza.Int("cart.item_count", 3),
+    loza.Money("cart.total", 129999, "INR"),
 )
-loxa.checkpoint(ctx, "cart_loaded")
-loxa.finish(ctx, "success")
-loxa.emit(ctx)
+loza.checkpoint(ctx, "cart_loaded")
+loza.finish(ctx, "success")
+loza.emit(ctx)
 ```
 
 Python should use snake_case for method names, but should not force user field keys into snake_case.
@@ -1717,33 +1717,33 @@ package main
 import (
     "context"
 
-    "github.com/astraive/loxa-go"
+    "github.com/astraive/loza-go"
 )
 
 func main() {
     ctx := context.Background()
 
-    loxa.Info("server started")
+    loza.Info("server started")
 
-    ctx = loxa.StartEvent(ctx, loxa.Params{
+    ctx = loza.StartEvent(ctx, loza.Params{
         Event: "checkout.request",
         Kind:  "http",
         Method: "POST",
         Path: "/checkout",
     })
 
-    _ = loxa.Set(ctx, loxa.UserID("u_123"), loxa.CartID("cart_456"))
-    _ = loxa.Checkpoint(ctx, "cart_loaded")
-    _ = loxa.Finish(ctx, "success")
-    _ = loxa.Emit(ctx)
+    _ = loza.Set(ctx, loza.UserID("u_123"), loza.CartID("cart_456"))
+    _ = loza.Checkpoint(ctx, "cart_loaded")
+    _ = loza.Finish(ctx, "success")
+    _ = loza.Emit(ctx)
 }
 ```
 
 Go should support:
 
 ```go
-loxa.CreateLoxa(...)
-loxa.New(...)
+loza.CreateLoza(...)
+loza.New(...)
 ```
 
 They must behave identically.
@@ -1753,27 +1753,27 @@ They must behave identically.
 # 23. Recommended Rust API shape
 
 ```rust
-use loxa::{self, Params};
+use loza::{self, Params};
 
-loxa::info("server started");
+loza::info("server started");
 
-let mut event = loxa::start_event(
+let mut event = loza::start_event(
     None,
     Params::new("checkout.request").with_kind("http"),
 );
 
-loxa::set(&mut event, "user.id", "u_123");
-loxa::set(&mut event, "cart.item_count", 3);
-loxa::checkpoint(&mut event, "cart_loaded");
-loxa::finish(&mut event);
-loxa::emit(&mut event)?;
+loza::set(&mut event, "user.id", "u_123");
+loza::set(&mut event, "cart.item_count", 3);
+loza::checkpoint(&mut event, "cart_loaded");
+loza::finish(&mut event);
+loza::emit(&mut event)?;
 ```
 
 Rust should expose:
 
 ```txt
-loxa::info(...)
-create_loxa(config)
+loza::info(...)
+create_loza(config)
 alias(name)
 ```
 
@@ -2000,7 +2000,7 @@ Recommended docs tree:
 ```txt
 docs/
   introduction.md
-  why-loxa.md
+  why-loza.md
   business-instrumentation.md
   instrumentation-and-sdk-idea.md
   lifecycle.md
@@ -2107,10 +2107,10 @@ job helpers
 
 # 29. Final product rule
 
-Loxa should make this easy:
+Loza should make this easy:
 
 ```ts
-const event = loxa.startEvent({ event: "checkout.request", kind: "http" });
+const event = loza.startEvent({ event: "checkout.request", kind: "http" });
 event.set("user.id", user.id);
 event.merge({ "cart.total": total, "cart.currency": "INR" });
 event.checkpoint("payment_started");

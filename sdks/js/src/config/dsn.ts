@@ -1,16 +1,16 @@
 /**
- * Parses loxa:// connection URIs into resolved HTTP/HTTPS/WebSocket endpoints.
+ * Parses loza:// connection URIs into resolved HTTP/HTTPS/WebSocket endpoints.
  *
- * The loxa:// URI is the standard connection string for Loxa Collector.
+ * The loza:// URI is the standard connection string for Loza Collector.
  * It resolves to HTTP/HTTPS/OTLP/gRPC/WebSocket endpoints — it is NOT a wire protocol.
  *
  * Format:
- *   loxa://[host][:port]/[project]?env=<env>&service=<service>&tls=<true|false|auto>&transport=<http|otlp|grpc>
+ *   loza://[host][:port]/[project]?env=<env>&service=<service>&tls=<true|false|auto>&transport=<http|otlp|grpc>
  */
 
-/** Parsed and resolved values from a loxa:// connection URI. */
-export interface LoxaDSN {
-  scheme: string;    // always "loxa"
+/** Parsed and resolved values from a loza:// connection URI. */
+export interface LozaDSN {
+  scheme: string;    // always "loza"
   host: string;      // hostname (no port)
   port: number;      // resolved port number
   project: string;   // path segment (project name)
@@ -30,13 +30,13 @@ function isLocalhost(host: string): boolean {
 }
 
 /**
- * Parse a raw loxa:// connection URI into a LoxaDSN.
+ * Parse a raw loza:// connection URI into a LozaDSN.
  *
  * Validation rules:
- *   - Scheme must be loxa://
- *   - Host is required (loxa:// or loxa:///project are rejected)
- *   - Project path is required (loxa://host is rejected)
- *   - No userinfo allowed (loxa://user:pass@host/project is rejected)
+ *   - Scheme must be loza://
+ *   - Host is required (loza:// or loza:///project are rejected)
+ *   - Project path is required (loza://host is rejected)
+ *   - No userinfo allowed (loza://user:pass@host/project is rejected)
  *   - tls must be "true", "false", or "auto"
  *   - transport must be "http", "otlp", or "grpc"
  *   - Port must be 1-65535 if specified
@@ -50,37 +50,37 @@ function isLocalhost(host: string): boolean {
  *   - tls=false -> 80
  *   - localhost without explicit port -> 9308
  */
-export function parse(raw: string): LoxaDSN {
+export function parse(raw: string): LozaDSN {
   if (raw === '') {
-    throw new Error('invalid Loxa DSN: empty string');
+    throw new Error('invalid Loza DSN: empty string');
   }
 
-  if (!raw.startsWith('loxa://')) {
-    throw new Error('invalid Loxa DSN: scheme must be loxa://');
+  if (!raw.startsWith('loza://')) {
+    throw new Error('invalid Loza DSN: scheme must be loza://');
   }
 
   let url: URL;
   try {
     url = new URL(raw);
   } catch (e) {
-    throw new Error(`invalid Loxa DSN: ${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(`invalid Loza DSN: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   // Reject userinfo (API keys must not be in the URL).
   if (url.username || url.password) {
-    throw new Error('invalid Loxa DSN: do not put API keys in the URL, use LOXA_API_KEY instead');
+    throw new Error('invalid Loza DSN: do not put API keys in the URL, use LOZA_API_KEY instead');
   }
 
   // Strip brackets from IPv6 hostname (URL API may include them for non-standard schemes).
   const host = url.hostname.replace(/^\[|\]$/g, '');
   if (!host) {
-    throw new Error('invalid Loxa DSN: host is required');
+    throw new Error('invalid Loza DSN: host is required');
   }
 
   // Project is the path segment without leading slash.
   const project = url.pathname.replace(/^\//, '');
   if (!project) {
-    throw new Error('invalid Loxa DSN: project path is required, e.g. loxa://host/my-project');
+    throw new Error('invalid Loza DSN: project path is required, e.g. loza://host/my-project');
   }
 
   // ── TLS default ──────────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ export function parse(raw: string): LoxaDSN {
         // keep the computed default
         break;
       default:
-        throw new Error(`invalid Loxa DSN: tls must be true, false, or auto, got "${tlsParam}"`);
+        throw new Error(`invalid Loza DSN: tls must be true, false, or auto, got "${tlsParam}"`);
     }
   }
 
@@ -110,7 +110,7 @@ export function parse(raw: string): LoxaDSN {
   if (url.port !== '') {
     const p = parseInt(url.port, 10);
     if (isNaN(p) || p < 1 || p > 65535) {
-      throw new Error(`invalid Loxa DSN: invalid port "${url.port}"`);
+      throw new Error(`invalid Loza DSN: invalid port "${url.port}"`);
     }
     port = p;
   }
@@ -126,7 +126,7 @@ export function parse(raw: string): LoxaDSN {
         transport = transportParam;
         break;
       default:
-        throw new Error(`invalid Loxa DSN: transport must be http, otlp, or grpc, got "${transportParam}"`);
+        throw new Error(`invalid Loza DSN: transport must be http, otlp, or grpc, got "${transportParam}"`);
     }
   }
 
@@ -143,7 +143,7 @@ export function parse(raw: string): LoxaDSN {
   const baseURL = `${scheme}://${hostPart}:${port}`;
 
   return {
-    scheme: 'loxa',
+    scheme: 'loza',
     host,
     port,
     project,
