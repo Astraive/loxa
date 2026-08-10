@@ -3,13 +3,11 @@ module github.com/astraive/loza/sdks/go
 go 1.25.0
 
 require (
-	github.com/astraive/loza/spec v0.0.0
+	github.com/astraive/loza/spec v0.2.6
 	github.com/prometheus/client_golang v1.23.2
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
 )
-
-replace github.com/astraive/loza/spec => ../../spec
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
