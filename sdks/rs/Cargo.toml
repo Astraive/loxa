@@ -3,6 +3,9 @@ name = "loza"
 version = "0.2.6"
 edition = "2021"
 description = "Rust LOZA wide-event SDK"
+license = "MIT"
+repository = "https://github.com/Astraive/loza"
+readme = "README.md"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
