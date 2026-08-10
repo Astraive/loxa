@@ -9,10 +9,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
-	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
-	"github.com/astraive/loxa/cli/internal/version"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
+	speccontract "github.com/astraive/loza/spec/generated/go/contract"
+	"github.com/astraive/loza/cli/internal/version"
 	_ "github.com/marcboeker/go-duckdb"
 )
 
@@ -23,7 +23,7 @@ func DoctorCommand(ctx context.Context, cfg config.Config, args []string) error 
 		return err
 	}
 
-	fmt.Println("Running LOXA health checks...")
+	fmt.Println("Running LOZA health checks...")
 	fmt.Println()
 
 	checks := []struct {
@@ -50,11 +50,11 @@ func DoctorCommand(ctx context.Context, cfg config.Config, args []string) error 
 		}},
 		{"test event accepted", func() error {
 			event := map[string]any{
-				"schema_version": speccontract.LOXASpecVersion,
-				"event_version":  speccontract.LOXAEventVersion,
+				"schema_version": speccontract.LOZASpecVersion,
+				"event_version":  speccontract.LOZAEventVersion,
 				"event_id":       fmt.Sprintf("evt_doctor_%d", time.Now().UnixNano()),
 				"timestamp":      time.Now().UTC().Format(time.RFC3339Nano),
-				"service":        "loxa-doctor",
+				"service":        "loza-doctor",
 				"event":          "doctor.check",
 				"kind":           "cli",
 				"level":          "info",
@@ -64,7 +64,7 @@ func DoctorCommand(ctx context.Context, cfg config.Config, args []string) error 
 			if err != nil {
 				return err
 			}
-			raw, err := speccontract.MarshalIngestEnvelope("loxa-cli", version.Version, "loxa-doctor", []json.RawMessage{rawEvent})
+			raw, err := speccontract.MarshalIngestEnvelope("loza-cli", version.Version, "loza-doctor", []json.RawMessage{rawEvent})
 			if err != nil {
 				return err
 			}

@@ -1,13 +1,13 @@
-/** Base error for all LOXA SDK errors. */
-export class LoxaError extends Error {
+/** Base error for all LOZA SDK errors. */
+export class LozaError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'LoxaError';
+    this.name = 'LozaError';
   }
 }
 
 /** Thrown when emit() is called twice on the same event. */
-export class DuplicateEmitError extends LoxaError {
+export class DuplicateEmitError extends LozaError {
   constructor() {
     super('event already emitted');
     this.name = 'DuplicateEmitError';
@@ -15,7 +15,7 @@ export class DuplicateEmitError extends LoxaError {
 }
 
 /** Thrown when mutating an event that has been emitted or closed. */
-export class EventClosedError extends LoxaError {
+export class EventClosedError extends LozaError {
   constructor() {
     super('event is closed');
     this.name = 'EventClosedError';
@@ -23,7 +23,7 @@ export class EventClosedError extends LoxaError {
 }
 
 /** Thrown when finish() is called twice. */
-export class EventAlreadyFinishedError extends LoxaError {
+export class EventAlreadyFinishedError extends LozaError {
   constructor() {
     super('event already finished');
     this.name = 'EventAlreadyFinishedError';
@@ -31,7 +31,7 @@ export class EventAlreadyFinishedError extends LoxaError {
 }
 
 /** Thrown when strict validation fails. */
-export class EventValidationError extends LoxaError {
+export class EventValidationError extends LozaError {
   constructor(message: string) {
     super(message);
     this.name = 'EventValidationError';

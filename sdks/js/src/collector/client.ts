@@ -23,7 +23,7 @@ export interface VersionInfo {
   event_version: string;
 }
 
-/** Standalone client for loxa-collector HTTP API. */
+/** Standalone client for loza-collector HTTP API. */
 export class CollectorClient {
   private url: string;
   private apiKey: string;
@@ -34,7 +34,7 @@ export class CollectorClient {
   constructor(opts: CollectorClientOptions) {
     this.url = opts.url.replace(/\/$/, '');
     this.apiKey = opts.apiKey || '';
-    this.authHeader = opts.authHeader || 'x-loxa-api-key';
+    this.authHeader = opts.authHeader || 'x-loza-api-key';
     this.timeout = opts.timeout || 5000;
     this.enableCompression = opts.enableCompression ?? true;
   }
@@ -67,7 +67,7 @@ export class CollectorClient {
 
   /** Send a batch of events to the collector. */
   async sendBatch(events: Record<string, any>[]): Promise<CollectorResponse> {
-    const envelope = buildIngestEnvelope('loxa-js', SDK_VERSION, '', events);
+    const envelope = buildIngestEnvelope('loza-js', SDK_VERSION, '', events);
     let body = Buffer.from(JSON.stringify(envelope), 'utf-8');
 
     const headers: Record<string, string> = {

@@ -5,10 +5,10 @@ on:
   push:
     branches: [main]
     paths:
-      - "proto/loxa/core/*.proto"
+      - "proto/loza/core/*.proto"
   pull_request:
     paths:
-      - "proto/loxa/core/*.proto"
+      - "proto/loza/core/*.proto"
 
 permissions:
   contents: read
@@ -43,4 +43,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: protos-generated
-          path: gen/go/loxa/core/
+          path: gen/go/loza/core/

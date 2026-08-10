@@ -1,6 +1,6 @@
-# LOXA Go SDK
+# LOZA Go SDK
 
-LOXA-Go is the Go SDK for creating canonical LOXA wide events.
+LOZA-Go is the Go SDK for creating canonical LOZA wide events.
 
 Core lifecycle:
 

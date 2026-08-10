@@ -40,7 +40,7 @@ type MetricsCollector struct {
 // Requirements: 49.10
 func NewMetricsCollector(namespace string, maxBufferSize int) *MetricsCollector {
 	if namespace == "" {
-		namespace = "loxa_sdk"
+		namespace = "loza_sdk"
 	}
 
 	registry := prometheus.NewRegistry()

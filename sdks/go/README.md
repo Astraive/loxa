@@ -1,6 +1,6 @@
-# LOXA-Go
+# LOZA-Go
 
-[![CI](https://github.com/astraive/loxa/actions/workflows/sdks-go-ci.yml/badge.svg)](https://github.com/astraive/loxa/actions/workflows/sdks-go-ci.yml)
+[![CI](https://github.com/astraive/loza/actions/workflows/sdks-go-ci.yml/badge.svg)](https://github.com/astraive/loza/actions/workflows/sdks-go-ci.yml)
 
 **Status**: 🟢 **STABLE** (v0.2.6) - Production-ready, collector-first stable-v1 SDK
 
@@ -10,29 +10,29 @@ Full emitter SDK conformance is tracked through `spec/`:
 - `spec/docs/SDK_CONFORMANCE_TEST_SUITE.md`
 - `spec/docs/SDK_COMPLETION_MATRIX.md`
 
-LOXA-Go is a canonical wide-event SDK for Go.  
+LOZA-Go is a canonical wide-event SDK for Go.
 It builds one structured event per operation (request, job, queue message, CLI run, cron run), then emits to your log/analytics backend.
 
 For the shared event contract, see `spec/`.
 For the collector runtime, see `collector/`.
 For the operations CLI, see `cli/`.
 
-`slog`/`zap`/`zerolog` still fit: LOXA is the operation event layer above line-by-line logs.
+`slog`/`zap`/`zerolog` still fit: LOZA is the operation event layer above line-by-line logs.
 
 ## Install
 
 Core:
 
 ```bash
-go get github.com/astraive/loxa/sdks/go
+go get github.com/astraive/loza/sdks/go
 ```
 
 Optional modules:
 
 ```bash
-go get github.com/astraive/loxa/sdks/go/middleware
-go get github.com/astraive/loxa/sdks/go/integrations
-go get github.com/astraive/loxa/sdks/go/sinks/httpbatch
+go get github.com/astraive/loza/sdks/go/middleware
+go get github.com/astraive/loza/sdks/go/integrations
+go get github.com/astraive/loza/sdks/go/sinks/httpbatch
 ```
 
 ## Quick Start
@@ -43,23 +43,23 @@ package main
 import (
 	"context"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func main() {
-	_ = loxa.Configure(loxa.Production().WithService("checkout"))
-	defer loxa.Shutdown(context.Background())
+	_ = loza.Configure(loza.Production().WithService("checkout"))
+	defer loza.Shutdown(context.Background())
 
-	ctx := loxa.StartEvent(context.Background(), loxa.Params{
+	ctx := loza.StartEvent(context.Background(), loza.Params{
 		Event:  "checkout.request",
 		Method: "POST",
 		Path:   "/checkout",
 		Route:  "/checkout",
 	})
-	defer loxa.Emit(ctx)
+	defer loza.Emit(ctx)
 
-	loxa.Enrich(ctx, loxa.UserID("u-1"), loxa.String("payment.provider", "stripe"))
-	loxa.Finish(ctx, "success", loxa.Int("status_code", 200))
+	loza.Enrich(ctx, loza.UserID("u-1"), loza.String("payment.provider", "stripe"))
+	loza.Finish(ctx, "success", loza.Int("status_code", 200))
 }
 ```
 
@@ -98,18 +98,18 @@ Sample event:
 
 ```go
 // Create a custom logger with its own config
-logger, _ := loxa.CreateLoxa(loxa.Config{
+logger, _ := loza.CreateLoza(loza.Config{
     Service:      "checkout-api",
     CollectorURL: "http://localhost:9308",
 })
 logger.Info(ctx, "payment processed")
 
 // Or use the idiomatic Go alias
-logger, _ := loxa.New(loxa.Config{Service: "checkout-api"})
+logger, _ := loza.New(loza.Config{Service: "checkout-api"})
 logger.Info(ctx, "payment processed")
 
-// Alias -- same config as default, loxa.alias metadata
-audit, _ := loxa.Alias("audit-service")
+// Alias -- same config as default, loza.alias metadata
+audit, _ := loza.Alias("audit-service")
 audit.Info(ctx, "permission changed")
 ```
 
@@ -126,11 +126,11 @@ For cross-language stable-v1 parity, treat `docs/sdk-parity-manifest.json` as th
 
 ## Package Boundaries
 
-- `github.com/astraive/loxa/sdks/go`: lifecycle, attrs, config, schema, sampler, security, core sinks.
-- `github.com/astraive/loxa/sdks/go/middleware/*`: HTTP/RPC adapters.
-- `github.com/astraive/loxa/sdks/go/integrations/*`: slog/zap/zerolog/otel bridges.
-- `github.com/astraive/loxa/sdks/go/sinks/httpbatch`: collector HTTP batch transport.
-- `github.com/astraive/loxa/sdks/go/testkit`: capture/assert helpers for tests.
+- `github.com/astraive/loza/sdks/go`: lifecycle, attrs, config, schema, sampler, security, core sinks.
+- `github.com/astraive/loza/sdks/go/middleware/*`: HTTP/RPC adapters.
+- `github.com/astraive/loza/sdks/go/integrations/*`: slog/zap/zerolog/otel bridges.
+- `github.com/astraive/loza/sdks/go/sinks/httpbatch`: collector HTTP batch transport.
+- `github.com/astraive/loza/sdks/go/testkit`: capture/assert helpers for tests.
 
 Repository boundaries:
 
@@ -141,7 +141,7 @@ Repository boundaries:
 ## Migration Pattern
 
 1. Keep existing `slog`/`zap`/`zerolog`.
-2. Add LOXA lifecycle around business operations.
+2. Add LOZA lifecycle around business operations.
 3. Emit one canonical event per operation for analytics and support workflows.
 
 ## Examples
@@ -165,20 +165,20 @@ Heavy production sinks such as Kafka, ClickHouse, Postgres, DuckDB, OTLP, S3, GC
 
 ## Breaking Changes in Current Refactor
 
-- Root testing helpers moved to `github.com/astraive/loxa/sdks/go/testkit`.
-- Root `net/http` middleware wrapper removed; use `github.com/astraive/loxa/sdks/go/middleware/nethttp`.
+- Root testing helpers moved to `github.com/astraive/loza/sdks/go/testkit`.
+- Root `net/http` middleware wrapper removed; use `github.com/astraive/loza/sdks/go/middleware/nethttp`.
 
 ## Current Focus
 
 - SDK lifecycle and canonical event emission for Go applications
 - app-side middleware, integrations, and sinks
-- compatibility with the shared LOXA spec and public collector ingest API
+- compatibility with the shared LOZA spec and public collector ingest API
 
 ## SDK Helpers
 
 - shutdown helpers:
-  - `loxa.ShutdownTimeout(10 * time.Second)`
-  - `loxa.MustShutdown(10 * time.Second)`
+  - `loza.ShutdownTimeout(10 * time.Second)`
+  - `loza.MustShutdown(10 * time.Second)`
 - config ergonomics:
   - `ApplyConfig(...)`
   - `WithAsyncQueue`

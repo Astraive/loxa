@@ -7,10 +7,10 @@ Recommended order:
 Typical usage:
 
 ```go
-ctx := loxa.StartEvent(context.Background(), loxa.Params{Event: "checkout.request"})
-defer loxa.Emit(ctx)
+ctx := loza.StartEvent(context.Background(), loza.Params{Event: "checkout.request"})
+defer loza.Emit(ctx)
 
-loxa.Enrich(ctx, loxa.String("payment.provider", "stripe"))
-loxa.Checkpoint(ctx, "payment_started")
-loxa.Finish(ctx, "success", loxa.Int("status_code", 200))
+loza.Enrich(ctx, loza.String("payment.provider", "stripe"))
+loza.Checkpoint(ctx, "payment_started")
+loza.Finish(ctx, "success", loza.Int("status_code", 200))
 ```

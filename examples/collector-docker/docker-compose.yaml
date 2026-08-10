@@ -3,7 +3,7 @@ services:
     build:
       context: ../../collector
       dockerfile: Dockerfile
-    command: ["./loxa-collector", "run", "-c", "/app/configs/loxa.local.yaml"]
+    command: ["./loza-collector", "run", "-c", "/app/configs/loza.local.yaml"]
     ports:
       - "9308:9308"
     volumes:

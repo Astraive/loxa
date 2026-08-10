@@ -1,0 +1,20 @@
+name: loza-cli
+kind: cli
+version: 0.2.6
+description: Local operator and developer CLI for LOZA
+license: MIT
+repository: https://github.com/Astraive/loza
+module: github.com/astraive/loza/cli
+
+paths:
+  root: cli
+  main: cli/cmd/loza
+
+publish:
+  github_release:
+    owner: astraive
+    binary: loza
+    tag_prefix: cli/v
+  go:
+    owner: astraive
+    install: github.com/astraive/loza/cli/cmd/loza

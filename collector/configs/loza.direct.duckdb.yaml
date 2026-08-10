@@ -1,0 +1,8 @@
+collector:
+  addr: ":9308"
+storage:
+  primary: "duckdb"
+duckdb:
+  path: "loza-direct.db"
+reliability:
+  mode: "direct"

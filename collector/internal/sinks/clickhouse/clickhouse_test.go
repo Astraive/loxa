@@ -8,7 +8,7 @@ import (
 func TestNewRejectsInvalidTableIdentifier(t *testing.T) {
 	_, err := New(Config{
 		Addrs: []string{"127.0.0.1:9000"},
-		Table: "loxa_events;DROP TABLE x",
+		Table: "loza_events;DROP TABLE x",
 	})
 	if err == nil {
 		t.Fatalf("expected invalid table identifier error")

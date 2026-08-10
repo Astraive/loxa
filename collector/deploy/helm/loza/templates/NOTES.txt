@@ -1,0 +1,32 @@
+Loza Collector has been deployed.
+
+{{- if .Values.collector.enabled }}
+
+Collector:
+  Service: {{ include "loza.fullname" . }}-collector.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.collector.service.port }}
+
+  Ingest endpoint:
+    http://{{ include "loza.fullname" . }}-collector.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.collector.service.port }}/ingest
+
+  Health check:
+    http://{{ include "loza.fullname" . }}-collector.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.collector.service.port }}/healthz
+
+  Metrics:
+    http://{{ include "loza.fullname" . }}-collector.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.collector.service.metricsPort }}/metrics
+{{- end }}
+
+{{- if .Values.worker.enabled }}
+
+Worker:
+  Deployed with {{ .Values.worker.replicaCount }} replicas.
+{{- end }}
+
+{{- if .Values.collector.ingress.enabled }}
+
+Ingress:
+  {{- range .Values.collector.ingress.hosts }}
+  http{{ if $.Values.collector.ingress.tls }}s{{ end }}://{{ .host }}
+  {{- end }}
+{{- end }}
+
+For more information, see: https://github.com/astraive/loza

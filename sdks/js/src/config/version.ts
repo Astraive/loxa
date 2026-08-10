@@ -1,5 +1,5 @@
 /**
- * Load SDK version from loxa-js.yaml metadata file.
+ * Load SDK version from loza-js.yaml metadata file.
  *
  * Falls back to a hardcoded default if the file cannot be found or parsed.
  */
@@ -21,14 +21,14 @@ function getPackageRoot(): string {
 }
 
 /**
- * Read version from loxa-js.yaml, searching standard locations.
+ * Read version from loza-js.yaml, searching standard locations.
  * Returns FALLBACK_VERSION if file not found or parsing fails.
  */
 function loadVersion(): string {
   try {
     const candidates = [
-      join(getPackageRoot(), 'loxa-js.yaml'),
-      join(process.cwd(), 'loxa-js.yaml'),
+      join(getPackageRoot(), 'loza-js.yaml'),
+      join(process.cwd(), 'loza-js.yaml'),
     ];
 
     for (const path of candidates) {
@@ -54,5 +54,5 @@ function loadVersion(): string {
   return FALLBACK_VERSION;
 }
 
-/** SDK version loaded from loxa-js.yaml at module init time. */
+/** SDK version loaded from loza-js.yaml at module init time. */
 export const SDK_VERSION: string = loadVersion();

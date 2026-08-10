@@ -16,7 +16,7 @@ pub mod core;
 pub mod cortex;
 pub mod integrations;
 pub mod internal;
-pub mod loxa;
+pub mod loza;
 pub mod middleware;
 pub mod packages;
 pub mod sinks;
@@ -36,16 +36,16 @@ pub use config::{
     RedactorConfig, SamplerConfig, SchemaConfig, SecurityConfig, SinkConfig, StatsHandler,
 };
 pub use cortex::{CortexClient, GraphView, IncidentContext, Remediation, RemediationFeedback};
-pub use errors::LoxaError;
+pub use errors::LozaError;
 pub use event::{
     Attr, ContextCarrier, ContextSource, EventContext, GroupHandle, Params, ProcessHandle,
     StopwatchHandle, TimerHandle,
 };
 pub use generated::spec_contract::{
-    LOXA_EVENT_VERSION, LOXA_INGEST_API_VERSION, LOXA_SPEC_VERSION,
+    LOZA_EVENT_VERSION, LOZA_INGEST_API_VERSION, LOZA_SPEC_VERSION,
 };
-// Logger is intentionally NOT re-exported. Use loxa::default(),
-// loxa::create_loxa(), or loxa::alias() instead.
+// Logger is intentionally NOT re-exported. Use loza::default(),
+// loza::create_loza(), or loza::alias() instead.
 use logger::Logger;
 pub use metrics::{MetricsCollector, MetricsSnapshot};
 pub use schema::{DefaultSchemaType, EventView, Schema, SchemaFunc};
@@ -80,7 +80,7 @@ pub fn NewWith(options: Vec<core::options::ConfigOption>) -> Logger {
     Logger::new(core::options::apply(Config::base(), options))
 }
 
-pub fn TryNew(config: Config) -> Result<Logger, LoxaError> {
+pub fn TryNew(config: Config) -> Result<Logger, LozaError> {
     Logger::try_new(config)
 }
 
@@ -93,9 +93,9 @@ pub fn Configure(config: Config) -> Logger {
 }
 
 /// Install a logger as the global default and return it.
-pub fn configure(config: Config) -> Result<Logger, LoxaError> {
+pub fn configure(config: Config) -> Result<Logger, LozaError> {
     let logger = Logger::try_new(config)?;
-    let lock = GLOBAL_LOGGER.get_or_init(|| RwLock::new(Logger::new(Config::dev("loxa"))));
+    let lock = GLOBAL_LOGGER.get_or_init(|| RwLock::new(Logger::new(Config::dev("loza"))));
     let mut guard = write_global_logger(lock);
     // Shut down the previous logger before replacing it
     let _ = guard.shutdown();
@@ -104,17 +104,17 @@ pub fn configure(config: Config) -> Result<Logger, LoxaError> {
     Ok(logger)
 }
 
-pub fn reset() -> Result<Logger, LoxaError> {
-    configure(Config::dev("loxa"))
+pub fn reset() -> Result<Logger, LozaError> {
+    configure(Config::dev("loza"))
 }
 
-pub fn Reset() -> Result<Logger, LoxaError> {
+pub fn Reset() -> Result<Logger, LozaError> {
     reset()
 }
 
 /// Return the global default logger. Always succeeds (dev default if not configured).
 pub fn default() -> Logger {
-    let lock = GLOBAL_LOGGER.get_or_init(|| RwLock::new(Logger::new(Config::dev("loxa"))));
+    let lock = GLOBAL_LOGGER.get_or_init(|| RwLock::new(Logger::new(Config::dev("loza"))));
     read_global_logger(lock).clone()
 }
 
@@ -171,12 +171,12 @@ pub fn StartCronEvent(cron: impl Into<String>) -> Params {
 static GLOBAL_LOGGER: OnceLock<RwLock<Logger>> = OnceLock::new();
 
 fn default_logger() -> Logger {
-    let lock = GLOBAL_LOGGER.get_or_init(|| RwLock::new(Logger::new(Config::dev("loxa"))));
+    let lock = GLOBAL_LOGGER.get_or_init(|| RwLock::new(Logger::new(Config::dev("loza"))));
     read_global_logger(lock).clone()
 }
 
 pub fn set_global_logger(logger: Logger) {
-    let lock = GLOBAL_LOGGER.get_or_init(|| RwLock::new(Logger::new(Config::dev("loxa"))));
+    let lock = GLOBAL_LOGGER.get_or_init(|| RwLock::new(Logger::new(Config::dev("loza"))));
     *write_global_logger(lock) = logger;
 }
 
@@ -244,11 +244,11 @@ pub fn FinishError(event: &mut EventContext, err: impl std::fmt::Display) {
     let _ = default_logger().finish_error(event, err.to_string());
 }
 
-pub fn Emit(event: &mut EventContext) -> Result<(), LoxaError> {
+pub fn Emit(event: &mut EventContext) -> Result<(), LozaError> {
     default_logger().emit(event).map(|_| ())
 }
 
-pub fn EmitEvent(event: &mut EventContext) -> Result<(), LoxaError> {
+pub fn EmitEvent(event: &mut EventContext) -> Result<(), LozaError> {
     Emit(event)
 }
 
@@ -261,17 +261,17 @@ pub fn Shutdown() {
 }
 
 /// Create a new Logger instance with the given config.
-pub fn create_loxa(config: Config) -> Logger {
+pub fn create_loza(config: Config) -> Logger {
     Logger::new(config)
 }
 
-/// Create a same-config Logger that emits loxa.alias metadata.
+/// Create a same-config Logger that emits loza.alias metadata.
 pub fn alias(name: impl Into<String>) -> Logger {
     default_logger().alias(name)
 }
 
-pub fn CreateLoxa(config: Config) -> Logger {
-    create_loxa(config)
+pub fn CreateLoza(config: Config) -> Logger {
+    create_loza(config)
 }
 
 pub fn Alias(service: impl Into<String>) -> Logger {
@@ -303,7 +303,7 @@ pub fn Fatal(message: impl Into<String>) -> ! {
 }
 
 /// Emit a fatal-level event without exiting the process.
-pub fn fatal_event(message: impl Into<String>) -> Result<String, LoxaError> {
+pub fn fatal_event(message: impl Into<String>) -> Result<String, LozaError> {
     default_logger().fatal(message)
 }
 
@@ -978,7 +978,7 @@ pub fn Wrap(event: &mut EventContext, f: impl FnOnce(&mut EventContext)) {
     f(event)
 }
 
-pub fn RunEvent(params: Params, f: impl FnOnce(&mut EventContext)) -> Result<String, LoxaError> {
+pub fn RunEvent(params: Params, f: impl FnOnce(&mut EventContext)) -> Result<String, LozaError> {
     let logger = default_logger();
     let mut ctx = logger.start_event(params);
     f(&mut ctx);
@@ -989,21 +989,21 @@ pub fn RunEvent(params: Params, f: impl FnOnce(&mut EventContext)) -> Result<Str
 pub fn Run(
     event: &mut EventContext,
     f: impl FnOnce(&mut EventContext),
-) -> Result<String, LoxaError> {
+) -> Result<String, LozaError> {
     let logger = default_logger();
     f(event);
     let _ = logger.finish(event, "success");
     logger.emit(event)
 }
 
-pub fn run_event(params: Params, f: impl FnOnce(&mut EventContext)) -> Result<String, LoxaError> {
+pub fn run_event(params: Params, f: impl FnOnce(&mut EventContext)) -> Result<String, LozaError> {
     RunEvent(params, f)
 }
 
 pub fn run(
     event: &mut EventContext,
     f: impl FnOnce(&mut EventContext),
-) -> Result<String, LoxaError> {
+) -> Result<String, LozaError> {
     Run(event, f)
 }
 
@@ -1407,7 +1407,7 @@ pub fn SanitizeEvent(value: Value, ctx: &EventContext) -> Value {
     crate::event::apply_sensitive_to_value(value, ctx)
 }
 
-/// Validate an event map against the Loxa spec contract.
+/// Validate an event map against the Loza spec contract.
 /// Returns Ok(()) if valid, Err with a list of error strings if not.
 pub fn ValidateEvent(event: &Value) -> Result<(), Vec<String>> {
     let mut errors: Vec<String> = Vec::new();
@@ -1524,7 +1524,7 @@ pub fn GoldenTest(path: impl Into<String>, snapshot: &str) -> bool {
 }
 
 pub fn ConformanceSuite() -> serde_json::Value {
-    serde_json::json!({"name": "loxa-rs-conformance", "status": "available"})
+    serde_json::json!({"name": "loza-rs-conformance", "status": "available"})
 }
 
 pub fn SetClock(unix_ms: u128) {
@@ -1875,7 +1875,7 @@ pub fn RedactPatterns(patterns: &[&str]) -> RedactorConfig {
 }
 
 pub fn render_prometheus(collector: &MetricsCollector) -> String {
-    collector.render_prometheus("loxa")
+    collector.render_prometheus("loza")
 }
 
 pub fn RenderPrometheus(collector: &MetricsCollector) -> String {
@@ -1896,7 +1896,7 @@ pub fn new_with(options: Vec<core::options::ConfigOption>) -> Logger {
     Logger::new(core::options::apply(Config::base(), options))
 }
 
-pub fn try_new_logger(config: Config) -> Result<Logger, LoxaError> {
+pub fn try_new_logger(config: Config) -> Result<Logger, LozaError> {
     Logger::try_new(config)
 }
 
@@ -1985,11 +1985,11 @@ pub fn finish_error(event: &mut EventContext, err: impl std::fmt::Display) {
     FinishError(event, err)
 }
 
-pub fn emit(event: &mut EventContext) -> Result<(), LoxaError> {
+pub fn emit(event: &mut EventContext) -> Result<(), LozaError> {
     Emit(event)
 }
 
-pub fn emit_event(event: &mut EventContext) -> Result<(), LoxaError> {
+pub fn emit_event(event: &mut EventContext) -> Result<(), LozaError> {
     Emit(event)
 }
 

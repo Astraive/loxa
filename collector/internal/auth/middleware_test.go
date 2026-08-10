@@ -93,8 +93,8 @@ func TestMiddleware_ValidSecretKey(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/events", nil)
 	req.Header.Set("Authorization", "Bearer lx_sec_live_ksec1_testsecret")
-	req.Header.Set("X-Loxa-Env", "prod")
-	req.Header.Set("X-Loxa-Service", "checkout-api")
+	req.Header.Set("X-Loza-Env", "prod")
+	req.Header.Set("X-Loza-Service", "checkout-api")
 	rec := httptest.NewRecorder()
 
 	handler.ServeHTTP(rec, req)
@@ -133,7 +133,7 @@ func TestMiddleware_ValidPublicKey(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/events", nil)
 	req.Header.Set("Authorization", "Bearer lx_pub_live_kpub1_pubsecret")
-	req.Header.Set("X-Loxa-Env", "prod")
+	req.Header.Set("X-Loza-Env", "prod")
 	req.Header.Set("Origin", "https://app.example.com") // must match AllowedOrigins in test store
 	rec := httptest.NewRecorder()
 
@@ -255,7 +255,7 @@ func TestMiddleware_WrongEnv(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/events", nil)
 	req.Header.Set("Authorization", "Bearer lx_sec_live_ksec1_testsecret")
-	req.Header.Set("X-Loxa-Env", "dev") // not in allowed_envs
+	req.Header.Set("X-Loza-Env", "dev") // not in allowed_envs
 	rec := httptest.NewRecorder()
 
 	handler.ServeHTTP(rec, req)
@@ -279,8 +279,8 @@ func TestMiddleware_WrongService(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/events", nil)
 	req.Header.Set("Authorization", "Bearer lx_sec_live_ksec1_testsecret")
-	req.Header.Set("X-Loxa-Env", "prod")
-	req.Header.Set("X-Loxa-Service", "wrong-service") // not in allowed_services
+	req.Header.Set("X-Loza-Env", "prod")
+	req.Header.Set("X-Loza-Service", "wrong-service") // not in allowed_services
 	rec := httptest.NewRecorder()
 
 	handler.ServeHTTP(rec, req)

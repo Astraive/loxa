@@ -1,17 +1,17 @@
-/// Load SDK version from loxa-rs.yaml metadata file.
+/// Load SDK version from loza-rs.yaml metadata file.
 ///
 /// Falls back to a hardcoded default if the file cannot be found or parsed.
 
 const FALLBACK_VERSION: &str = "0.2.6";
 
-/// Read version from loxa-rs.yaml, searching standard locations.
+/// Read version from loza-rs.yaml, searching standard locations.
 /// Returns FALLBACK_VERSION if file not found or parsing fails.
 fn load_version() -> String {
     let candidates = vec![
-        std::path::PathBuf::from("loxa-rs.yaml"),
+        std::path::PathBuf::from("loza-rs.yaml"),
         // Relative to Cargo.toml (one level up from src/)
-        std::path::PathBuf::from("../loxa-rs.yaml"),
-        std::path::PathBuf::from("../../loxa-rs.yaml"),
+        std::path::PathBuf::from("../loza-rs.yaml"),
+        std::path::PathBuf::from("../../loza-rs.yaml"),
     ];
 
     for path in &candidates {
@@ -31,7 +31,7 @@ fn load_version() -> String {
     FALLBACK_VERSION.to_string()
 }
 
-/// SDK version loaded from loxa-rs.yaml at startup.
+/// SDK version loaded from loza-rs.yaml at startup.
 pub fn sdk_version() -> &'static str {
     // Use a once_cell-like pattern for thread-safe lazy initialization
     use std::sync::OnceLock;

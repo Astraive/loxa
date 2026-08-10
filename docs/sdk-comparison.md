@@ -1,6 +1,6 @@
 # SDK Comparison
 
-v0.2.0 standardizes the same product shape in every SDK: default `loxa` client, cross-language factory, immutable same-config aliases, and first-class lifecycle primitives (`checkpoint`, `process`, `group`, `timer`, `stopwatch`). See [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md) for the canonical catalog.
+v0.2.0 standardizes the same product shape in every SDK: default `loza` client, cross-language factory, immutable same-config aliases, and first-class lifecycle primitives (`checkpoint`, `process`, `group`, `timer`, `stopwatch`). See [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md) for the canonical catalog.
 
 ## Feature Matrix
 
@@ -17,8 +17,8 @@ v0.2.0 standardizes the same product shape in every SDK: default `loxa` client, 
 | Metrics | Internal counters | -- | Internal counters | -- |
 | Async Emit | Goroutine-based | Thread-based | Tokio async | Promise-based |
 | CortexClient | Yes (11 methods) | Yes (13 methods) | Yes | Yes |
-| Default API (`loxa.*` facade) | Yes | Yes | Yes | Yes |
-| `CreateLoxa()` factory | `CreateLoxa` and `New` | `create_loxa` | `create_loxa` | `createLoxa` |
+| Default API (`loza.*` facade) | Yes | Yes | Yes | Yes |
+| `CreateLoza()` factory | `CreateLoza` and `New` | `create_loza` | `create_loza` | `createLoza` |
 | `Alias("name")` sugar | Yes | Yes | Yes | Yes |
 
 ## SDK Documentation

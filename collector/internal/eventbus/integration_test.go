@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/collector/internal/eventbus"
-	_ "github.com/astraive/loxa/collector/internal/eventbus/kafka"
-	_ "github.com/astraive/loxa/collector/internal/eventbus/memory"
-	_ "github.com/astraive/loxa/collector/internal/eventbus/nats"
-	_ "github.com/astraive/loxa/collector/internal/eventbus/redis"
+	"github.com/astraive/loza/collector/internal/eventbus"
+	_ "github.com/astraive/loza/collector/internal/eventbus/kafka"
+	_ "github.com/astraive/loza/collector/internal/eventbus/memory"
+	_ "github.com/astraive/loza/collector/internal/eventbus/nats"
+	_ "github.com/astraive/loza/collector/internal/eventbus/redis"
 )
 
 // redisAddr returns the Redis address from env or default.

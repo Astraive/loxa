@@ -1,4 +1,4 @@
-use loxa::{Config, New, Params, UserID};
+use loza::{Config, New, Params, UserID};
 
 fn main() {
     let logger = New(Config::dev("checkout"));

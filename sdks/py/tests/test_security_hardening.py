@@ -1,9 +1,9 @@
 import pytest
 
-from loxa.core.http_client import CollectorClient
-from loxa.cortex.client import CortexClient
-from loxa.core.pipeline import DiskOfflineBuffer
-from loxa.sinks.file import FileSink
+from loza.core.http_client import CollectorClient
+from loza.cortex.client import CortexClient
+from loza.core.pipeline import DiskOfflineBuffer
+from loza.sinks.file import FileSink
 
 
 def test_collector_client_rejects_metadata_endpoint():
@@ -13,12 +13,12 @@ def test_collector_client_rejects_metadata_endpoint():
 
 def test_file_sink_rejects_parent_traversal():
     with pytest.raises(ValueError, match="traversal"):
-        FileSink("../loxa.ndjson")
+        FileSink("../loza.ndjson")
 
 
 def test_disk_offline_buffer_rejects_parent_traversal():
     with pytest.raises(ValueError, match="traversal"):
-        DiskOfflineBuffer("../loxa-spool.ndjson")
+        DiskOfflineBuffer("../loza-spool.ndjson")
 
 
 def test_cortex_client_rejects_metadata_endpoint():

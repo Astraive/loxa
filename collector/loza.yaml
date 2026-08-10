@@ -1,0 +1,19 @@
+name: loza-collector
+kind: docker
+version: 0.2.6
+description: High-performance event collector with DuckDB storage
+license: MIT
+repository: https://github.com/Astraive/loza
+module: github.com/astraive/loza/collector
+
+paths:
+  root: collector
+  dockerfile: collector/Dockerfile
+
+publish:
+  docker:
+    owner: astraive
+    images:
+      - astraive/loza
+      - ghcr.io/astraive/loza
+    context: .

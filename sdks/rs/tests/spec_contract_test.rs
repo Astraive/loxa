@@ -9,7 +9,7 @@ fn repo_root() -> PathBuf {
 }
 
 #[test]
-fn loxa_spec_manifest_points_to_existing_contract_files() {
+fn loza_spec_manifest_points_to_existing_contract_files() {
     let root = repo_root();
     let manifest_path = {
         let canonical = root.join("spec/conformance/manifest.json");

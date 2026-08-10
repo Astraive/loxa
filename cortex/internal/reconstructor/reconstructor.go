@@ -7,11 +7,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/astraive/loxa/cortex/internal/graph"
-	"github.com/astraive/loxa/cortex/internal/learner"
-	"github.com/astraive/loxa/cortex/internal/matcher"
-	"github.com/astraive/loxa/cortex/internal/models"
-	"github.com/astraive/loxa/cortex/internal/storage"
+	"github.com/astraive/loza/cortex/internal/graph"
+	"github.com/astraive/loza/cortex/internal/learner"
+	"github.com/astraive/loza/cortex/internal/matcher"
+	"github.com/astraive/loza/cortex/internal/models"
+	"github.com/astraive/loza/cortex/internal/storage"
 )
 
 type IncidentReconstructor struct {

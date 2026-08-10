@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
-	"github.com/astraive/loxa/cli/internal/output"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/output"
 )
 
 func DebugCommand(ctx context.Context, cfg config.Config, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: loxa debug <event|pipeline|cortex> [args...]")
+		return fmt.Errorf("usage: loza debug <event|pipeline|cortex> [args...]")
 	}
 
 	switch args[0] {
@@ -30,7 +30,7 @@ func DebugCommand(ctx context.Context, cfg config.Config, args []string) error {
 
 func debugEvent(ctx context.Context, cfg config.Config, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: loxa debug event <event_id>")
+		return fmt.Errorf("usage: loza debug event <event_id>")
 	}
 	eventID := args[0]
 	// Validate event_id is a safe identifier to prevent SQL injection

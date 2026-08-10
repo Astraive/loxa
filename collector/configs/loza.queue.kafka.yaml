@@ -1,0 +1,22 @@
+collector:
+  addr: ":9308"
+kafka:
+  brokers:
+    - "127.0.0.1:9092"
+  topic: "loza-events"
+  acks: "all"
+  request_timeout: 10s
+  enable_idempotence: true
+  max_retries: 10
+  retry_backoff: 100ms
+worker:
+  consumer_group: "loza-worker"
+reliability:
+  mode: "queue"
+dedupe:
+  enabled: true
+  key: event_id
+  window: 24h
+  backend: redis
+  redis_addr: "127.0.0.1:6379"
+  redis_prefix: "loza:dedupe:"

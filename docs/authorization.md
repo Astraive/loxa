@@ -2,7 +2,7 @@
 
 ## Overview
 
-LOXA uses Role-Based Access Control (RBAC) with Attribute-Based Access Control (ABAC) restrictions. Every API key carries a role that determines which permissions it has, plus optional attribute restrictions that further limit what it can do.
+LOZA uses Role-Based Access Control (RBAC) with Attribute-Based Access Control (ABAC) restrictions. Every API key carries a role that determines which permissions it has, plus optional attribute restrictions that further limit what it can do.
 
 ## RBAC Roles
 
@@ -91,8 +91,8 @@ Each API key can have attribute-based restrictions that further limit access bey
 
 | Restriction | Type | Description | Default |
 |-------------|------|-------------|---------|
-| `allowed_envs` | `string[]` | Permitted environments (`X-Loxa-Env` header) | All |
-| `allowed_services` | `string[]` | Permitted service names (`X-Loxa-Service` header) | All |
+| `allowed_envs` | `string[]` | Permitted environments (`X-Loza-Env` header) | All |
+| `allowed_services` | `string[]` | Permitted service names (`X-Loza-Service` header) | All |
 | `allowed_origins` | `string[]` | Permitted HTTP Origins | Required for `pub` keys |
 | `allowed_ips` | `string[]` | Permitted IP addresses/CIDRs (e.g., `10.0.0.0/8`) | All |
 | `max_payload_bytes` | `int` | Maximum request body size | 262144 (256KB) |
@@ -184,8 +184,8 @@ The collector validates every request through a 17-step pipeline:
  8. HMAC-SHA256(incoming secret) == stored hash (constant-time)
  9. Build AuthContext (org, project, roles, permissions)
 10. Public keys → force allow_pii=false, allow_attachments=false
-11. Check X-Loxa-Env against allowed_envs
-12. Check X-Loxa-Service against allowed_services
+11. Check X-Loza-Env against allowed_envs
+12. Check X-Loza-Service against allowed_services
 13. Check Origin against allowed_origins
 14. Check remote IP against allowed_ips
 15. Check Content-Length against max_payload_bytes
@@ -215,8 +215,8 @@ The same RBAC+ABAC model applies to gRPC endpoints. Keys are passed via gRPC met
 ```go
 metadata := metadata.Pairs(
     "authorization", "Bearer lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw",
-    "x-loxa-service", "checkout-api",
-    "x-loxa-env", "prod",
+    "x-loza-service", "checkout-api",
+    "x-loza-env", "prod",
 )
 ctx := metadata.NewOutgoingContext(context.Background(), metadata)
 ```

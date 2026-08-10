@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
-	"github.com/astraive/loxa/cli/internal/output"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/output"
 )
 
 func QuarantineCommand(ctx context.Context, cfg config.Config, args []string) error {
@@ -49,7 +49,7 @@ func QuarantineCommand(ctx context.Context, cfg config.Config, args []string) er
 		return nil
 	case "replay":
 		if len(args) < 2 {
-			return fmt.Errorf("usage: loxa quarantine replay <id>")
+			return fmt.Errorf("usage: loza quarantine replay <id>")
 		}
 		body, err := client.ReplayQuarantineItem(ctx, cfg.CollectorURL, args[1])
 		if err != nil {
@@ -59,7 +59,7 @@ func QuarantineCommand(ctx context.Context, cfg config.Config, args []string) er
 		return nil
 	case "delete":
 		if len(args) < 2 {
-			return fmt.Errorf("usage: loxa quarantine delete <id>")
+			return fmt.Errorf("usage: loza quarantine delete <id>")
 		}
 		body, err := client.DeleteQuarantineItem(ctx, cfg.CollectorURL, args[1])
 		if err != nil {

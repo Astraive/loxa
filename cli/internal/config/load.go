@@ -39,9 +39,9 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	configPath := os.Getenv("LOXA_CLI_CONFIG")
+	configPath := os.Getenv("LOZA_CLI_CONFIG")
 	if configPath == "" {
-		configPath = ".loxa-cli.yaml"
+		configPath = ".loza-cli.yaml"
 	}
 	if _, err := os.Stat(configPath); err == nil {
 		raw, readErr := os.ReadFile(configPath)
@@ -74,14 +74,14 @@ func loadDefaults() (Config, error) {
 }
 
 func findDefaultsFile() string {
-	if override := strings.TrimSpace(os.Getenv("LOXA_CLI_DEFAULTS")); override != "" {
+	if override := strings.TrimSpace(os.Getenv("LOZA_CLI_DEFAULTS")); override != "" {
 		return override
 	}
 
 	candidates := []string{
-		"loxa-cli.defaults.yaml",
-		filepath.Join("..", "loxa-cli.defaults.yaml"),
-		filepath.Join("..", "..", "loxa-cli.defaults.yaml"),
+		"loza-cli.defaults.yaml",
+		filepath.Join("..", "loza-cli.defaults.yaml"),
+		filepath.Join("..", "..", "loza-cli.defaults.yaml"),
 	}
 	for _, candidate := range candidates {
 		if _, err := os.Stat(candidate); err == nil {
@@ -93,12 +93,12 @@ func findDefaultsFile() string {
 	if err == nil {
 		dir := filepath.Dir(exe)
 		for i := 0; i < 4; i++ {
-			candidate := filepath.Join(dir, "loxa-cli.defaults.yaml")
+			candidate := filepath.Join(dir, "loza-cli.defaults.yaml")
 			if _, statErr := os.Stat(candidate); statErr == nil {
 				return candidate
 			}
 			dir = filepath.Dir(dir)
 		}
 	}
-	return "loxa-cli.defaults.yaml"
+	return "loza-cli.defaults.yaml"
 }

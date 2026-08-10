@@ -1,6 +1,6 @@
 # v1/ — Release Snapshot (Immutable)
 
-This folder contains the **immutable snapshot of Loxa v1**.
+This folder contains the **immutable snapshot of Loza v1**.
 
 ## Do Not Edit This Folder
 The v1 release is frozen. Any changes require:
@@ -12,7 +12,7 @@ The v1 release is frozen. Any changes require:
 ## Canonical Location
 Active development happens under:
 ```
-spec/loxa/
+spec/loza/
 spec/cortex/
 ```
 
@@ -23,7 +23,7 @@ spec/cortex/
 
 ## Migration Path
 If you're still using v1 directly, plan to migrate to:
-- `spec/loxa/` for the latest Loxa specification
+- `spec/loza/` for the latest Loza specification
 - `spec/cortex/` for the latest Cortex specification
 
 See `CHANGELOG.md` and `compatibility.md` for detailed migration guidance.

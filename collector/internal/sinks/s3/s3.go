@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	collectorevent "github.com/astraive/loxa/collector/internal/event"
-	"github.com/astraive/loxa/collector/internal/sinks/internal/atrest"
-	"github.com/astraive/loxa/collector/internal/sinks/internal/projection"
-	storagepath "github.com/astraive/loxa/collector/internal/storage"
+	collectorevent "github.com/astraive/loza/collector/internal/event"
+	"github.com/astraive/loza/collector/internal/sinks/internal/atrest"
+	"github.com/astraive/loza/collector/internal/sinks/internal/projection"
+	storagepath "github.com/astraive/loza/collector/internal/storage"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 

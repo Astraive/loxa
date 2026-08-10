@@ -1,17 +1,17 @@
-// Package dsn parses loxa:// connection URIs into resolved HTTP/HTTPS/WebSocket endpoints.
+// Package dsn parses loza:// connection URIs into resolved HTTP/HTTPS/WebSocket endpoints.
 //
-// The loxa:// URI is the standard connection string for Loxa Collector.
+// The loza:// URI is the standard connection string for Loza Collector.
 // It resolves to HTTP/HTTPS/OTLP/gRPC/WebSocket endpoints — it is NOT a wire protocol.
 //
 // Format:
 //
-//	loxa://[host][:port]/[project]?env=<env>&service=<service>&tls=<true|false>&transport=<http|otlp|grpc>
+//	loza://[host][:port]/[project]?env=<env>&service=<service>&tls=<true|false>&transport=<http|otlp|grpc>
 //
 // Examples:
 //
-//	loxa://localhost:9308/my-app?env=dev&tls=false
-//	loxa://collector.example.com/my-app?env=prod&tls=true
-//	loxa://loxa.internal:4318/backend?env=staging&service=auth&transport=otlp
+//	loza://localhost:9308/my-app?env=dev&tls=false
+//	loza://collector.example.com/my-app?env=prod&tls=true
+//	loza://loza.internal:4318/backend?env=staging&service=auth&transport=otlp
 package dsn
 
 import (
@@ -21,9 +21,9 @@ import (
 	"strings"
 )
 
-// LoxaDSN holds the parsed and resolved values from a loxa:// connection URI.
-type LoxaDSN struct {
-	Scheme    string // always "loxa"
+// LozaDSN holds the parsed and resolved values from a loza:// connection URI.
+type LozaDSN struct {
+	Scheme    string // always "loza"
 	Host      string // hostname (no port)
 	Port      int    // resolved port number
 	Project   string // path segment (project name)
@@ -38,13 +38,13 @@ type LoxaDSN struct {
 	TailWSURL string // ws(s)://host:port/tail
 }
 
-// Parse parses a raw loxa:// connection URI into a LoxaDSN.
+// Parse parses a raw loza:// connection URI into a LozaDSN.
 //
 // Validation rules:
-//   - Scheme must be loxa://
-//   - Host is required (loxa:// or loxa:///project are rejected)
-//   - Project path is required (loxa://host is rejected)
-//   - No userinfo allowed (loxa://user:pass@host/project is rejected)
+//   - Scheme must be loza://
+//   - Host is required (loza:// or loza:///project are rejected)
+//   - Project path is required (loza://host is rejected)
+//   - No userinfo allowed (loza://user:pass@host/project is rejected)
 //   - tls must be "true", "false", or "auto"
 //   - transport must be "http", "otlp", or "grpc"
 //   - Port must be 1-65535 if specified
@@ -57,29 +57,29 @@ type LoxaDSN struct {
 //   - tls=true -> 443
 //   - tls=false -> 80
 //   - localhost without explicit port -> 9308
-func Parse(raw string) (*LoxaDSN, error) {
+func Parse(raw string) (*LozaDSN, error) {
 	if raw == "" {
-		return nil, fmt.Errorf("invalid Loxa DSN: empty string")
+		return nil, fmt.Errorf("invalid Loza DSN: empty string")
 	}
 
-	if !strings.HasPrefix(raw, "loxa://") {
-		return nil, fmt.Errorf("invalid Loxa DSN: scheme must be loxa://")
+	if !strings.HasPrefix(raw, "loza://") {
+		return nil, fmt.Errorf("invalid Loza DSN: scheme must be loza://")
 	}
 
-	// Parse as URL. The loxa:// scheme is valid for url.Parse.
+	// Parse as URL. The loza:// scheme is valid for url.Parse.
 	u, err := url.Parse(raw)
 	if err != nil {
-		return nil, fmt.Errorf("invalid Loxa DSN: %w", err)
+		return nil, fmt.Errorf("invalid Loza DSN: %w", err)
 	}
 
 	// Reject userinfo (API keys must not be in the URL).
 	if u.User != nil {
-		return nil, fmt.Errorf("invalid Loxa DSN: do not put API keys in the URL, use LOXA_API_KEY instead")
+		return nil, fmt.Errorf("invalid Loza DSN: do not put API keys in the URL, use LOZA_API_KEY instead")
 	}
 
 	host := u.Hostname()
 	if host == "" {
-		return nil, fmt.Errorf("invalid Loxa DSN: host is required")
+		return nil, fmt.Errorf("invalid Loza DSN: host is required")
 	}
 
 	portStr := u.Port()
@@ -87,7 +87,7 @@ func Parse(raw string) (*LoxaDSN, error) {
 	// Project is the path segment without leading slash.
 	project := strings.TrimPrefix(u.Path, "/")
 	if project == "" {
-		return nil, fmt.Errorf("invalid Loxa DSN: project path is required, e.g. loxa://host/my-project")
+		return nil, fmt.Errorf("invalid Loza DSN: project path is required, e.g. loza://host/my-project")
 	}
 
 	q := u.Query()
@@ -106,7 +106,7 @@ func Parse(raw string) (*LoxaDSN, error) {
 		case "auto":
 			// keep the computed default
 		default:
-			return nil, fmt.Errorf("invalid Loxa DSN: tls must be true, false, or auto, got %q", v)
+			return nil, fmt.Errorf("invalid Loza DSN: tls must be true, false, or auto, got %q", v)
 		}
 	}
 
@@ -121,7 +121,7 @@ func Parse(raw string) (*LoxaDSN, error) {
 	if portStr != "" {
 		p, err := strconv.Atoi(portStr)
 		if err != nil || p < 1 || p > 65535 {
-			return nil, fmt.Errorf("invalid Loxa DSN: invalid port %q", portStr)
+			return nil, fmt.Errorf("invalid Loza DSN: invalid port %q", portStr)
 		}
 		port = p
 	}
@@ -133,7 +133,7 @@ func Parse(raw string) (*LoxaDSN, error) {
 		case "http", "otlp", "grpc":
 			transport = v
 		default:
-			return nil, fmt.Errorf("invalid Loxa DSN: transport must be http, otlp, or grpc, got %q", v)
+			return nil, fmt.Errorf("invalid Loza DSN: transport must be http, otlp, or grpc, got %q", v)
 		}
 	}
 
@@ -161,8 +161,8 @@ func Parse(raw string) (*LoxaDSN, error) {
 
 	baseURL := fmt.Sprintf("%s://%s:%d", scheme, hostPart, port)
 
-	return &LoxaDSN{
-		Scheme:    "loxa",
+	return &LozaDSN{
+		Scheme:    "loza",
 		Host:      host,
 		Port:      port,
 		Project:   project,

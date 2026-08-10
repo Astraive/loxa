@@ -3,7 +3,7 @@ use std::net::TcpListener;
 use std::thread;
 use std::time::Duration;
 
-use loxa::core::client::CollectorHttpClient;
+use loza::core::client::CollectorHttpClient;
 
 fn start_server() -> (String, std::sync::mpsc::Sender<()>) {
     let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
@@ -141,7 +141,7 @@ fn collector_and_cortex_client_families_work() {
     let _ = stop.send(());
 
     let cortex =
-        loxa::CortexClient::new("http://127.0.0.1:9").with_timeout(Duration::from_millis(10));
+        loza::CortexClient::new("http://127.0.0.1:9").with_timeout(Duration::from_millis(10));
     assert!(!cortex.health());
     assert!(!cortex.ready());
 }

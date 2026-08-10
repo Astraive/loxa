@@ -1,5 +1,5 @@
-use crate::errors::LoxaError;
-pub use crate::generated::spec_contract::{LOXA_EVENT_VERSION, LOXA_SPEC_VERSION};
+use crate::errors::LozaError;
+pub use crate::generated::spec_contract::{LOZA_EVENT_VERSION, LOZA_SPEC_VERSION};
 use serde::Serialize;
 use serde_json::{Map, Value};
 use std::collections::BTreeMap;
@@ -370,8 +370,8 @@ impl EventContext {
             .unwrap_or_else(|| format!("req_{started_unix_ms}"));
         Self {
             timestamp,
-            schema_version: LOXA_SPEC_VERSION.to_string(),
-            event_version: LOXA_EVENT_VERSION.to_string(),
+            schema_version: LOZA_SPEC_VERSION.to_string(),
+            event_version: LOZA_EVENT_VERSION.to_string(),
             event_id,
             request_id,
             trace_id: params.trace_id,
@@ -422,11 +422,11 @@ impl EventContext {
         }
     }
 
-    pub(crate) fn ensure_mutable(&self) -> Result<(), LoxaError> {
+    pub(crate) fn ensure_mutable(&self) -> Result<(), LozaError> {
         let state = self.lifecycle_state();
         match state.as_str() {
             EVENT_CREATED | EVENT_ACTIVE | EVENT_FINISHED => Ok(()),
-            _ => Err(LoxaError::EventClosed {
+            _ => Err(LozaError::EventClosed {
                 event_id: self.event_id.clone(),
                 state,
             }),
@@ -547,10 +547,10 @@ impl EventContext {
         }
     }
 
-    pub fn finish(&mut self, outcome: impl Into<String>) -> Result<(), LoxaError> {
+    pub fn finish(&mut self, outcome: impl Into<String>) -> Result<(), LozaError> {
         self.ensure_mutable()?;
         if self.outcome.is_some() {
-            return Err(LoxaError::EventAlreadyFinished {
+            return Err(LozaError::EventAlreadyFinished {
                 event_id: self.event_id.clone(),
             });
         }
@@ -561,7 +561,7 @@ impl EventContext {
         Ok(())
     }
 
-    pub fn finish_error(&mut self, message: impl Into<String>) -> Result<(), LoxaError> {
+    pub fn finish_error(&mut self, message: impl Into<String>) -> Result<(), LozaError> {
         self.finish("error")?;
         let mut error = Map::new();
         error.insert("type".to_string(), Value::String("error".to_string()));
@@ -595,17 +595,17 @@ impl EventContext {
             .unwrap_or_else(|_| self.event_state.clone())
     }
 
-    pub fn begin_emit(&self) -> Result<(), LoxaError> {
-        let mut lifecycle = self.lifecycle.lock().map_err(|_| LoxaError::EventClosed {
+    pub fn begin_emit(&self) -> Result<(), LozaError> {
+        let mut lifecycle = self.lifecycle.lock().map_err(|_| LozaError::EventClosed {
             event_id: self.event_id.clone(),
             state: "poisoned".to_string(),
         })?;
         match lifecycle.state.as_str() {
-            EVENT_EMITTED => Err(LoxaError::DuplicateEmit {
+            EVENT_EMITTED => Err(LozaError::DuplicateEmit {
                 event_id: self.event_id.clone(),
             }),
             EVENT_EMITTING | EVENT_DELIVERY_FAILED | EVENT_FAILED_VALIDATION => {
-                Err(LoxaError::EventClosed {
+                Err(LozaError::EventClosed {
                     event_id: self.event_id.clone(),
                     state: lifecycle.state.clone(),
                 })

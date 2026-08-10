@@ -10,19 +10,19 @@ import (
 	"strconv"
 	"time"
 
-	loxacortex "github.com/astraive/loxa/cortex"
-	"github.com/astraive/loxa/cortex/internal/config"
-	"github.com/astraive/loxa/cortex/internal/correlation"
-	"github.com/astraive/loxa/cortex/internal/graph"
-	"github.com/astraive/loxa/cortex/internal/learner"
-	"github.com/astraive/loxa/cortex/internal/matcher"
-	"github.com/astraive/loxa/cortex/internal/middleware"
-	"github.com/astraive/loxa/cortex/internal/models"
-	"github.com/astraive/loxa/cortex/internal/processor"
-	"github.com/astraive/loxa/cortex/internal/reconstructor"
-	"github.com/astraive/loxa/cortex/internal/redaction"
-	"github.com/astraive/loxa/cortex/internal/storage"
-	"github.com/astraive/loxa/cortex/internal/topology"
+	lozacortex "github.com/astraive/loza/cortex"
+	"github.com/astraive/loza/cortex/internal/config"
+	"github.com/astraive/loza/cortex/internal/correlation"
+	"github.com/astraive/loza/cortex/internal/graph"
+	"github.com/astraive/loza/cortex/internal/learner"
+	"github.com/astraive/loza/cortex/internal/matcher"
+	"github.com/astraive/loza/cortex/internal/middleware"
+	"github.com/astraive/loza/cortex/internal/models"
+	"github.com/astraive/loza/cortex/internal/processor"
+	"github.com/astraive/loza/cortex/internal/reconstructor"
+	"github.com/astraive/loza/cortex/internal/redaction"
+	"github.com/astraive/loza/cortex/internal/storage"
+	"github.com/astraive/loza/cortex/internal/topology"
 	"github.com/go-chi/chi/v5"
 	httpmiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -30,7 +30,7 @@ import (
 )
 
 // cortexVersion is the current version of the cortex service.
-var cortexVersion = loxacortex.Version
+var cortexVersion = lozacortex.Version
 
 // maxGraphDepth caps the depth parameter for graph queries to prevent abuse.
 const maxGraphDepth = 100

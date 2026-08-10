@@ -13,9 +13,9 @@ Global production tasks:
 CLI commands:
 
 ```text
-loxa migrate status
-loxa migrate up
-loxa backup
-loxa restore
+loza migrate status
+loza migrate up
+loza backup
+loza restore
 ```
 

@@ -1,4 +1,4 @@
 #[derive(Clone, Debug, Default)]
-pub struct LoxaTracingLayer {
+pub struct LozaTracingLayer {
     pub capture_fields: bool,
 }

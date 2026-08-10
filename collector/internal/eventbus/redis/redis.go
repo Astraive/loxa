@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/astraive/loxa/collector/internal/eventbus"
+	"github.com/astraive/loza/collector/internal/eventbus"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -37,13 +37,13 @@ func New(_ context.Context, cfg eventbus.Config) (eventbus.Bus, error) {
 		rc.Stream = cfg.Topic
 	}
 	if rc.Stream == "" {
-		rc.Stream = "loxa.events.raw"
+		rc.Stream = "loza.events.raw"
 	}
 	if rc.Group == "" {
 		rc.Group = cfg.ConsumerGroup
 	}
 	if rc.Group == "" {
-		rc.Group = "loxa-worker"
+		rc.Group = "loza-worker"
 	}
 
 	client := redis.NewClient(&redis.Options{
@@ -233,7 +233,7 @@ func (b *redisBus) Health(ctx context.Context) eventbus.Health {
 func (b *redisBus) PublishDLQ(ctx context.Context, original eventbus.Envelope, reason error) error {
 	dlqTopic := b.dlqCfg
 	if dlqTopic == "" {
-		dlqTopic = "loxa.events.dlq"
+		dlqTopic = "loza.events.dlq"
 	}
 	if original.Headers == nil {
 		original.Headers = make(map[string]string)

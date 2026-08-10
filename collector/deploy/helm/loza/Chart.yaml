@@ -1,0 +1,17 @@
+apiVersion: v2
+name: loza
+description: Loza wide-event logging system
+type: application
+version: 0.2.6
+appVersion: "0.2.6"
+keywords:
+  - logging
+  - events
+  - observability
+  - wide-events
+home: https://github.com/astraive/loza
+sources:
+  - https://github.com/astraive/loza
+maintainers:
+  - name: Loza Team
+    email: dev@loza.io

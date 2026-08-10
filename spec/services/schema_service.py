@@ -42,7 +42,7 @@ def _env_int(name: str, default: int) -> int:
 
 
 class SchemaServiceHandler(BaseHTTPRequestHandler):
-    server_version = "LoxaSchemaService/0.1"
+    server_version = "LozaSchemaService/0.1"
 
     def _spec_root(self) -> Path:
         # service located in spec/services/ -> step up one to spec
@@ -139,21 +139,21 @@ class SchemaServiceHandler(BaseHTTPRequestHandler):
             requests = getattr(self.server, "requests_count", 0)
             contract_hits = getattr(self.server, "contract_hits", 0)
             metrics = (
-                "# HELP loxa_schema_service_uptime_seconds Uptime in seconds\n"
-                "# TYPE loxa_schema_service_uptime_seconds gauge\n"
-                f"loxa_schema_service_uptime_seconds {uptime:.2f}\n"
-                "# HELP loxa_schema_service_requests_total Total requests served\n"
-                "# TYPE loxa_schema_service_requests_total counter\n"
-                f"loxa_schema_service_requests_total {requests}\n"
-                "# HELP loxa_schema_service_contract_requests Total contract requests\n"
-                "# TYPE loxa_schema_service_contract_requests counter\n"
-                f"loxa_schema_service_contract_requests {contract_hits}\n"
+                "# HELP loza_schema_service_uptime_seconds Uptime in seconds\n"
+                "# TYPE loza_schema_service_uptime_seconds gauge\n"
+                f"loza_schema_service_uptime_seconds {uptime:.2f}\n"
+                "# HELP loza_schema_service_requests_total Total requests served\n"
+                "# TYPE loza_schema_service_requests_total counter\n"
+                f"loza_schema_service_requests_total {requests}\n"
+                "# HELP loza_schema_service_contract_requests Total contract requests\n"
+                "# TYPE loza_schema_service_contract_requests counter\n"
+                f"loza_schema_service_contract_requests {contract_hits}\n"
             )
             self._send_text(metrics)
             return
 
-        if path == "/contract" or path == "/contract/loxa-contract.json":
-            target = root / "generated" / "contract" / "loxa-contract.json"
+        if path == "/contract" or path == "/contract/loza-contract.json":
+            target = root / "generated" / "contract" / "loza-contract.json"
             # track contract fetches
             self.server.contract_hits = getattr(self.server, "contract_hits", 0) + 1
             return self._send_file(target)

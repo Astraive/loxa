@@ -1,2 +1,2 @@
-// Package testkit provides testing helpers for LOXA event assertions and capture.
+// Package testkit provides testing helpers for LOZA event assertions and capture.
 package testkit

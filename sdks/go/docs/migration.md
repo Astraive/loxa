@@ -1,6 +1,6 @@
 # Repository Migration
 
-All components are now consolidated in the `Astraive/loxa` monorepo:
+All components are now consolidated in the `Astraive/loza` monorepo:
 
 - Collector code: `collector/`
 - Shared protocol docs and contract: `spec/`

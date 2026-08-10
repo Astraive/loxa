@@ -2,8 +2,8 @@ tests/integration/*.db
 tests/integration/*.db-wal
 tests/integration/*.db.wal
 tests/integration/*.db-shm
-cmd/loxa-collector/main.go.*
-cmd/loxa-collector/main_test.go.*
+cmd/loza-collector/main.go.*
+cmd/loza-collector/main_test.go.*
 *.go.[0-9]*
 
 

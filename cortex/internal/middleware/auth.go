@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/astraive/loxa/cortex/internal/config"
+	"github.com/astraive/loza/cortex/internal/config"
 )
 
 type Auth struct {

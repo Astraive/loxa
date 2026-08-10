@@ -1,7 +1,7 @@
 """
 Test panic safety: graceful error handling without unhandled exceptions.
 
-LOXA must guarantee:
+LOZA must guarantee:
 - Errors are returned cleanly, not raise unhandled exceptions
 - Invalid inputs handled gracefully
 - Edge cases don't crash the SDK
@@ -12,17 +12,17 @@ from __future__ import annotations
 import json
 
 
-import loxa
+import loza
 
 
 def test_oversized_event_handled_gracefully() -> None:
     """Verify oversized events are rejected cleanly."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(event="test"))
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(event="test"))
 
     # Try to add extremely large attribute
     huge_value = "x" * (10 * 1024 * 1024)  # 10MB string
-    logger.enrich(ctx, loxa.String("huge", huge_value))
+    logger.enrich(ctx, loza.String("huge", huge_value))
     logger.finish(ctx, "success")
 
     # Should either emit empty (dropped) or raise ValueError, not crash
@@ -39,11 +39,11 @@ def test_oversized_event_handled_gracefully() -> None:
 
 def test_invalid_event_name_handled() -> None:
     """Verify invalid event names are handled."""
-    logger = loxa.New(loxa.Test("test"))
+    logger = loza.New(loza.Test("test"))
 
     # Python SDK accepts various types, so just verify no crashes
     try:
-        ctx = logger.start_event(loxa.Params(event=" "))
+        ctx = logger.start_event(loza.Params(event=" "))
         logger.finish(ctx, "success")
         logger.emit(ctx)
         # Should handle without crashing
@@ -62,8 +62,8 @@ def test_sink_write_failure_doesnt_crash() -> None:
         def close(self) -> None:
             pass
 
-    logger = loxa.New(loxa.Test("test").with_sink(FailingSink()))
-    ctx = logger.start_event(loxa.Params(event="test"))
+    logger = loza.New(loza.Test("test").with_sink(FailingSink()))
+    ctx = logger.start_event(loza.Params(event="test"))
     logger.finish(ctx, "success")
 
     # emit() should complete even if sink fails
@@ -80,11 +80,11 @@ def test_invalid_duplicate_policy_rejected() -> None:
     """Verify invalid duplicate policies are rejected."""
     try:
         # Try to create logger with None policy
-        logger = loxa.New(
-            loxa.Test("test").with_duplicate_policy(None)
+        logger = loza.New(
+            loza.Test("test").with_duplicate_policy(None)
         )
         # If it doesn't raise, continue
-        ctx = logger.start_event(loxa.Params(event="test"))
+        ctx = logger.start_event(loza.Params(event="test"))
         logger.finish(ctx, "success")
     except (TypeError, ValueError, AttributeError):
         # Expected to reject invalid policy
@@ -95,10 +95,10 @@ def test_invalid_sampler_rejected() -> None:
     """Verify invalid samplers are rejected."""
     try:
         # Try to create logger with None sampler
-        logger = loxa.New(
-            loxa.Test("test").with_sampler(None)
+        logger = loza.New(
+            loza.Test("test").with_sampler(None)
         )
-        ctx = logger.start_event(loxa.Params(event="test"))
+        ctx = logger.start_event(loza.Params(event="test"))
         logger.finish(ctx, "success")
     except (TypeError, ValueError, AttributeError):
         # Expected to reject invalid sampler
@@ -108,10 +108,10 @@ def test_invalid_sampler_rejected() -> None:
 def test_invalid_schema_rejected() -> None:
     """Verify invalid schemas are rejected."""
     try:
-        logger = loxa.New(
-            loxa.Test("test").with_schema(None)
+        logger = loza.New(
+            loza.Test("test").with_schema(None)
         )
-        ctx = logger.start_event(loxa.Params(event="test"))
+        ctx = logger.start_event(loza.Params(event="test"))
         logger.finish(ctx, "success")
     except (TypeError, ValueError, AttributeError):
         # Expected to reject invalid schema
@@ -121,10 +121,10 @@ def test_invalid_schema_rejected() -> None:
 def test_invalid_redactor_rejected() -> None:
     """Verify invalid redactors are rejected."""
     try:
-        logger = loxa.New(
-            loxa.Test("test").with_redactor(None)
+        logger = loza.New(
+            loza.Test("test").with_redactor(None)
         )
-        ctx = logger.start_event(loxa.Params(event="test"))
+        ctx = logger.start_event(loza.Params(event="test"))
         logger.finish(ctx, "success")
     except (TypeError, ValueError, AttributeError):
         # Expected to reject invalid redactor
@@ -133,8 +133,8 @@ def test_invalid_redactor_rejected() -> None:
 
 def test_finish_twice_handled() -> None:
     """Verify calling finish() twice is handled."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(event="test"))
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(event="test"))
 
     logger.finish(ctx, "success")
 
@@ -149,8 +149,8 @@ def test_finish_twice_handled() -> None:
 
 def test_emit_before_finish_handled() -> None:
     """Verify emitting before finish is allowed or errors cleanly."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(event="test"))
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(event="test"))
 
     # Emitting without finish may be allowed or error
     try:
@@ -166,12 +166,12 @@ def test_emit_before_finish_handled() -> None:
 
 def test_null_attribute_values_handled() -> None:
     """Verify null/None values in attributes are handled."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(event="test"))
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(event="test"))
 
     # Try to enrich with None value
     try:
-        logger.enrich(ctx, loxa.String("attr", None))
+        logger.enrich(ctx, loza.String("attr", None))
         logger.finish(ctx, "success")
         logger.emit(ctx)
         # Should handle without crashing
@@ -182,8 +182,8 @@ def test_null_attribute_values_handled() -> None:
 
 def test_special_characters_in_attributes() -> None:
     """Verify special characters are handled."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(event="test"))
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(event="test"))
 
     special_values = [
         "\x00null byte",
@@ -195,7 +195,7 @@ def test_special_characters_in_attributes() -> None:
 
     for value in special_values:
         try:
-            logger.enrich(ctx, loxa.String("attr", value))
+            logger.enrich(ctx, loza.String("attr", value))
         except (ValueError, TypeError):
             pass
 
@@ -209,14 +209,14 @@ def test_special_characters_in_attributes() -> None:
 
 def test_deeply_nested_attributes() -> None:
     """Verify deeply nested attribute structures are handled."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(event="test"))
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(event="test"))
 
     # Python SDK may not support nested objects directly
     # But it should handle without crashing
     try:
         for i in range(1000):
-            logger.enrich(ctx, loxa.String(f"attr_{i}", f"value_{i}"))
+            logger.enrich(ctx, loza.String(f"attr_{i}", f"value_{i}"))
         logger.finish(ctx, "success")
         logger.emit(ctx)
         # Should complete without crashing

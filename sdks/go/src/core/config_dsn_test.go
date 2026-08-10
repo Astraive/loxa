@@ -17,21 +17,21 @@ func TestWithDSN(t *testing.T) {
 	}{
 		{
 			name:         "localhost dev",
-			dsn:          "loxa://localhost:9308/demo?env=dev&tls=false",
+			dsn:          "loza://localhost:9308/demo?env=dev&tls=false",
 			wantURL:      "http://localhost:9308",
 			wantEnv:      "dev",
 			wantInsecure: true,
 		},
 		{
 			name:         "prod default tls",
-			dsn:          "loxa://collector.example.com/demo?env=prod",
+			dsn:          "loza://collector.example.com/demo?env=prod",
 			wantURL:      "https://collector.example.com:443",
 			wantEnv:      "prod",
 			wantInsecure: false,
 		},
 		{
 			name:         "with service",
-			dsn:          "loxa://collector.example.com/demo?env=staging&service=auth",
+			dsn:          "loza://collector.example.com/demo?env=staging&service=auth",
 			wantURL:      "https://collector.example.com:443",
 			wantEnv:      "staging",
 			wantService:  "auth",
@@ -44,7 +44,7 @@ func TestWithDSN(t *testing.T) {
 		},
 		{
 			name:          "missing project",
-			dsn:           "loxa://collector.example.com",
+			dsn:           "loza://collector.example.com",
 			wantParseFail: true,
 		},
 	}
@@ -79,10 +79,10 @@ func TestWithDSN(t *testing.T) {
 func TestLoadFromEnv_DSN(t *testing.T) {
 	// Save and restore env vars
 	saved := map[string]string{
-		"LOXA_DSN":           os.Getenv("LOXA_DSN"),
-		"LOXA_COLLECTOR_URL": os.Getenv("LOXA_COLLECTOR_URL"),
-		"LOXA_ENVIRONMENT":   os.Getenv("LOXA_ENVIRONMENT"),
-		"LOXA_SERVICE_NAME":  os.Getenv("LOXA_SERVICE_NAME"),
+		"LOZA_DSN":           os.Getenv("LOZA_DSN"),
+		"LOZA_COLLECTOR_URL": os.Getenv("LOZA_COLLECTOR_URL"),
+		"LOZA_ENVIRONMENT":   os.Getenv("LOZA_ENVIRONMENT"),
+		"LOZA_SERVICE_NAME":  os.Getenv("LOZA_SERVICE_NAME"),
 	}
 	defer func() {
 		for k, v := range saved {
@@ -95,10 +95,10 @@ func TestLoadFromEnv_DSN(t *testing.T) {
 	}()
 
 	t.Run("DSN sets CollectorURL and Environment", func(t *testing.T) {
-		os.Setenv("LOXA_DSN", "loxa://collector.example.com/myapp?env=staging")
-		os.Unsetenv("LOXA_COLLECTOR_URL")
-		os.Unsetenv("LOXA_ENVIRONMENT")
-		os.Unsetenv("LOXA_SERVICE_NAME")
+		os.Setenv("LOZA_DSN", "loza://collector.example.com/myapp?env=staging")
+		os.Unsetenv("LOZA_COLLECTOR_URL")
+		os.Unsetenv("LOZA_ENVIRONMENT")
+		os.Unsetenv("LOZA_SERVICE_NAME")
 
 		cfg := LoadFromEnv(Config{})
 		if cfg.CollectorURL != "https://collector.example.com:443" {
@@ -109,11 +109,11 @@ func TestLoadFromEnv_DSN(t *testing.T) {
 		}
 	})
 
-	t.Run("LOXA_COLLECTOR_URL overrides DSN", func(t *testing.T) {
-		os.Setenv("LOXA_DSN", "loxa://collector.example.com/myapp?env=staging")
-		os.Setenv("LOXA_COLLECTOR_URL", "http://override:9308")
-		os.Unsetenv("LOXA_ENVIRONMENT")
-		os.Unsetenv("LOXA_SERVICE_NAME")
+	t.Run("LOZA_COLLECTOR_URL overrides DSN", func(t *testing.T) {
+		os.Setenv("LOZA_DSN", "loza://collector.example.com/myapp?env=staging")
+		os.Setenv("LOZA_COLLECTOR_URL", "http://override:9308")
+		os.Unsetenv("LOZA_ENVIRONMENT")
+		os.Unsetenv("LOZA_SERVICE_NAME")
 
 		cfg := LoadFromEnv(Config{})
 		if cfg.CollectorURL != "http://override:9308" {
@@ -125,11 +125,11 @@ func TestLoadFromEnv_DSN(t *testing.T) {
 		}
 	})
 
-	t.Run("LOXA_ENVIRONMENT overrides DSN env", func(t *testing.T) {
-		os.Setenv("LOXA_DSN", "loxa://collector.example.com/myapp?env=staging")
-		os.Setenv("LOXA_ENVIRONMENT", "production")
-		os.Unsetenv("LOXA_COLLECTOR_URL")
-		os.Unsetenv("LOXA_SERVICE_NAME")
+	t.Run("LOZA_ENVIRONMENT overrides DSN env", func(t *testing.T) {
+		os.Setenv("LOZA_DSN", "loza://collector.example.com/myapp?env=staging")
+		os.Setenv("LOZA_ENVIRONMENT", "production")
+		os.Unsetenv("LOZA_COLLECTOR_URL")
+		os.Unsetenv("LOZA_SERVICE_NAME")
 
 		cfg := LoadFromEnv(Config{})
 		if cfg.Environment != "production" {
@@ -138,10 +138,10 @@ func TestLoadFromEnv_DSN(t *testing.T) {
 	})
 
 	t.Run("DSN with service sets Service", func(t *testing.T) {
-		os.Setenv("LOXA_DSN", "loxa://collector.example.com/myapp?env=prod&service=payments")
-		os.Unsetenv("LOXA_COLLECTOR_URL")
-		os.Unsetenv("LOXA_ENVIRONMENT")
-		os.Unsetenv("LOXA_SERVICE_NAME")
+		os.Setenv("LOZA_DSN", "loza://collector.example.com/myapp?env=prod&service=payments")
+		os.Unsetenv("LOZA_COLLECTOR_URL")
+		os.Unsetenv("LOZA_ENVIRONMENT")
+		os.Unsetenv("LOZA_SERVICE_NAME")
 
 		cfg := LoadFromEnv(Config{})
 		if cfg.Service != "payments" {
@@ -149,11 +149,11 @@ func TestLoadFromEnv_DSN(t *testing.T) {
 		}
 	})
 
-	t.Run("LOXA_SERVICE_NAME overrides DSN service", func(t *testing.T) {
-		os.Setenv("LOXA_DSN", "loxa://collector.example.com/myapp?env=prod&service=payments")
-		os.Setenv("LOXA_SERVICE_NAME", "billing")
-		os.Unsetenv("LOXA_COLLECTOR_URL")
-		os.Unsetenv("LOXA_ENVIRONMENT")
+	t.Run("LOZA_SERVICE_NAME overrides DSN service", func(t *testing.T) {
+		os.Setenv("LOZA_DSN", "loza://collector.example.com/myapp?env=prod&service=payments")
+		os.Setenv("LOZA_SERVICE_NAME", "billing")
+		os.Unsetenv("LOZA_COLLECTOR_URL")
+		os.Unsetenv("LOZA_ENVIRONMENT")
 
 		cfg := LoadFromEnv(Config{})
 		if cfg.Service != "billing" {
@@ -162,10 +162,10 @@ func TestLoadFromEnv_DSN(t *testing.T) {
 	})
 
 	t.Run("localhost DSN sets Insecure", func(t *testing.T) {
-		os.Setenv("LOXA_DSN", "loxa://localhost:9308/demo?tls=false")
-		os.Unsetenv("LOXA_COLLECTOR_URL")
-		os.Unsetenv("LOXA_ENVIRONMENT")
-		os.Unsetenv("LOXA_SERVICE_NAME")
+		os.Setenv("LOZA_DSN", "loza://localhost:9308/demo?tls=false")
+		os.Unsetenv("LOZA_COLLECTOR_URL")
+		os.Unsetenv("LOZA_ENVIRONMENT")
+		os.Unsetenv("LOZA_SERVICE_NAME")
 
 		cfg := LoadFromEnv(Config{})
 		if !cfg.Insecure {
@@ -177,10 +177,10 @@ func TestLoadFromEnv_DSN(t *testing.T) {
 	})
 
 	t.Run("invalid DSN is silently ignored", func(t *testing.T) {
-		os.Setenv("LOXA_DSN", "https://not-a-loxa-dsn")
-		os.Unsetenv("LOXA_COLLECTOR_URL")
-		os.Unsetenv("LOXA_ENVIRONMENT")
-		os.Unsetenv("LOXA_SERVICE_NAME")
+		os.Setenv("LOZA_DSN", "https://not-a-loza-dsn")
+		os.Unsetenv("LOZA_COLLECTOR_URL")
+		os.Unsetenv("LOZA_ENVIRONMENT")
+		os.Unsetenv("LOZA_SERVICE_NAME")
 
 		cfg := LoadFromEnv(Config{})
 		// Invalid DSN should not set anything

@@ -1,0 +1,19 @@
+name: loza-cortex
+kind: docker
+version: 0.2.6
+description: Incident intelligence and graph analysis engine for LOZA
+license: MIT
+repository: https://github.com/Astraive/loza
+module: github.com/astraive/loza/cortex
+
+paths:
+  root: cortex
+  dockerfile: cortex/configs/Dockerfile
+
+publish:
+  docker:
+    owner: astraive
+    images:
+      - astraive/loza-cortex
+      - ghcr.io/astraive/loza-cortex
+    context: .

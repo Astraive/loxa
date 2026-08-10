@@ -1,8 +1,8 @@
 # Instrumentation Guide — Python
 
-> **Audience**: Python developers instrumenting checkout, payments, auth, jobs, queues, and cron flows with LOXA.
+> **Audience**: Python developers instrumenting checkout, payments, auth, jobs, queues, and cron flows with LOZA.
 
-This guide covers LOXA's Python SDK for real-world Instrumentation. All APIs use Python naming conventions:
+This guide covers LOZA's Python SDK for real-world Instrumentation. All APIs use Python naming conventions:
 
 - **Functions**: `snake_case` — `start_event`, `enrich`, `checkpoint`, `finish`, `emit`
 - **Constructors**: `PascalCase` — `String`, `Int`, `UserID`, `OrderID`
@@ -13,7 +13,7 @@ This guide covers LOXA's Python SDK for real-world Instrumentation. All APIs use
 ## Quick Start
 
 ```python
-from loxa import (
+from loza import (
     production, configure, start_http_event, enrich, checkpoint,
     finish, finish_error, emit, shutdown,
     String, Int, Bool, UserID, OrderID, CartID, Amount, Currency,
@@ -70,7 +70,7 @@ stateDiagram-v2
 ### Starting Events
 
 ```python
-from loxa import (
+from loza import (
     start_event, start_http_event, start_job_event,
     start_queue_event, start_cli_event, start_cron_event,
     Params,
@@ -90,7 +90,7 @@ ctx = start_cron_event(None, event="cron.daily_billing")
 ### Enriching Events
 
 ```python
-from loxa import enrich, append, set, merge, delete, get, get_group, String, Int
+from loza import enrich, append, set, merge, delete, get, get_group, String, Int
 
 # Add attributes
 enrich(ctx, String("user.id", "u_123"), Int("cart.items", 3))
@@ -115,7 +115,7 @@ group = get_group(ctx, "payment")
 ### Checkpoints
 
 ```python
-from loxa import checkpoint
+from loza import checkpoint
 
 checkpoint(ctx, "cart_loaded")
 checkpoint(ctx, "risk_checked")
@@ -125,7 +125,7 @@ checkpoint(ctx, "payment_started")
 ### Finishing and Emitting
 
 ```python
-from loxa import finish, finish_error, emit, flush, shutdown
+from loza import finish, finish_error, emit, flush, shutdown
 
 # Success
 finish(ctx, "success", Int("status_code", 200))
@@ -161,7 +161,7 @@ shutdown()
 ### Process
 
 ```python
-from loxa import process
+from loza import process
 
 # Ordered step with duration
 p = process(ctx, "authorize_payment")
@@ -176,7 +176,7 @@ except Exception as e:
 ### Group
 
 ```python
-from loxa import start_group
+from loza import start_group
 
 # Named phase containing multiple steps
 g = start_group(ctx, "payment_flow")
@@ -191,7 +191,7 @@ except Exception as e:
 ### Timer
 
 ```python
-from loxa import start_timer
+from loza import start_timer
 
 # Measure a specific operation
 t = start_timer(ctx, "db.cart_lookup")
@@ -202,7 +202,7 @@ t.stop(Int("db.rows", 1))
 ### Stopwatch
 
 ```python
-from loxa import stopwatch
+from loza import stopwatch
 
 # Standalone elapsed time
 sw = stopwatch()
@@ -215,7 +215,7 @@ elapsed = sw.elapsed()
 ## Attribute Constructors
 
 ```python
-from loxa import (
+from loza import (
     String, Int, Int64, Uint64, Float64, Bool,
     Time, Duration, Any, Null, Group,
 )
@@ -251,7 +251,7 @@ String("user.id", "u_123")  # → {"user": {"id": "u_123"}}
 ## Canonical Helpers
 
 ```python
-from loxa import (
+from loza import (
     UserID, TenantID, WorkspaceID, OrganizationID, SessionID,
     RequestID, TraceID, SpanID,
     FeatureFlag, FeatureFlagBool, Experiment,
@@ -277,7 +277,7 @@ enrich(ctx,
 ## Business Helpers
 
 ```python
-from loxa import (
+from loza import (
     OrderID, CartID, ProductID, CustomerID,
     Plan, Currency, Amount, Country, Device, Platform, AppVersion,
 )
@@ -302,7 +302,7 @@ enrich(ctx,
 ## Error Handling
 
 ```python
-from loxa import (
+from loza import (
     finish_error, ErrorType, ErrorCode, ErrorMessage, ErrorStack, Retryable,
 )
 
@@ -340,18 +340,18 @@ finally:
 ### Flask
 
 ```python
-from loxa.middleware.flask.middleware import LoxaMiddleware
+from loza.middleware.flask.middleware import LozaMiddleware
 
 app = Flask(__name__)
-app.wsgi_app = LoxaMiddleware(app.wsgi_app, service="checkout")
+app.wsgi_app = LozaMiddleware(app.wsgi_app, service="checkout")
 ```
 
 ### FastAPI / Starlette
 
 ```python
-from loxa.middleware.asgi.middleware import Middleware as LoxaMiddleware
+from loza.middleware.asgi.middleware import Middleware as LozaMiddleware
 
-app.add_middleware(LoxaMiddleware, service="checkout")
+app.add_middleware(LozaMiddleware, service="checkout")
 ```
 
 ### Django
@@ -359,7 +359,7 @@ app.add_middleware(LoxaMiddleware, service="checkout")
 ```python
 # settings.py
 MIDDLEWARE = [
-    "loxa.middleware.django.middleware.LoxaMiddleware",
+    "loza.middleware.django.middleware.LozaMiddleware",
     # ... other middleware
 ]
 ```
@@ -384,7 +384,7 @@ async def checkout(request: Request):
 ### Presets
 
 ```python
-from loxa import dev, production, test
+from loza import dev, production, test
 
 cfg = dev("checkout")        # pretty JSON, stdout, sync, debug
 cfg = production("checkout") # compact JSON, stdout, async, info
@@ -394,7 +394,7 @@ cfg = test("checkout")       # sync, no sinks, debug
 ### Production Config
 
 ```python
-from loxa import (
+from loza import (
     production, StdoutSink, HTTPBatchSink, SampleErrors, DefaultRedactor,
     CanonicalWins,
 )
@@ -414,7 +414,7 @@ cfg = (
 ### Sinks
 
 ```python
-from loxa import StdoutSink, StderrSink, FileSink, MemorySink, NoopSink, HTTPBatchSink
+from loza import StdoutSink, StderrSink, FileSink, MemorySink, NoopSink, HTTPBatchSink
 
 StdoutSink()                                      # stdout
 StderrSink()                                      # stderr
@@ -431,7 +431,7 @@ HTTPBatchSink("http://collector:9308/events")  # HTTP batch
 ### Sampling
 
 ```python
-from loxa import (
+from loza import (
     SampleAll, SampleNone, SampleRandom, SampleErrors,
     SampleSlowRequests, SampleStatusCodes, SampleRoutes,
     SampleUsers, SampleTenants, SampleFeatureFlag,
@@ -454,7 +454,7 @@ cfg = production("checkout").with_sampler(
 ### Redaction
 
 ```python
-from loxa import (
+from loza import (
     DefaultRedactor, RedactKeys, HashKeys, MaskKeys, DropKeys,
     ComposeRedactors, SensitiveString, MarkSensitive, HashString,
 )
@@ -479,7 +479,7 @@ enrich(ctx,
 ## Testing
 
 ```python
-from loxa.testkit.helpers import (
+from loza.testkit.helpers import (
     test_logger, capture, assert_event, assert_redacted, assert_has_checkpoint,
 )
 
@@ -502,7 +502,7 @@ assert_has_checkpoint(events[0], "payment_started")
 ### Checkout Flow
 
 ```python
-from loxa import *
+from loza import *
 
 configure(production("checkout").with_sink(
     HTTPBatchSink("http://127.0.0.1:9308/events")

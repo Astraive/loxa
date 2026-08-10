@@ -1,3 +1,3 @@
 pub mod logger;
 
-pub use logger::LoxaLogBridge;
+pub use logger::LozaLogBridge;

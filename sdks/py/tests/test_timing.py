@@ -1,10 +1,10 @@
 """Tests for timing primitives: Process, Timer, Group, Stopwatch."""
 import time
-import loxa
+import loza
 
 
 def test_process_basic():
-    ev = loxa.start_event(loxa.Params(service="test", event="test.event"))
+    ev = loza.start_event(loza.Params(service="test", event="test.event"))
     proc = ev.start_process("redirect_to_gateway")
     time.sleep(0.01)
     proc.finish(status_code=302, gateway="stripe")
@@ -21,7 +21,7 @@ def test_process_basic():
 
 
 def test_process_finish_error():
-    ev = loxa.start_event(loxa.Params(service="test", event="test.event"))
+    ev = loza.start_event(loza.Params(service="test", event="test.event"))
     proc = ev.start_process("payment_attempt")
     time.sleep(0.01)
     proc.finish_error(ValueError("gateway timeout"), status_code=504)
@@ -33,7 +33,7 @@ def test_process_finish_error():
 
 
 def test_step_counter():
-    ev = loxa.start_event(loxa.Params(service="test", event="test.event"))
+    ev = loza.start_event(loza.Params(service="test", event="test.event"))
     for _ in range(3):
         proc = ev.start_process("step")
         proc.finish()
@@ -44,7 +44,7 @@ def test_step_counter():
 
 
 def test_timer_start_stop():
-    ev = loxa.start_event(loxa.Params(service="test", event="test.event"))
+    ev = loza.start_event(loza.Params(service="test", event="test.event"))
     timer = ev.start_timer("stripe.create_session")
     time.sleep(0.01)
     timer.stop(status_code=200)
@@ -57,7 +57,7 @@ def test_timer_start_stop():
 
 
 def test_group_start_finish():
-    ev = loxa.start_event(loxa.Params(service="test", event="test.event"))
+    ev = loza.start_event(loza.Params(service="test", event="test.event"))
     group = ev.start_group("payment_flow")
     time.sleep(0.01)
     group.finish(status_code=402, final_reason="insufficient_funds")
@@ -71,14 +71,14 @@ def test_group_start_finish():
 
 
 def test_stopwatch_elapsed():
-    sw = loxa.stopwatch()
+    sw = loza.stopwatch()
     time.sleep(0.01)
     elapsed = sw.elapsed()
     assert elapsed.total_seconds() >= 0.01
 
 
 def test_timing_in_to_dict():
-    ev = loxa.start_event(loxa.Params(service="test", event="test.event"))
+    ev = loza.start_event(loza.Params(service="test", event="test.event"))
     proc = ev.start_process("step1")
     proc.finish(status_code=200)
     group = ev.start_group("phase1")

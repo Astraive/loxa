@@ -142,7 +142,7 @@ class KafkaAdapter:
             "failed_at": datetime.now(timezone.utc).isoformat(),
             "source": source_meta,
         }
-        headers = {"x-loxa-dlq-reason": reason, "x-loxa-dlq-attempts": str(attempts)}
+        headers = {"x-loza-dlq-reason": reason, "x-loza-dlq-attempts": str(attempts)}
         self.produce(envelope, topic=self.config.dlq_topic, headers=headers)
 
     def consume(self, batch_size: int = 10, timeout: float | None = None) -> Iterable[tuple[KafkaRecord, dict]]:

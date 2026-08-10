@@ -1,8 +1,8 @@
 use std::fmt;
 
-/// Parsed and resolved loxa:// DSN.
+/// Parsed and resolved loza:// DSN.
 #[derive(Debug, Clone, PartialEq)]
-pub struct LoxaDSN {
+pub struct LozaDSN {
     pub scheme: String,
     pub host: String,
     pub port: u16,
@@ -23,16 +23,16 @@ pub struct DsnError(pub String);
 
 impl fmt::Display for DsnError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "invalid Loxa DSN: {}", self.0)
+        write!(f, "invalid Loza DSN: {}", self.0)
     }
 }
 
 impl std::error::Error for DsnError {}
 
-/// Parse a loxa:// connection URI into a resolved LoxaDSN.
+/// Parse a loza:// connection URI into a resolved LozaDSN.
 ///
 /// Validation rules:
-/// - Scheme must be `loxa://`
+/// - Scheme must be `loza://`
 /// - Host is required
 /// - Project path is required
 /// - No userinfo allowed
@@ -42,16 +42,16 @@ impl std::error::Error for DsnError {}
 ///
 /// TLS defaults: localhost/127.0.0.1/::1 -> false; everything else -> true.
 /// Port defaults: tls=true -> 443; tls=false -> 80; localhost without port -> 9308.
-pub fn parse(raw: &str) -> Result<LoxaDSN, DsnError> {
+pub fn parse(raw: &str) -> Result<LozaDSN, DsnError> {
     if raw.is_empty() {
         return Err(DsnError("empty string".into()));
     }
 
-    if !raw.starts_with("loxa://") {
-        return Err(DsnError("scheme must be loxa://".into()));
+    if !raw.starts_with("loza://") {
+        return Err(DsnError("scheme must be loza://".into()));
     }
 
-    let rest = &raw[7..]; // skip "loxa://"
+    let rest = &raw[7..]; // skip "loza://"
 
     // Strip fragment if present.
     let rest = match rest.find('#') {
@@ -68,7 +68,7 @@ pub fn parse(raw: &str) -> Result<LoxaDSN, DsnError> {
     // Reject userinfo (API keys must not be in the URL).
     if authority.contains('@') {
         return Err(DsnError(
-            "do not put API keys in the URL, use LOXA_API_KEY instead".into(),
+            "do not put API keys in the URL, use LOZA_API_KEY instead".into(),
         ));
     }
 
@@ -123,7 +123,7 @@ pub fn parse(raw: &str) -> Result<LoxaDSN, DsnError> {
     let project = path_part.trim_start_matches('/');
     if project.is_empty() {
         return Err(DsnError(
-            "project path is required, e.g. loxa://host/my-project".into(),
+            "project path is required, e.g. loza://host/my-project".into(),
         ));
     }
 
@@ -207,8 +207,8 @@ pub fn parse(raw: &str) -> Result<LoxaDSN, DsnError> {
 
     let base_url = format!("{scheme}://{host_part}:{port}");
 
-    Ok(LoxaDSN {
-        scheme: "loxa".to_string(),
+    Ok(LozaDSN {
+        scheme: "loza".to_string(),
         host: host.to_string(),
         port,
         project: project.to_string(),
@@ -234,7 +234,7 @@ mod tests {
 
     #[test]
     fn basic_localhost() {
-        let dsn = parse("loxa://localhost:9308/demo?tls=false").unwrap();
+        let dsn = parse("loza://localhost:9308/demo?tls=false").unwrap();
         assert_eq!(dsn.host, "localhost");
         assert_eq!(dsn.port, 9308);
         assert_eq!(dsn.project, "demo");
@@ -254,16 +254,16 @@ mod tests {
 
     #[test]
     fn reject_no_host() {
-        assert!(parse("loxa://").is_err());
+        assert!(parse("loza://").is_err());
     }
 
     #[test]
     fn reject_no_project() {
-        assert!(parse("loxa://host").is_err());
+        assert!(parse("loza://host").is_err());
     }
 
     #[test]
     fn reject_userinfo() {
-        assert!(parse("loxa://key@host/project").is_err());
+        assert!(parse("loza://key@host/project").is_err());
     }
 }

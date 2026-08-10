@@ -1,6 +1,6 @@
 # Tools
 
-Shared tooling for the LOXA monorepo.
+Shared tooling for the LOZA monorepo.
 
 | Tool | Description | Usage |
 |------|-------------|-------|

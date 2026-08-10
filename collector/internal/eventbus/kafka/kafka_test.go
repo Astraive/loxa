@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/collector/internal/eventbus"
+	"github.com/astraive/loza/collector/internal/eventbus"
 )
 
 func TestKafkaRequiresBrokers(t *testing.T) {
@@ -29,7 +29,7 @@ func TestKafkaRequiresConnection(t *testing.T) {
 		Type: "kafka",
 		Kafka: eventbus.KafkaConfig{
 			Brokers: []string{"127.0.0.1:9092"},
-			Topic:   "loxa.test.conn",
+			Topic:   "loza.test.conn",
 		},
 	})
 	if err != nil {
@@ -45,8 +45,8 @@ func TestKafkaBusContract(t *testing.T) {
 
 	// Use unique topic and consumer group per test run to avoid stale group state
 	uniqueID := fmt.Sprintf("%d", time.Now().UnixNano())
-	topic := "loxa.test.contract." + uniqueID
-	group := "loxa-test-group." + uniqueID
+	topic := "loza.test.contract." + uniqueID
+	group := "loza-test-group." + uniqueID
 
 	bus, err := New(ctx, eventbus.Config{
 		Type:          "kafka",

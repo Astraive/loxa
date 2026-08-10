@@ -1,14 +1,14 @@
 {
-  "$schema": "loxa-dsn-test-cases-v1",
-  "description": "Shared test cases for loxa:// DSN parsing across all SDKs (Go, JS, Python, Rust).",
+  "$schema": "loza-dsn-test-cases-v1",
+  "description": "Shared test cases for loza:// DSN parsing across all SDKs (Go, JS, Python, Rust).",
   "version": "1.0.0",
   "cases": [
     {
       "name": "localhost dev with explicit port",
-      "input": "loxa://localhost:9308/demo?tls=false",
+      "input": "loza://localhost:9308/demo?tls=false",
       "valid": true,
       "expected": {
-        "scheme": "loxa",
+        "scheme": "loza",
         "host": "localhost",
         "port": 9308,
         "project": "demo",
@@ -25,10 +25,10 @@
     },
     {
       "name": "localhost default port 9308",
-      "input": "loxa://localhost/demo?tls=false",
+      "input": "loza://localhost/demo?tls=false",
       "valid": true,
       "expected": {
-        "scheme": "loxa",
+        "scheme": "loza",
         "host": "localhost",
         "port": 9308,
         "project": "demo",
@@ -45,10 +45,10 @@
     },
     {
       "name": "prod default tls=true",
-      "input": "loxa://collector.example.com/demo",
+      "input": "loza://collector.example.com/demo",
       "valid": true,
       "expected": {
-        "scheme": "loxa",
+        "scheme": "loza",
         "host": "collector.example.com",
         "port": 443,
         "project": "demo",
@@ -65,10 +65,10 @@
     },
     {
       "name": "custom env and service",
-      "input": "loxa://collector.example.com/demo?env=prod&service=api",
+      "input": "loza://collector.example.com/demo?env=prod&service=api",
       "valid": true,
       "expected": {
-        "scheme": "loxa",
+        "scheme": "loza",
         "host": "collector.example.com",
         "port": 443,
         "project": "demo",
@@ -81,10 +81,10 @@
     },
     {
       "name": "otlp transport",
-      "input": "loxa://collector.example.com/demo?transport=otlp",
+      "input": "loza://collector.example.com/demo?transport=otlp",
       "valid": true,
       "expected": {
-        "scheme": "loxa",
+        "scheme": "loza",
         "host": "collector.example.com",
         "port": 443,
         "project": "demo",
@@ -98,10 +98,10 @@
     },
     {
       "name": "grpc transport",
-      "input": "loxa://collector.example.com/demo?transport=grpc",
+      "input": "loza://collector.example.com/demo?transport=grpc",
       "valid": true,
       "expected": {
-        "scheme": "loxa",
+        "scheme": "loza",
         "host": "collector.example.com",
         "port": 443,
         "project": "demo",
@@ -114,10 +114,10 @@
     },
     {
       "name": "127.0.0.1 defaults to tls=false",
-      "input": "loxa://127.0.0.1/demo",
+      "input": "loza://127.0.0.1/demo",
       "valid": true,
       "expected": {
-        "scheme": "loxa",
+        "scheme": "loza",
         "host": "127.0.0.1",
         "port": 9308,
         "project": "demo",
@@ -130,10 +130,10 @@
     },
     {
       "name": "::1 defaults to tls=false (brackets required)",
-      "input": "loxa://[::1]/demo",
+      "input": "loza://[::1]/demo",
       "valid": true,
       "expected": {
-        "scheme": "loxa",
+        "scheme": "loza",
         "host": "::1",
         "port": 9308,
         "project": "demo",
@@ -146,10 +146,10 @@
     },
     {
       "name": "tls=auto keeps localhost default",
-      "input": "loxa://localhost/demo?tls=auto",
+      "input": "loza://localhost/demo?tls=auto",
       "valid": true,
       "expected": {
-        "scheme": "loxa",
+        "scheme": "loza",
         "host": "localhost",
         "port": 9308,
         "project": "demo",
@@ -162,10 +162,10 @@
     },
     {
       "name": "tls=auto keeps remote default",
-      "input": "loxa://collector.example.com/demo?tls=auto",
+      "input": "loza://collector.example.com/demo?tls=auto",
       "valid": true,
       "expected": {
-        "scheme": "loxa",
+        "scheme": "loza",
         "host": "collector.example.com",
         "port": 443,
         "project": "demo",
@@ -178,10 +178,10 @@
     },
     {
       "name": "explicit tls=true on localhost",
-      "input": "loxa://localhost:8443/demo?tls=true",
+      "input": "loza://localhost:8443/demo?tls=true",
       "valid": true,
       "expected": {
-        "scheme": "loxa",
+        "scheme": "loza",
         "host": "localhost",
         "port": 8443,
         "project": "demo",
@@ -194,10 +194,10 @@
     },
     {
       "name": "explicit port 4318 with otlp",
-      "input": "loxa://collector.example.com:4318/backend?env=staging&service=auth&transport=otlp",
+      "input": "loza://collector.example.com:4318/backend?env=staging&service=auth&transport=otlp",
       "valid": true,
       "expected": {
-        "scheme": "loxa",
+        "scheme": "loza",
         "host": "collector.example.com",
         "port": 4318,
         "project": "backend",
@@ -228,67 +228,67 @@
     },
     {
       "name": "reject no host",
-      "input": "loxa://",
+      "input": "loza://",
       "valid": false,
       "expected": null
     },
     {
       "name": "reject triple-slash no host",
-      "input": "loxa:///project",
+      "input": "loza:///project",
       "valid": false,
       "expected": null
     },
     {
       "name": "reject no project",
-      "input": "loxa://collector.example.com",
+      "input": "loza://collector.example.com",
       "valid": false,
       "expected": null
     },
     {
       "name": "reject empty project",
-      "input": "loxa://collector.example.com/",
+      "input": "loza://collector.example.com/",
       "valid": false,
       "expected": null
     },
     {
       "name": "reject userinfo (API key in URL)",
-      "input": "loxa://key@collector.example.com/demo",
+      "input": "loza://key@collector.example.com/demo",
       "valid": false,
       "expected": null
     },
     {
       "name": "reject userinfo with password",
-      "input": "loxa://user:pass@collector.example.com/demo",
+      "input": "loza://user:pass@collector.example.com/demo",
       "valid": false,
       "expected": null
     },
     {
       "name": "reject invalid tls value",
-      "input": "loxa://collector.example.com/demo?tls=maybe",
+      "input": "loza://collector.example.com/demo?tls=maybe",
       "valid": false,
       "expected": null
     },
     {
       "name": "reject invalid transport value",
-      "input": "loxa://collector.example.com/demo?transport=random",
+      "input": "loza://collector.example.com/demo?transport=random",
       "valid": false,
       "expected": null
     },
     {
       "name": "reject port 0",
-      "input": "loxa://collector.example.com:0/demo",
+      "input": "loza://collector.example.com:0/demo",
       "valid": false,
       "expected": null
     },
     {
       "name": "reject port above 65535",
-      "input": "loxa://collector.example.com:99999/demo",
+      "input": "loza://collector.example.com:99999/demo",
       "valid": false,
       "expected": null
     },
     {
       "name": "reject non-numeric port",
-      "input": "loxa://collector.example.com:abc/demo",
+      "input": "loza://collector.example.com:abc/demo",
       "valid": false,
       "expected": null
     }

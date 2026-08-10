@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 	"github.com/rs/zerolog"
 )
 
@@ -16,9 +16,9 @@ func TestHookCompatibility(t *testing.T) {
 }
 
 func TestHookRunEmitsToLova(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
-	if err := loxa.Configure(cfg); err != nil {
+	sink, store := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
@@ -31,15 +31,15 @@ func TestHookRunEmitsToLova(t *testing.T) {
 }
 
 func TestHookRunMapsLevels(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
-	if err := loxa.Configure(cfg); err != nil {
+	sink, store := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
 	zl := zerolog.New(&bytes.Buffer{}).Hook(Hook())
 
-	// Debug and Trace both map to loxa Debug.
+	// Debug and Trace both map to loza Debug.
 	zl.Debug().Msg("debug msg")
 	zerolog.GlobalLevel() // ensure trace is available
 	zl.Trace().Msg("trace msg")

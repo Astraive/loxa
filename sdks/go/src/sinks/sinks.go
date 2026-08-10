@@ -1,7 +1,7 @@
 package sinks
 
 import (
-	"github.com/astraive/loxa/sdks/go/src/core"
+	"github.com/astraive/loza/sdks/go/src/core"
 )
 
 // StdoutSink returns a core.Sink that writes NDJSON to os.Stdout.

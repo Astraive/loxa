@@ -3,9 +3,9 @@ package httpserver
 import (
 	"net/http"
 
-	"github.com/astraive/loxa/cortex/internal/api"
-	"github.com/astraive/loxa/cortex/internal/config"
-	"github.com/astraive/loxa/cortex/internal/storage"
+	"github.com/astraive/loza/cortex/internal/api"
+	"github.com/astraive/loza/cortex/internal/config"
+	"github.com/astraive/loza/cortex/internal/storage"
 )
 
 func New(cfg *config.Config, stor storage.Storage) *api.Server {

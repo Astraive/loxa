@@ -4,13 +4,13 @@ Run the collector:
 
 ```bash
 cd collector
-go run ./cmd/loxa-collector run -c configs/loxa.local.yaml
+go run ./cmd/loza-collector run -c configs/loza.local.yaml
 ```
 
 If auth is enabled on the collector, set:
 
 ```bash
-export LOXA_API_KEY="lx_local_dev_mydevtoken"
+export LOZA_API_KEY="lx_local_dev_mydevtoken"
 ```
 
 Run the Python example:
@@ -22,6 +22,6 @@ python main.py
 
 Use this example to validate that:
 
-- `loxa-py` (Python SDK) emits collector-compatible JSON
+- `loza-py` (Python SDK) emits collector-compatible JSON
 - the collector accepts `/events`
 - collector-side durability and sink fanout stay outside the SDK

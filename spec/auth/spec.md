@@ -1,8 +1,8 @@
-# LOXA Authentication Specification
+# LOZA Authentication Specification
 
 ## Overview
 
-LOXA uses scoped ingest API keys with RBAC+ABAC for authentication and authorization. The collector (data plane) validates keys and enforces permissions. Key management (create/revoke/rotate) lives in the control plane (cortex/API).
+LOZA uses scoped ingest API keys with RBAC+ABAC for authentication and authorization. The collector (data plane) validates keys and enforces permissions. Key management (create/revoke/rotate) lives in the control plane (cortex/API).
 
 ## Key Format
 
@@ -42,8 +42,8 @@ lx_local_dev_mydevtoken                      # Local development only
 ```
 POST /events
 Authorization: Bearer lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
-X-Loxa-Service: checkout-api
-X-Loxa-Env: prod
+X-Loza-Service: checkout-api
+X-Loza-Env: prod
 Content-Type: application/json
 ```
 
@@ -52,8 +52,8 @@ Content-Type: application/json
 Metadata:
 ```
 authorization: Bearer lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
-x-loxa-service: checkout-api
-x-loxa-env: prod
+x-loza-service: checkout-api
+x-loza-env: prod
 ```
 
 ## RBAC Roles
@@ -107,8 +107,8 @@ Each API key can have attribute-based restrictions:
 7.  HMAC-SHA256(incoming secret) == stored hash (constant-time)
 8.  Build AuthContext (org, project, roles, permissions)
 9.  Public keys: force allow_pii=false, allow_attachments=false
-10. Check X-Loxa-Env against allowed_envs
-11. Check X-Loxa-Service against allowed_services
+10. Check X-Loza-Env against allowed_envs
+11. Check X-Loza-Service against allowed_services
 12. Check Origin against allowed_origins (public keys)
 13. Check remote IP against allowed_ips
 14. Check Content-Length against max_payload_bytes
@@ -164,8 +164,8 @@ X-Auth-Failure-Code: <machine-readable code>
 | `key_expired` | Key has expired |
 | `key_kind_mismatch` | Key kind prefix mismatch |
 | `invalid_secret` | HMAC verification failed |
-| `env_not_allowed` | X-Loxa-Env not in allowed_envs |
-| `service_not_allowed` | X-Loxa-Service not in allowed_services |
+| `env_not_allowed` | X-Loza-Env not in allowed_envs |
+| `service_not_allowed` | X-Loza-Service not in allowed_services |
 | `origin_not_allowed` | Origin not in allowed_origins |
 | `ip_not_allowed` | IP not in allowed_ips |
 | `rate_limited` | Per-key rate limit exceeded |
@@ -182,28 +182,28 @@ X-Auth-Failure-Code: <machine-readable code>
 ### Go
 
 ```go
-client := loxa.New(loxa.Config{
-    Endpoint: "https://collector.loxa.dev",
-    APIKey:   os.Getenv("LOXA_API_KEY"),
+client := loza.New(loza.Config{
+    Endpoint: "https://collector.loza.dev",
+    APIKey:   os.Getenv("LOZA_API_KEY"),
     Service:  "checkout-service",
     Env:      "prod",
 })
 ```
 
-Env vars: `LOXA_API_KEY`, `LOXA_COLLECTOR_URL`
+Env vars: `LOZA_API_KEY`, `LOZA_COLLECTOR_URL`
 
 ### Headers Set Automatically
 
 ```
 Authorization: Bearer lx_sec_live_k_xxx_yyyy
-X-Loxa-Service: checkout-service
-X-Loxa-Env: prod
+X-Loza-Service: checkout-service
+X-Loza-Env: prod
 ```
 
 ## Local Development
 
 ```go
-client := loxa.New(loxa.Config{
+client := loza.New(loza.Config{
     Endpoint: "http://localhost:9308",
     APIKey:   "lx_local_dev_mydevtoken",
     Service:  "test-service",
@@ -226,7 +226,7 @@ Key management (create/revoke/rotate) lives in the control plane (cortex/API), N
 
 1. User creates project in dashboard
 2. Backend generates ingest token
-3. User adds token to env (`LOXA_API_KEY`)
+3. User adds token to env (`LOZA_API_KEY`)
 4. SDK sends batches to collector over HTTPS
 5. Collector validates token, enriches, redacts, stores
 
@@ -274,7 +274,7 @@ Each route has its own permission requirement:
 For enterprise high-security mode:
 
 ```
-Authorization: Loxa-HMAC key_id="k_xxx", signature="...", timestamp="..."
+Authorization: Loza-HMAC key_id="k_xxx", signature="...", timestamp="..."
 ```
 
 Signature base: `METHOD\nPATH\nTIMESTAMP\nSHA256(body)`

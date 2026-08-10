@@ -1,11 +1,11 @@
 use serde_json::Value;
 
-use loxa::{Config, ContextCarrier, EventContext, MemorySinkStore, Params, SinkConfig};
+use loza::{Config, ContextCarrier, EventContext, MemorySinkStore, Params, SinkConfig};
 
 #[test]
 fn incident_id_in_params() {
     let store = MemorySinkStore::new();
-    let logger = loxa::New(Config::test("test-svc").with_sink(SinkConfig::Memory(store.clone())));
+    let logger = loza::New(Config::test("test-svc").with_sink(SinkConfig::Memory(store.clone())));
     let mut ctx = logger.start_event(Params::new("test.incident").with_incident_id("inc-test-001"));
     ctx.finish("success").unwrap();
     logger.emit(&ctx).unwrap();
@@ -29,7 +29,7 @@ fn incident_id_from_context_carrier() {
     let params = Params::new("test.incident-carrier").inherit_from_carrier(&carrier);
 
     let store = MemorySinkStore::new();
-    let logger = loxa::New(Config::test("test-svc").with_sink(SinkConfig::Memory(store.clone())));
+    let logger = loza::New(Config::test("test-svc").with_sink(SinkConfig::Memory(store.clone())));
     let mut ctx = logger.start_event(params);
     ctx.finish("success").unwrap();
     logger.emit(&ctx).unwrap();
@@ -63,7 +63,7 @@ fn incident_id_inherited_from_event_context() {
 #[test]
 fn incident_id_omitted_when_not_set() {
     let store = MemorySinkStore::new();
-    let logger = loxa::New(Config::test("test-svc").with_sink(SinkConfig::Memory(store.clone())));
+    let logger = loza::New(Config::test("test-svc").with_sink(SinkConfig::Memory(store.clone())));
     let mut ctx = logger.start_event(Params::new("test.no-incident"));
     ctx.finish("success").unwrap();
     logger.emit(&ctx).unwrap();

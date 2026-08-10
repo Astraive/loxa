@@ -1,4 +1,4 @@
-use loxa::{Config, EventContext, LoxaError, New, Params, SinkConfig};
+use loza::{Config, EventContext, LozaError, New, Params, SinkConfig};
 
 #[test]
 fn duplicate_emit_is_idempotent_and_finish_after_emit_are_typed() {
@@ -10,7 +10,7 @@ fn duplicate_emit_is_idempotent_and_finish_after_emit_are_typed() {
     assert_eq!(first, second);
     assert!(matches!(
         logger.finish(&mut ctx, "success"),
-        Err(LoxaError::EventClosed { .. })
+        Err(LozaError::EventClosed { .. })
     ));
 }
 
@@ -18,7 +18,7 @@ fn duplicate_emit_is_idempotent_and_finish_after_emit_are_typed() {
 fn validation_failure_does_not_mark_emitted() {
     let logger = New(Config::test("checkout"));
     let ctx = EventContext::new("", Params::new("bad"));
-    assert!(matches!(logger.emit(&ctx), Err(LoxaError::Validation(_))));
+    assert!(matches!(logger.emit(&ctx), Err(LozaError::Validation(_))));
     assert!(!ctx.is_emitted());
     assert_eq!(ctx.lifecycle_state(), "failed_validation");
 }

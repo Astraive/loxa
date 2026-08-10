@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/cortex/internal/config"
+	"github.com/astraive/loza/cortex/internal/config"
 )
 
 func TestRunSourceOfTruthSyncAgainstLiveCollector(t *testing.T) {
@@ -28,8 +28,8 @@ func TestRunSourceOfTruthSyncAgainstLiveCollector(t *testing.T) {
 	repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", "..", ".."))
 	collectorDir := filepath.Join(repoRoot, "collector")
 	binDir := t.TempDir()
-	collectorBin := filepath.Join(binDir, "loxa-collector-test.exe")
-	buildCmd := exec.Command("go", "build", "-o", collectorBin, "./cmd/loxa-collector")
+	collectorBin := filepath.Join(binDir, "loza-collector-test.exe")
+	buildCmd := exec.Command("go", "build", "-o", collectorBin, "./cmd/loza-collector")
 	buildCmd.Dir = collectorDir
 	buildCmd.Stdout = os.Stdout
 	buildCmd.Stderr = os.Stderr
@@ -39,7 +39,7 @@ func TestRunSourceOfTruthSyncAgainstLiveCollector(t *testing.T) {
 
 	port := freePort(t)
 	duckdbPath := filepath.Join(t.TempDir(), "collector-live.duckdb")
-	cmd := exec.Command(collectorBin, "run", "-c", "loxa-collector.defaults.yaml", "--addr", fmt.Sprintf("127.0.0.1:%d", port), "--duckdb-path", duckdbPath)
+	cmd := exec.Command(collectorBin, "run", "-c", "loza-collector.defaults.yaml", "--addr", fmt.Sprintf("127.0.0.1:%d", port), "--duckdb-path", duckdbPath)
 	cmd.Dir = collectorDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

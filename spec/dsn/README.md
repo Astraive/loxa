@@ -1,14 +1,14 @@
-# loxa:// DSN Specification
+# loza:// DSN Specification
 
-This package defines the canonical `loxa://` connection URI format and the
+This package defines the canonical `loza://` connection URI format and the
 reference Go parser implementation.
 
 ## Purpose
 
-`loxa://` is a connection URI (like `postgres://` or `redis://`) that resolves
+`loza://` is a connection URI (like `postgres://` or `redis://`) that resolves
 to HTTP/HTTPS/OTLP/gRPC/WebSocket endpoints. It is **not** a new wire protocol.
 
-All Loxa SDKs (Go, JS, Python, Rust) must parse `loxa://` DSNs identically.
+All Loza SDKs (Go, JS, Python, Rust) must parse `loza://` DSNs identically.
 The `test-cases.json` file in this directory defines the shared test vectors
 for cross-SDK validation.
 
@@ -25,9 +25,9 @@ spec/dsn/
 ## Usage from the Go SDK
 
 ```go
-import "github.com/astraive/loxa/spec/dsn"
+import "github.com/astraive/loza/spec/dsn"
 
-d, err := dsn.Parse("loxa://localhost:9308/demo?env=dev&tls=false")
+d, err := dsn.Parse("loza://localhost:9308/demo?env=dev&tls=false")
 if err != nil {
     log.Fatal(err)
 }

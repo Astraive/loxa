@@ -1,9 +1,9 @@
 import pytest
 
-from loxa.core.client import Logger as ClientLogger
-from loxa.core.config import Config
-from loxa.core.logger import Logger
-from loxa.sinks.httpbatch import HTTPBatchSink
+from loza.core.client import Logger as ClientLogger
+from loza.core.config import Config
+from loza.core.logger import Logger
+from loza.sinks.httpbatch import HTTPBatchSink
 
 
 @pytest.mark.parametrize("logger_type", [Logger, ClientLogger])

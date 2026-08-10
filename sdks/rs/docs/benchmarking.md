@@ -1,6 +1,6 @@
 # Benchmarking
 
-How to run and interpret benchmarks for the LOXA Rust SDK.
+How to run and interpret benchmarks for the LOZA Rust SDK.
 
 ## Running Benchmarks
 
@@ -56,7 +56,7 @@ Rust benchmarks are significantly faster than Go/Python/JS due to zero-cost abst
 Create a new file `sdks/rs/bench/<name>_bench.rs`:
 
 ```rust
-use loxa::{Config, Logger, Params};
+use loza::{Config, Logger, Params};
 
 pub fn my_benchmark_iteration() -> usize {
     let logger = Logger::new(Config::test("bench"));

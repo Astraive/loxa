@@ -40,10 +40,10 @@ All notable changes to this project are documented in this file.
 ## [0.2.3] - 2026-05-27
 
 ### Fixed
-- Create shared APP_VERSION constant in Loxana to eliminate duplicate version strings
-- Remove dead config files (routes.ts, nav.ts, features.ts) from Loxana
-- Remove stale template assets (next.svg, vercel.svg) from Loxana public/
-- Remove unnecessary "use client" directives from all Loxana .tsx files (Vite, not Next.js)
+- Create shared APP_VERSION constant in Lozana to eliminate duplicate version strings
+- Remove dead config files (routes.ts, nav.ts, features.ts) from Lozana
+- Remove stale template assets (next.svg, vercel.svg) from Lozana public/
+- Remove unnecessary "use client" directives from all Lozana .tsx files (Vite, not Next.js)
 - Add root README.md with architecture overview and quickstart
 - Add TESTING.md with unit, race, frontend, and security check commands
 - Fix stale version strings in SDK READMEs (Go, Python, Cortex)
@@ -58,7 +58,7 @@ All notable changes to this project are documented in this file.
 - Fix randomToken() CSPRNG failure fallback (now fails request instead of returning "local")
 - Fix SQL query leak in LQL error/success responses
 - Fix key rotation to actually store the new key in the key store
-- Fix LIKE wildcard injection in Loxana LQL compiler (escapeSQLString now escapes % and _)
+- Fix LIKE wildcard injection in Lozana LQL compiler (escapeSQLString now escapes % and _)
 - Add query(), printf(), format() to isSafeQuery blocklist
 - Fix isSafeQuery/isReadOnlyQuery pragma contradiction
 - Fix ReadTimeout copy-paste bug in HTTP server
@@ -69,7 +69,7 @@ All notable changes to this project are documented in this file.
 - Fix DLQ/quarantine mutex hold during sleep
 - Add dedupe map size cap (100K entries)
 - Exclude health/ready/version/metrics endpoints from Cortex auth
-- Fix Loxana escapeSQLString to escape LIKE wildcards
+- Fix Lozana escapeSQLString to escape LIKE wildcards
 - Fix handleKeyCreate to actually store generated keys (with SecretHash)
 - Fix handleKeyRotate to set SecretHash on new key (HMAC verification now works)
 - Add serverSecret field to collectorState for key lifecycle operations
@@ -83,16 +83,16 @@ All notable changes to this project are documented in this file.
 - Fix local dev key bypass to require AllowLocalDevKeys config flag
 - Fix .env.example to use correct COLLECTOR_API_KEY env var name
 - Fix SDK READMEs to show v0.2.2 (was v0.0.1)
-- Fix Loxana sidebar and settings version strings to v0.2.2
+- Fix Lozana sidebar and settings version strings to v0.2.2
 
 ### Fixed
 - Bump all versions to 0.2.2
 - Fix 11 files still at 0.2.0 (Helm charts, CLI, quickstarts, SDK manifests)
 - Fix Python SDK README testkit section (wrong casing, wrong arg style)
-- Add React error boundary to Loxana
-- Add 404 catch-all route to Loxana
+- Add React error boundary to Lozana
+- Add 404 catch-all route to Lozana
 - Remove dead files from Vite migration
-- Fix Loxana Settings page stale version
+- Fix Lozana Settings page stale version
 - Fix nav config references to non-existent routes
 - Add collector .env.example
 - Expand cortex .env.example
@@ -102,11 +102,11 @@ All notable changes to this project are documented in this file.
 ### Security
 
 - **CRITICAL**: Remove raw SQL passthrough from `/query` and `/lql/query` endpoints. Added blocklist for dangerous DuckDB functions (read_csv, read_json, read_blob, etc.) and `SET enable_external_access=false`.
-- **CRITICAL**: Remove hardcoded `"loxa-default-secret"` fallback for HMAC/AES. Collector now fails to start when `auth.enabled=true` and `storageEncryptionKey` is not configured.
+- **CRITICAL**: Remove hardcoded `"loza-default-secret"` fallback for HMAC/AES. Collector now fails to start when `auth.enabled=true` and `storageEncryptionKey` is not configured.
 - **HIGH**: Fix LIKE wildcard injection in `deleteEventsByUser`. Added `escapeLIKE` function to escape `%`, `_`, and `\` characters.
 - **HIGH**: Fix DDL injection in blueprint handler. Added allowlist of valid DuckDB column types.
 - **HIGH**: Fix key revocation persistence and rotation old-key invalidation in admin handlers.
-- **HIGH**: Fix Loxana LQL compiler SQL injection. Added `escapeSQLString` for string values in `wasm.ts`.
+- **HIGH**: Fix Lozana LQL compiler SQL injection. Added `escapeSQLString` for string values in `wasm.ts`.
 - **HIGH**: Improve mTLS certificate validation. Now validates certificate CN is non-empty.
 - **HIGH**: Add rate limiter cleanup goroutine to prevent unbounded memory growth.
 - **HIGH**: Pre-compile PII redaction wildcard regex patterns (cache instead of recompile per call).
@@ -117,7 +117,7 @@ All notable changes to this project are documented in this file.
 ### Changed
 
 - Bump version to 0.2.1 across all components.
-- Collector, Cortex, Loxana, and all SDKs now report version 0.2.1.
+- Collector, Cortex, Lozana, and all SDKs now report version 0.2.1.
 
 ### Fixed
 
@@ -125,7 +125,7 @@ All notable changes to this project are documented in this file.
 - Python SDK README updated to document correct Params-based API.
 - Docker build fixed to handle local replace directives.
 - CLI defaults.yaml updated for monorepo layout.
-- Loxana README replaced with accurate Vite+React documentation.
+- Lozana README replaced with accurate Vite+React documentation.
 - Cortex README build command corrected.
 - Collector defaults routes corrected (`/ingest` → `/events`, `/healthz` → `/health`).
 - Duplicate route panic in `BuildMux` when `ingestPath` equals `/events`.
@@ -149,7 +149,7 @@ All notable changes to this project are documented in this file.
   - `duckdb.column_types` for schema column type mapping.
   - `reliability.spool_file` for WAL file name.
   - `reliability.delivery_queue_size` for spool delivery queue.
-- Reference config `build/loxa-collector.yaml` updated with new fields.
+- Reference config `build/loza-collector.yaml` updated with new fields.
 - Strict gate: `go test ./... -race` green across all 9 modules; `go vet` clean.
 
 ### Added
@@ -158,16 +158,16 @@ All notable changes to this project are documented in this file.
   - Kafka, ClickHouse, Postgres, DuckDB, OTLP, S3, GCS, and Loki sink implementations are collector-side code.
   - application SDKs emit to the collector through lightweight transports.
 - Collector-local event and sink contracts under `internal/event`.
-- Dependency boundary removed: collector no longer imports or requires any LOXA SDK module.
+- Dependency boundary removed: collector no longer imports or requires any LOZA SDK module.
 - Collector fanout and worker paths cover heavy production sinks.
 
 ### Changed
 
-- Collector module dependency graph no longer includes any LOXA SDK module.
+- Collector module dependency graph no longer includes any LOZA SDK module.
 - Removed dependency on the old SDK sinks module.
 - Integration DuckDB stress test uses temp DB path to avoid cross-run file lock collisions.
-- README/docs repositioned LOXA as canonical wide-event layer.
+- README/docs repositioned LOZA as canonical wide-event layer.
 
 ### Breaking
 
-- Collector sink implementations now use `github.com/astraive/loxa/collector/internal/event` instead of SDK-owned interfaces.
+- Collector sink implementations now use `github.com/astraive/loza/collector/internal/event` instead of SDK-owned interfaces.

@@ -1,16 +1,16 @@
-project_name: loxa
+project_name: loza
 
 version: 2
 
 builds:
-  - id: loxa-cli
+  - id: loza-cli
     dir: ./cli
-    main: ./cmd/loxa
-    binary: loxa
+    main: ./cmd/loza
+    binary: loza
     env:
       - CGO_ENABLED=0
     ldflags:
-      - -s -w -X github.com/astraive/loxa/cli/internal/version.Version={{ .Version }}
+      - -s -w -X github.com/astraive/loza/cli/internal/version.Version={{ .Version }}
     goos:
       - linux
       - darwin
@@ -24,13 +24,13 @@ builds:
     mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
-  - id: loxa-cli
-    ids: [loxa-cli]
+  - id: loza-cli
+    ids: [loza-cli]
     formats: [tar.gz]
     format_overrides:
       - goos: windows
         formats: [zip]
-    name_template: "loxa_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "loza_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
   name_template: "checksums.txt"
@@ -38,8 +38,8 @@ checksum:
 release:
   github:
     owner: Astraive
-    name: loxa
-  name_template: "LOXA CLI {{ .Version }}"
+    name: loza
+  name_template: "LOZA CLI {{ .Version }}"
 
 changelog:
   sort: asc

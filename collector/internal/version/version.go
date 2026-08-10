@@ -13,7 +13,7 @@ var (
 	version string
 )
 
-// CollectorVersion returns the collector version from loxa.yaml,
+// CollectorVersion returns the collector version from loza.yaml,
 // falling back to the hardcoded default if the file cannot be found or parsed.
 func CollectorVersion() string {
 	once.Do(func() {
@@ -24,9 +24,9 @@ func CollectorVersion() string {
 
 func loadVersion() string {
 	candidates := []string{
-		"loxa.yaml",
-		"../loxa.yaml",
-		"../../loxa.yaml",
+		"loza.yaml",
+		"../loza.yaml",
+		"../../loza.yaml",
 	}
 
 	for _, path := range candidates {

@@ -6,22 +6,22 @@ package main
 import (
 	"net/http"
 
-	"github.com/astraive/loxa/sdks/go"
-	loxahttp "github.com/astraive/loxa/sdks/go/middleware/nethttp"
+	"github.com/astraive/loza/sdks/go"
+	lozahttp "github.com/astraive/loza/sdks/go/middleware/nethttp"
 )
 
 func main() {
-	sink, _ := loxa.MemorySink()
-	_ = loxa.Configure(loxa.Production().WithService("checkout").WithSink(sink))
+	sink, _ := loza.MemorySink()
+	_ = loza.Configure(loza.Production().WithService("checkout").WithSink(sink))
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /checkout", func(w http.ResponseWriter, r *http.Request) {
-		loxa.Enrich(r.Context(), loxa.UserID("u-1"), loxa.String("payment.provider", "stripe"))
-		loxa.Finish(r.Context(), "success", loxa.Int("status_code", http.StatusOK))
+		loza.Enrich(r.Context(), loza.UserID("u-1"), loza.String("payment.provider", "stripe"))
+		loza.Finish(r.Context(), "success", loza.Int("status_code", http.StatusOK))
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler := loxahttp.Middleware(loxahttp.Config{Event: "checkout.request"})(mux)
+	handler := lozahttp.Middleware(lozahttp.Config{Event: "checkout.request"})(mux)
 	_ = http.ListenAndServe(":8080", handler)
 }
 ```

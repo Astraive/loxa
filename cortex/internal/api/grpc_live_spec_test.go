@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/cortex/internal/config"
-	"github.com/astraive/loxa/cortex/internal/models"
-	"github.com/astraive/loxa/cortex/internal/redaction"
-	"github.com/astraive/loxa/cortex/internal/storage"
-	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
+	"github.com/astraive/loza/cortex/internal/config"
+	"github.com/astraive/loza/cortex/internal/models"
+	"github.com/astraive/loza/cortex/internal/redaction"
+	"github.com/astraive/loza/cortex/internal/storage"
+	lozav1 "github.com/astraive/loza/gen/go/loza/core"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -45,14 +45,14 @@ func TestGRPCServerAcceptsCollectorStyleBatch(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close()
 
-	client := loxav1.NewCortexServiceClient(conn)
+	client := lozav1.NewCortexServiceClient(conn)
 	ts := time.Now().UTC().Add(-time.Minute).Truncate(time.Second)
 
-	resp, err := client.IngestBatch(context.Background(), &loxav1.IngestBatchRequest{
-		Events: []*loxav1.Event{{
+	resp, err := client.IngestBatch(context.Background(), &lozav1.IngestBatchRequest{
+		Events: []*lozav1.Event{{
 			EventId:   "evt-live-1",
 			Timestamp: timestamppb.New(ts),
-			Kind:      loxav1.EventKind_EVENT_KIND_EVENT,
+			Kind:      lozav1.EventKind_EVENT_KIND_EVENT,
 			Service:   "checkout",
 			Event:     "payment.completed",
 			TraceId:   "tr_live_1",
@@ -64,7 +64,7 @@ func TestGRPCServerAcceptsCollectorStyleBatch(t *testing.T) {
 
 	event, err := stor.Events().Get(context.Background(), "evt-live-1")
 	require.NoError(t, err)
-	require.Equal(t, models.EventKindLoxaEvent, event.Kind)
+	require.Equal(t, models.EventKindLozaEvent, event.Kind)
 	require.Equal(t, "checkout", event.Service)
 	require.Equal(t, "tr_live_1", event.TraceID)
 	require.Equal(t, "grpc", event.Provenance, "gRPC-ingested events should have 'grpc' provenance")
@@ -95,15 +95,15 @@ func TestGRPCServerProvenanceIsGrpc(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close()
 
-	client := loxav1.NewCortexServiceClient(conn)
+	client := lozav1.NewCortexServiceClient(conn)
 	ts := time.Now().UTC().Add(-time.Minute).Truncate(time.Second)
 
 	// Test single IngestEvent
-	resp, err := client.IngestEvent(context.Background(), &loxav1.IngestEventRequest{
-		Event: &loxav1.Event{
+	resp, err := client.IngestEvent(context.Background(), &lozav1.IngestEventRequest{
+		Event: &lozav1.Event{
 			EventId:    "evt-provenance-single",
 			Timestamp:  timestamppb.New(ts),
-			Kind:       loxav1.EventKind_EVENT_KIND_HTTP,
+			Kind:       lozav1.EventKind_EVENT_KIND_HTTP,
 			Service:    "checkout",
 			Event:      "checkout.started",
 			IncidentId: "inc-1234",
@@ -119,11 +119,11 @@ func TestGRPCServerProvenanceIsGrpc(t *testing.T) {
 	require.Equal(t, "inc-1234", event.IncidentID, "IncidentID should be preserved from proto")
 
 	// Test batch IngestBatch
-	respBatch, err := client.IngestBatch(context.Background(), &loxav1.IngestBatchRequest{
-		Events: []*loxav1.Event{{
+	respBatch, err := client.IngestBatch(context.Background(), &lozav1.IngestBatchRequest{
+		Events: []*lozav1.Event{{
 			EventId:    "evt-provenance-batch",
 			Timestamp:  timestamppb.New(ts),
-			Kind:       loxav1.EventKind_EVENT_KIND_EVENT,
+			Kind:       lozav1.EventKind_EVENT_KIND_EVENT,
 			Service:    "billing",
 			Event:      "invoice.sent",
 			IncidentId: "inc-5678",
@@ -164,8 +164,8 @@ func TestGRPCServerRejectsEmptyIngestEventRequest(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close()
 
-	client := loxav1.NewCortexServiceClient(conn)
-	_, err = client.IngestEvent(context.Background(), &loxav1.IngestEventRequest{})
+	client := lozav1.NewCortexServiceClient(conn)
+	_, err = client.IngestEvent(context.Background(), &lozav1.IngestEventRequest{})
 	require.Error(t, err)
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
 }

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Metadata for a single field in the Loxa event schema.
+/// Metadata for a single field in the Loza event schema.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FieldInfo {
     pub name: String,
@@ -23,7 +23,7 @@ pub enum FieldType {
     Any,
 }
 
-/// The full Loxa event schema, used for validation and column mapping.
+/// The full Loza event schema, used for validation and column mapping.
 #[derive(Debug, Clone)]
 pub struct Schema {
     pub table: String,
@@ -97,7 +97,7 @@ impl Schema {
     /// Create the default ClickHouse schema.
     pub fn clickhouse_default() -> Self {
         let mut schema = Self::duckdb_default();
-        schema.table = "loxa_events".to_string();
+        schema.table = "loza_events".to_string();
         schema.ts_column = "ts".to_string();
         schema.raw_column = "raw".to_string();
         schema

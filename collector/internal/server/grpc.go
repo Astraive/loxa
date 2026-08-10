@@ -9,10 +9,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/astraive/loxa/collector/internal/auth"
-	"github.com/astraive/loxa/collector/internal/otlpconv"
-	"github.com/astraive/loxa/collector/internal/version"
-	loxav1 "github.com/astraive/loxa/gen/go/loxa/core"
+	"github.com/astraive/loza/collector/internal/auth"
+	"github.com/astraive/loza/collector/internal/otlpconv"
+	"github.com/astraive/loza/collector/internal/version"
+	lozav1 "github.com/astraive/loza/gen/go/loza/core"
 	collectorlogsv1 "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -117,10 +117,10 @@ func (s *GRPCServer) Start(ctx context.Context) error {
 
 	s.srv = grpc.NewServer(opts...)
 
-	loxav1.RegisterCollectorServiceServer(s.srv, &collectorSvcServer{state: s.state})
-	loxav1.RegisterLogIngestServer(s.srv, &logIngestSvcServer{state: s.state})
-	loxav1.RegisterLoxaIngestServer(s.srv, &loxaIngestSvcServer{state: s.state})
-	loxav1.RegisterCollectorIngestServer(s.srv, &collectorIngestServer{state: s.state})
+	lozav1.RegisterCollectorServiceServer(s.srv, &collectorSvcServer{state: s.state})
+	lozav1.RegisterLogIngestServer(s.srv, &logIngestSvcServer{state: s.state})
+	lozav1.RegisterLozaIngestServer(s.srv, &lozaIngestSvcServer{state: s.state})
+	lozav1.RegisterCollectorIngestServer(s.srv, &collectorIngestServer{state: s.state})
 	collectorlogsv1.RegisterLogsServiceServer(s.srv, &otlpLogsServiceServer{state: s.state})
 
 	var err error
@@ -148,31 +148,31 @@ func (s *GRPCServer) Stop(ctx context.Context) error {
 }
 
 type collectorSvcServer struct {
-	loxav1.UnimplementedCollectorServiceServer
+	lozav1.UnimplementedCollectorServiceServer
 	state State
 }
 
-func (s *collectorSvcServer) Health(ctx context.Context, req *loxav1.CollectorStatusRequest) (*loxav1.CollectorStatusResponse, error) {
+func (s *collectorSvcServer) Health(ctx context.Context, req *lozav1.CollectorStatusRequest) (*lozav1.CollectorStatusResponse, error) {
 	if s.state.IsHealthy() {
-		return &loxav1.CollectorStatusResponse{Status: "ok"}, nil
+		return &lozav1.CollectorStatusResponse{Status: "ok"}, nil
 	}
-	return &loxav1.CollectorStatusResponse{Status: "unhealthy"}, nil
+	return &lozav1.CollectorStatusResponse{Status: "unhealthy"}, nil
 }
 
-func (s *collectorSvcServer) Ready(ctx context.Context, req *loxav1.CollectorStatusRequest) (*loxav1.CollectorStatusResponse, error) {
+func (s *collectorSvcServer) Ready(ctx context.Context, req *lozav1.CollectorStatusRequest) (*lozav1.CollectorStatusResponse, error) {
 	if s.state.IsReady() {
-		return &loxav1.CollectorStatusResponse{Status: "ready"}, nil
+		return &lozav1.CollectorStatusResponse{Status: "ready"}, nil
 	}
-	return &loxav1.CollectorStatusResponse{Status: "not_ready"}, nil
+	return &lozav1.CollectorStatusResponse{Status: "not_ready"}, nil
 }
 
 type logIngestSvcServer struct {
-	loxav1.UnimplementedLogIngestServer
+	lozav1.UnimplementedLogIngestServer
 	state State
 }
 
-type loxaIngestSvcServer struct {
-	loxav1.UnimplementedLoxaIngestServer
+type lozaIngestSvcServer struct {
+	lozav1.UnimplementedLozaIngestServer
 	state State
 }
 
@@ -181,28 +181,28 @@ type otlpLogsServiceServer struct {
 	state State
 }
 
-func (s *logIngestSvcServer) Push(ctx context.Context, batch *loxav1.RawEventBatch) (*loxav1.PushResponse, error) {
+func (s *logIngestSvcServer) Push(ctx context.Context, batch *lozav1.RawEventBatch) (*lozav1.PushResponse, error) {
 	return ingestGRPCBatch(ctx, s.state, batch)
 }
 
-func (s *loxaIngestSvcServer) Ingest(ctx context.Context, batch *loxav1.RawEventBatch) (*loxav1.PushResponse, error) {
+func (s *lozaIngestSvcServer) Ingest(ctx context.Context, batch *lozav1.RawEventBatch) (*lozav1.PushResponse, error) {
 	return ingestGRPCBatch(ctx, s.state, batch)
 }
 
-func (s *loxaIngestSvcServer) IngestStream(stream loxav1.LoxaIngest_IngestStreamServer) error {
+func (s *lozaIngestSvcServer) IngestStream(stream lozav1.LozaIngest_IngestStreamServer) error {
 	var (
 		totalAccepted int64
 		totalRejected int64
 		totalInvalid  int64
 		totalDeduped  int64
-		acks          []*loxav1.EventAck
+		acks          []*lozav1.EventAck
 	)
 
 	for {
 		batch, err := stream.Recv()
 		if err != nil {
 			if err == io.EOF {
-				return stream.SendAndClose(&loxav1.PushResponse{
+				return stream.SendAndClose(&lozav1.PushResponse{
 					Accepted: totalAccepted,
 					Rejected: totalRejected,
 					Invalid:  totalInvalid,
@@ -224,9 +224,9 @@ func (s *loxaIngestSvcServer) IngestStream(stream loxav1.LoxaIngest_IngestStream
 	}
 }
 
-func ingestGRPCBatch(ctx context.Context, state State, batch *loxav1.RawEventBatch) (*loxav1.PushResponse, error) {
+func ingestGRPCBatch(ctx context.Context, state State, batch *lozav1.RawEventBatch) (*lozav1.PushResponse, error) {
 	if batch == nil || batch.Events == nil {
-		return &loxav1.PushResponse{Accepted: 0}, nil
+		return &lozav1.PushResponse{Accepted: 0}, nil
 	}
 
 	events := make([][]byte, 0, len(batch.Events))
@@ -237,7 +237,7 @@ func ingestGRPCBatch(ctx context.Context, state State, batch *loxav1.RawEventBat
 	}
 
 	if len(events) == 0 {
-		return &loxav1.PushResponse{Accepted: 0}, nil
+		return &lozav1.PushResponse{Accepted: 0}, nil
 	}
 
 	accepted, err := state.Ingest(ctx, events)
@@ -245,7 +245,7 @@ func ingestGRPCBatch(ctx context.Context, state State, batch *loxav1.RawEventBat
 		return nil, status.Errorf(codes.Internal, "ingest failed: %v", err)
 	}
 
-	return &loxav1.PushResponse{Accepted: int64(accepted)}, nil
+	return &lozav1.PushResponse{Accepted: int64(accepted)}, nil
 }
 
 func (s *otlpLogsServiceServer) Export(ctx context.Context, req *collectorlogsv1.ExportLogsServiceRequest) (*collectorlogsv1.ExportLogsServiceResponse, error) {
@@ -265,20 +265,20 @@ func (s *otlpLogsServiceServer) Export(ctx context.Context, req *collectorlogsv1
 
 // collectorIngestServer implements the CollectorIngest gRPC service for SDK lightweight connectors.
 type collectorIngestServer struct {
-	loxav1.UnimplementedCollectorIngestServer
+	lozav1.UnimplementedCollectorIngestServer
 	state State
 }
 
-func (s *collectorIngestServer) Ingest(ctx context.Context, batch *loxav1.IngestBatch) (*loxav1.IngestResponse, error) {
+func (s *collectorIngestServer) Ingest(ctx context.Context, batch *lozav1.IngestBatch) (*lozav1.IngestResponse, error) {
 	if batch == nil || len(batch.Events) == 0 {
-		return &loxav1.IngestResponse{}, nil
+		return &lozav1.IngestResponse{}, nil
 	}
 
 	rawEvents := make([][]byte, 0, len(batch.Events))
 	accepted := int64(0)
 	rejected := int64(0)
 	invalid := int64(0)
-	acks := make([]*loxav1.EventAck, 0, len(batch.Events))
+	acks := make([]*lozav1.EventAck, 0, len(batch.Events))
 
 	for _, event := range batch.Events {
 		if event == nil {
@@ -288,7 +288,7 @@ func (s *collectorIngestServer) Ingest(ctx context.Context, batch *loxav1.Ingest
 		rawMap, err := eventProtoToMap(event)
 		if err != nil {
 			invalid++
-			acks = append(acks, &loxav1.EventAck{
+			acks = append(acks, &lozav1.EventAck{
 				EventId: event.EventId,
 				Status:  "invalid",
 				Reason:  err.Error(),
@@ -298,7 +298,7 @@ func (s *collectorIngestServer) Ingest(ctx context.Context, batch *loxav1.Ingest
 		rawJSON, err := json.Marshal(rawMap)
 		if err != nil {
 			invalid++
-			acks = append(acks, &loxav1.EventAck{
+			acks = append(acks, &lozav1.EventAck{
 				EventId: event.EventId,
 				Status:  "invalid",
 				Reason:  err.Error(),
@@ -317,7 +317,7 @@ func (s *collectorIngestServer) Ingest(ctx context.Context, batch *loxav1.Ingest
 		rejected = int64(len(rawEvents)) - accepted
 	}
 
-	return &loxav1.IngestResponse{
+	return &lozav1.IngestResponse{
 		Accepted: accepted,
 		Rejected: rejected,
 		Invalid:  invalid,
@@ -325,17 +325,17 @@ func (s *collectorIngestServer) Ingest(ctx context.Context, batch *loxav1.Ingest
 	}, nil
 }
 
-func (s *collectorIngestServer) IngestStream(stream loxav1.CollectorIngest_IngestStreamServer) error {
+func (s *collectorIngestServer) IngestStream(stream lozav1.CollectorIngest_IngestStreamServer) error {
 	var totalAccepted int64
 	var totalRejected int64
 	var totalInvalid int64
-	var allAcks []*loxav1.EventAck
+	var allAcks []*lozav1.EventAck
 
 	for {
 		event, err := stream.Recv()
 		if err != nil {
 			if err == io.EOF {
-				return stream.SendAndClose(&loxav1.IngestResponse{
+				return stream.SendAndClose(&lozav1.IngestResponse{
 					Accepted: totalAccepted,
 					Rejected: totalRejected,
 					Invalid:  totalInvalid,
@@ -345,7 +345,7 @@ func (s *collectorIngestServer) IngestStream(stream loxav1.CollectorIngest_Inges
 			return status.Errorf(codes.Internal, "stream recv failed: %v", err)
 		}
 
-		batch := &loxav1.IngestBatch{Events: []*loxav1.Event{event}}
+		batch := &lozav1.IngestBatch{Events: []*lozav1.Event{event}}
 		resp, err := s.Ingest(stream.Context(), batch)
 		if err != nil {
 			return err
@@ -357,15 +357,15 @@ func (s *collectorIngestServer) IngestStream(stream loxav1.CollectorIngest_Inges
 	}
 }
 
-func (s *collectorIngestServer) Ping(ctx context.Context, req *loxav1.PingRequest) (*loxav1.PingResponse, error) {
-	return &loxav1.PingResponse{
+func (s *collectorIngestServer) Ping(ctx context.Context, req *lozav1.PingRequest) (*lozav1.PingResponse, error) {
+	return &lozav1.PingResponse{
 		Status:  "ok",
 		Version: version.CollectorVersion(),
 	}, nil
 }
 
 // eventProtoToMap converts a proto Event message to a map[string]interface{} for JSON serialization.
-func eventProtoToMap(event *loxav1.Event) (map[string]interface{}, error) {
+func eventProtoToMap(event *lozav1.Event) (map[string]interface{}, error) {
 	rawMap := make(map[string]interface{})
 
 	if event.EventId != "" {
@@ -393,10 +393,10 @@ func eventProtoToMap(event *loxav1.Event) (map[string]interface{}, error) {
 	if event.Event != "" {
 		rawMap["event"] = event.Event
 	}
-	if event.Level != loxav1.EventLevel_EVENT_LEVEL_UNSPECIFIED {
+	if event.Level != lozav1.EventLevel_EVENT_LEVEL_UNSPECIFIED {
 		rawMap["level"] = event.Level.String()
 	}
-	if event.Outcome != loxav1.EventOutcome_EVENT_OUTCOME_UNSPECIFIED {
+	if event.Outcome != lozav1.EventOutcome_EVENT_OUTCOME_UNSPECIFIED {
 		rawMap["outcome"] = event.Outcome.String()
 	}
 	if event.DurationMs != 0 {

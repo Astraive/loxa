@@ -1,66 +1,66 @@
 ---
-title: Wide Events — the loxa Foundation
+title: Wide Events — the loza Foundation
 impact: CRITICAL
 ---
 
-## Wide Events in loxa
+## Wide Events in loza
 
-One event per service hop. Build it during execution. Emit once via `defer loxa.Emit(ctx)`.
+One event per service hop. Build it during execution. Emit once via `defer loza.Emit(ctx)`.
 
-loxa provides three patterns — choose based on context.
+loza provides three patterns — choose based on context.
 
 ---
 
 ### Pattern 1: Explicit Lifecycle (handlers, any code)
 
 ```go
-import "github.com/yourorg/loxa"
+import "github.com/yourorg/loza"
 
 func CheckoutHandler(w http.ResponseWriter, r *http.Request) {
-    ctx := loxa.StartEvent(r.Context(), loxa.Params{
+    ctx := loza.StartEvent(r.Context(), loza.Params{
         Service: "checkout-service",
         Name:    "checkout.completed",
         Kind:    "request",
     })
-    defer loxa.Emit(ctx)
+    defer loza.Emit(ctx)
 
     user, err := getUser(ctx, r.UserID)
     if err != nil {
-        loxa.FinishError(ctx, err)
+        loza.FinishError(ctx, err)
         http.Error(w, "unauthorized", 401)
         return
     }
-    loxa.Enrich(ctx,
-        loxa.UserID(user.ID),
-        loxa.String("user.plan", user.Plan),
-        loxa.Int("user.account_age_days", user.AccountAgeDays),
+    loza.Enrich(ctx,
+        loza.UserID(user.ID),
+        loza.String("user.plan", user.Plan),
+        loza.Int("user.account_age_days", user.AccountAgeDays),
     )
 
     cart, err := getCart(ctx, user.ID)
     if err != nil {
-        loxa.FinishError(ctx, err)
+        loza.FinishError(ctx, err)
         http.Error(w, "cart error", 500)
         return
     }
-    loxa.Enrich(ctx,
-        loxa.CartID(cart.ID),
-        loxa.Int("cart.total_cents", cart.Total),
-        loxa.Int("cart.item_count", len(cart.Items)),
+    loza.Enrich(ctx,
+        loza.CartID(cart.ID),
+        loza.Int("cart.total_cents", cart.Total),
+        loza.Int("cart.item_count", len(cart.Items)),
     )
 
     payment, err := charge(ctx, cart)
     if err != nil {
-        loxa.FinishError(ctx, err,
-            loxa.String("payment.provider", payment.Provider),
-            loxa.Int("payment.attempt", payment.Attempt),
+        loza.FinishError(ctx, err,
+            loza.String("payment.provider", payment.Provider),
+            loza.Int("payment.attempt", payment.Attempt),
         )
         http.Error(w, "payment failed", 402)
         return
     }
-    loxa.Finish(ctx, "success",
-        loxa.String("payment.provider", payment.Provider),
-        loxa.Int("payment.latency_ms", payment.LatencyMs),
-        loxa.Int("payment.attempt", payment.Attempt),
+    loza.Finish(ctx, "success",
+        loza.String("payment.provider", payment.Provider),
+        loza.Int("payment.latency_ms", payment.LatencyMs),
+        loza.Int("payment.attempt", payment.Attempt),
     )
     json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 }
@@ -75,17 +75,17 @@ Handlers only add **business context**.
 
 ```go
 // main.go — apply once at startup
-r.Use(loxahttp.Middleware())
+r.Use(lozahttp.Middleware())
 
 // Handler: only enrich
 func CheckoutHandler(w http.ResponseWriter, r *http.Request) {
     ctx := r.Context()
 
-    loxa.Enrich(ctx,
-        loxa.UserID(ctx.Value("userID").(string)),
-        loxa.String("user.plan", ctx.Value("plan").(string)),
-        loxa.Int("cart.total_cents", cart.Total),
-        loxa.FeatureFlag("new_checkout", "on"),
+    loza.Enrich(ctx,
+        loza.UserID(ctx.Value("userID").(string)),
+        loza.String("user.plan", ctx.Value("plan").(string)),
+        loza.Int("cart.total_cents", cart.Total),
+        loza.FeatureFlag("new_checkout", "on"),
     )
 
     payment, err := charge(ctx, cart)
@@ -94,9 +94,9 @@ func CheckoutHandler(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "payment failed", 402)
         return
     }
-    loxa.Enrich(ctx,
-        loxa.String("payment.provider", payment.Provider),
-        loxa.Int("payment.latency_ms", payment.LatencyMs),
+    loza.Enrich(ctx,
+        loza.String("payment.provider", payment.Provider),
+        loza.Int("payment.latency_ms", payment.LatencyMs),
     )
     // middleware emits — http.method, http.status_code, duration_ms,
     // request.id, trace.id, service.* all populated automatically
@@ -134,28 +134,28 @@ Emitted event includes all standard HTTP fields automatically:
 
 ```go
 func SendEmailDigestJob(ctx context.Context, job Job) error {
-    ctx = loxa.StartJobEvent(ctx, loxa.Params{
+    ctx = loza.StartJobEvent(ctx, loza.Params{
         Service: "mailer",
         Name:    "email_digest.sent",
     })
-    defer loxa.Emit(ctx)
+    defer loza.Emit(ctx)
 
-    loxa.Enrich(ctx,
-        loxa.String("job.id", job.ID),
-        loxa.String("job.queue", "default"),
-        loxa.UserID(job.UserID),
-        loxa.Int("email.count", len(job.Recipients)),
+    loza.Enrich(ctx,
+        loza.String("job.id", job.ID),
+        loza.String("job.queue", "default"),
+        loza.UserID(job.UserID),
+        loza.Int("email.count", len(job.Recipients)),
     )
 
     result, err := sendDigest(ctx, job.Recipients)
     if err != nil {
-        loxa.FinishError(ctx, err)
+        loza.FinishError(ctx, err)
         return err
     }
-    loxa.Finish(ctx, "success",
-        loxa.Int("email.sent", result.Sent),
-        loxa.Int("email.failed", result.Failed),
-        loxa.String("email.provider", result.Provider),
+    loza.Finish(ctx, "success",
+        loza.Int("email.sent", result.Sent),
+        loza.Int("email.failed", result.Failed),
+        loza.String("email.provider", result.Provider),
     )
     return nil
 }
@@ -169,17 +169,17 @@ Use checkpoints for external calls, DB queries, retries, or AI tool calls.
 **Do not use them as debug breadcrumbs.** One or two per event is fine; many is a smell.
 
 ```go
-loxa.Checkpoint(ctx, "payment_started",
-    loxa.String("payment.provider", "stripe"),
-    loxa.Int("payment.amount_cents", 15999),
-    loxa.String("payment.currency", "usd"),
+loza.Checkpoint(ctx, "payment_started",
+    loza.String("payment.provider", "stripe"),
+    loza.Int("payment.amount_cents", 15999),
+    loza.String("payment.currency", "usd"),
 )
 
 charge, err := stripeCharge(amount)
 
-loxa.Checkpoint(ctx, "payment_finished",
-    loxa.String("payment.charge_id", charge.ID),
-    loxa.Int("payment.attempt", attempt),
+loza.Checkpoint(ctx, "payment_finished",
+    loza.String("payment.charge_id", charge.ID),
+    loza.Int("payment.attempt", attempt),
 )
 // Checkpoints appear as: { "checkpoints": [{"name":"payment_started","at_ms":42}, ...] }
 ```
@@ -193,19 +193,19 @@ Every event that calls a downstream service must forward `request.id` as a heade
 ```go
 // Outbound — forward the request ID
 req, _ := http.NewRequestWithContext(ctx, "POST", "http://inventory-service/reserve", body)
-req.Header.Set("x-request-id", loxa.RequestIDFromContext(ctx))
-req.Header.Set("traceparent", loxa.TraceIDFromContext(ctx)) // OTel propagation
+req.Header.Set("x-request-id", loza.RequestIDFromContext(ctx))
+req.Header.Set("traceparent", loza.TraceIDFromContext(ctx)) // OTel propagation
 client.Do(req)
 
 // Inbound (inventory-service) — pick it up and start a linked event
 func ReserveHandler(w http.ResponseWriter, r *http.Request) {
-    ctx = loxa.StartEvent(r.Context(), loxa.Params{
+    ctx = loza.StartEvent(r.Context(), loza.Params{
         Service:   "inventory-service",
         Name:      "inventory.reserve",
         Kind:      "request",
         RequestID: r.Header.Get("x-request-id"),
     })
-    defer loxa.Emit(ctx)
+    defer loza.Emit(ctx)
     // Both events now share the same request.id — queryable together
 }
 ```
@@ -215,7 +215,7 @@ func ReserveHandler(w http.ResponseWriter, r *http.Request) {
 ### Error Fields (structured, not strings)
 
 ```go
-// loxa.FinishError() auto-populates structured fields from the error:
+// loza.FinishError() auto-populates structured fields from the error:
 // {
 //   "error.type":          "PaymentError",
 //   "error.message":       "Card declined by issuer",
@@ -225,11 +225,11 @@ func ReserveHandler(w http.ResponseWriter, r *http.Request) {
 // }
 
 // Pass additional attrs alongside the error:
-loxa.FinishError(ctx, err,
-    loxa.String("payment.provider", "stripe"),
-    loxa.Int("payment.attempt", 3),
-    loxa.Bool("retryable", false),
+loza.FinishError(ctx, err,
+    loza.String("payment.provider", "stripe"),
+    loza.Int("payment.attempt", 3),
+    loza.Bool("retryable", false),
 )
 ```
 
-Never do: `loxa.Enrich(ctx, loxa.String("error", err.Error()))` — that loses structure.
+Never do: `loza.Enrich(ctx, loza.String("error", err.Error()))` — that loses structure.

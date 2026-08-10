@@ -1,4 +1,4 @@
-use loxa::{middleware::tower::capture_request, Config, New};
+use loza::{middleware::tower::capture_request, Config, New};
 
 pub fn capture_http_once() -> String {
     let logger = New(Config::test("bench"));

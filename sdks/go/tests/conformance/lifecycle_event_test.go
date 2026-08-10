@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func TestLifecycleEventHelpers(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	if err := loxa.Configure(loxa.Test().WithSink(sink)); err != nil {
+	sink, store := loza.MemorySink()
+	if err := loza.Configure(loza.Test().WithSink(sink)); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
-	ctx := loxa.StartEvent(context.Background(), loxa.Params{
+	ctx := loza.StartEvent(context.Background(), loza.Params{
 		Service: "verification",
 		Event:   "checkout.request",
 		Kind:    "http",
@@ -21,72 +21,72 @@ func TestLifecycleEventHelpers(t *testing.T) {
 		Path:    "/checkout",
 		Route:   "/checkout",
 	})
-	if err := loxa.Append(ctx, loxa.UserID("u_123"), loxa.TenantID("t_123")); err != nil {
+	if err := loza.Append(ctx, loza.UserID("u_123"), loza.TenantID("t_123")); err != nil {
 		t.Fatalf("append: %v", err)
 	}
-	if err := loxa.Set(ctx, loxa.String("payment.provider", "stripe")); err != nil {
+	if err := loza.Set(ctx, loza.String("payment.provider", "stripe")); err != nil {
 		t.Fatalf("set: %v", err)
 	}
-	if err := loxa.Merge(ctx, "cart", loxa.Int("items", 3)); err != nil {
+	if err := loza.Merge(ctx, "cart", loza.Int("items", 3)); err != nil {
 		t.Fatalf("merge: %v", err)
 	}
-	if got, ok := loxa.Get(ctx, "payment.provider"); !ok || got != "stripe" {
+	if got, ok := loza.Get(ctx, "payment.provider"); !ok || got != "stripe" {
 		t.Fatalf("expected payment.provider=stripe, got %v ok=%v", got, ok)
 	}
-	if group, ok := loxa.GetGroup(ctx, "cart"); !ok || group["items"] != 3 {
+	if group, ok := loza.GetGroup(ctx, "cart"); !ok || group["items"] != 3 {
 		t.Fatalf("expected merged cart group, got %#v ok=%v", group, ok)
 	}
-	if err := loxa.Delete(ctx, "payment.provider"); err != nil {
+	if err := loza.Delete(ctx, "payment.provider"); err != nil {
 		t.Fatalf("delete: %v", err)
 	}
-	if err := loxa.Checkpoint(ctx, "validated", loxa.String("stage", "validation")); err != nil {
+	if err := loza.Checkpoint(ctx, "validated", loza.String("stage", "validation")); err != nil {
 		t.Fatalf("checkpoint: %v", err)
 	}
-	linkedCtx, err := loxa.LinkEvent(ctx, "evt_parent", loxa.String("link.kind", "parent"))
+	linkedCtx, err := loza.LinkEvent(ctx, "evt_parent", loza.String("link.kind", "parent"))
 	if err != nil {
 		t.Fatalf("link event: %v", err)
 	}
-	if _, ok := loxa.CurrentEvent(linkedCtx); !ok {
+	if _, ok := loza.CurrentEvent(linkedCtx); !ok {
 		t.Fatalf("expected current event on linked context")
 	}
-	cloned, err := loxa.CloneEvent(ctx)
+	cloned, err := loza.CloneEvent(ctx)
 	if err != nil {
 		t.Fatalf("clone event: %v", err)
 	}
-	if cloned.EventID != loxa.EventID(ctx) {
+	if cloned.EventID != loza.EventID(ctx) {
 		t.Fatalf("expected clone to preserve event id")
 	}
-	if err := loxa.Finish(ctx, "success"); err != nil {
+	if err := loza.Finish(ctx, "success"); err != nil {
 		t.Fatalf("finish: %v", err)
 	}
-	if err := loxa.Emit(ctx); err != nil {
+	if err := loza.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
 
-	dropCtx := loxa.StartEvent(context.Background(), loxa.Params{Event: "drop.event"})
-	if err := loxa.Drop(dropCtx, "capacity"); err != nil {
+	dropCtx := loza.StartEvent(context.Background(), loza.Params{Event: "drop.event"})
+	if err := loza.Drop(dropCtx, "capacity"); err != nil {
 		t.Fatalf("drop: %v", err)
 	}
-	cancelCtx := loxa.StartEvent(context.Background(), loxa.Params{Event: "cancel.event"})
-	if err := loxa.Cancel(cancelCtx, "user_cancelled"); err != nil {
+	cancelCtx := loza.StartEvent(context.Background(), loza.Params{Event: "cancel.event"})
+	if err := loza.Cancel(cancelCtx, "user_cancelled"); err != nil {
 		t.Fatalf("cancel: %v", err)
 	}
-	abandonCtx := loxa.StartEvent(context.Background(), loxa.Params{Event: "abandon.event"})
-	if err := loxa.Abandon(abandonCtx, "orphaned"); err != nil {
+	abandonCtx := loza.StartEvent(context.Background(), loza.Params{Event: "abandon.event"})
+	if err := loza.Abandon(abandonCtx, "orphaned"); err != nil {
 		t.Fatalf("abandon: %v", err)
 	}
-	retryCtx := loxa.StartEvent(context.Background(), loxa.Params{Event: "retry.event"})
-	if err := loxa.Retry(retryCtx, loxa.Int("attempt", 2)); err != nil {
+	retryCtx := loza.StartEvent(context.Background(), loza.Params{Event: "retry.event"})
+	if err := loza.Retry(retryCtx, loza.Int("attempt", 2)); err != nil {
 		t.Fatalf("retry: %v", err)
 	}
-	partialCtx := loxa.StartEvent(context.Background(), loxa.Params{Event: "partial.event"})
-	if err := loxa.Partial(partialCtx, loxa.String("reason", "timeout")); err != nil {
+	partialCtx := loza.StartEvent(context.Background(), loza.Params{Event: "partial.event"})
+	if err := loza.Partial(partialCtx, loza.String("reason", "timeout")); err != nil {
 		t.Fatalf("partial: %v", err)
 	}
-	if err := loxa.Wrap("wrapped.event", func() error { return nil }); err != nil {
+	if err := loza.Wrap("wrapped.event", func() error { return nil }); err != nil {
 		t.Fatalf("wrap: %v", err)
 	}
-	if err := loxa.Flush(context.Background()); err != nil {
+	if err := loza.Flush(context.Background()); err != nil {
 		t.Fatalf("flush: %v", err)
 	}
 	if store.Len() == 0 {

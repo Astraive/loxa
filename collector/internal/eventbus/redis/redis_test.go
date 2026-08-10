@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/collector/internal/eventbus"
+	"github.com/astraive/loza/collector/internal/eventbus"
 )
 
 func TestRedisRequiresConnection(t *testing.T) {
@@ -23,12 +23,12 @@ func TestRedisRequiresConnection(t *testing.T) {
 func TestRedisBusContract(t *testing.T) {
 	bus, err := New(context.Background(), eventbus.Config{
 		Type:         "redis",
-		Topic:        "loxa.test.events",
-		ConsumerGroup: "loxa-test-group",
+		Topic:        "loza.test.events",
+		ConsumerGroup: "loza-test-group",
 		Redis: eventbus.RedisConfig{
 			Addr:   "127.0.0.1:6379",
-			Stream: "loxa.test.events",
-			Group:  "loxa-test-group",
+			Stream: "loza.test.events",
+			Group:  "loza-test-group",
 		},
 	})
 	if err != nil {
@@ -45,14 +45,14 @@ func TestRedisBusContract(t *testing.T) {
 		return msg.Ack(ctx)
 	}
 
-	if err := bus.Subscribe(ctx, "loxa.test.events", "loxa-test-group", handler); err != nil {
+	if err := bus.Subscribe(ctx, "loza.test.events", "loza-test-group", handler); err != nil {
 		t.Fatalf("subscribe: %v", err)
 	}
 
 	envelopes := []eventbus.Envelope{
 		{ID: "redis-1", Event: "test.event", Timestamp: time.Now(), Body: []byte(`{"x":1}`)},
 	}
-	if err := bus.Publish(ctx, "loxa.test.events", envelopes); err != nil {
+	if err := bus.Publish(ctx, "loza.test.events", envelopes); err != nil {
 		t.Fatalf("publish: %v", err)
 	}
 

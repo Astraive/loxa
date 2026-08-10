@@ -21,7 +21,7 @@
     "path": "/checkout",
     "route": "/checkout",
     "status_code": 200,
-    "user_agent": "loxa-test/1.0"
+    "user_agent": "loza-test/1.0"
   },
   "user": {
     "id": "user_001"

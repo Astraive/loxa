@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from loxa.sinks.httpbatch import HTTPBatchSink
+from loza.sinks.httpbatch import HTTPBatchSink
 
 
 def _repo_root() -> Path:

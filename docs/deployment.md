@@ -1,4 +1,4 @@
-# LOXA Deployment Guide
+# LOZA Deployment Guide
 
 This guide documents the deployment paths that are implemented in this repo today.
 
@@ -8,21 +8,21 @@ Run the collector directly:
 
 ```bash
 cd collector
-go run ./cmd/loxa-collector run -c configs/loxa.local.yaml
+go run ./cmd/loza-collector run -c configs/loza.local.yaml
 ```
 
 Run the worker when you are testing queue mode:
 
 ```bash
 cd collector
-go run ./cmd/loxa-worker run
+go run ./cmd/loza-worker run
 ```
 
 Run the CLI against the same workspace:
 
 ```bash
 cd cli
-go run ./cmd/loxa query --sql "SELECT * FROM events LIMIT 10"
+go run ./cmd/loza query --sql "SELECT * FROM events LIMIT 10"
 ```
 
 ## Packaged Assets
@@ -30,7 +30,7 @@ go run ./cmd/loxa query --sql "SELECT * FROM events LIMIT 10"
 Current deployment assets are split by ownership:
 
 - Collector runtime assets live under [collector/deploy](collector/deploy)
-- `schema-service` and `stager` container and Helm assets live under [spec](spec), with the canonical chart at [spec/charts/loxa](spec/charts/loxa)
+- `schema-service` and `stager` container and Helm assets live under [spec](spec), with the canonical chart at [spec/charts/loza](spec/charts/loza)
 - Root-level [docker-compose.yml](docker-compose.yml) is the local Kafka/Redis/schema-service/stager integration stack
 
 Treat `spec/deploy/k8s` as thin example manifests that mirror the chart-managed deploy path.

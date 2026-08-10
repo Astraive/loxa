@@ -14,7 +14,7 @@ import (
 )
 
 // userConfigFiles lists the user override file names searched in cwd order.
-var userConfigFiles = []string{"loxa-cortex.yaml", "loxa.yaml"}
+var userConfigFiles = []string{"loza-cortex.yaml", "loza.yaml"}
 
 // Config represents the complete Cortex configuration
 type Config struct {
@@ -269,7 +269,7 @@ type LoggingConfig struct {
 	Format string `yaml:"format"` // "json" or "console"
 }
 
-// CollectorConfig contains loxa-collector integration settings
+// CollectorConfig contains loza-collector integration settings
 type CollectorConfig struct {
 	Mode                 string        `yaml:"mode"` // "fanout", "pull", "replay"
 	URL                  string        `yaml:"url"`
@@ -683,7 +683,7 @@ func Default() *Config {
 	return cfg
 }
 
-const bundledDefaultFilename = "loxa-cortex.defaults.yaml"
+const bundledDefaultFilename = "loza-cortex.defaults.yaml"
 
 var bundledDefaultCandidates = defaultBundledDefaultCandidates
 

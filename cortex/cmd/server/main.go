@@ -11,20 +11,20 @@ import (
 	"syscall"
 	"time"
 
-	loxacortex "github.com/astraive/loxa/cortex"
-	"github.com/astraive/loxa/cortex/internal/collectorsync"
-	"github.com/astraive/loxa/cortex/internal/config"
-	"github.com/astraive/loxa/cortex/internal/logging"
-	"github.com/astraive/loxa/cortex/internal/processor"
-	"github.com/astraive/loxa/cortex/internal/storage"
-	grpcserver "github.com/astraive/loxa/cortex/server/grpc"
-	httpserver "github.com/astraive/loxa/cortex/server/http"
+	lozacortex "github.com/astraive/loza/cortex"
+	"github.com/astraive/loza/cortex/internal/collectorsync"
+	"github.com/astraive/loza/cortex/internal/config"
+	"github.com/astraive/loza/cortex/internal/logging"
+	"github.com/astraive/loza/cortex/internal/processor"
+	"github.com/astraive/loza/cortex/internal/storage"
+	grpcserver "github.com/astraive/loza/cortex/server/grpc"
+	httpserver "github.com/astraive/loza/cortex/server/http"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
-var version = loxacortex.Version
+var version = lozacortex.Version
 
 var grpcServer *grpc.Server
 
@@ -40,7 +40,7 @@ func main() {
 	logger := logging.New(*logLevel, *logFormat)
 	log.Logger = logger.GetZerologLogger()
 
-	log.Info().Msg("Starting LOXA Cortex")
+	log.Info().Msg("Starting LOZA Cortex")
 
 	var (
 		cfg *config.Config

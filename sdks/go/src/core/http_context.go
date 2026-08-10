@@ -32,7 +32,7 @@ func TraceFromOTel(ctx context.Context) (traceID string, spanID string) {
 	return sc.TraceID().String(), sc.SpanID().String()
 }
 
-// InjectHTTPHeaders injects LOXA + trace context headers into an outbound request.
+// InjectHTTPHeaders injects LOZA + trace context headers into an outbound request.
 func InjectHTTPHeaders(req *http.Request) {
 	if req == nil {
 		return
@@ -40,7 +40,7 @@ func InjectHTTPHeaders(req *http.Request) {
 	req.Header = InjectHTTPHeaderCarrier(req.Context(), req.Header)
 }
 
-// InjectHTTPHeaderCarrier injects LOXA and trace context into headers.
+// InjectHTTPHeaderCarrier injects LOZA and trace context into headers.
 func InjectHTTPHeaderCarrier(ctx context.Context, header http.Header) http.Header {
 	if header == nil {
 		header = make(http.Header)

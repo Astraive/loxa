@@ -1,16 +1,16 @@
-# LOXA Configuration Reference
+# LOZA Configuration Reference
 
-This guide documents all configuration options for LOXA components.
+This guide documents all configuration options for LOZA components.
 
 ## File Format
 
-Configuration is stored in YAML format. By default, LOXA looks for:
-- `loxa.yaml` (current directory)
-- `./loxa.yaml`
+Configuration is stored in YAML format. By default, LOZA looks for:
+- `loza.yaml` (current directory)
+- `./loza.yaml`
 - Parent directories up to 5 levels
 - Executable directory
 
-Environment variable overrides: Set `LOXA_COLLECTOR_DEFAULTS` to specify an alternative defaults file.
+Environment variable overrides: Set `LOZA_COLLECTOR_DEFAULTS` to specify an alternative defaults file.
 
 ## Collector Configuration
 
@@ -124,7 +124,7 @@ DuckDB is the supported primary storage backend. Raw event persistence is encryp
 ```yaml
 storage:
   primary: duckdb
-  encryption_key_env: LOXA_STORAGE_ENCRYPTION_KEY
+  encryption_key_env: LOZA_STORAGE_ENCRYPTION_KEY
 ```
 
 ### `duckdb`
@@ -133,7 +133,7 @@ DuckDB database configuration (when `storage.primary: duckdb`).
 
 ```yaml
 duckdb:
-  path: loxa.db                        # Database file path
+  path: loza.db                        # Database file path
   driver: duckdb
   table: events                        # Table name
   raw_column: raw                      # Column for raw event JSON
@@ -194,7 +194,7 @@ Kafka configuration (when `storage.primary: kafka`).
 kafka:
   brokers:
     - 127.0.0.1:9092                   # Broker addresses
-  topic: loxa-events
+  topic: loza-events
   acks: all                            # 0 | 1 | all (delivery guarantee)
   request_timeout: 10s
   enable_idempotence: true             # Enable exactly-once semantics
@@ -208,7 +208,7 @@ Worker process configuration (consuming from Kafka).
 
 ```yaml
 worker:
-  consumer_group: loxa-worker
+  consumer_group: loza-worker
   poll_timeout: 2s
 ```
 
@@ -240,14 +240,14 @@ reliability:
   mode: direct                         # direct | queue | spool
   
   # Spool mode settings
-  spool_dir: loxa-spool
+  spool_dir: loza-spool
   spool_file: spool.ndjson
   max_spool_bytes: 10737418240         # 10GB max spool size
   fsync: true                          # Sync to disk on each write
   delivery_queue_size: 4096            # In-flight events queue
   
   # Queue mode settings (with Kafka)
-  queue_dir: loxa-queue
+  queue_dir: loza-queue
   queue_batch_size: 100                # Events per worker batch
   queue_batch_timeout: 5s
   queue_flush_interval: 1s
@@ -327,8 +327,8 @@ Registered component implementations.
 ```yaml
 components:
   receivers:
-    - loxa_http
-    - loxa_ndjson
+    - loza_http
+    - loza_ndjson
   
   processors:
     - validate
@@ -367,7 +367,7 @@ Dead letter queue for undeliverable events.
 ```yaml
 dead_letter:
   enabled: true
-  path: loxa-dlq                       # DLQ directory
+  path: loza-dlq                       # DLQ directory
 ```
 
 ### `fanout`
@@ -397,7 +397,7 @@ fanout:
       clickhouse:
         addrs:
           - http://clickhouse:8123
-        database: loxa
+        database: loza
         username: default
         password: default
         table: events
@@ -408,7 +408,7 @@ fanout:
       type: postgres
       postgres:
         addr: postgres:5432
-        database: loxa
+        database: loza
         username: postgres
         password: postgres
         table: events
@@ -418,7 +418,7 @@ fanout:
       s3:
         bucket: my-bucket
         region: us-west-2
-        prefix: loxa-events/
+        prefix: loza-events/
         batch_size: 100
   
   delivery:
@@ -459,7 +459,7 @@ schema_governance:
   schema_version: v1
   event_version: v1
   registry_file: schema-registry.yaml
-  quarantine_path: loxa-quarantine
+  quarantine_path: loza-quarantine
   
   registry:
     - schema_version: v1
@@ -475,12 +475,12 @@ schema_governance:
 ### Go SDK
 
 ```go
-import loxa "github.com/astraive/loxa/sdks/go"
+import loza "github.com/astraive/loza/sdks/go"
 
-client, err := loxa.New(loxa.Config{
+client, err := loza.New(loza.Config{
     Service: "my-service",
     Sink:    sink,
-    APIKey:  os.Getenv("LOXA_API_KEY"),
+    APIKey:  os.Getenv("LOZA_API_KEY"),
 })
 if err != nil {
     panic(err)
@@ -492,26 +492,26 @@ See [Authentication](authentication.md) for key configuration.
 
 // Configuration precedence:
 // 1. Code (NewSDK options)
-// 2. Environment variables (LOXA_*)
-// 3. Config file (./loxa.yaml)
+// 2. Environment variables (LOZA_*)
+// 3. Config file (./loza.yaml)
 // 4. Defaults
 ```
 
 ### Python SDK
 
 ```python
-from loxa import SDK
+from loza import SDK
 
 sdk = SDK()
 
 # Or with config file:
-sdk = SDK(config_file="./loxa.yaml")
+sdk = SDK(config_file="./loza.yaml")
 ```
 
 ### Rust SDK
 
 ```rust
-use loxa::SDK;
+use loza::SDK;
 
 let sdk = SDK::new();
 
@@ -524,31 +524,31 @@ All configuration can be overridden via environment variables:
 
 ```bash
 # Collector
-export LOXA_COLLECTOR_ADDR=":9309"
-export LOXA_API_KEY="secret123"
-export LOXA_DUCKDB_PATH="/data/loxa.db"
-export LOXA_RETENTION_DAYS=30
-export LOXA_RETENTION_MAX_SIZE=10737418240
+export LOZA_COLLECTOR_ADDR=":9309"
+export LOZA_API_KEY="secret123"
+export LOZA_DUCKDB_PATH="/data/loza.db"
+export LOZA_RETENTION_DAYS=30
+export LOZA_RETENTION_MAX_SIZE=10737418240
 
 # Logging
-export LOXA_LOGGING_LEVEL="debug"
+export LOZA_LOGGING_LEVEL="debug"
 
 # Reliability
-export LOXA_RELIABILITY_MODE="spool"
+export LOZA_RELIABILITY_MODE="spool"
 ```
 
 ## Default Configuration
 
-The default configuration is embedded in LOXA binaries. To see defaults:
+The default configuration is embedded in LOZA binaries. To see defaults:
 
 ```bash
-loxa config print
+loza config print
 ```
 
 To validate your configuration:
 
 ```bash
-loxa config validate -c loxa.yaml
+loza config validate -c loza.yaml
 ```
 
 ## Configuration Examples
@@ -563,7 +563,7 @@ auth:
   enabled: false
 
 duckdb:
-  path: ./loxa.db
+  path: ./loza.db
 
 logging:
   level: debug
@@ -591,7 +591,7 @@ auth:
       roles: ["collector_ingest_server"]
 
 duckdb:
-  path: /data/loxa.db                  # Persistent volume
+  path: /data/loza.db                  # Persistent volume
   max_open_conns: 5
   checkpoint_interval: 5m
 
@@ -602,7 +602,7 @@ retention:
 
 reliability:
   mode: spool
-  spool_dir: /data/loxa-spool
+  spool_dir: /data/loza-spool
   max_spool_bytes: 107374182400
 
 logging:
@@ -624,7 +624,7 @@ kafka:
     - kafka-1:9092
     - kafka-2:9092
     - kafka-3:9092
-  topic: loxa-events
+  topic: loza-events
   acks: all
   enable_idempotence: true
 

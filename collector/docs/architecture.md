@@ -168,4 +168,4 @@ DuckDB retention is managed by the `storage.duckdb.retention_days` config. Event
 
 ### Collector-Owned Storage
 
-The collector owns all sink implementations. SDKs do not connect to databases directly. The collector imports `internal/event` for sink interfaces and `internal/storage` for DuckDB operations. There is no dependency on any LOXA SDK module.
+The collector owns all sink implementations. SDKs do not connect to databases directly. The collector imports `internal/event` for sink interfaces and `internal/storage` for DuckDB operations. There is no dependency on any LOZA SDK module.

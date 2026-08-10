@@ -31,7 +31,7 @@ cargo test
 4. Verify Docker build:
 
 ```bash
-docker build -t loxa-cortex:$(git describe --tags --always) .
+docker build -t loza-cortex:$(git describe --tags --always) .
 ```
 
 5. Update `CHANGELOG.md` with the new version and date.
@@ -56,8 +56,8 @@ git push origin cortex/v0.2.0
 
 ```bash
 cd cortex/configs
-docker build -t ghcr.io/astraive/loxa-cortex:0.2.0 ..
-docker push ghcr.io/astraive/loxa-cortex:0.2.0
+docker build -t ghcr.io/astraive/loza-cortex:0.2.0 ..
+docker push ghcr.io/astraive/loza-cortex:0.2.0
 ```
 
 ## Kubernetes Deployment

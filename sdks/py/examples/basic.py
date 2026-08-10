@@ -1,4 +1,4 @@
-from loxa import Config, Params, new
+from loza import Config, Params, new
 
 
 def main() -> None:

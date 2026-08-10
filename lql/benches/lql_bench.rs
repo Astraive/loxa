@@ -1,10 +1,10 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use loxa_lql::compiler::Target;
-use loxa_lql::lexer::Lexer;
-use loxa_lql::parser::Parser;
-use loxa_lql::schema::Schema;
-use loxa_lql::{compile_to_duckdb, parse};
+use loza_lql::compiler::Target;
+use loza_lql::lexer::Lexer;
+use loza_lql::parser::Parser;
+use loza_lql::schema::Schema;
+use loza_lql::{compile_to_duckdb, parse};
 
 // ── Query samples ────────────────────────────────────────────────────────────
 
@@ -213,7 +213,7 @@ fn bench_sql_compilation(c: &mut Criterion) {
     // ClickHouse compilation
     c.bench_function("compile_clickhouse_complex", |b| {
         b.iter(|| {
-            let sql = loxa_lql::compile_to_clickhouse(black_box(COMPLEX_QUERY));
+            let sql = loza_lql::compile_to_clickhouse(black_box(COMPLEX_QUERY));
             black_box(sql);
         })
     });
@@ -223,7 +223,7 @@ fn bench_sql_compilation(c: &mut Criterion) {
     let schema = Schema::duckdb_default();
     c.bench_function("compile_only_duckdb", |b| {
         b.iter(|| {
-            let sql = loxa_lql::compiler::compile(
+            let sql = loza_lql::compiler::compile(
                 black_box(&pipeline),
                 Target::DuckDB,
                 black_box(&schema),
@@ -236,7 +236,7 @@ fn bench_sql_compilation(c: &mut Criterion) {
     let schema_ch = Schema::clickhouse_default();
     c.bench_function("compile_only_clickhouse", |b| {
         b.iter(|| {
-            let sql = loxa_lql::compiler::compile(
+            let sql = loza_lql::compiler::compile(
                 black_box(&pipeline_ch),
                 Target::ClickHouse,
                 black_box(&schema_ch),

@@ -1,0 +1,17 @@
+name: loza-rs
+kind: sdk
+language: rust
+version: 0.2.6
+description: Rust SDK for LOZA
+license: MIT
+repository: https://github.com/Astraive/loza
+module: crates:loza
+
+paths:
+  root: sdks/rs
+
+publish:
+  crates:
+    owner: astraive
+    package: loza
+    directory: sdks/rs

@@ -3,7 +3,7 @@ package packages_test
 import (
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go/src/packages"
+	"github.com/astraive/loza/sdks/go/src/packages"
 )
 
 func TestCatalogsNonEmpty(t *testing.T) {

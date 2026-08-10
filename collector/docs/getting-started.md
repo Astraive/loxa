@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide walks you through building, running, and sending your first event to the LOXA collector in under 5 minutes.
+This guide walks you through building, running, and sending your first event to the LOZA collector in under 5 minutes.
 
 ## Prerequisites
 
@@ -11,13 +11,13 @@ This guide walks you through building, running, and sending your first event to 
 
 ```bash
 cd collector
-go build -o loxa-collector.exe ./cmd/loxa-collector
+go build -o loza-collector.exe ./cmd/loza-collector
 ```
 
 ## Run
 
 ```bash
-./loxa-collector.exe run -c configs/loxa.local.yaml
+./loza-collector.exe run -c configs/loza.local.yaml
 ```
 
 The collector starts an HTTP server on `localhost:9308` by default.
@@ -51,7 +51,7 @@ The collector responds with an acknowledgment:
 ```mermaid
 sequenceDiagram
     participant App as Application
-    participant SDK as LOXA SDK
+    participant SDK as LOZA SDK
     participant C as Collector
     participant P as Processing Pipeline
     participant S as Sinks

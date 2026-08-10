@@ -41,6 +41,6 @@
   "timers": [
     { "name": "model.inference", "duration_ms": 1400 }
   ],
-  "sdk": { "name": "loxa-js", "version": "0.1.0", "language": "javascript" },
+  "sdk": { "name": "loza-js", "version": "0.1.0", "language": "javascript" },
   "collector": { "received_at": "2026-05-22T06:10:45.511Z" }
 }

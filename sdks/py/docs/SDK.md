@@ -1,17 +1,17 @@
 # SDK Overview
 
-The LOXA Python SDK is a lightweight bridge connector to the LOXA collector. It provides the wide-event lifecycle (create, enrich, finish, emit) without owning heavy production sinks.
+The LOZA Python SDK is a lightweight bridge connector to the LOZA collector. It provides the wide-event lifecycle (create, enrich, finish, emit) without owning heavy production sinks.
 
 ## Architecture
 
 ```
 Application Code
       |
-  loxa SDK (Python)
+  loza SDK (Python)
       |
   HTTPBatchSink
       |
-  loxa-collector (Go)
+  loza-collector (Go)
       |
   ClickHouse / Postgres / DuckDB / Kafka / OTLP / S3 / GCS / Loki
 ```
@@ -47,14 +47,14 @@ The collector owns:
 4. Let the collector handle storage, retries, fan-out, and heavy sink integration.
 
 ```python
-import loxa
+import loza
 
 cfg = (
-    loxa.production("checkout-service")
-    .with_sink(loxa.HTTPBatchSink("http://collector:9308/events"))
-    .with_sampler(loxa.SampleErrors())
+    loza.production("checkout-service")
+    .with_sink(loza.HTTPBatchSink("http://collector:9308/events"))
+    .with_sampler(loza.SampleErrors())
 )
-loxa.configure(cfg)
+loza.configure(cfg)
 ```
 
 ## Module-Level Facade
@@ -62,19 +62,19 @@ loxa.configure(cfg)
 The SDK provides a module-level facade that delegates to the global default logger:
 
 ```python
-import loxa
+import loza
 
-ctx = loxa.start_event(loxa.Params(event="my.event"))
-loxa.enrich(ctx, loxa.String("key", "value"))
-loxa.finish(ctx, "success")
-loxa.emit(ctx)
+ctx = loza.start_event(loza.Params(event="my.event"))
+loza.enrich(ctx, loza.String("key", "value"))
+loza.finish(ctx, "success")
+loza.emit(ctx)
 ```
 
 All functions are available in both lowercase (Pythonic) and Uppercase (Go-style alias) forms:
 
 ```python
-loxa.start_event(params)  # Pythonic
-loxa.StartEvent(params)   # Go-style alias
+loza.start_event(params)  # Pythonic
+loza.StartEvent(params)   # Go-style alias
 ```
 
 ## Dependencies
@@ -93,7 +93,7 @@ Configuration can be loaded from multiple sources (layered):
 4. Programmatic overrides
 
 ```python
-from loxa.core.config import load_layered_config
+from loza.core.config import load_layered_config
 
 cfg = load_layered_config()  # merges all sources
 ```

@@ -1,7 +1,7 @@
-# LOXA Rust SDK -- Instrumentation Guide
+# LOZA Rust SDK -- Instrumentation Guide
 
-> **Audience**: Rust engineers instrumenting production services with LOXA structured events.
-> **SDK version**: loxa-rs v0.0.1 | **Spec version**: see `LOXA_SPEC_VERSION`
+> **Audience**: Rust engineers instrumenting production services with LOZA structured events.
+> **SDK version**: loza-rs v0.0.1 | **Spec version**: see `LOZA_SPEC_VERSION`
 
 ---
 
@@ -25,14 +25,14 @@
 
 ## 1. Introduction
 
-LOXA's Rust SDK provides a **wide-event structured instrumentation** layer that turns every meaningful business operation -- checkout, payment, authentication, background job, queue consumer, cron task -- into a rich, schema-validated JSON event. These events flow through the LOXA Collector into your observability stack (DuckDB, Datadog, OTel, Elasticsearch, or any custom sink).
+LOZA's Rust SDK provides a **wide-event structured instrumentation** layer that turns every meaningful business operation -- checkout, payment, authentication, background job, queue consumer, cron task -- into a rich, schema-validated JSON event. These events flow through the LOZA Collector into your observability stack (DuckDB, Datadog, OTel, Elasticsearch, or any custom sink).
 
 ### Why Wide Events
 
-Traditional logging produces narrow, fragmented log lines. A LOXA wide event captures the **entire operational context** of a business operation in a single structured document:
+Traditional logging produces narrow, fragmented log lines. A LOZA wide event captures the **entire operational context** of a business operation in a single structured document:
 
 ```
-| Traditional Log                     | LOXA Wide Event                          |
+| Traditional Log                     | LOZA Wide Event                          |
 |-------------------------------------|------------------------------------------|
 | "Order 123 placed by user 456"      | Full event with order.id, user.id,       |
 |                                     | payment.amount, cart.items, checkpoints, |
@@ -66,9 +66,9 @@ Both styles are functionally identical. Choose whichever fits your codebase conv
 
 ```mermaid
 flowchart LR
-    A[Your Rust Service] -->|StartEvent + Enrich + Finish + Emit| B[loxa-rs Logger]
+    A[Your Rust Service] -->|StartEvent + Enrich + Finish + Emit| B[loza-rs Logger]
     B -->|JSON payload| C{Sink}
-    C -->|HttpBatch| D[LOXA Collector]
+    C -->|HttpBatch| D[LOZA Collector]
     C -->|Stdout| E[Terminal / Log Aggregator]
     C -->|File| F[Rotating Log File]
     C -->|Memory| G[Test Capture]
@@ -83,7 +83,7 @@ flowchart LR
 This example demonstrates the complete lifecycle of a checkout business operation.
 
 ```rust
-use loxa::{
+use loza::{
     Config, Params, Enrich, Append, Checkpoint,
     Finish, FinishError, Emit, Flush, Shutdown,
     UserID, TenantID, OrderID, CartID, CustomerID,
@@ -96,14 +96,14 @@ use loxa::{
 
 fn main() {
     // 1. Configure the default logger
-    loxa::configure(Config::production("checkout-service")
+    loza::configure(Config::production("checkout-service")
         .with_sink(HttpBatchSink("http://collector:9308/events"))
         .with_sampler(SampleAll())
         .with_redactor(DefaultRedactor()))
-        .expect("failed to configure loxa");
+        .expect("failed to configure loza");
 
     // 2. Start a checkout event
-    let mut evt = loxa::start_event(Params::new("checkout.completed").with_kind("event"));
+    let mut evt = loza::start_event(Params::new("checkout.completed").with_kind("event"));
 
     // 3. Attach identity context
     Append(&mut evt, UserID("u_8f3a"));
@@ -198,7 +198,7 @@ fn main() {
 
 ## 3. Core Lifecycle
 
-Every LOXA event follows a strict state machine:
+Every LOZA event follows a strict state machine:
 
 ```mermaid
 stateDiagram-v2
@@ -225,24 +225,24 @@ stateDiagram-v2
 
 ```rust
 // Generic event
-let mut evt = loxa::start_event(Params::new("order.created").with_kind("event"));
+let mut evt = loza::start_event(Params::new("order.created").with_kind("event"));
 
 // HTTP event -- method and path are pre-populated
-let mut evt = loxa::start_event(
+let mut evt = loza::start_event(
     StartHTTPEvent("POST", "/api/orders")
 );
 
 // Background job
-let mut evt = loxa::start_event(Params::new("send_welcome_email").with_kind("job"));
+let mut evt = loza::start_event(Params::new("send_welcome_email").with_kind("job"));
 
 // Queue consumer
-let mut evt = loxa::start_event(Params::new("order_notifications").with_kind("queue"));
+let mut evt = loza::start_event(Params::new("order_notifications").with_kind("queue"));
 
 // CLI command
-let mut evt = loxa::start_event(Params::new("migrate_db").with_kind("cli"));
+let mut evt = loza::start_event(Params::new("migrate_db").with_kind("cli"));
 
 // Cron task
-let mut evt = loxa::start_event(Params::new("cleanup_expired_sessions").with_kind("cron"));
+let mut evt = loza::start_event(Params::new("cleanup_expired_sessions").with_kind("cron"));
 ```
 
 **Params builder methods:**
@@ -318,15 +318,15 @@ Finish(&mut evt);
 FinishError(&mut evt, "payment gateway timeout");
 
 // Via module-level functions (return Result)
-loxa::finish(&mut evt, "success")?;
-loxa::finish_error(&mut evt, "connection refused")?;
+loza::finish(&mut evt, "success")?;
+loza::finish_error(&mut evt, "connection refused")?;
 ```
 
 ### 3.5 Emitting and Flushing
 
 ```rust
 // Emit sends the event through the configured sink pipeline
-Emit(&mut evt)?;  // returns Result<(), LoxaError>
+Emit(&mut evt)?;  // returns Result<(), LozaError>
 
 // Flush drains any async buffers
 Flush();
@@ -504,7 +504,7 @@ Append(&mut evt, HashString("user.email", "alice@example.com"));
 
 ## 6. Canonical Helpers
 
-Canonical helpers set **reserved field names** that map to the LOXA spec's standard schema. They use dotted key prefixes that the logger routes to nested JSON groups (`user.*`, `tenant.*`, `http.*`, `resource.*`).
+Canonical helpers set **reserved field names** that map to the LOZA spec's standard schema. They use dotted key prefixes that the logger routes to nested JSON groups (`user.*`, `tenant.*`, `http.*`, `resource.*`).
 
 ### 6.1 Identity & Multi-Tenancy
 
@@ -629,7 +629,7 @@ Append(&mut evt, Route("/api/orders"));
 `FinishError` sets `outcome = "error"`, `level = "error"`, and populates the `error` object in the event JSON.
 
 ```rust
-let mut evt = loxa::start_event(Params::new("payment.charge").with_kind("event"));
+let mut evt = loza::start_event(Params::new("payment.charge").with_kind("event"));
 
 match charge_payment(&order).await {
     Ok(charge) => {
@@ -649,7 +649,7 @@ Emit(&mut evt)?;
 For detailed error context, combine the error helpers:
 
 ```rust
-use loxa::{
+use loza::{
     ErrorType, ErrorCode, ErrorMessage, ErrorStack, Retryable,
 };
 
@@ -701,22 +701,22 @@ The SDK provides first-class middleware for **Actix Web**, **Axum**, and **Tower
 ```toml
 # Cargo.toml
 [dependencies]
-loxa = { version = "1.0", features = ["actix"] }
+loza = { version = "1.0", features = ["actix"] }
 ```
 
 ```rust
 use actix_web::{web, App, HttpServer, HttpResponse};
-use loxa::{Config, HttpBatchSink};
-use loxa::middleware::actix::LoxaMiddleware;
+use loza::{Config, HttpBatchSink};
+use loza::middleware::actix::LozaMiddleware;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let logger = loxa::create_loxa(Config::production("api-server")
+    let logger = loza::create_loza(Config::production("api-server")
         .with_sink(HttpBatchSink("http://collector:9308/events")));
 
     HttpServer::new(move || {
         App::new()
-            .wrap(LoxaMiddleware::new(logger.clone(), "api-server"))
+            .wrap(LozaMiddleware::new(logger.clone(), "api-server"))
             .route("/orders", web::post().to(create_order))
     })
     .bind("0.0.0.0:8080")?
@@ -729,25 +729,25 @@ async fn main() -> std::io::Result<()> {
 
 ```toml
 [dependencies]
-loxa = { version = "1.0", features = ["axum"] }
+loza = { version = "1.0", features = ["axum"] }
 ```
 
 ```rust
 use axum::{Router, routing::post, middleware};
-use loxa::{Config, HttpBatchSink};
-use loxa::middleware::axum::{LoxaLayer, loxa_middleware};
+use loza::{Config, HttpBatchSink};
+use loza::middleware::axum::{LozaLayer, loza_middleware};
 use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
-    let logger = Arc::new(loxa::create_loxa(Config::production("api-server")
+    let logger = Arc::new(loza::create_loza(Config::production("api-server")
         .with_sink(HttpBatchSink("http://collector:9308/events"))));
 
     let app = Router::new()
         .route("/orders", post(create_order))
         .layer(middleware::from_fn(move |req, next| {
             let logger = logger.clone();
-            loxa_middleware(logger, "api-server".to_string(), req, next)
+            loza_middleware(logger, "api-server".to_string(), req, next)
         }));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
@@ -759,11 +759,11 @@ async fn main() {
 
 ```toml
 [dependencies]
-loxa = { version = "1.0", features = ["tower"] }
+loza = { version = "1.0", features = ["tower"] }
 ```
 
 ```rust
-use loxa::middleware::tower::{LoxaLayer, MiddlewareConfig, capture_request};
+use loza::middleware::tower::{LozaLayer, MiddlewareConfig, capture_request};
 
 // Manual capture for custom Tower services
 let result = capture_request(&logger, "GET", "/health", 200)?;
@@ -802,13 +802,13 @@ pub struct MiddlewareConfig {
 
 ```rust
 // Production -- strict validation, async enabled
-loxa::configure(Config::production("my-service")).unwrap();
+loza::configure(Config::production("my-service")).unwrap();
 
 // Development -- lenient, stdout sink
-loxa::configure(Config::dev("my-service")).unwrap();
+loza::configure(Config::dev("my-service")).unwrap();
 
 // Testing -- memory sink for capture
-loxa::configure(Config::test("my-service")).unwrap();
+loza::configure(Config::test("my-service")).unwrap();
 ```
 
 ### 10.2 Config Builder
@@ -828,12 +828,12 @@ let config = Config::production("my-service")
 
 ### 10.3 Config Builder API
 
-The `loxa::create_loxa` factory accepts a `Config` object with builder methods:
+The `loza::create_loza` factory accepts a `Config` object with builder methods:
 
 ```rust
-use loxa::{Config, HttpBatchSink, SampleErrors, RedactKeys, CanonicalWins};
+use loza::{Config, HttpBatchSink, SampleErrors, RedactKeys, CanonicalWins};
 
-let logger = loxa::create_loxa(
+let logger = loza::create_loza(
     Config::production("checkout-service")
         .with_version("2.0.0")
         .with_environment("production")
@@ -972,7 +972,7 @@ let config = Config::production("svc")
 `test_logger` creates a logger with a **MemorySink** for capturing events in tests.
 
 ```rust
-use loxa::testkit::{test_logger, capture, assert_contains, assert_event, assert_redacted, assert_has_checkpoint};
+use loza::testkit::{test_logger, capture, assert_contains, assert_event, assert_redacted, assert_has_checkpoint};
 
 #[test]
 fn test_order_creation() {
@@ -1052,12 +1052,12 @@ fn test_checkpoints() {
 For advanced test scenarios, use `MemorySinkStore` directly:
 
 ```rust
-use loxa::{Config, SinkConfig, MemorySinkStore};
+use loza::{Config, SinkConfig, MemorySinkStore};
 
 #[test]
 fn test_advanced_capture() {
     let store = MemorySinkStore::new();
-    let logger = loxa::create_loxa(
+    let logger = loza::create_loza(
         Config::test("advanced").with_sink(SinkConfig::Memory(store.clone()))
     );
 
@@ -1088,7 +1088,7 @@ fn test_advanced_capture() {
 ### 13.1 Checkout Flow
 
 ```rust
-use loxa::*;
+use loza::*;
 
 fn process_checkout(logger: &Logger, user: &User, cart: &Cart) -> Result<Order, AppError> {
     let mut evt = logger.start_event(Params::new("checkout.completed").with_kind("event"));
@@ -1398,7 +1398,7 @@ async fn cleanup_expired_sessions(logger: &Logger) -> Result<(), CronError> {
 
 | PascalCase              | snake_case              | Returns                 |
 |-------------------------|-------------------------|-------------------------|
-| `create_loxa(config)`   | `create_loxa(config)`   | `Logger` (custom instance) |
+| `create_loza(config)`   | `create_loza(config)`   | `Logger` (custom instance) |
 | `TryNew(config)`        | `try_new_logger(config)`| `Result<Logger, Error>` |
 | `Dev(service)`          | `dev(service)`          | `Logger`                |
 | `Production(service)`   | `production(service)`   | `Logger`                |
@@ -1447,4 +1447,4 @@ async fn cleanup_expired_sessions(logger: &Logger) -> Result<(), CronError> {
 
 ---
 
-> **LOXA Rust SDK** -- Wide events for the systems you actually run in production.
+> **LOZA Rust SDK** -- Wide events for the systems you actually run in production.

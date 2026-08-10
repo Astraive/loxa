@@ -1,4 +1,4 @@
-# LOXA SDK Conformance Contract (v0.0.2)
+# LOZA SDK Conformance Contract (v0.0.2)
 
 ## Purpose
 
@@ -16,16 +16,16 @@ Stable-v1 scope is intentionally **collector-first**:
 
 Every SDK MUST expose the same mental model:
 
-- Default/global client: `loxa.<method>()` or package/module equivalents.
-- Cross-language factory: `createLoxa` / `create_loxa` / `CreateLoxa`.
-- Idiomatic constructor: optional language-native constructor (`Loxa`, `New`, `Loxa::new`).
+- Default/global client: `loza.<method>()` or package/module equivalents.
+- Cross-language factory: `createLoza` / `create_loza` / `CreateLoza`.
+- Idiomatic constructor: optional language-native constructor (`Loza`, `New`, `Loza::new`).
 - Same-config alias: `alias(name)` returns an immutable child client.
 
 Alias semantics are fixed in v0.0.2:
 
 - `alias(name)` MUST preserve parent config, including `service`, endpoint, auth, sampling, redaction, and sink configuration.
 - `alias(name)` MUST NOT mutate the parent/default client.
-- Events emitted by an alias MUST include custom metadata key `loxa.alias` with the alias name.
+- Events emitted by an alias MUST include custom metadata key `loza.alias` with the alias name.
 
 ## 1. Event Lifecycle
 
@@ -219,9 +219,9 @@ When kind="http", http object MUST contain:
 ## 7. Configuration Precedence
 
 ### 7.1 Priority Order (highest to lowest)
-1. Environment variables (LOXA_*)
+1. Environment variables (LOZA_*)
 2. SDK Config struct fields
-3. Default configuration file (~/.loxa/config.yaml)
+3. Default configuration file (~/.loza/config.yaml)
 4. Built-in defaults
 
 ### 7.2 Canonical Config Fields
@@ -367,14 +367,14 @@ The following capabilities are intentionally collector-owned and MUST NOT be tre
 
 ## 12. Default API Surface
 
-### 12.1 `loxa` Namespace
-- All SDKs MUST export a `loxa` object/namespace as the primary API surface
-- `loxa.info("msg")` etc. MUST delegate to the global default logger
-- `loxa.New(cfg)` / `loxa.new(cfg)` / `loxa::New(cfg)` creates a custom instance
+### 12.1 `loza` Namespace
+- All SDKs MUST export a `loza` object/namespace as the primary API surface
+- `loza.info("msg")` etc. MUST delegate to the global default logger
+- `loza.New(cfg)` / `loza.new(cfg)` / `loza::New(cfg)` creates a custom instance
 
-### 12.2 `CreateLoxa()` Factory
-- JS, Python, Rust MUST export `CreateLoxa()` / `create_loxa()` as an alias for `New()`/`new()`
-- Go does not need this because `loxa.New(cfg)` is already idiomatic
+### 12.2 `CreateLoza()` Factory
+- JS, Python, Rust MUST export `CreateLoza()` / `create_loza()` as an alias for `New()`/`new()`
+- Go does not need this because `loza.New(cfg)` is already idiomatic
 - Both PascalCase and camelCase/snake_case variants MUST be exported
 
 ### 12.3 `Alias()` Method

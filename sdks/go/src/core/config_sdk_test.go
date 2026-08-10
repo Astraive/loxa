@@ -111,16 +111,16 @@ func TestConfigValidation(t *testing.T) {
 func TestLoadFromEnv(t *testing.T) {
 	// Save original env vars
 	originalEnv := map[string]string{
-		"LOXA_COLLECTOR_URL":      os.Getenv("LOXA_COLLECTOR_URL"),
-		"LOXA_SERVICE_NAME":       os.Getenv("LOXA_SERVICE_NAME"),
-		"LOXA_SERVICE_VERSION":    os.Getenv("LOXA_SERVICE_VERSION"),
-		"LOXA_ENVIRONMENT":        os.Getenv("LOXA_ENVIRONMENT"),
-		"LOXA_TENANT_ID":          os.Getenv("LOXA_TENANT_ID"),
-		"LOXA_FLUSH_INTERVAL":     os.Getenv("LOXA_FLUSH_INTERVAL"),
-		"LOXA_MAX_BACKOFF":        os.Getenv("LOXA_MAX_BACKOFF"),
-		"LOXA_TIMEOUT":            os.Getenv("LOXA_TIMEOUT"),
-		"LOXA_CONNECTION_TIMEOUT": os.Getenv("LOXA_CONNECTION_TIMEOUT"),
-		"LOXA_ENABLE_COMPRESSION": os.Getenv("LOXA_ENABLE_COMPRESSION"),
+		"LOZA_COLLECTOR_URL":      os.Getenv("LOZA_COLLECTOR_URL"),
+		"LOZA_SERVICE_NAME":       os.Getenv("LOZA_SERVICE_NAME"),
+		"LOZA_SERVICE_VERSION":    os.Getenv("LOZA_SERVICE_VERSION"),
+		"LOZA_ENVIRONMENT":        os.Getenv("LOZA_ENVIRONMENT"),
+		"LOZA_TENANT_ID":          os.Getenv("LOZA_TENANT_ID"),
+		"LOZA_FLUSH_INTERVAL":     os.Getenv("LOZA_FLUSH_INTERVAL"),
+		"LOZA_MAX_BACKOFF":        os.Getenv("LOZA_MAX_BACKOFF"),
+		"LOZA_TIMEOUT":            os.Getenv("LOZA_TIMEOUT"),
+		"LOZA_CONNECTION_TIMEOUT": os.Getenv("LOZA_CONNECTION_TIMEOUT"),
+		"LOZA_ENABLE_COMPRESSION": os.Getenv("LOZA_ENABLE_COMPRESSION"),
 	}
 
 	// Restore env vars after test
@@ -135,16 +135,16 @@ func TestLoadFromEnv(t *testing.T) {
 	}()
 
 	// Set test env vars
-	os.Setenv("LOXA_COLLECTOR_URL", "http://test-collector:9308")
-	os.Setenv("LOXA_SERVICE_NAME", "env-service")
-	os.Setenv("LOXA_SERVICE_VERSION", "2.0.0")
-	os.Setenv("LOXA_ENVIRONMENT", "staging")
-	os.Setenv("LOXA_TENANT_ID", "tenant-env")
-	os.Setenv("LOXA_FLUSH_INTERVAL", "10s")
-	os.Setenv("LOXA_MAX_BACKOFF", "60s")
-	os.Setenv("LOXA_TIMEOUT", "20s")
-	os.Setenv("LOXA_CONNECTION_TIMEOUT", "10s")
-	os.Setenv("LOXA_ENABLE_COMPRESSION", "false")
+	os.Setenv("LOZA_COLLECTOR_URL", "http://test-collector:9308")
+	os.Setenv("LOZA_SERVICE_NAME", "env-service")
+	os.Setenv("LOZA_SERVICE_VERSION", "2.0.0")
+	os.Setenv("LOZA_ENVIRONMENT", "staging")
+	os.Setenv("LOZA_TENANT_ID", "tenant-env")
+	os.Setenv("LOZA_FLUSH_INTERVAL", "10s")
+	os.Setenv("LOZA_MAX_BACKOFF", "60s")
+	os.Setenv("LOZA_TIMEOUT", "20s")
+	os.Setenv("LOZA_CONNECTION_TIMEOUT", "10s")
+	os.Setenv("LOZA_ENABLE_COMPRESSION", "false")
 
 	base := Config{
 		Service:           "base-service",
@@ -198,11 +198,11 @@ func TestConfigPrecedence(t *testing.T) {
 	// Test: code > environment > defaults
 
 	// Set env vars
-	os.Setenv("LOXA_SERVICE_NAME", "env-service")
-	os.Setenv("LOXA_COLLECTOR_URL", "http://env-collector:9308")
+	os.Setenv("LOZA_SERVICE_NAME", "env-service")
+	os.Setenv("LOZA_COLLECTOR_URL", "http://env-collector:9308")
 	defer func() {
-		os.Unsetenv("LOXA_SERVICE_NAME")
-		os.Unsetenv("LOXA_COLLECTOR_URL")
+		os.Unsetenv("LOZA_SERVICE_NAME")
+		os.Unsetenv("LOZA_COLLECTOR_URL")
 	}()
 
 	// Start with defaults

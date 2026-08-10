@@ -29,20 +29,20 @@ go test ./bench/... -bench=. -benchmem
 4. Verify Docker build:
 
 ```bash
-docker build -t loxa:$(git describe --tags --always) .
+docker build -t loza:$(git describe --tags --always) .
 ```
 
 5. Update `CHANGELOG.md` with the new version and date.
 
-6. Verify config defaults file (`loxa-collector.defaults.yaml`) is up to date.
+6. Verify config defaults file (`loza-collector.defaults.yaml`) is up to date.
 
 ## Build
 
 ```bash
 cd collector
-go build -o loxa-collector.exe ./cmd/loxa-collector
-go build -o loxa-worker.exe ./cmd/loxa-worker
-go build -o loxa-loadgen.exe ./cmd/loxa-loadgen
+go build -o loza-collector.exe ./cmd/loza-collector
+go build -o loza-worker.exe ./cmd/loza-worker
+go build -o loza-loadgen.exe ./cmd/loza-loadgen
 ```
 
 ## Tagging
@@ -58,12 +58,12 @@ The Dockerfile expects the build context to be the **repo root** (not `collector
 
 ```bash
 # Build from repo root (required for proto file access)
-docker build -t ghcr.io/astraive/loxa:0.2.0 -f collector/Dockerfile .
+docker build -t ghcr.io/astraive/loza:0.2.0 -f collector/Dockerfile .
 
 # Or via docker-compose (already sets context correctly)
 docker compose -f collector/deploy/docker-compose.yml build
 
-docker push ghcr.io/astraive/loxa:0.2.0
+docker push ghcr.io/astraive/loza:0.2.0
 ```
 
 ## Kubernetes Deployment
@@ -71,7 +71,7 @@ docker push ghcr.io/astraive/loxa:0.2.0
 Apply the Helm chart:
 
 ```bash
-helm install loxa-collector ../deploy/helm/collector
+helm install loza-collector ../deploy/helm/collector
 ```
 
 Or apply raw manifests from `deploy/`.

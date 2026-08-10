@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	collectorevent "github.com/astraive/loxa/collector/internal/event"
+	collectorevent "github.com/astraive/loza/collector/internal/event"
 )
 
 type Factory func(t testing.TB) collectorevent.Sink

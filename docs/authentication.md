@@ -2,7 +2,7 @@
 
 ## Overview
 
-LOXA uses scoped API keys with the `Authorization: Bearer` header for all ingest and control-plane requests. Keys follow the `lx_` format and carry built-in RBAC roles and ABAC restrictions.
+LOZA uses scoped API keys with the `Authorization: Bearer` header for all ingest and control-plane requests. Keys follow the `lx_` format and carry built-in RBAC roles and ABAC restrictions.
 
 ```
 Authorization: Bearer lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
@@ -71,7 +71,7 @@ lx_local_dev_mydevtoken
 
 ## SDK Configuration
 
-Set the `LOXA_API_KEY` environment variable, then configure the SDK:
+Set the `LOZA_API_KEY` environment variable, then configure the SDK:
 
 ### Go
 
@@ -79,87 +79,87 @@ Set the `LOXA_API_KEY` environment variable, then configure the SDK:
 import (
     "os"
 
-    loxa "github.com/astraive/loxa/sdks/go"
+    loza "github.com/astraive/loza/sdks/go"
 )
 
-loxa.Configure(loxa.Production("checkout-api").
+loza.Configure(loza.Production("checkout-api").
     WithCollectorEndpoint("https://collector.example.com").
-    WithAPIKey(os.Getenv("LOXA_API_KEY")))
+    WithAPIKey(os.Getenv("LOZA_API_KEY")))
 ```
 
 Or create a custom instance:
 
 ```go
-logger, _ := loxa.New(loxa.Config{
+logger, _ := loza.New(loza.Config{
     Service:        "checkout-api",
     CollectorURL:   "https://collector.example.com",
-    APIKey:         os.Getenv("LOXA_API_KEY"),
+    APIKey:         os.Getenv("LOZA_API_KEY"),
 })
 ```
 
 ### Python
 
 ```python
-import os, loxa
+import os, loza
 
-loxa.configure(
-    loxa.production("checkout-api")
+loza.configure(
+    loza.production("checkout-api")
     .with_collector_endpoint("https://collector.example.com")
-    .with_api_key(os.environ["LOXA_API_KEY"])
+    .with_api_key(os.environ["LOZA_API_KEY"])
 )
 ```
 
 Or create a custom instance:
 
 ```python
-logger = loxa.create_loxa(
+logger = loza.create_loza(
     service="checkout-api",
     collector_endpoint="https://collector.example.com",
-    api_key=os.environ["LOXA_API_KEY"],
+    api_key=os.environ["LOZA_API_KEY"],
 )
 ```
 
 ### Rust
 
 ```rust
-loxa::configure(
-    loxa::Config::production("checkout-api")
+loza::configure(
+    loza::Config::production("checkout-api")
         .with_collector_endpoint("https://collector.example.com")
-        .with_api_key(std::env::var("LOXA_API_KEY")?)
+        .with_api_key(std::env::var("LOZA_API_KEY")?)
 )?;
 ```
 
 Or create a custom instance:
 
 ```rust
-let logger = loxa::create_loxa(
-    loxa::Config::production("checkout-api")
+let logger = loza::create_loza(
+    loza::Config::production("checkout-api")
         .with_collector_endpoint("https://collector.example.com")
-        .with_api_key(std::env::var("LOXA_API_KEY")?)
+        .with_api_key(std::env::var("LOZA_API_KEY")?)
 );
 ```
 
 ### JavaScript
 
 ```typescript
-import { loxa } from "loxa";
+import { loza } from "loza";
 
-loxa.configure(
-    loxa.production("checkout-api")
+loza.configure(
+    loza.production("checkout-api")
         .withCollectorEndpoint("https://collector.example.com")
-        .withApiKey(process.env.LOXA_API_KEY!)
+        .withApiKey(process.env.LOZA_API_KEY!)
 );
 ```
 
 Or create a custom instance:
 
 ```typescript
-import { createLoxa } from "loxa";
+import { createLoza } from "loza";
 
-const logger = createLoxa({
+const logger = createLoza({
     service: "checkout-api",
     collectorUrl: "https://collector.example.com",
-    apiKey: process.env.LOXA_API_KEY!,
+    apiKey: process.env.LOZA_API_KEY!,
 });
 ```
 
@@ -170,8 +170,8 @@ When an API key is configured, the SDK automatically sends these headers:
 | Header | Value | Description |
 |--------|-------|-------------|
 | `Authorization` | `Bearer lx_sec_live_k_xxx_yyyy` | The API key |
-| `X-Loxa-Service` | `checkout-api` | Service name from config |
-| `X-Loxa-Env` | `prod` | Environment from config |
+| `X-Loza-Service` | `checkout-api` | Service name from config |
+| `X-Loza-Env` | `prod` | Environment from config |
 
 ## Collector Configuration
 
@@ -201,7 +201,7 @@ auth:
       roles: [collector_ingest_public]
       allowed_origins: [https://app.example.com]
 storage:
-  encryption_key_env: LOXA_STORAGE_ENCRYPTION_KEY
+  encryption_key_env: LOZA_STORAGE_ENCRYPTION_KEY
 ```
 
 All configured key IDs must be unique. `kind` is `sec` or `pub`; public keys require a non-empty origin allowlist. Auth startup requires a non-empty resolved server secret, every configured key secret, and the storage encryption key. An explicit `auth.enabled: false` remains an operator override, not a tracked default.
@@ -216,7 +216,7 @@ hash = hmac_sha256(server_secret, token_secret)
 
 - Server secret from `COLLECTOR_AUTH_SERVER_SECRET`, resolved through `auth.server_secret`
 - Token secrets from each configured `secret_env`
-- The independent raw-event encryption key from `LOXA_STORAGE_ENCRYPTION_KEY`
+- The independent raw-event encryption key from `LOZA_STORAGE_ENCRYPTION_KEY`
 - Constant-time comparison via `crypto/subtle.ConstantTimeCompare`
 
 ## Key Rotation
@@ -228,7 +228,7 @@ hash = hmac_sha256(server_secret, token_secret)
 
 ## Legacy Bootstrap Token
 
-For a single-key bootstrap only, `auth.value` or `auth.value_env` may supply a complete valid LOXA token. It is parsed and assigned the `collector_ingest_server` role. New deployments should use `auth.keys`; raw, non-LOXA legacy values are rejected when authentication is active.
+For a single-key bootstrap only, `auth.value` or `auth.value_env` may supply a complete valid LOZA token. It is parsed and assigned the `collector_ingest_server` role. New deployments should use `auth.keys`; raw, non-LOZA legacy values are rejected when authentication is active.
 
 ## Error Responses
 
@@ -248,11 +248,11 @@ X-Auth-Failure-Reason: authentication required
 For local development, either deliberately disable auth or set `allow_local_dev_keys: true` alongside enabled auth. Local keys are rejected by default.
 
 ```bash
-export LOXA_API_KEY="lx_local_dev_mydevtoken"
+export LOZA_API_KEY="lx_local_dev_mydevtoken"
 ```
 
 ```go
-client, _ := loxa.New(loxa.Config{
+client, _ := loza.New(loza.Config{
     Service:  "test-service",
     Sink:     sink,
     APIKey:   "lx_local_dev_mydevtoken",

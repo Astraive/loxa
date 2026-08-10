@@ -111,18 +111,18 @@ jobs:
         if: inputs.component == 'spec' && inputs.dry_run != true
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: gh release create "spec/v${{ inputs.version }}" spec/loxa-spec.yaml spec/v1/event.schema.json --title "LOXA Spec ${{ inputs.version }}" --notes "LOXA spec release ${{ inputs.version }}"
+        run: gh release create "spec/v${{ inputs.version }}" spec/loza-spec.yaml spec/v1/event.schema.json --title "LOZA Spec ${{ inputs.version }}" --notes "LOZA spec release ${{ inputs.version }}"
       - name: Verify module resolution
         if: inputs.dry_run != true
         shell: bash
         run: |
           tmp="$(mktemp -d)"
           cd "$tmp"
-          go mod init verify-loxa-module
+          go mod init verify-loza-module
           if [ "${{ inputs.component }}" = "spec" ]; then
-            go get github.com/astraive/loxa/spec@v${{ inputs.version }}
-            go list -m github.com/astraive/loxa/spec
+            go get github.com/astraive/loza/spec@v${{ inputs.version }}
+            go list -m github.com/astraive/loza/spec
           else
-            go get github.com/astraive/loxa/sdks/go@v${{ inputs.version }}
-            go list -m github.com/astraive/loxa/sdks/go
+            go get github.com/astraive/loza/sdks/go@v${{ inputs.version }}
+            go list -m github.com/astraive/loza/sdks/go
           fi

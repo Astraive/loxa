@@ -1,6 +1,6 @@
 # Benchmarking
 
-How to run and interpret benchmarks for the LOXA JS SDK (`loxa`).
+How to run and interpret benchmarks for the LOZA JS SDK (`loza`).
 
 ## Running Benchmarks
 
@@ -63,10 +63,10 @@ Create a new file `sdks/js/bench/<name>.bench.ts`:
 
 ```typescript
 import { bench, describe } from 'vitest';
-import { createLoxa, production, memorySink, string } from '../src';
+import { createLoza, production, memorySink, string } from '../src';
 
 describe('my feature', () => {
-  const logger = createLoxa({ service: 'bench', sink: memorySink() });
+  const logger = createLoza({ service: 'bench', sink: memorySink() });
 
   bench('my benchmark', () => {
     const ctx = logger.startEvent({ event: 'bench.test' });

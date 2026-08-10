@@ -6,21 +6,21 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
-	loxahttp "github.com/astraive/loxa/sdks/go/src/middleware/nethttp"
+	"github.com/astraive/loza/sdks/go"
+	lozahttp "github.com/astraive/loza/sdks/go/src/middleware/nethttp"
 )
 
 func BenchmarkNetHTTPMiddleware(b *testing.B) {
-	sink, _ := loxa.MemorySink()
-	_ = loxa.Configure(loxa.Test().WithSink(sink))
+	sink, _ := loza.MemorySink()
+	_ = loza.Configure(loza.Test().WithSink(sink))
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /bench", func(w http.ResponseWriter, r *http.Request) {
-		loxa.Finish(r.Context(), "success", loxa.Int("status_code", 200))
+		loza.Finish(r.Context(), "success", loza.Int("status_code", 200))
 		_, _ = io.WriteString(w, "ok")
 	})
 
-	srv := httptest.NewServer(loxahttp.Middleware(loxahttp.Config{Event: "http.request"})(mux))
+	srv := httptest.NewServer(lozahttp.Middleware(lozahttp.Config{Event: "http.request"})(mux))
 	defer srv.Close()
 
 	b.ResetTimer()

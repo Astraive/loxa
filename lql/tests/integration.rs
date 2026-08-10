@@ -1,4 +1,4 @@
-use loxa_lql::{compile_to_clickhouse, compile_to_duckdb, parse, validate_query};
+use loza_lql::{compile_to_clickhouse, compile_to_duckdb, parse, validate_query};
 
 #[test]
 fn smoke_from_events_limit() {

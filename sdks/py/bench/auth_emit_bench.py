@@ -1,4 +1,4 @@
-"""LOXA Python SDK auth emit benchmark.
+"""LOZA Python SDK auth emit benchmark.
 
 Measures emit cycle with API key authentication configured.
 
@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 sys.path.insert(0, sys.path[0] + "/.." if sys.path[0].endswith("bench") else ".")
 
-import loxa
+import loza
 
 
 # Suppress MemorySink stdout output during benchmarks
@@ -80,10 +80,10 @@ def bench_emit_auth(iterations: int = 10000) -> BenchmarkResult:
     """Emit with API key configured."""
     def setup():
         sink = NullSink()
-        return loxa.new(loxa.test("bench").with_sink(sink).with_api_key("lx_sec_live_kBenchKey_secret"))
+        return loza.new(loza.test("bench").with_sink(sink).with_api_key("lx_sec_live_kBenchKey_secret"))
 
     def run(logger):
-        ctx = logger.start_event(loxa.Params(event="bench.auth.emit"))
+        ctx = logger.start_event(loza.Params(event="bench.auth.emit"))
         logger.finish(ctx, "success")
         logger.emit(ctx)
 
@@ -94,16 +94,16 @@ def bench_emit_auth_attrs(iterations: int = 10000) -> BenchmarkResult:
     """Emit with API key + enriched attributes."""
     def setup():
         sink = NullSink()
-        return loxa.new(loxa.test("bench").with_sink(sink).with_api_key("lx_sec_live_kBenchKey_secret"))
+        return loza.new(loza.test("bench").with_sink(sink).with_api_key("lx_sec_live_kBenchKey_secret"))
 
     def run(logger):
-        ctx = logger.start_event(loxa.Params(event="bench.auth.attrs"))
+        ctx = logger.start_event(loza.Params(event="bench.auth.attrs"))
         logger.enrich(ctx,
-            loxa.String("http.method", "POST"),
-            loxa.String("http.path", "/api/payments"),
-            loxa.Int("http.status", 200),
-            loxa.Float64("payment.amount", 99.99),
-            loxa.Bool("payment.success", True),
+            loza.String("http.method", "POST"),
+            loza.String("http.path", "/api/payments"),
+            loza.Int("http.status", 200),
+            loza.Float64("payment.amount", 99.99),
+            loza.Bool("payment.success", True),
         )
         logger.finish(ctx, "success")
         logger.emit(ctx)
@@ -115,10 +115,10 @@ def bench_emit_no_auth(iterations: int = 10000) -> BenchmarkResult:
     """Emit without API key (baseline)."""
     def setup():
         sink = NullSink()
-        return loxa.new(loxa.test("bench").with_sink(sink))
+        return loza.new(loza.test("bench").with_sink(sink))
 
     def run(logger):
-        ctx = logger.start_event(loxa.Params(event="bench.baseline"))
+        ctx = logger.start_event(loza.Params(event="bench.baseline"))
         logger.finish(ctx, "success")
         logger.emit(ctx)
 
@@ -129,12 +129,12 @@ def bench_emit_sampler_auth(iterations: int = 10000) -> BenchmarkResult:
     """Emit with sampler + API key."""
     def setup():
         sink = NullSink()
-        return loxa.new(loxa.test("bench").with_sink(sink)
+        return loza.new(loza.test("bench").with_sink(sink)
             .with_api_key("lx_sec_live_kBenchKey_secret")
-            .with_sampler(loxa.SampleRandom(0.5)))
+            .with_sampler(loza.SampleRandom(0.5)))
 
     def run(logger):
-        ctx = logger.start_event(loxa.Params(event="bench.sampler.auth"))
+        ctx = logger.start_event(loza.Params(event="bench.sampler.auth"))
         logger.finish(ctx, "success")
         logger.emit(ctx)
 
@@ -145,12 +145,12 @@ def bench_emit_batch_10(iterations: int = 1000) -> BenchmarkResult:
     """Emit 10 events per iteration."""
     def setup():
         sink = NullSink()
-        return loxa.new(loxa.test("bench").with_sink(sink).with_api_key("lx_sec_live_kBenchKey_secret"))
+        return loza.new(loza.test("bench").with_sink(sink).with_api_key("lx_sec_live_kBenchKey_secret"))
 
     def run(logger):
         for j in range(10):
-            ctx = logger.start_event(loxa.Params(event="bench.batch"))
-            logger.enrich(ctx, loxa.Int("batch.index", j))
+            ctx = logger.start_event(loza.Params(event="bench.batch"))
+            logger.enrich(ctx, loza.Int("batch.index", j))
             logger.finish(ctx, "success")
             logger.emit(ctx)
 
@@ -159,7 +159,7 @@ def bench_emit_batch_10(iterations: int = 1000) -> BenchmarkResult:
 
 if __name__ == "__main__":
     import sys
-    print("LOXA Python SDK Auth Benchmarks", file=sys.stderr)
+    print("LOZA Python SDK Auth Benchmarks", file=sys.stderr)
     print("=" * 50, file=sys.stderr)
 
     results = []

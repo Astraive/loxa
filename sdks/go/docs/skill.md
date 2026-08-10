@@ -1,18 +1,18 @@
 ---
-name: loxa
+name: loza
 description: >
-  Apply loxa wide-event logging when writing or reviewing any observability, logging, or instrumentation code.
-  loxa replaces scattered log statements with a single context-rich canonical event per operation, emitted
+  Apply loza wide-event logging when writing or reviewing any observability, logging, or instrumentation code.
+  loza replaces scattered log statements with a single context-rich canonical event per operation, emitted
   once when the outcome is known. Use this skill whenever the user is: adding logging to a service, handler,
   worker, job, or AI agent; reviewing existing log/console/logger calls; designing observability strategy;
   asking about structured logging, canonical log lines, wide events, or OpenTelemetry; importing any logger
   (pino, winston, zap, slog, structlog, log/slog); or asking how to debug production issues with logs.
-  Even if the user only says "add some logging here" — apply loxa.
+  Even if the user only says "add some logging here" — apply loza.
 ---
 
-# loxa Skill
+# loza Skill
 
-loxa is a wide-event logging framework. Instead of scattering log lines across a codebase, you build
+loza is a wide-event logging framework. Instead of scattering log lines across a codebase, you build
 **one rich event per operation** (request, job, workflow, agent run), enrich it with technical and business
 context as execution progresses, then emit it once when the outcome is known.
 
@@ -20,7 +20,7 @@ context as execution progresses, then emit it once when the outcome is known.
 
 ## Core Rule
 
-**Never write scattered log lines.** Write one loxa event per service hop.
+**Never write scattered log lines.** Write one loza event per service hop.
 
 ```go
 // ❌ Old model — scattered diary
@@ -28,24 +28,24 @@ log.Println("payment started")
 log.Println("retry attempt 2")
 log.Printf("payment failed: %v", err)
 
-// ✅ loxa model — one canonical event
-ctx = loxa.StartEvent(ctx, loxa.Params{
+// ✅ loza model — one canonical event
+ctx = loza.StartEvent(ctx, loza.Params{
     Service: "checkout",
     Name:    "checkout.completed",
     Kind:    "request",
 })
-defer loxa.Emit(ctx)
+defer loza.Emit(ctx)
 
-loxa.Enrich(ctx,
-    loxa.String("payment.provider", "stripe"),
-    loxa.Int("payment.attempt", 2),
+loza.Enrich(ctx,
+    loza.String("payment.provider", "stripe"),
+    loza.Int("payment.attempt", 2),
 )
 
 if err != nil {
-    loxa.FinishError(ctx, err)
+    loza.FinishError(ctx, err)
     return err
 }
-loxa.Finish(ctx, "success", loxa.Int("status_code", 200))
+loza.Finish(ctx, "success", loza.Int("status_code", 200))
 ```
 
 ## When to Read Rule Files
@@ -57,11 +57,11 @@ loxa.Finish(ctx, "success", loxa.Int("status_code", 200))
 | Setting up logger, middleware, sinks | `rules/structure.md` (HIGH) |
 | Reviewing existing logging code for issues | `rules/pitfalls.md` (MEDIUM) |
 
-Always read at least `wide-events.md` and `context.md` before writing any loxa code.
+Always read at least `wide-events.md` and `context.md` before writing any loza code.
 
 ## Field Naming Convention
 
-loxa uses dot-separated lowercase namespaces. This is non-negotiable.
+loza uses dot-separated lowercase namespaces. This is non-negotiable.
 
 ```
 service.name      user.id          cart.total_cents
@@ -91,84 +91,84 @@ agent.run_id      model.name       tokens.input
 
 ```go
 // Explicit lifecycle — handlers, any async code
-ctx = loxa.StartEvent(ctx, loxa.Params{
+ctx = loza.StartEvent(ctx, loza.Params{
     Service: "checkout-service",
     Name:    "checkout.completed",
     Kind:    "request",
 })
-defer loxa.Emit(ctx)
+defer loza.Emit(ctx)
 
-loxa.Enrich(ctx,
-    loxa.UserID(user.ID),
-    loxa.Int("cart.total_cents", cart.Total),
+loza.Enrich(ctx,
+    loza.UserID(user.ID),
+    loza.Int("cart.total_cents", cart.Total),
 )
 
 if err != nil {
-    loxa.FinishError(ctx, err)
+    loza.FinishError(ctx, err)
     return
 }
-loxa.Finish(ctx, "success")
+loza.Finish(ctx, "success")
 
 // Job / worker pattern
-ctx = loxa.StartJobEvent(ctx, loxa.Params{
+ctx = loza.StartJobEvent(ctx, loza.Params{
     Service: "mailer",
     Name:    "email_digest.sent",
 })
-defer loxa.Emit(ctx)
+defer loza.Emit(ctx)
 
-loxa.Enrich(ctx,
-    loxa.String("job.id", job.ID),
-    loxa.String("job.queue", "default"),
-    loxa.Int("email.count", len(recipients)),
+loza.Enrich(ctx,
+    loza.String("job.id", job.ID),
+    loza.String("job.queue", "default"),
+    loza.Int("email.count", len(recipients)),
 )
 result := sendDigest(recipients)
-loxa.Finish(ctx, "success",
-    loxa.Int("email.sent", result.Sent),
-    loxa.Int("email.failed", result.Failed),
-    loxa.String("email.provider", result.Provider),
+loza.Finish(ctx, "success",
+    loza.Int("email.sent", result.Sent),
+    loza.Int("email.failed", result.Failed),
+    loza.String("email.provider", result.Provider),
 )
 
 // HTTP middleware (auto-emits — handlers only enrich)
-r.Use(loxahttp.Middleware())
+r.Use(lozahttp.Middleware())
 
 // Inside handler — just enrich, middleware handles emit
-loxa.Enrich(r.Context(),
-    loxa.UserID(ctx.User.ID),
-    loxa.FeatureFlag("new_checkout", "on"),
-    loxa.Int("cart.total_cents", ctx.Cart.Total),
+loza.Enrich(r.Context(),
+    loza.UserID(ctx.User.ID),
+    loza.FeatureFlag("new_checkout", "on"),
+    loza.Int("cart.total_cents", ctx.Cart.Total),
 )
 
 // Checkpoints for external calls / DB queries / retries
-loxa.Checkpoint(ctx, "payment_started",
-    loxa.String("payment.provider", "stripe"),
-    loxa.Int("payment.amount_cents", 15999),
+loza.Checkpoint(ctx, "payment_started",
+    loza.String("payment.provider", "stripe"),
+    loza.Int("payment.amount_cents", 15999),
 )
 charge, err := stripeCharge(amount)
-loxa.Checkpoint(ctx, "payment_finished",
-    loxa.String("payment.charge_id", charge.ID),
-    loxa.Int("payment.attempt", attempt),
+loza.Checkpoint(ctx, "payment_finished",
+    loza.String("payment.charge_id", charge.ID),
+    loza.Int("payment.attempt", attempt),
 )
 ```
 
 ## Attribute Constructors
 
 ```go
-loxa.String(key, value)    loxa.Int(key, value)     loxa.Bool(key, value)
-loxa.Float64(key, value)   loxa.Duration(key, value) loxa.Any(key, value)
+loza.String(key, value)    loza.Int(key, value)     loza.Bool(key, value)
+loza.Float64(key, value)   loza.Duration(key, value) loza.Any(key, value)
 
 // Canonical helpers
-loxa.UserID(id)            loxa.TenantID(id)         loxa.RequestID(id)
-loxa.TraceID(id)           loxa.SpanID(id)
-loxa.FeatureFlag(name, value)                         loxa.Experiment(name, variant)
+loza.UserID(id)            loza.TenantID(id)         loza.RequestID(id)
+loza.TraceID(id)           loza.SpanID(id)
+loza.FeatureFlag(name, value)                         loza.Experiment(name, variant)
 
 // Business helpers
-loxa.OrderID(id)           loxa.CartID(id)           loxa.Amount(cents)
-loxa.Currency(code)        loxa.Plan(name)
+loza.OrderID(id)           loza.CartID(id)           loza.Amount(cents)
+loza.Currency(code)        loza.Plan(name)
 
 // Groups (nested objects)
-loxa.Group("user",
-    loxa.String("id", userID),
-    loxa.String("plan", "pro"),
+loza.Group("user",
+    loza.String("id", userID),
+    loza.String("plan", "pro"),
 )
 ```
 
@@ -177,11 +177,11 @@ loxa.Group("user",
 Sampling decisions happen **after** outcome is known — never before.
 
 ```go
-loxa.Configure(loxa.Production().
-    WithSampler(loxa.AnySampler(
-        loxa.SampleErrors(),
-        loxa.SampleSlowRequests(2000 * time.Millisecond),
-        loxa.SampleRandom(0.05),
+loza.Configure(loza.Production().
+    WithSampler(loza.AnySampler(
+        loza.SampleErrors(),
+        loza.SampleSlowRequests(2000 * time.Millisecond),
+        loza.SampleRandom(0.05),
     )),
 )
 ```
@@ -196,10 +196,10 @@ Every emitted event includes sampling metadata:
 
 | Kind | Use for |
 |------|---------|
-| `request` | HTTP / RPC / API call — use `loxa.StartHTTPEvent` |
-| `job` | Background job — use `loxa.StartJobEvent` |
+| `request` | HTTP / RPC / API call — use `loza.StartHTTPEvent` |
+| `job` | Background job — use `loza.StartJobEvent` |
 | `workflow` | Multi-step business flow |
-| `message` | Queue / message processing — use `loxa.StartQueueEvent` |
+| `message` | Queue / message processing — use `loza.StartQueueEvent` |
 | `agent` | AI agent / tool execution |
 | `system` | Runtime / infra events |
 | `security` | Auth, access, policy |

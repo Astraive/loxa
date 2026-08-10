@@ -39,7 +39,7 @@ Embedded columnar database. The default sink for local development and single-no
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| path | string | `loxa.db` | Database file path |
+| path | string | `loza.db` | Database file path |
 | table | string | `events` | Target table name |
 | column_types | map | (auto) | Column type overrides |
 
@@ -49,7 +49,7 @@ Embedded columnar database. The default sink for local development and single-no
 sinks:
   - name: local-db
     type: duckdb
-    path: /data/loxa.db
+    path: /data/loza.db
     table: events
 ```
 
@@ -86,7 +86,7 @@ sinks:
     type: kafka
     brokers:
       - "127.0.0.1:9092"
-    topic: loxa-events
+    topic: loza-events
     acks: all
     enable_idempotence: true
     compression: snappy
@@ -119,7 +119,7 @@ Columnar OLAP database for analytics workloads.
 sinks:
   - name: analytics
     type: clickhouse
-    dsn: "clickhouse://localhost:9000/loxa"
+    dsn: "clickhouse://localhost:9000/loza"
     table: events
     batch_size: 1000
     flush_interval: 5s
@@ -152,7 +152,7 @@ Relational database for metadata storage and relational queries.
 sinks:
   - name: metadata
     type: postgres
-    dsn: "postgres://user:pass@localhost:5432/loxa?sslmode=disable"
+    dsn: "postgres://user:pass@localhost:5432/loza?sslmode=disable"
     table: events
 ```
 
@@ -185,9 +185,9 @@ sinks:
   - name: logs
     type: loki
     url: "http://localhost:3100/loki/api/core/push"
-    tenant_id: loxa
+    tenant_id: loza
     labels:
-      source: loxa-collector
+      source: loza-collector
 ```
 
 **Behavior Notes**
@@ -254,7 +254,7 @@ AWS S3 object storage for cold storage and archival.
 sinks:
   - name: archive
     type: s3
-    bucket: loxa-events
+    bucket: loza-events
     prefix: "2026/05/"
     region: us-east-1
     format: ndjson
@@ -289,7 +289,7 @@ Google Cloud Storage for cold storage and archival.
 sinks:
   - name: gcs-archive
     type: gcs
-    bucket: loxa-events-gcs
+    bucket: loza-events-gcs
     prefix: "events/"
     format: ndjson
 ```

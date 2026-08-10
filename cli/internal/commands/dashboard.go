@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
 )
 
 func DashboardCommand(cfg config.Config, args []string) error {
@@ -15,7 +15,7 @@ func DashboardCommand(cfg config.Config, args []string) error {
 	}
 
 	// Create Grafana dashboard config from template
-	dashboardPath := filepath.Join(".", ".loxa-dashboard")
+	dashboardPath := filepath.Join(".", ".loza-dashboard")
 	if err := os.MkdirAll(dashboardPath, 0o755); err != nil {
 		return fmt.Errorf("create dashboard dir: %w", err)
 	}
@@ -34,7 +34,7 @@ func DashboardCommand(cfg config.Config, args []string) error {
 		"grafana",
 		"provisioning",
 		"dashboards",
-		"loxa-collector.json",
+		"loza-collector.json",
 	)
 	if _, err := os.Stat(collectorDashboard); err == nil {
 		if err := copyDeployAsset(filepath.Dir(collectorDashboard), dashboardPath); err != nil {
@@ -44,7 +44,7 @@ func DashboardCommand(cfg config.Config, args []string) error {
 		return nil
 	}
 	dashboardJSON := generateDashboardConfig(cfg)
-	dashboardFile := filepath.Join(dashboardPath, "loxa-dashboard.json")
+	dashboardFile := filepath.Join(dashboardPath, "loza-dashboard.json")
 	if err := os.WriteFile(dashboardFile, []byte(dashboardJSON), 0o644); err != nil {
 		return fmt.Errorf("write dashboard config: %w", err)
 	}
@@ -55,21 +55,21 @@ func DashboardCommand(cfg config.Config, args []string) error {
 func generateDashboardConfig(cfg config.Config) string {
 	return `{
   "dashboard": {
-    "title": "LOXA Collector",
-    "tags": ["loxa", "collector"],
+    "title": "LOZA Collector",
+    "tags": ["loza", "collector"],
     "timezone": "browser",
     "panels": [
       {
         "title": "Requests Total",
-        "targets": [{"expr": "loxa_collector_requests_total"}]
+        "targets": [{"expr": "loza_collector_requests_total"}]
       },
       {
         "title": "Events Accepted",
-        "targets": [{"expr": "loxa_collector_events_accepted_total"}]
+        "targets": [{"expr": "loza_collector_events_accepted_total"}]
       },
       {
         "title": "Sink Health",
-        "targets": [{"expr": "loxa_collector_sink_health"}]
+        "targets": [{"expr": "loza_collector_sink_health"}]
       }
     ]
   }

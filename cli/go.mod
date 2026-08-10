@@ -1,16 +1,16 @@
-module github.com/astraive/loxa/cli
+module github.com/astraive/loza/cli
 
 go 1.25.0
 
 require (
-	github.com/astraive/loxa/spec v0.0.0
+	github.com/astraive/loza/spec v0.0.0
 	github.com/marcboeker/go-duckdb v1.8.5
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-replace github.com/astraive/loxa/spec => ../spec
+replace github.com/astraive/loza/spec => ../spec
 
-replace github.com/astraive/loxa/gen/go => ../gen/go
+replace github.com/astraive/loza/gen/go => ../gen/go
 
 require (
 	github.com/apache/arrow-go/v18 v18.1.0 // indirect

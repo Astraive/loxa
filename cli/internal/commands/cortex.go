@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
-	"github.com/astraive/loxa/cli/internal/output"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/output"
 )
 
-// CortexCommand handles loxa cortex subcommands
+// CortexCommand handles loza cortex subcommands
 func CortexCommand(ctx context.Context, cfg config.Config, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("specify a cortex subcommand")
@@ -48,7 +48,7 @@ func getCortexURL(cfg config.Config) string {
 	if cfg.Cortex != nil && cfg.Cortex.URL != "" {
 		return strings.TrimRight(cfg.Cortex.URL, "/")
 	}
-	url := os.Getenv("LOXA_CORTEX_URL")
+	url := os.Getenv("LOZA_CORTEX_URL")
 	if url != "" {
 		return strings.TrimRight(url, "/")
 	}
@@ -73,7 +73,7 @@ func RunCortexServer(ctx context.Context, cfg config.Config, args []string) erro
 		}
 	}
 	if !hasConfig {
-		cmdArgs = append([]string{"--config", filepath.Join(cfg.CortexRepoPath, "configs", "loxa-cortex.defaults.yaml")}, cmdArgs...)
+		cmdArgs = append([]string{"--config", filepath.Join(cfg.CortexRepoPath, "configs", "loza-cortex.defaults.yaml")}, cmdArgs...)
 	}
 	return client.RunCortexCommand(ctx, cfg.CortexRepoPath, cmdArgs)
 }

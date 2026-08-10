@@ -4,19 +4,19 @@ import (
 	"context"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func BenchmarkSampler(b *testing.B) {
-	sink, _ := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
-	cfg.Sampler = loxa.SampleRandom(0.5)
-	_ = loxa.Configure(cfg)
+	sink, _ := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
+	cfg.Sampler = loza.SampleRandom(0.5)
+	_ = loza.Configure(cfg)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		ctx := loxa.StartEvent(context.Background(), loxa.Params{Event: "bench.sample"})
-		loxa.Finish(ctx, "success")
-		_ = loxa.Emit(ctx)
+		ctx := loza.StartEvent(context.Background(), loza.Params{Event: "bench.sample"})
+		loza.Finish(ctx, "success")
+		_ = loza.Emit(ctx)
 	}
 }

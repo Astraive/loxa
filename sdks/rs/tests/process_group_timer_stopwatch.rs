@@ -2,39 +2,39 @@ use std::time::Duration;
 
 #[test]
 fn process_group_timer_and_stopwatch_helpers_work() {
-    let mut ctx = loxa::start_event(
+    let mut ctx = loza::start_event(
         None,
-        loxa::Params::new("checkout.request").with_kind("http"),
+        loza::Params::new("checkout.request").with_kind("http"),
     );
 
-    loxa::with_process(&mut ctx, "authorize_payment", |handle, event| {
-        handle.finish(event, &[loxa::string("payment.status", "approved")]);
+    loza::with_process(&mut ctx, "authorize_payment", |handle, event| {
+        handle.finish(event, &[loza::string("payment.status", "approved")]);
     });
-    loxa::with_group(&mut ctx, "payment_flow", |handle, event| {
-        handle.finish(event, &[loxa::string("phase", "done")]);
+    loza::with_group(&mut ctx, "payment_flow", |handle, event| {
+        handle.finish(event, &[loza::string("phase", "done")]);
     });
-    loxa::with_timer(&mut ctx, "db.lookup", |handle, event| {
-        handle.stop(event, &[loxa::string("cache", "miss")]);
+    loza::with_timer(&mut ctx, "db.lookup", |handle, event| {
+        handle.stop(event, &[loza::string("cache", "miss")]);
     });
-    loxa::measure(&mut ctx, "measure.wrap", |event| {
-        event.append_attr(loxa::string("measure", "done"));
+    loza::measure(&mut ctx, "measure.wrap", |event| {
+        event.append_attr(loza::string("measure", "done"));
     });
-    loxa::step(&mut ctx, "step.wrap", |event| {
-        event.append_attr(loxa::string("step", "done"));
+    loza::step(&mut ctx, "step.wrap", |event| {
+        event.append_attr(loza::string("step", "done"));
     });
-    loxa::phase(&mut ctx, "phase.wrap", |event| {
-        event.append_attr(loxa::string("phase", "done"));
+    loza::phase(&mut ctx, "phase.wrap", |event| {
+        event.append_attr(loza::string("phase", "done"));
     });
-    loxa::span(&mut ctx, "span.wrap", |event| {
-        event.append_attr(loxa::string("span", "done"));
+    loza::span(&mut ctx, "span.wrap", |event| {
+        event.append_attr(loza::string("span", "done"));
     });
 
-    let stopwatch = loxa::StopwatchHandle::new();
+    let stopwatch = loza::StopwatchHandle::new();
     std::thread::sleep(Duration::from_millis(1));
     assert!(stopwatch.elapsed().as_millis() >= 1);
 
-    loxa::finish(&mut ctx);
-    loxa::emit(&mut ctx).expect("emit");
+    loza::finish(&mut ctx);
+    loza::emit(&mut ctx).expect("emit");
     assert!(!ctx.processes.is_empty());
     assert!(!ctx.groups.is_empty());
     assert!(!ctx.timers.is_empty());

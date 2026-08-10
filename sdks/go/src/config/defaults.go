@@ -3,7 +3,7 @@ package config
 import (
 	"context"
 
-	"github.com/astraive/loxa/sdks/go/src/core"
+	"github.com/astraive/loza/sdks/go/src/core"
 )
 
 // Production returns a Config suitable for production use.
@@ -42,7 +42,7 @@ func WithAsync(enabled bool) ConfigOption { return core.WithAsync(enabled) }
 // WithCollectorURL sets the collector endpoint URL.
 func WithCollectorURL(url string) ConfigOption { return core.WithCollectorURL(url) }
 
-// WithDSN parses a loxa:// connection URI and applies the resolved values.
+// WithDSN parses a loza:// connection URI and applies the resolved values.
 func WithDSN(raw string) ConfigOption { return core.WithDSN(raw) }
 
 // WithBatchSize sets the batch size for async processing.

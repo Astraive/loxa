@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# bump-version.sh — update the version string across all Loxa components.
+# bump-version.sh — update the version string across all Loza components.
 #
 # Usage:
 #   ./scripts/bump-version.sh <new-version> [old-version] [--dry-run] [--check]
@@ -28,7 +28,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # can replace just the version number while preserving surrounding syntax.
 # ---------------------------------------------------------------------------
 FILES=(
-  # Collector fallback version — used when loxa.yaml cannot be found.
+  # Collector fallback version — used when loza.yaml cannot be found.
   "collector/internal/version/version.go"
 
   # CLI — version.Version is set via ldflags ("dev" default), so we skip it.
@@ -51,24 +51,24 @@ FILES=(
 
   # Helm charts — version: X.Y.Z  +  appVersion: "X.Y.Z"
   "cortex/deploy/helm/cortex/Chart.yaml"
-  "collector/deploy/helm/loxa/Chart.yaml"
+  "collector/deploy/helm/loza/Chart.yaml"
 
   # Project metadata YAML
-  "collector/loxa.yaml"
-  "cortex/loxa-cortex.yaml"
-  "cli/loxa-cli.yaml"
-  "sdks/go/loxa-go.yaml"
-  "sdks/py/loxa-py.yaml"
-  "sdks/rs/loxa-rs.yaml"
-  "sdks/js/loxa-js.yaml"
-  "spec/loxa-spec.yaml"
+  "collector/loza.yaml"
+  "cortex/loza-cortex.yaml"
+  "cli/loza-cli.yaml"
+  "sdks/go/loza-go.yaml"
+  "sdks/py/loza-py.yaml"
+  "sdks/rs/loza-rs.yaml"
+  "sdks/js/loza-js.yaml"
+  "spec/loza-spec.yaml"
   "lql/lql.yaml"
 
   # Goreleaser
   "collector/deploy/goreleaser.yml"
 
 
-  # Docker image tags (astraive/loxa-<component>:X.Y.Z)
+  # Docker image tags (astraive/loza-<component>:X.Y.Z)
   "cortex/configs/docker-compose.yml"
 
   # K8s deployment image tags
@@ -87,7 +87,7 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") [OPTIONS] <new-version> [old-version]
 
-Update the version string across all Loxa components.
+Update the version string across all Loza components.
 
 Arguments:
   new-version    New semver version (e.g. 0.3.0)

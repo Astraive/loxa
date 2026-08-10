@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/collector/internal/auth"
+	"github.com/astraive/loza/collector/internal/auth"
 )
 
 var benchServerSecret = []byte("bench-server-secret-key-32bytes-long!")
@@ -100,8 +100,8 @@ func BenchmarkAuthMiddlewareHit(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		req := httptest.NewRequest("POST", "/events", bytes.NewReader([]byte(`[{"event_name":"test"}]`)))
 		req.Header.Set("Authorization", "Bearer lx_sec_live_kBenchKey_bench_secret_value")
-		req.Header.Set("X-Loxa-Service", "bench-service")
-		req.Header.Set("X-Loxa-Env", "live")
+		req.Header.Set("X-Loza-Service", "bench-service")
+		req.Header.Set("X-Loza-Env", "live")
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)
 		if rec.Code != http.StatusAccepted {
@@ -129,8 +129,8 @@ func BenchmarkAuthMiddlewareMiss(b *testing.B) {
 		cache.Invalidate(record.KeyID) // force miss every time
 		req := httptest.NewRequest("POST", "/events", bytes.NewReader([]byte(`[{"event_name":"test"}]`)))
 		req.Header.Set("Authorization", "Bearer lx_sec_live_kBenchKey_bench_secret_value")
-		req.Header.Set("X-Loxa-Service", "bench-service")
-		req.Header.Set("X-Loxa-Env", "live")
+		req.Header.Set("X-Loza-Service", "bench-service")
+		req.Header.Set("X-Loza-Env", "live")
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)
 		if rec.Code != http.StatusAccepted {

@@ -2,7 +2,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { Logger } from '../src/core/logger.ts';
 import {
-  loxa, configure, reset, startEvent, append, enrich, finish, finishError, emit,
+  loza, configure, reset, startEvent, append, enrich, finish, finishError, emit,
   checkpoint, set, get, del, getGroup, merge, shutdown,
   startProcess, finishProcess, finishProcessError,
   startGroup, finishGroup, finishGroupError, timer, stopTimer,
@@ -11,7 +11,7 @@ import {
   stdoutSink, memorySink, noopSink,
   userId, cartId, featureFlag, int,
   EventView, ConfigBuilder,
-  createLoxa, alias,
+  createLoza, alias,
 } from '../src/index.ts';
 
 describe('Facade', () => {
@@ -156,23 +156,23 @@ describe('Facade', () => {
   });
 });
 
-describe('loxa default instance', () => {
+describe('loza default instance', () => {
   afterEach(() => {
     reset();
   });
 
-  it('loxa is exported as a Logger instance', () => {
-    assert.ok(loxa instanceof Logger);
+  it('loza is exported as a Logger instance', () => {
+    assert.ok(loza instanceof Logger);
   });
 
-  it('loxa.configure + loxa.startEvent + loxa.finish + loxa.emit works', async () => {
+  it('loza.configure + loza.startEvent + loza.finish + loza.emit works', async () => {
     const sink = memorySink();
     configure(production('checkout').withSink(sink));
 
-    const ctx = loxa.startEvent({ event: 'checkout.request' });
-    loxa.append(ctx, userId('u_123'));
-    loxa.finish(ctx, 'success', int('status_code', 200));
-    const encoded = await loxa.emit(ctx);
+    const ctx = loza.startEvent({ event: 'checkout.request' });
+    loza.append(ctx, userId('u_123'));
+    loza.finish(ctx, 'success', int('status_code', 200));
+    const encoded = await loza.emit(ctx);
 
     assert.ok(encoded);
     assert.equal(sink.getLength(), 1);
@@ -182,48 +182,48 @@ describe('loxa default instance', () => {
     assert.equal(parsed.user.id, 'u_123');
   });
 
-  it('loxa.info works for immediate logs', async () => {
+  it('loza.info works for immediate logs', async () => {
     const sink = memorySink();
     configure(dev('test').withSink(sink));
 
-    await loxa.info('server started');
+    await loza.info('server started');
 
     assert.equal(sink.getLength(), 1);
     const parsed = JSON.parse(sink.getEvents()[0]);
     assert.equal(parsed.event, 'server started');
   });
 
-  it('loxa.createLoxa returns independent instance', () => {
-    const logger = createLoxa({ service: 'custom' });
+  it('loza.createLoza returns independent instance', () => {
+    const logger = createLoza({ service: 'custom' });
     assert.ok(logger instanceof Logger);
     assert.equal(logger.getConfig().service, 'custom');
-    assert.notEqual(logger, loxa);
+    assert.notEqual(logger, loza);
   });
 
-  it('loxa.alias creates same-service child with alias metadata', () => {
+  it('loza.alias creates same-service child with alias metadata', () => {
     configure(production('api').withSink(memorySink()));
-    const audit = loxa.alias('audit');
+    const audit = loza.alias('audit');
     assert.ok(audit instanceof Logger);
     assert.equal(audit.getConfig().service, 'api');
     assert.equal(audit.getConfig().alias, 'audit');
-    assert.notEqual(audit, loxa);
+    assert.notEqual(audit, loza);
   });
 
-  it('configure updates loxa instance in-place', () => {
+  it('configure updates loza instance in-place', () => {
     configure(dev('first'));
-    assert.equal(loxa.getConfig().service, 'first');
+    assert.equal(loza.getConfig().service, 'first');
     configure(dev('second'));
-    assert.equal(loxa.getConfig().service, 'second');
+    assert.equal(loza.getConfig().service, 'second');
   });
 });
 
-describe('createLoxa and alias', () => {
+describe('createLoza and alias', () => {
   afterEach(() => {
     reset();
   });
 
-  it('createLoxa returns independent Logger', () => {
-    const logger = createLoxa({ service: 'test-svc' });
+  it('createLoza returns independent Logger', () => {
+    const logger = createLoza({ service: 'test-svc' });
     assert.ok(logger instanceof Logger);
     assert.equal(logger.getConfig().service, 'test-svc');
   });
@@ -245,13 +245,13 @@ describe('createLoxa and alias', () => {
     assert.equal(logger.getConfig().alias, '');
   });
 
-  it('alias emits loxa.alias without changing service', async () => {
+  it('alias emits loza.alias without changing service', async () => {
     const sink = memorySink();
     const logger = new Logger({ service: 'api', sink });
     const audit = logger.alias('audit');
     await audit.info('permission changed');
     const parsed = JSON.parse(sink.getEvents()[0]);
     assert.equal(parsed.service, 'api');
-    assert.equal(parsed.attrs.loxa.alias, 'audit');
+    assert.equal(parsed.attrs.loza.alias, 'audit');
   });
 });

@@ -1,4 +1,4 @@
-/** Log levels matching the LOXA spec. */
+/** Log levels matching the LOZA spec. */
 export const LevelDebug = 0;
 export const LevelInfo = 1;
 export const LevelNotice = 2;

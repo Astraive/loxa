@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 
-import loxa
-from loxa.middleware.asgi import Middleware
+import loza
+from loza.middleware.asgi import Middleware
 
 
 async def _receive() -> dict:
@@ -16,8 +16,8 @@ async def _run_app(messages: list[dict]) -> None:
         await send({"type": "http.response.start", "status": 201, "headers": []})
         await send({"type": "http.response.body", "body": b"ok"})
 
-    sink = loxa.MemorySink()
-    loxa.Configure(loxa.Test("checkout").with_sink(sink))
+    sink = loza.MemorySink()
+    loza.Configure(loza.Test("checkout").with_sink(sink))
     middleware = Middleware(app, service="checkout")
 
     async def send(message: dict) -> None:
@@ -50,7 +50,7 @@ def test_asgi_middleware_captures_http_request() -> None:
 
 
 def test_flask_middleware_streams_response_without_buffering() -> None:
-    from loxa.middleware.flask import Middleware as FlaskMiddleware
+    from loza.middleware.flask import Middleware as FlaskMiddleware
 
     produced = 0
 
@@ -65,8 +65,8 @@ def test_flask_middleware_streams_response_without_buffering() -> None:
 
         return body()
 
-    sink = loxa.MemorySink()
-    loxa.Configure(loxa.Test("checkout").with_sink(sink))
+    sink = loza.MemorySink()
+    loza.Configure(loza.Test("checkout").with_sink(sink))
     middleware = FlaskMiddleware(app, service="checkout")
 
     response = middleware({"REQUEST_METHOD": "GET", "PATH_INFO": "/stream"}, lambda *_args: None)
@@ -91,7 +91,7 @@ def test_flask_middleware_streams_response_without_buffering() -> None:
 
 
 def test_flask_middleware_closes_original_iterable_on_close() -> None:
-    from loxa.middleware.flask import Middleware as FlaskMiddleware
+    from loza.middleware.flask import Middleware as FlaskMiddleware
 
     class StreamingBody:
         def __init__(self) -> None:
@@ -110,8 +110,8 @@ def test_flask_middleware_closes_original_iterable_on_close() -> None:
         start_response("200 OK", [])
         return body
 
-    sink = loxa.MemorySink()
-    loxa.Configure(loxa.Test("checkout").with_sink(sink))
+    sink = loza.MemorySink()
+    loza.Configure(loza.Test("checkout").with_sink(sink))
     middleware = FlaskMiddleware(app, service="checkout")
 
     response = middleware({"REQUEST_METHOD": "GET", "PATH_INFO": "/stream"}, lambda *_args: None)

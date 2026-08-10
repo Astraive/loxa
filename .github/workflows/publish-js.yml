@@ -51,7 +51,7 @@ jobs:
 
       - name: Enforce npm package identity
         run: |
-          test "$(node -p "require('./package.json').name")" = "loxa"
+          test "$(node -p "require('./package.json').name")" = "loza"
           test "$(node -p "require('./package.json').version")" = "${{ inputs.version }}"
 
       - run: npm ci

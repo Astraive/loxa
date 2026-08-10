@@ -23,7 +23,7 @@
     "topology",
     "incident_signal",
     "remediation",
-    "loxa_event",
+    "loza_event",
     "otel_log",
     "otel_span",
     "collector_event"
@@ -42,7 +42,7 @@
     "unknown"
   ],
   "provenance": [
-    "loxa",
+    "loza",
     "collector",
     "otlp",
     "jsonl",

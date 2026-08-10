@@ -1,7 +1,7 @@
 """
 Test that canonical fields are protected and cannot be overridden.
 
-Canonical fields are core LOXA event fields that should never be overridden
+Canonical fields are core LOZA event fields that should never be overridden
 by user code. These include: schema_version, event_version, timestamp,
 event_id, service, event, outcome, duration_ms, level, and trace context.
 """
@@ -11,22 +11,22 @@ from __future__ import annotations
 import json
 
 
-import loxa
+import loza
 
 
 def test_schema_version_is_protected() -> None:
     """Verify schema_version cannot be overridden by user."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(event="test.event"))
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(event="test.event"))
     logger.finish(ctx, "success")
 
     payload = json.loads(logger.emit(ctx))
     assert payload["schema_version"] == "v1"
 
     # Attempt to override - should be ignored or stored in attrs, not replace canonical
-    logger2 = loxa.New(loxa.Test("test"))
-    ctx2 = logger2.start_event(loxa.Params(event="test.event"))
-    logger2.enrich(ctx2, loxa.String("schema_version", "v999"))
+    logger2 = loza.New(loza.Test("test"))
+    ctx2 = logger2.start_event(loza.Params(event="test.event"))
+    logger2.enrich(ctx2, loza.String("schema_version", "v999"))
     logger2.finish(ctx2, "success")
 
     payload2 = json.loads(logger2.emit(ctx2))
@@ -37,17 +37,17 @@ def test_schema_version_is_protected() -> None:
 
 def test_event_version_is_protected() -> None:
     """Verify event_version cannot be overridden by user."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(event="test.event"))
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(event="test.event"))
     logger.finish(ctx, "success")
 
     payload = json.loads(logger.emit(ctx))
     assert payload["event_version"] == "v1"
 
     # Attempt to override - should be ignored
-    logger2 = loxa.New(loxa.Test("test"))
-    ctx2 = logger2.start_event(loxa.Params(event="test.event"))
-    logger2.enrich(ctx2, loxa.String("event_version", "v999"))
+    logger2 = loza.New(loza.Test("test"))
+    ctx2 = logger2.start_event(loza.Params(event="test.event"))
+    logger2.enrich(ctx2, loza.String("event_version", "v999"))
     logger2.finish(ctx2, "success")
 
     payload2 = json.loads(logger2.emit(ctx2))
@@ -57,12 +57,12 @@ def test_event_version_is_protected() -> None:
 
 def test_event_id_is_protected() -> None:
     """Verify event_id cannot be overridden by user."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(event="test.event"))
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(event="test.event"))
     original_id = ctx.event_id
 
     # Attempt to override - should be ignored
-    logger.enrich(ctx, loxa.String("event_id", "user_attempted_override"))
+    logger.enrich(ctx, loza.String("event_id", "user_attempted_override"))
     logger.finish(ctx, "success")
 
     payload = json.loads(logger.emit(ctx))
@@ -73,17 +73,17 @@ def test_event_id_is_protected() -> None:
 
 def test_timestamp_is_protected() -> None:
     """Verify timestamp cannot be overridden by user."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(event="test.event"))
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(event="test.event"))
     logger.finish(ctx, "success")
 
     payload = json.loads(logger.emit(ctx))
     payload["timestamp"]
 
     # Attempt to override - should be ignored
-    logger2 = loxa.New(loxa.Test("test"))
-    ctx2 = logger2.start_event(loxa.Params(event="test.event"))
-    logger2.enrich(ctx2, loxa.String("timestamp", "1970-01-01T00:00:00Z"))
+    logger2 = loza.New(loza.Test("test"))
+    ctx2 = logger2.start_event(loza.Params(event="test.event"))
+    logger2.enrich(ctx2, loza.String("timestamp", "1970-01-01T00:00:00Z"))
     logger2.finish(ctx2, "success")
 
     payload2 = json.loads(logger2.emit(ctx2))
@@ -93,11 +93,11 @@ def test_timestamp_is_protected() -> None:
 
 def test_service_is_protected() -> None:
     """Verify service name cannot be overridden by user."""
-    logger = loxa.New(loxa.Test("my-service"))
-    ctx = logger.start_event(loxa.Params(event="test.event"))
+    logger = loza.New(loza.Test("my-service"))
+    ctx = logger.start_event(loza.Params(event="test.event"))
 
     # Attempt to override - should be ignored
-    logger.enrich(ctx, loxa.String("service", "attacker-service"))
+    logger.enrich(ctx, loza.String("service", "attacker-service"))
     logger.finish(ctx, "success")
 
     payload = json.loads(logger.emit(ctx))
@@ -108,11 +108,11 @@ def test_service_is_protected() -> None:
 
 def test_event_name_is_protected() -> None:
     """Verify event name cannot be overridden by user."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(event="checkout.completed"))
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(event="checkout.completed"))
 
     # Attempt to override - should be ignored
-    logger.enrich(ctx, loxa.String("event", "fake.event"))
+    logger.enrich(ctx, loza.String("event", "fake.event"))
     logger.finish(ctx, "success")
 
     payload = json.loads(logger.emit(ctx))
@@ -123,8 +123,8 @@ def test_event_name_is_protected() -> None:
 
 def test_duration_ms_is_protected() -> None:
     """Verify duration_ms is calculated and not overridable."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(event="test.event"))
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(event="test.event"))
     logger.finish(ctx, "success")
 
     payload = json.loads(logger.emit(ctx))
@@ -133,9 +133,9 @@ def test_duration_ms_is_protected() -> None:
     assert original_duration >= 0
 
     # Attempt to override - should be ignored (based on actual timing, not user input)
-    logger2 = loxa.New(loxa.Test("test"))
-    ctx2 = logger2.start_event(loxa.Params(event="test.event"))
-    logger2.enrich(ctx2, loxa.String("duration_ms", "9999999"))
+    logger2 = loza.New(loza.Test("test"))
+    ctx2 = logger2.start_event(loza.Params(event="test.event"))
+    logger2.enrich(ctx2, loza.String("duration_ms", "9999999"))
     logger2.finish(ctx2, "success")
 
     payload2 = json.loads(logger2.emit(ctx2))
@@ -146,17 +146,17 @@ def test_duration_ms_is_protected() -> None:
 
 def test_outcome_is_protected() -> None:
     """Verify outcome cannot be overridden by user."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(event="test.event"))
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(event="test.event"))
     logger.finish(ctx, "success")
 
     payload = json.loads(logger.emit(ctx))
     assert payload["outcome"] == "success"
 
     # Attempt to override outcome by enriching before finish
-    logger2 = loxa.New(loxa.Test("test"))
-    ctx2 = logger2.start_event(loxa.Params(event="test.event"))
-    logger2.enrich(ctx2, loxa.String("outcome", "fake_outcome"))
+    logger2 = loza.New(loza.Test("test"))
+    ctx2 = logger2.start_event(loza.Params(event="test.event"))
+    logger2.enrich(ctx2, loza.String("outcome", "fake_outcome"))
     logger2.finish(ctx2, "error")  # Finish with error
 
     payload2 = json.loads(logger2.emit(ctx2))
@@ -167,8 +167,8 @@ def test_outcome_is_protected() -> None:
 
 def test_trace_context_is_protected() -> None:
     """Verify trace context fields are protected if set."""
-    logger = loxa.New(loxa.Test("test"))
-    ctx = logger.start_event(loxa.Params(
+    logger = loza.New(loza.Test("test"))
+    ctx = logger.start_event(loza.Params(
         event="test.event",
         trace_id="trace_123",
         span_id="span_456",
@@ -184,8 +184,8 @@ def test_trace_context_is_protected() -> None:
     assert payload.get("request_id") == "req_789"
 
     # Attempt to override trace context - enriched values should not override
-    logger2 = loxa.New(loxa.Test("test"))
-    ctx2 = logger2.start_event(loxa.Params(
+    logger2 = loza.New(loza.Test("test"))
+    ctx2 = logger2.start_event(loza.Params(
         event="test.event",
         trace_id="trace_123",
         span_id="span_456",
@@ -194,9 +194,9 @@ def test_trace_context_is_protected() -> None:
 
     logger2.enrich(
         ctx2,
-        loxa.String("trace_id", "fake_trace"),
-        loxa.String("span_id", "fake_span"),
-        loxa.String("request_id", "fake_request")
+        loza.String("trace_id", "fake_trace"),
+        loza.String("span_id", "fake_span"),
+        loza.String("request_id", "fake_request")
     )
     logger2.finish(ctx2, "success")
 
@@ -212,16 +212,16 @@ def test_trace_context_is_protected() -> None:
 
 def test_canonical_fields_with_all_policies() -> None:
     """Verify canonical protection works with all duplicate policies."""
-    for policy in [loxa.CanonicalWins, loxa.UserWins, loxa.KeepBoth]:
-        logger = loxa.New(
-            loxa.Test("test").with_duplicate_policy(policy)
+    for policy in [loza.CanonicalWins, loza.UserWins, loza.KeepBoth]:
+        logger = loza.New(
+            loza.Test("test").with_duplicate_policy(policy)
         )
-        ctx = logger.start_event(loxa.Params(event="policy_test"))
+        ctx = logger.start_event(loza.Params(event="policy_test"))
         original_id = ctx.event_id
 
         # Attempt to override with duplicate
-        logger.enrich(ctx, loxa.String("event_id", "override_1"))
-        logger.enrich(ctx, loxa.String("event_id", "override_2"))
+        logger.enrich(ctx, loza.String("event_id", "override_1"))
+        logger.enrich(ctx, loza.String("event_id", "override_2"))
         logger.finish(ctx, "success")
 
         payload = json.loads(logger.emit(ctx))

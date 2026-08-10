@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from loxa.core.http_client import CollectorClient
-from loxa.core.http_client import _validate_ingest_envelope
+from loza.core.http_client import CollectorClient
+from loza.core.http_client import _validate_ingest_envelope
 
 
 def _fixture(name: str) -> dict:
@@ -34,7 +34,7 @@ def test_validate_ingest_envelope_rejects_missing_events() -> None:
         _validate_ingest_envelope(
             {
                 "api_version": "v1",
-                "source": {"sdk": "loxa-py", "version": "0.2.0", "service": "checkout"},
+                "source": {"sdk": "loza-py", "version": "0.2.0", "service": "checkout"},
                 "events": [],
             }
         )

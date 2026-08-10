@@ -3,7 +3,7 @@ package sampling
 import (
 	"time"
 
-	"github.com/astraive/loxa/sdks/go/src/core"
+	"github.com/astraive/loza/sdks/go/src/core"
 )
 
 // SampleAll keeps every event.

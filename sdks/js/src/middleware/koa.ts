@@ -5,14 +5,14 @@ export interface KoaMiddlewareOptions {
   service?: string;
 }
 
-export function loxaKoaMiddleware(opts: KoaMiddlewareOptions = {}) {
-  const loxa = new Logger({ service: opts.service });
+export function lozaKoaMiddleware(opts: KoaMiddlewareOptions = {}) {
+  const loza = new Logger({ service: opts.service });
 
   return async (ctx: any, next: any) => {
     const startedAt = Date.now();
     const route = ctx.route?.path || ctx.path || '';
 
-    const ev = loxa.startHTTPEvent({
+    const ev = loza.startHTTPEvent({
       event: `${ctx.method} ${route}`,
       kind: 'http',
       method: ctx.method,
@@ -21,7 +21,7 @@ export function loxaKoaMiddleware(opts: KoaMiddlewareOptions = {}) {
       service: opts.service,
     });
 
-    loxa.enrich(ev,
+    loza.enrich(ev,
       AttrString('http.user_agent', ctx.headers?.['user-agent'] || ''),
       AttrString('http.remote_ip', ctx.ip || ctx.socket?.remoteAddress || ''),
     );
@@ -30,17 +30,17 @@ export function loxaKoaMiddleware(opts: KoaMiddlewareOptions = {}) {
       await next();
       const durationMs = Date.now() - startedAt;
       const outcome = ctx.status >= 500 ? 'error' : 'success';
-      loxa.finish(ev, outcome,
+      loza.finish(ev, outcome,
         AttrInt('status_code', ctx.status),
         AttrInt('duration_ms', durationMs),
       );
     } catch (err: any) {
       const durationMs = Date.now() - startedAt;
-      loxa.finishError(ev, err,
+      loza.finishError(ev, err,
         AttrInt('status_code', ctx.status || 500),
         AttrInt('duration_ms', durationMs),
       );
     }
-    await loxa.emit(ev).catch(() => {});
+    await loza.emit(ev).catch(() => {});
   };
 }

@@ -1,6 +1,6 @@
 {
-  "title": "LOXA Event Schema v1",
-  "description": "Canonical event schema for LOXA observability system",
+  "title": "LOZA Event Schema v1",
+  "description": "Canonical event schema for LOZA observability system",
   "type": "object",
   "required": [
     "event_id",

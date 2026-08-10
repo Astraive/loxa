@@ -1,4 +1,4 @@
-package loxa_test
+package loza_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -17,22 +17,22 @@ import (
 type closeFailSink struct{}
 
 func (closeFailSink) Name() string { return "close-fail" }
-func (closeFailSink) WriteEvent(context.Context, []byte, *loxa.Event) error {
+func (closeFailSink) WriteEvent(context.Context, []byte, *loza.Event) error {
 	return nil
 }
 func (closeFailSink) Flush(context.Context) error { return nil }
 func (closeFailSink) Close(context.Context) error { return context.DeadlineExceeded }
 
 func TestShutdownHelpers(t *testing.T) {
-	orig := loxa.Default()
-	l, err := loxa.New(loxa.Test().WithSink(closeFailSink{}))
+	orig := loza.Default()
+	l, err := loza.New(loza.Test().WithSink(closeFailSink{}))
 	if err != nil {
 		t.Fatalf("new logger: %v", err)
 	}
-	loxa.SetDefault(l)
-	defer loxa.SetDefault(orig)
+	loza.SetDefault(l)
+	defer loza.SetDefault(orig)
 
-	if err := loxa.ShutdownTimeout(50 * time.Millisecond); err == nil {
+	if err := loza.ShutdownTimeout(50 * time.Millisecond); err == nil {
 		t.Fatalf("expected shutdown timeout error")
 	}
 	defer func() {
@@ -40,24 +40,24 @@ func TestShutdownHelpers(t *testing.T) {
 			t.Fatalf("expected MustShutdown panic")
 		}
 	}()
-	loxa.MustShutdown(50 * time.Millisecond)
+	loza.MustShutdown(50 * time.Millisecond)
 }
 
 func TestShutdownTimeoutRejectsNonPositive(t *testing.T) {
-	if err := loxa.ShutdownTimeout(0); err == nil {
+	if err := loza.ShutdownTimeout(0); err == nil {
 		t.Fatalf("expected invalid timeout error")
 	}
 }
 
 func TestStrictConfigureValidationSemantics(t *testing.T) {
-	err := loxa.Configure(loxa.Test().WithStrict(true))
+	err := loza.Configure(loza.Test().WithStrict(true))
 	if err == nil {
 		t.Fatalf("expected strict config validation error")
 	}
-	if !errors.Is(err, loxa.ErrInvalidConfig) {
+	if !errors.Is(err, loza.ErrInvalidConfig) {
 		t.Fatalf("expected ErrInvalidConfig, got %v", err)
 	}
-	var cfgErr *loxa.ConfigValidationError
+	var cfgErr *loza.ConfigValidationError
 	if !errors.As(err, &cfgErr) {
 		t.Fatalf("expected ConfigValidationError, got %T", err)
 	}
@@ -67,13 +67,13 @@ func TestStrictConfigureValidationSemantics(t *testing.T) {
 }
 
 func TestHTTPContextHelpers(t *testing.T) {
-	sink, _ := loxa.MemorySink()
-	if err := loxa.Configure(loxa.Test().WithService("svc").WithSink(sink)); err != nil {
+	sink, _ := loza.MemorySink()
+	if err := loza.Configure(loza.Test().WithService("svc").WithSink(sink)); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
 	req := httptest.NewRequest("GET", "http://example.com", nil)
-	ctx := loxa.StartEvent(req.Context(), loxa.Params{
+	ctx := loza.StartEvent(req.Context(), loza.Params{
 		Event:     "http.request",
 		RequestID: "req-1",
 		TraceID:   "trace-1",
@@ -81,32 +81,32 @@ func TestHTTPContextHelpers(t *testing.T) {
 	})
 	req = req.WithContext(ctx)
 
-	loxa.InjectHTTPHeaders(req)
-	if got := loxa.RequestIDFromHTTP(req); got != "req-1" {
+	loza.InjectHTTPHeaders(req)
+	if got := loza.RequestIDFromHTTP(req); got != "req-1" {
 		t.Fatalf("request id mismatch: %q", got)
 	}
-	attrs := loxa.ExtractHTTPHeaders(req)
+	attrs := loza.ExtractHTTPHeaders(req)
 	if len(attrs) < 2 {
 		t.Fatalf("expected extracted attrs, got %d", len(attrs))
 	}
 }
 
 func TestStartHTTPEventFromRequest(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	if err := loxa.Configure(loxa.Test().WithService("svc").WithSink(sink)); err != nil {
+	sink, store := loza.MemorySink()
+	if err := loza.Configure(loza.Test().WithService("svc").WithSink(sink)); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "http://example.com/checkout", nil)
 	req.Header.Set("X-Request-ID", "req-123")
 
-	ctx := loxa.StartHTTPEventFromRequest(req, loxa.Params{
+	ctx := loza.StartHTTPEventFromRequest(req, loza.Params{
 		Event: "checkout.request",
 	})
-	if err := loxa.Finish(ctx, "success"); err != nil {
+	if err := loza.Finish(ctx, "success"); err != nil {
 		t.Fatalf("finish: %v", err)
 	}
-	if err := loxa.Emit(ctx); err != nil {
+	if err := loza.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
 	if store.Len() != 1 {
@@ -129,29 +129,29 @@ func TestStartHTTPEventFromRequest(t *testing.T) {
 }
 
 func TestHTTPContextHeaderCarrierHelpers(t *testing.T) {
-	sink, _ := loxa.MemorySink()
-	cfg := loxa.ApplyConfig(
-		loxa.Test(),
-		loxa.WithService("svc"),
-		loxa.WithSink(sink),
-		loxa.WithAsyncQueue(16),
-		loxa.WithWorkers(2),
-		loxa.WithAsyncFlushInterval(10*time.Millisecond),
-		loxa.WithAsyncMaxBatchBytes(1024),
-		loxa.WithBackpressure(loxa.DropNewest),
-		loxa.WithStrict(true),
+	sink, _ := loza.MemorySink()
+	cfg := loza.ApplyConfig(
+		loza.Test(),
+		loza.WithService("svc"),
+		loza.WithSink(sink),
+		loza.WithAsyncQueue(16),
+		loza.WithWorkers(2),
+		loza.WithAsyncFlushInterval(10*time.Millisecond),
+		loza.WithAsyncMaxBatchBytes(1024),
+		loza.WithBackpressure(loza.DropNewest),
+		loza.WithStrict(true),
 	)
-	if err := loxa.Configure(cfg); err != nil {
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
-	ctx := loxa.StartEvent(context.Background(), loxa.Params{
+	ctx := loza.StartEvent(context.Background(), loza.Params{
 		Event:     "http.request",
 		RequestID: "req-2",
 		TraceID:   "trace-2",
 		SpanID:    "span-2",
 	})
-	header := loxa.InjectHTTPHeaderCarrier(ctx, nil)
+	header := loza.InjectHTTPHeaderCarrier(ctx, nil)
 	if got := header.Get("X-Request-ID"); got != "req-2" {
 		t.Fatalf("request id mismatch: %q", got)
 	}
@@ -173,7 +173,7 @@ func TestExtractHTTPHeaderAttrsTraceparentFallback(t *testing.T) {
 	header := make(http.Header)
 	propagation.TraceContext{}.Inject(ctx, propagation.HeaderCarrier(header))
 
-	attrs := loxa.ExtractHTTPHeaderAttrs(header)
+	attrs := loza.ExtractHTTPHeaderAttrs(header)
 	if len(attrs) != 2 {
 		t.Fatalf("expected 2 attrs from traceparent fallback, got %d", len(attrs))
 	}

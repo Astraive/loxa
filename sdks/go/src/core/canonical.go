@@ -87,7 +87,7 @@ type eventStarter func(context.Context, Params) context.Context
 
 func runEventWithStarter(ctx context.Context, params Params, fn EventFunc, start eventStarter, finishAttrs ...Attr) (err error) {
 	if start == nil {
-		return fmt.Errorf("loxa: event starter is nil")
+		return fmt.Errorf("loza: event starter is nil")
 	}
 
 	evCtx := start(ctx, params)
@@ -130,7 +130,7 @@ func runEventWithStarter(ctx context.Context, params Params, fn EventFunc, start
 
 	if fn == nil {
 		recovered = true
-		return fmt.Errorf("loxa: event function is nil")
+		return fmt.Errorf("loza: event function is nil")
 	}
 	err = fn(evCtx)
 	recovered = true

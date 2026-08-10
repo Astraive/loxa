@@ -2,15 +2,15 @@
 
 ## Component Overview
 
-Cortex is the control plane of the LOXA platform. It sits between the collector (data plane) and the SDKs (client plane), consuming events and serving incident intelligence queries.
+Cortex is the control plane of the LOZA platform. It sits between the collector (data plane) and the SDKs (client plane), consuming events and serving incident intelligence queries.
 
 ```mermaid
 flowchart TB
     subgraph SDKs
-        GoSDK[loxa-go]
-        PySDK[loxa-py]
-        JsSDK[loxa-js]
-        RsSDK[loxa-rs]
+        GoSDK[loza-go]
+        PySDK[loza-py]
+        JsSDK[loza-js]
+        RsSDK[loza-rs]
     end
 
     subgraph Collector
@@ -31,7 +31,7 @@ flowchart TB
     end
 
     subgraph Clients
-        CLI[loxa CLI]
+        CLI[loza CLI]
         Dashboard[Dashboard]
     end
 

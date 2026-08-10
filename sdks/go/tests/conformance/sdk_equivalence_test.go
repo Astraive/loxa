@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func TestSDKOutputEquivalence(t *testing.T) {
@@ -24,30 +24,30 @@ func TestSDKOutputEquivalence(t *testing.T) {
 	}
 
 	// Create event using SDK
-	sink, store := loxa.MemorySink()
-	cfg := loxa.Test().
+	sink, store := loza.MemorySink()
+	cfg := loza.Test().
 		WithService("checkout").
 		WithSink(sink).
-		WithSampler(loxa.SampleAll()).
+		WithSampler(loza.SampleAll()).
 		WithAsync(false)
-	if err := loxa.Configure(cfg); err != nil {
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
-	ctx := loxa.StartEvent(context.Background(), loxa.Params{
+	ctx := loza.StartEvent(context.Background(), loza.Params{
 		Service: "checkout",
 		Event:   "payment.completed",
 		Kind:    "event",
-		Level:   loxa.LevelInfo,
+		Level:   loza.LevelInfo,
 	})
-	_ = loxa.Enrich(ctx,
-		loxa.Float64("amount", 99.99),
-		loxa.String("currency", "USD"),
-		loxa.String("user.id", "u_123"),
+	_ = loza.Enrich(ctx,
+		loza.Float64("amount", 99.99),
+		loza.String("currency", "USD"),
+		loza.String("user.id", "u_123"),
 	)
-	_ = loxa.Finish(ctx, "success")
-	_ = loxa.Emit(ctx)
-	_ = loxa.Flush(context.Background())
+	_ = loza.Finish(ctx, "success")
+	_ = loza.Emit(ctx)
+	_ = loza.Flush(context.Background())
 
 	if store.Len() == 0 {
 		t.Fatal("no events emitted")

@@ -1,3 +1,3 @@
 import logging
-from loxa.integrations.logging import LoxaHandler
-logging.getLogger().addHandler(LoxaHandler())
+from loza.integrations.logging import LozaHandler
+logging.getLogger().addHandler(LozaHandler())

@@ -171,7 +171,7 @@ impl CollectorHttpClient {
             api_key: None,
             auth_header: "Authorization".to_string(),
             timeout_ms: 2_000,
-            sdk_name: "loxa-rs".to_string(),
+            sdk_name: "loza-rs".to_string(),
             sdk_version: crate::core::version::sdk_version().to_string(),
             service: None,
         }
@@ -451,10 +451,10 @@ pub fn validate_ingest_envelope(envelope: &Value) -> Result<(), String> {
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .ok_or_else(|| "collector envelope must include api_version".to_string())?;
-    if api_version != crate::generated::spec_contract::LOXA_INGEST_API_VERSION {
+    if api_version != crate::generated::spec_contract::LOZA_INGEST_API_VERSION {
         return Err(format!(
             "collector envelope api_version must be {}",
-            crate::generated::spec_contract::LOXA_INGEST_API_VERSION
+            crate::generated::spec_contract::LOZA_INGEST_API_VERSION
         ));
     }
 

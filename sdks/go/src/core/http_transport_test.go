@@ -489,7 +489,7 @@ func TestHTTPTransport_CustomClientPreservesRetriesAndMetrics(t *testing.T) {
 			}, nil
 		}),
 	}
-	metrics := NewMetricsCollector("loxa_http", 4)
+	metrics := NewMetricsCollector("loza_http", 4)
 	transport := NewHTTPTransport(HTTPTransportConfig{
 		MaxRetries: 1,
 		MaxBackoff: 10 * time.Millisecond,
@@ -516,10 +516,10 @@ func TestHTTPTransport_CustomClientPreservesRetriesAndMetrics(t *testing.T) {
 	rec := httptest.NewRecorder()
 	metrics.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/metrics", nil))
 	body := rec.Body.String()
-	if !strings.Contains(body, `loxa_http_retry_total{attempt="1"} 1`) {
+	if !strings.Contains(body, `loza_http_retry_total{attempt="1"} 1`) {
 		t.Fatalf("expected retry metric in output, got %s", body)
 	}
-	if !strings.Contains(body, `loxa_http_backpressure_total 1`) {
+	if !strings.Contains(body, `loza_http_backpressure_total 1`) {
 		t.Fatalf("expected backpressure metric in output, got %s", body)
 	}
 }

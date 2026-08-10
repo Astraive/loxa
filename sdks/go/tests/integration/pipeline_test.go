@@ -6,30 +6,30 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func TestAsyncPipelineDrain(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
+	sink, store := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
 	cfg.Async.Enabled = true
 	cfg.Async.QueueSize = 128
 	cfg.Async.Workers = 2
 	cfg.Async.FlushInterval = 10 * time.Millisecond
 
-	if err := loxa.Configure(cfg); err != nil {
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
 	for i := 0; i < 50; i++ {
-		ctx := loxa.StartEvent(context.Background(), loxa.Params{Event: "pipeline.test"})
-		loxa.Finish(ctx, "success")
-		if err := loxa.Emit(ctx); err != nil {
+		ctx := loza.StartEvent(context.Background(), loza.Params{Event: "pipeline.test"})
+		loza.Finish(ctx, "success")
+		if err := loza.Emit(ctx); err != nil {
 			t.Fatalf("emit: %v", err)
 		}
 	}
 
-	if err := loxa.Flush(context.Background()); err != nil {
+	if err := loza.Flush(context.Background()); err != nil {
 		t.Fatalf("flush: %v", err)
 	}
 
@@ -39,15 +39,15 @@ func TestAsyncPipelineDrain(t *testing.T) {
 }
 
 func TestAsyncPipelineNoLossConcurrent(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
+	sink, store := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
 	cfg.Async.Enabled = true
 	cfg.Async.QueueSize = 256
 	cfg.Async.Workers = 4
 	cfg.Async.FlushInterval = 10 * time.Millisecond
-	cfg.Async.Backpressure = loxa.Block
+	cfg.Async.Backpressure = loza.Block
 
-	if err := loxa.Configure(cfg); err != nil {
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
@@ -59,10 +59,10 @@ func TestAsyncPipelineNoLossConcurrent(t *testing.T) {
 		go func(gid int) {
 			defer wg.Done()
 			for i := 0; i < perGoroutine; i++ {
-				ctx := loxa.StartEvent(context.Background(), loxa.Params{Event: "pipeline.concurrent"})
-				loxa.Enrich(ctx, loxa.Int("worker", gid), loxa.Int("seq", i))
-				loxa.Finish(ctx, "success")
-				if err := loxa.Emit(ctx); err != nil {
+				ctx := loza.StartEvent(context.Background(), loza.Params{Event: "pipeline.concurrent"})
+				loza.Enrich(ctx, loza.Int("worker", gid), loza.Int("seq", i))
+				loza.Finish(ctx, "success")
+				if err := loza.Emit(ctx); err != nil {
 					t.Errorf("emit: %v", err)
 					return
 				}
@@ -71,7 +71,7 @@ func TestAsyncPipelineNoLossConcurrent(t *testing.T) {
 	}
 	wg.Wait()
 
-	if err := loxa.Flush(context.Background()); err != nil {
+	if err := loza.Flush(context.Background()); err != nil {
 		t.Fatalf("flush: %v", err)
 	}
 
@@ -82,34 +82,34 @@ func TestAsyncPipelineNoLossConcurrent(t *testing.T) {
 }
 
 func TestConfigureDrainsPreviousLogger(t *testing.T) {
-	sinkA, storeA := loxa.MemorySink()
-	cfgA := loxa.Test().WithSink(sinkA)
+	sinkA, storeA := loza.MemorySink()
+	cfgA := loza.Test().WithSink(sinkA)
 	cfgA.Async.Enabled = true
 	cfgA.Async.QueueSize = 256
 	cfgA.Async.Workers = 2
 	cfgA.Async.FlushInterval = time.Second
-	cfgA.Async.Backpressure = loxa.Block
-	if err := loxa.Configure(cfgA); err != nil {
+	cfgA.Async.Backpressure = loza.Block
+	if err := loza.Configure(cfgA); err != nil {
 		t.Fatalf("configure A: %v", err)
 	}
 
 	const total = 400
 	for i := 0; i < total; i++ {
-		ctx := loxa.StartEvent(context.Background(), loxa.Params{Event: "pipeline.reconfigure"})
-		loxa.Finish(ctx, "success")
-		if err := loxa.Emit(ctx); err != nil {
+		ctx := loza.StartEvent(context.Background(), loza.Params{Event: "pipeline.reconfigure"})
+		loza.Finish(ctx, "success")
+		if err := loza.Emit(ctx); err != nil {
 			t.Fatalf("emit A: %v", err)
 		}
 	}
 
-	sinkB, _ := loxa.MemorySink()
-	cfgB := loxa.Test().WithSink(sinkB)
+	sinkB, _ := loza.MemorySink()
+	cfgB := loza.Test().WithSink(sinkB)
 	cfgB.Async.Enabled = true
 	cfgB.Async.QueueSize = 128
 	cfgB.Async.Workers = 2
 	cfgB.Async.FlushInterval = 10 * time.Millisecond
-	cfgB.Async.Backpressure = loxa.Block
-	if err := loxa.Configure(cfgB); err != nil {
+	cfgB.Async.Backpressure = loza.Block
+	if err := loza.Configure(cfgB); err != nil {
 		t.Fatalf("configure B: %v", err)
 	}
 

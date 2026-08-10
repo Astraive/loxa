@@ -17,7 +17,7 @@ const (
 	KeyKindLocal  KeyKind = "local" // lx_local_dev_yyyy (dev only)
 )
 
-// ParsedKey holds the components of a parsed LOXA API key.
+// ParsedKey holds the components of a parsed LOZA API key.
 type ParsedKey struct {
 	Raw    string
 	Kind   KeyKind
@@ -26,7 +26,7 @@ type ParsedKey struct {
 	Secret string // e.g. "7QmVxN8pT4zRbK1sYw"
 }
 
-// ParseKey parses a LOXA API key into its components.
+// ParseKey parses a LOZA API key into its components.
 //
 // Format: lx_{kind}_{env}_{key_id}_{secret}
 // key_id is "k" + base64 token (no underscore between k and token).

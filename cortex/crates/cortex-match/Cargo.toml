@@ -2,8 +2,8 @@
 name = "cortex-match"
 version = "0.2.6"
 edition = "2021"
-description = "High-performance incident shape matching for LOXA Cortex"
-authors = ["LOXA Team"]
+description = "High-performance incident shape matching for LOZA Cortex"
+authors = ["LOZA Team"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

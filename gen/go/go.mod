@@ -1,4 +1,4 @@
-module github.com/astraive/loxa/gen/go
+module github.com/astraive/loza/gen/go
 
 go 1.25.0
 

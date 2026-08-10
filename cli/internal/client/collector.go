@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
+	speccontract "github.com/astraive/loza/spec/generated/go/contract"
 )
 
 const (
@@ -26,17 +26,17 @@ const (
 
 // RunCollectorCommand executes the local collector binary from the collector repo.
 func RunCollectorCommand(ctx context.Context, collectorRepoPath string, args []string) error {
-	return runGoCommand(ctx, collectorRepoPath, filepath.Join(".", "cmd", "loxa-collector"), args)
+	return runGoCommand(ctx, collectorRepoPath, filepath.Join(".", "cmd", "loza-collector"), args)
 }
 
 // RunWorkerCommand executes the local worker binary from the collector repo.
 func RunWorkerCommand(ctx context.Context, collectorRepoPath string, args []string) error {
-	return runGoCommand(ctx, collectorRepoPath, filepath.Join(".", "cmd", "loxa-worker"), args)
+	return runGoCommand(ctx, collectorRepoPath, filepath.Join(".", "cmd", "loza-worker"), args)
 }
 
 // RunLoadgenCommand executes the local load generator from the collector repo.
 func RunLoadgenCommand(ctx context.Context, collectorRepoPath string, args []string) error {
-	return runGoCommand(ctx, collectorRepoPath, filepath.Join(".", "cmd", "loxa-loadgen"), args)
+	return runGoCommand(ctx, collectorRepoPath, filepath.Join(".", "cmd", "loza-loadgen"), args)
 }
 
 // CheckHealth checks the collector health endpoint.
@@ -577,19 +577,19 @@ func SetConfigAPIKey(key string) {
 }
 
 func getConfiguredAPIKey(host string) string {
-	// Primary: LOXA_API_KEY (works for all services)
-	if apiKey := strings.TrimSpace(os.Getenv("LOXA_API_KEY")); apiKey != "" {
+	// Primary: LOZA_API_KEY (works for all services)
+	if apiKey := strings.TrimSpace(os.Getenv("LOZA_API_KEY")); apiKey != "" {
 		return apiKey
 	}
 	// Fallback: service-specific keys
 	host = strings.ToLower(strings.TrimSpace(host))
 	if strings.Contains(host, "cortex") {
-		if apiKey := strings.TrimSpace(os.Getenv("LOXA_CORTEX_API_KEY")); apiKey != "" {
+		if apiKey := strings.TrimSpace(os.Getenv("LOZA_CORTEX_API_KEY")); apiKey != "" {
 			return apiKey
 		}
 		return cfgAPIKey
 	}
-	if apiKey := strings.TrimSpace(os.Getenv("LOXA_COLLECTOR_API_KEY")); apiKey != "" {
+	if apiKey := strings.TrimSpace(os.Getenv("LOZA_COLLECTOR_API_KEY")); apiKey != "" {
 		return apiKey
 	}
 	return cfgAPIKey

@@ -27,7 +27,7 @@ impl fmt::Display for ValidationError {
 impl std::error::Error for ValidationError {}
 
 #[derive(Debug)]
-pub enum LoxaError {
+pub enum LozaError {
     DuplicateEmit { event_id: String },
     EventClosed { event_id: String, state: String },
     EventAlreadyFinished { event_id: String },
@@ -36,29 +36,29 @@ pub enum LoxaError {
     Transport(String),
 }
 
-impl fmt::Display for LoxaError {
+impl fmt::Display for LozaError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LoxaError::DuplicateEmit { event_id } => {
+            LozaError::DuplicateEmit { event_id } => {
                 write!(f, "duplicate emit for event {event_id}")
             }
-            LoxaError::EventClosed { event_id, state } => {
+            LozaError::EventClosed { event_id, state } => {
                 write!(f, "event {event_id} is closed in state {state}")
             }
-            LoxaError::EventAlreadyFinished { event_id } => {
+            LozaError::EventAlreadyFinished { event_id } => {
                 write!(f, "event {event_id} already finished")
             }
-            LoxaError::Validation(v) => f.write_str(&v.message),
-            LoxaError::Serialization(err) => write!(f, "serialization failed: {err}"),
-            LoxaError::Transport(message) => f.write_str(message),
+            LozaError::Validation(v) => f.write_str(&v.message),
+            LozaError::Serialization(err) => write!(f, "serialization failed: {err}"),
+            LozaError::Transport(message) => f.write_str(message),
         }
     }
 }
 
-impl std::error::Error for LoxaError {}
+impl std::error::Error for LozaError {}
 
-impl From<serde_json::Error> for LoxaError {
+impl From<serde_json::Error> for LozaError {
     fn from(value: serde_json::Error) -> Self {
-        LoxaError::Serialization(value)
+        LozaError::Serialization(value)
     }
 }

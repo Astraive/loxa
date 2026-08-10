@@ -1,4 +1,4 @@
-"""LOXA Python SDK emit cycle benchmark.
+"""LOZA Python SDK emit cycle benchmark.
 
 Measures the full emit cycle: start_event, finish, encode, deliver to MemorySink.
 
@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 sys.path.insert(0, sys.path[0] + "/.." if sys.path[0].endswith("bench") else ".")
 
-import loxa
+import loza
 
 
 @dataclass
@@ -46,16 +46,16 @@ class BenchmarkResult:
 
 def run_emit_benchmark(iterations: int = 10000) -> BenchmarkResult:
     """Run the emit cycle benchmark."""
-    sink = loxa.MemorySink()
-    logger = loxa.new(loxa.test("bench").with_sink(sink))
+    sink = loza.MemorySink()
+    logger = loza.new(loza.test("bench").with_sink(sink))
 
     latencies: list[float] = []
 
     for _ in range(iterations):
         t0 = time.perf_counter()
-        ctx = logger.start_event(loxa.Params(event="bench.emit"))
-        loxa.finish(ctx, "success")
-        loxa.emit(ctx)
+        ctx = logger.start_event(loza.Params(event="bench.emit"))
+        loza.finish(ctx, "success")
+        loza.emit(ctx)
         latencies.append((time.perf_counter() - t0) * 1_000_000)
 
     latencies.sort()
@@ -75,22 +75,22 @@ def run_emit_benchmark(iterations: int = 10000) -> BenchmarkResult:
 
 def run_emit_enriched_benchmark(iterations: int = 10000) -> BenchmarkResult:
     """Run the emit cycle benchmark with enriched attributes."""
-    sink = loxa.MemorySink()
-    logger = loxa.new(loxa.test("bench").with_sink(sink))
+    sink = loza.MemorySink()
+    logger = loza.new(loza.test("bench").with_sink(sink))
 
     latencies: list[float] = []
 
     for _ in range(iterations):
         t0 = time.perf_counter()
-        ctx = logger.start_event(loxa.Params(event="bench.emit.enriched"))
-        loxa.enrich(ctx,
-            loxa.String("user.id", "u-abc123"),
-            loxa.Int("status_code", 200),
-            loxa.Float64("duration_ms", 42.5),
-            loxa.Bool("cache_hit", True),
+        ctx = logger.start_event(loza.Params(event="bench.emit.enriched"))
+        loza.enrich(ctx,
+            loza.String("user.id", "u-abc123"),
+            loza.Int("status_code", 200),
+            loza.Float64("duration_ms", 42.5),
+            loza.Bool("cache_hit", True),
         )
-        loxa.finish(ctx, "success")
-        loxa.emit(ctx)
+        loza.finish(ctx, "success")
+        loza.emit(ctx)
         latencies.append((time.perf_counter() - t0) * 1_000_000)
 
     latencies.sort()
@@ -109,7 +109,7 @@ def run_emit_enriched_benchmark(iterations: int = 10000) -> BenchmarkResult:
 
 
 if __name__ == "__main__":
-    print("Running LOXA Python SDK benchmarks...")
+    print("Running LOZA Python SDK benchmarks...")
     print()
 
     results = []

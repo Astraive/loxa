@@ -1,4 +1,4 @@
-# LOXA Schema Compatibility
+# LOZA Schema Compatibility
 
 This document provides an overview of schema compatibility policies across all versions.
 
@@ -10,7 +10,7 @@ This document provides an overview of schema compatibility policies across all v
 
 ## Versioning Policy
 
-LOXA schemas follow [Semantic Versioning](https://semver.org/):
+LOZA schemas follow [Semantic Versioning](https://semver.org/):
 
 - **MAJOR** version (v1 → v2): Breaking changes
 - **MINOR** version (v0.0.1): Backward-compatible additions
@@ -53,13 +53,13 @@ SDKs should:
 
 ```bash
 # Validate against specific version
-loxa schema validate --file event.json --schema-version v1
+loza schema validate --file event.json --schema-version v1
 
 # Check compatibility between versions
-loxa schema diff --from v0.0.1 --to v0.0.1
+loza schema diff --from v0.0.1 --to v0.0.1
 
 # List all available versions
-loxa schema list
+loza schema list
 ```
 
 ### Golden Test Suites
@@ -134,7 +134,7 @@ Collectors use this to:
 
 When deprecating features:
 
-1. Mark as deprecated in schema using `x-loxa-deprecated`
+1. Mark as deprecated in schema using `x-loza-deprecated`
 2. Document migration path
 3. Maintain support for 90 days minimum
 4. Log deprecation warnings
@@ -146,9 +146,9 @@ Example:
 {
   "old_field": {
     "type": "string",
-    "x-loxa-deprecated": "use new_field instead",
-    "x-loxa-deprecated-since": "v0.0.1",
-    "x-loxa-removed-in": "v0.0.1"
+    "x-loza-deprecated": "use new_field instead",
+    "x-loza-deprecated-since": "v0.0.1",
+    "x-loza-removed-in": "v0.0.1"
   }
 }
 ```
@@ -168,5 +168,5 @@ Example:
 ## Contact
 
 For compatibility questions:
-- GitHub Issues: https://github.com/astraive/loxa/issues
-- Documentation: https://github.com/astraive/loxa/tree/main/spec/docs
+- GitHub Issues: https://github.com/astraive/loza/issues
+- Documentation: https://github.com/astraive/loza/tree/main/spec/docs

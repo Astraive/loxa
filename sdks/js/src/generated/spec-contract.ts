@@ -1,11 +1,11 @@
 /**
- * LOXA Spec Contract — constants and validation from loxa-spec.
- * Generated from loxa-spec/spec/schemas/json/event.schema.json
+ * LOZA Spec Contract — constants and validation from loza-spec.
+ * Generated from loza-spec/spec/schemas/json/event.schema.json
  */
 
-export const LOXA_SPEC_VERSION = 'v1';
-export const LOXA_EVENT_VERSION = 'v1';
-export const LOXA_INGEST_API_VERSION = 'v1';
+export const LOZA_SPEC_VERSION = 'v1';
+export const LOZA_EVENT_VERSION = 'v1';
+export const LOZA_INGEST_API_VERSION = 'v1';
 export const MAX_EVENT_BYTES = 65536;
 
 export const ALLOWED_KINDS = new Set(['event', 'http', 'job', 'queue', 'cli', 'cron', 'log', 'checkpoint']);
@@ -87,7 +87,7 @@ export function buildIngestEnvelope(
 ): Record<string, any> {
   const normalizedEvents = events.map(normalizeEventAliases);
   return {
-    api_version: LOXA_INGEST_API_VERSION,
+    api_version: LOZA_INGEST_API_VERSION,
     source: { sdk: sdkName, version: sdkVersion, service },
     events: normalizedEvents,
   };

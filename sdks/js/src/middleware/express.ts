@@ -6,14 +6,14 @@ export interface ExpressMiddlewareOptions {
   routeExtractor?: (req: any) => string;
 }
 
-export function loxaMiddleware(opts: ExpressMiddlewareOptions = {}) {
-  const loxa = new Logger({ service: opts.service });
+export function lozaMiddleware(opts: ExpressMiddlewareOptions = {}) {
+  const loza = new Logger({ service: opts.service });
 
   return (req: any, res: any, next: any) => {
     const startedAt = Date.now();
     const route = opts.routeExtractor?.(req) || req.route?.path || req.path || '';
 
-    const ctx = loxa.startHTTPEvent({
+    const ctx = loza.startHTTPEvent({
       event: `${req.method} ${route}`,
       kind: 'http',
       method: req.method,
@@ -22,7 +22,7 @@ export function loxaMiddleware(opts: ExpressMiddlewareOptions = {}) {
       service: opts.service,
     });
 
-    loxa.enrich(ctx,
+    loza.enrich(ctx,
       AttrString('http.user_agent', req.headers?.['user-agent'] || ''),
       AttrString('http.remote_ip', req.ip || req.socket?.remoteAddress || ''),
     );
@@ -31,17 +31,17 @@ export function loxaMiddleware(opts: ExpressMiddlewareOptions = {}) {
     res.end = function (...args: any[]) {
       const durationMs = Date.now() - startedAt;
       const outcome = res.statusCode >= 500 ? 'error' : 'success';
-      loxa.finish(ctx, outcome,
+      loza.finish(ctx, outcome,
         AttrInt('status_code', res.statusCode),
         AttrInt('duration_ms', durationMs),
       );
-      loxa.emit(ctx).catch(() => {});
+      loza.emit(ctx).catch(() => {});
       return originalEnd.apply(res, args);
     };
 
     res.on('error', (err: Error) => {
-      loxa.finishError(ctx, err);
-      loxa.emit(ctx).catch(() => {});
+      loza.finishError(ctx, err);
+      loza.emit(ctx).catch(() => {});
     });
 
     next();

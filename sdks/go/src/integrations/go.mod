@@ -1,9 +1,9 @@
-module github.com/astraive/loxa/sdks/go/src/integrations
+module github.com/astraive/loza/sdks/go/src/integrations
 
 go 1.25.0
 
 require (
-	github.com/astraive/loxa/sdks/go v0.0.0
+	github.com/astraive/loza/sdks/go v0.0.0
 	github.com/rs/zerolog v1.35.1
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/astraive/loxa/spec v0.0.0 // indirect
+	github.com/astraive/loza/spec v0.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
@@ -27,6 +27,6 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace github.com/astraive/loxa/sdks/go => ../../
+replace github.com/astraive/loza/sdks/go => ../../
 
-replace github.com/astraive/loxa/spec => ../../../../spec
+replace github.com/astraive/loza/spec => ../../../../spec

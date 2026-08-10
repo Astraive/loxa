@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 type fixture struct {
@@ -25,9 +25,9 @@ func TestConformanceFixtures(t *testing.T) {
 		t.Fatalf("no fixture files found")
 	}
 
-	sink, store := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
-	if err := loxa.Configure(cfg); err != nil {
+	sink, store := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
@@ -42,14 +42,14 @@ func TestConformanceFixtures(t *testing.T) {
 				t.Fatalf("unmarshal fixture: %v", err)
 			}
 
-			ctx := loxa.StartEvent(context.Background(), loxa.Params{Event: fx.Event})
-			var attrs []loxa.Attr
+			ctx := loza.StartEvent(context.Background(), loza.Params{Event: fx.Event})
+			var attrs []loza.Attr
 			for k, v := range fx.Attrs {
-				attrs = append(attrs, loxa.String(k, v))
+				attrs = append(attrs, loza.String(k, v))
 			}
-			_ = loxa.Enrich(ctx, attrs...)
-			_ = loxa.Finish(ctx, fx.Outcome)
-			if err := loxa.Emit(ctx); err != nil {
+			_ = loza.Enrich(ctx, attrs...)
+			_ = loza.Finish(ctx, fx.Outcome)
+			if err := loza.Emit(ctx); err != nil {
 				t.Fatalf("emit: %v", err)
 			}
 		})

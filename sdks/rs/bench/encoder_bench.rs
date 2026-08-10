@@ -1,4 +1,4 @@
-use loxa::{Config, New, Params};
+use loza::{Config, New, Params};
 
 pub fn encode_once() -> String {
     let logger = New(Config::test("bench"));

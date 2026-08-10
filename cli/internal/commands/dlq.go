@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
-	"github.com/astraive/loxa/cli/internal/output"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/output"
 )
 
 func DLQCommand(ctx context.Context, cfg config.Config, args []string) error {
@@ -48,7 +48,7 @@ func DLQCommand(ctx context.Context, cfg config.Config, args []string) error {
 		return nil
 	case "show":
 		if len(args) < 2 {
-			return fmt.Errorf("usage: loxa dlq show <id>")
+			return fmt.Errorf("usage: loza dlq show <id>")
 		}
 		body, err := client.FetchDLQItem(cfg.CollectorURL, args[1])
 		if err != nil {
@@ -58,7 +58,7 @@ func DLQCommand(ctx context.Context, cfg config.Config, args []string) error {
 		return nil
 	case "delete":
 		if len(args) < 2 {
-			return fmt.Errorf("usage: loxa dlq delete <id>")
+			return fmt.Errorf("usage: loza dlq delete <id>")
 		}
 		body, err := client.DeleteDLQItem(ctx, cfg.CollectorURL, args[1])
 		if err != nil {
@@ -68,7 +68,7 @@ func DLQCommand(ctx context.Context, cfg config.Config, args []string) error {
 		return nil
 	case "replay":
 		if len(args) < 2 {
-			return fmt.Errorf("usage: loxa dlq replay <id>")
+			return fmt.Errorf("usage: loza dlq replay <id>")
 		}
 		body, err := client.ReplayDLQItem(ctx, cfg.CollectorURL, args[1])
 		if err != nil {

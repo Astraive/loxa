@@ -110,7 +110,7 @@ pub fn set_id_generator(f: fn() -> String) {
 
 /// Reset all global mutable state: global logger, clock, and ID generator.
 pub fn reset_for_test() {
-    crate::set_global_logger(Logger::new(Config::dev("loxa")));
+    crate::set_global_logger(Logger::new(Config::dev("loza")));
     crate::internal::clock::unfreeze();
     crate::internal::core::uuidv7::reset_id_generator();
 }

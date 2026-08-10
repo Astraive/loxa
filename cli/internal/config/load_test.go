@@ -8,8 +8,8 @@ import (
 
 func TestLoadUsesDefaultsThenUserConfig(t *testing.T) {
 	dir := t.TempDir()
-	defaultsPath := filepath.Join(dir, "loxa-cli.defaults.yaml")
-	userPath := filepath.Join(dir, ".loxa-cli.yaml")
+	defaultsPath := filepath.Join(dir, "loza-cli.defaults.yaml")
+	userPath := filepath.Join(dir, ".loza-cli.yaml")
 
 	if err := os.WriteFile(defaultsPath, []byte(""+
 		"collector_repo_path: defaults-collector\n"+
@@ -25,8 +25,8 @@ func TestLoadUsesDefaultsThenUserConfig(t *testing.T) {
 		t.Fatalf("write user config: %v", err)
 	}
 
-	t.Setenv("LOXA_CLI_DEFAULTS", defaultsPath)
-	t.Setenv("LOXA_CLI_CONFIG", userPath)
+	t.Setenv("LOZA_CLI_DEFAULTS", defaultsPath)
+	t.Setenv("LOZA_CLI_CONFIG", userPath)
 
 	cfg, err := Load()
 	if err != nil {

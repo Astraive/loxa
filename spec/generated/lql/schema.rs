@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-/// Metadata for a single field in the Loxa event schema.
+/// Metadata for a single field in the Loza event schema.
 #[derive(Debug, Clone)]
 pub struct FieldInfo {
     pub name: &'static str,
@@ -23,7 +23,7 @@ pub enum FieldType {
     Object,
 }
 
-/// The full Loxa event schema, used for validation and column mapping.
+/// The full Loza event schema, used for validation and column mapping.
 pub struct Schema {
     pub table: &'static str,
     pub fields: Vec<FieldInfo>,
@@ -92,7 +92,7 @@ impl Schema {
 
     /// Create the default ClickHouse schema.
     pub fn clickhouse_default() -> Self {
-        Self { table: "loxa_events", fields: build_fields() }
+        Self { table: "loza_events", fields: build_fields() }
     }
 
     /// Check if a field name exists in the schema.
@@ -116,7 +116,7 @@ pub fn known_enum_values(field: &str) -> Option<Vec<&'static str>> {
         "outcome" => Some(vec!["abandoned", "cancelled", "error", "partial", "quarantined", "rejected", "retried", "skipped", "success", "timeout", "unknown"]),
         "partial_reason" => Some(vec!["collector_unavailable", "not_finished", "panic", "process_exit", "timeout"]),
         "event_state" => Some(vec!["active", "created", "delivery_failed", "dlq_written", "dropped", "emit_failed", "emitted", "emitting", "failed_validation", "finished", "invalid", "spooled"]),
-        "source_sdks" => Some(vec!["loxa-cli", "loxa-go", "loxa-py", "loxa-rs"]),
+        "source_sdks" => Some(vec!["loza-cli", "loza-go", "loza-py", "loza-rs"]),
         _ => None,
     }
 }

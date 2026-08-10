@@ -450,13 +450,13 @@ fn retryable_error_message(value: &Value) -> Option<String> {
 
 fn collector_http_client(endpoint: &str) -> CollectorHttpClient {
     let mut client = CollectorHttpClient::new(endpoint.to_string());
-    if let Ok(api_key) = env::var("LOXA_COLLECTOR_API_KEY") {
+    if let Ok(api_key) = env::var("LOZA_COLLECTOR_API_KEY") {
         let api_key = api_key.trim();
         if !api_key.is_empty() {
             client = client.with_api_key(api_key.to_string());
         }
     }
-    if let Ok(header) = env::var("LOXA_COLLECTOR_API_KEY_HEADER") {
+    if let Ok(header) = env::var("LOZA_COLLECTOR_API_KEY_HEADER") {
         let header = header.trim();
         if !header.is_empty() {
             client.auth_header = header.to_string();

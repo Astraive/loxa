@@ -1,10 +1,10 @@
 import { afterEach, it } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import * as loxa from '../src/index.ts';
+import * as loza from '../src/index.ts';
 
 afterEach(() => {
-  loxa.reset();
+  loza.reset();
 });
 
 it('covers collector and cortex client families', async () => {
@@ -40,7 +40,7 @@ it('covers collector and cortex client families', async () => {
   });
   await new Promise<void>((resolve) => collectorServer.listen(0, resolve));
   const collectorPort = (collectorServer.address() as any).port;
-  const collector = new loxa.CollectorClient({ url: `http://127.0.0.1:${collectorPort}`, enableCompression: false });
+  const collector = new loza.CollectorClient({ url: `http://127.0.0.1:${collectorPort}`, enableCompression: false });
 
   assert.equal(await collector.health(), true);
   assert.equal(await collector.ready(), true);
@@ -88,7 +88,7 @@ it('covers collector and cortex client families', async () => {
   });
   await new Promise<void>((resolve) => cortexServer.listen(0, resolve));
   const cortexPort = (cortexServer.address() as any).port;
-  const cortex = new loxa.CortexClient({ url: `http://127.0.0.1:${cortexPort}` });
+  const cortex = new loza.CortexClient({ url: `http://127.0.0.1:${cortexPort}` });
 
   assert.equal(await cortex.health(), true);
   assert.equal(await cortex.ready(), true);

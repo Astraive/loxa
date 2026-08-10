@@ -1,27 +1,27 @@
-# Loxa DSN (loxa://)
+# Loza DSN (loza://)
 
-The `loxa://` URI is the standard connection string for Loxa Collector.
+The `loza://` URI is the standard connection string for Loza Collector.
 It resolves to HTTP/HTTPS/OTLP/gRPC/WebSocket endpoints -- it is NOT a new wire protocol.
 
 ## Format
 
 ```
-loxa://[host][:port]/[project]?env=<env>&service=<service>&tls=<true|false>&transport=<http|otlp|grpc>
+loza://[host][:port]/[project]?env=<env>&service=<service>&tls=<true|false>&transport=<http|otlp|grpc>
 ```
 
 ## Examples
 
 ```bash
 # Local development
-LOXA_DSN=loxa://localhost:9308/demo?env=dev&tls=false
-LOXA_API_KEY=lx_sec_dev_k_xxx
+LOZA_DSN=loza://localhost:9308/demo?env=dev&tls=false
+LOZA_API_KEY=lx_sec_dev_k_xxx
 
 # Production
-LOXA_DSN=loxa://collector.example.com/payments?env=prod
-LOXA_API_KEY=lx_sec_prod_k_xxx
+LOZA_DSN=loza://collector.example.com/payments?env=prod
+LOZA_API_KEY=lx_sec_prod_k_xxx
 
 # OTLP transport for staging
-LOXA_DSN=loxa://loxa.internal:4318/backend?env=staging&service=auth&transport=otlp
+LOZA_DSN=loza://loza.internal:4318/backend?env=staging&service=auth&transport=otlp
 ```
 
 ## Parameters
@@ -57,7 +57,7 @@ Setting `tls=auto` preserves the computed default.
 
 ## Resolved URLs
 
-A parsed `loxa://` DSN resolves to these endpoints:
+A parsed `loza://` DSN resolves to these endpoints:
 
 | Field        | Pattern                           | Example                                  |
 |--------------|-----------------------------------|------------------------------------------|
@@ -69,37 +69,37 @@ A parsed `loxa://` DSN resolves to these endpoints:
 
 ## Security
 
-- **Do NOT put API keys in the DSN URL.** Use `LOXA_API_KEY` environment variable separately.
-- `loxa://` resolves to HTTP/HTTPS, not a custom protocol.
-- Userinfo in the URL (`loxa://key@host/project`) is explicitly rejected.
+- **Do NOT put API keys in the DSN URL.** Use `LOZA_API_KEY` environment variable separately.
+- `loza://` resolves to HTTP/HTTPS, not a custom protocol.
+- Userinfo in the URL (`loza://key@host/project`) is explicitly rejected.
 
 ## Environment Variable Usage
 
 ```bash
 # Go SDK
-export LOXA_DSN=loxa://collector.example.com/my-app?env=prod
-export LOXA_API_KEY=lx_sec_prod_k_xxx
+export LOZA_DSN=loza://collector.example.com/my-app?env=prod
+export LOZA_API_KEY=lx_sec_prod_k_xxx
 
 # JS/TS SDK
-LOXA_DSN=loxa://collector.example.com/my-app?env=prod
-LOXA_API_KEY=lx_sec_prod_k_xxx
+LOZA_DSN=loza://collector.example.com/my-app?env=prod
+LOZA_API_KEY=lx_sec_prod_k_xxx
 
 # Python SDK
-LOXA_DSN=loxa://collector.example.com/my-app?env=prod
-LOXA_API_KEY=lx_sec_prod_k_xxx
+LOZA_DSN=loza://collector.example.com/my-app?env=prod
+LOZA_API_KEY=lx_sec_prod_k_xxx
 ```
 
 ## Validation Errors
 
 | Input                           | Error                                          |
 |---------------------------------|------------------------------------------------|
-| `http://host/project`           | Scheme must be `loxa://`                       |
-| `loxa://`                       | Host is required                               |
-| `loxa:///project`               | Host is required                               |
-| `loxa://host`                   | Project path is required                       |
-| `loxa://host/`                  | Project path is required                       |
-| `loxa://key@host/project`       | Do not put API keys in the URL                 |
-| `loxa://host/project?tls=maybe` | tls must be true, false, or auto               |
-| `loxa://host/project?transport=x` | transport must be http, otlp, or grpc        |
-| `loxa://host:0/project`         | Invalid port                                   |
-| `loxa://host:99999/project`     | Invalid port                                   |
+| `http://host/project`           | Scheme must be `loza://`                       |
+| `loza://`                       | Host is required                               |
+| `loza:///project`               | Host is required                               |
+| `loza://host`                   | Project path is required                       |
+| `loza://host/`                  | Project path is required                       |
+| `loza://key@host/project`       | Do not put API keys in the URL                 |
+| `loza://host/project?tls=maybe` | tls must be true, false, or auto               |
+| `loza://host/project?transport=x` | transport must be http, otlp, or grpc        |
+| `loza://host:0/project`         | Invalid port                                   |
+| `loza://host:99999/project`     | Invalid port                                   |

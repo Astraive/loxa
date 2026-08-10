@@ -1,4 +1,4 @@
-# LOXA Python Examples
+# LOZA Python Examples
 
 Runnable examples in this repo:
 

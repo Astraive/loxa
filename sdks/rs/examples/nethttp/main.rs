@@ -1,4 +1,4 @@
-use loxa::{middleware::tower::capture_request, Config, New};
+use loza::{middleware::tower::capture_request, Config, New};
 
 fn main() {
     let logger = New(Config::test("web"));

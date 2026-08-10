@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# release-all.sh -- Orchestrates release for all LOXA components.
+# release-all.sh -- Orchestrates release for all LOZA components.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -18,7 +18,7 @@ if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     exit 1
 fi
 
-echo "=== LOXA Release: $VERSION ==="
+echo "=== LOZA Release: $VERSION ==="
 echo ""
 
 # Ensure clean working tree

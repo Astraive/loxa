@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { createLoxa, MemorySink } from '../src/index.ts';
+import { createLoza, MemorySink } from '../src/index.ts';
 
 function loadFixture() {
   const paths = [
@@ -30,7 +30,7 @@ describe('Emitted shape matches cortex contract', () => {
   it('produces the expected JSON shape', async () => {
     const fixture = loadFixture();
     const sink = new MemorySink();
-    const logger = createLoxa({
+    const logger = createLoza({
       service: fixture.params.service,
       environment: 'test',
       sink,

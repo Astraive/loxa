@@ -8,9 +8,9 @@ def render_rust_contract(contract: dict[str, Any]) -> str:
     return (
         "use serde::{Deserialize, Serialize};\n"
         "pub const CONTRACT_JSON: &str = r#\"" + json.dumps(contract, indent=2).replace("\\", "\\\\").replace('"', '\\"') + "\"#;\n"
-        "pub const LOXA_SPEC_VERSION: &str = \"{}\";\n".format(contract["spec_version"])
-        + "pub const LOXA_INGEST_API_VERSION: &str = \"{}\";\n".format(contract["api_version"])
-        + "pub const LOXA_EVENT_VERSION: &str = \"{}\";\n".format(contract["event_version"])
+        "pub const LOZA_SPEC_VERSION: &str = \"{}\";\n".format(contract["spec_version"])
+        + "pub const LOZA_INGEST_API_VERSION: &str = \"{}\";\n".format(contract["api_version"])
+        + "pub const LOZA_EVENT_VERSION: &str = \"{}\";\n".format(contract["event_version"])
         + "pub const MAX_EVENT_BYTES: usize = {};\n".format(contract["limits"]["max_event_size_bytes"])
         + "#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]\n"
         + "pub struct ValidationError { pub field: String, pub code: String, pub message: String, #[serde(default)] pub event_id: String, #[serde(default)] pub retryable: bool }\n"

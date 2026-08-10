@@ -74,5 +74,5 @@ jobs:
 
       - name: Verify go install target
         if: inputs.dry_run != true
-        run: go install github.com/astraive/loxa/cli/cmd/loxa@cli/v${{ inputs.version }}
+        run: go install github.com/astraive/loza/cli/cmd/loza@cli/v${{ inputs.version }}
         working-directory: .

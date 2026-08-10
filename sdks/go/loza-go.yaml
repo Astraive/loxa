@@ -1,0 +1,17 @@
+name: loza-go
+kind: sdk
+language: go
+version: 0.2.6
+description: Go SDK for LOZA
+license: MIT
+repository: https://github.com/Astraive/loza
+module: github.com/astraive/loza/sdks/go
+
+paths:
+  root: sdks/go
+
+publish:
+  go:
+    owner: astraive
+    tag_prefix: sdks/go/v
+    install: github.com/astraive/loza/sdks/go

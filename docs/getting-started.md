@@ -1,4 +1,4 @@
-# Getting Started with LOXA
+# Getting Started with LOZA
 
 ![Version](https://img.shields.io/badge/version-0.2.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -27,10 +27,10 @@
 ```mermaid
 sequenceDiagram
     participant App as Application
-    participant SDK as LOXA SDK
+    participant SDK as LOZA SDK
     participant Collector as Collector
     participant Sink as Storage Sink
-    participant CLI as loxa CLI
+    participant CLI as loza CLI
 
     App->>SDK: StartEvent("order.created")
     SDK->>SDK: Enrich with attributes
@@ -50,15 +50,15 @@ sequenceDiagram
 
 ```bash
 cd collector
-go build -o loxa-collector ./cmd/loxa-collector
-./loxa-collector --config configs/loxa.local.yaml
+go build -o loza-collector ./cmd/loza-collector
+./loza-collector --config configs/loza.local.yaml
 ```
 
 ### Run with Default Config
 
 ```bash
 cd collector
-go run ./cmd/loxa-collector --config loxa-collector.defaults.yaml
+go run ./cmd/loza-collector --config loza-collector.defaults.yaml
 ```
 
 The collector starts on port 9308 by default. Verify it is running:
@@ -88,21 +88,21 @@ import (
     "context"
     "fmt"
 
-    "github.com/astraive/loxa/sdks/go"
+    "github.com/astraive/loza/sdks/go"
 )
 
 func main() {
-    loxa.Configure(loxa.Dev("my-service").WithCollectorEndpoint("http://localhost:9308"))
-    defer loxa.Shutdown(context.Background())
+    loza.Configure(loza.Dev("my-service").WithCollectorEndpoint("http://localhost:9308"))
+    defer loza.Shutdown(context.Background())
 
-    ctx := loxa.StartEvent(context.Background(), loxa.Params{Event: "order.created"})
-    loxa.Enrich(ctx,
-        loxa.String("order_id", "ORD-12345"),
-        loxa.String("customer_id", "CUST-789"),
-        loxa.Int("total_cents", 5999),
+    ctx := loza.StartEvent(context.Background(), loza.Params{Event: "order.created"})
+    loza.Enrich(ctx,
+        loza.String("order_id", "ORD-12345"),
+        loza.String("customer_id", "CUST-789"),
+        loza.Int("total_cents", 5999),
     )
-    loxa.Finish(ctx, "success")
-    if err := loxa.Emit(ctx); err != nil {
+    loza.Finish(ctx, "success")
+    if err := loza.Emit(ctx); err != nil {
         fmt.Printf("emit error: %v\n", err)
     }
 }
@@ -111,36 +111,36 @@ func main() {
 ### Python
 
 ```python
-import loxa
+import loza
 
-loxa.configure(loxa.dev("my-service").with_collector_endpoint("http://localhost:9308"))
+loza.configure(loza.dev("my-service").with_collector_endpoint("http://localhost:9308"))
 
-ctx = loxa.start_event(event="order.created")
-loxa.enrich(ctx,
-    loxa.String("order_id", "ORD-12345"),
-    loxa.String("customer_id", "CUST-789"),
-    loxa.Int("total_cents", 5999),
+ctx = loza.start_event(event="order.created")
+loza.enrich(ctx,
+    loza.String("order_id", "ORD-12345"),
+    loza.String("customer_id", "CUST-789"),
+    loza.Int("total_cents", 5999),
 )
-loxa.finish(ctx, "success")
-loxa.emit(ctx)
-loxa.shutdown()
+loza.finish(ctx, "success")
+loza.emit(ctx)
+loza.shutdown()
 ```
 
 ### Rust
 
 ```rust
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    loxa::configure(
-        loxa::Config::dev("my-service").with_collector_endpoint("http://localhost:9308"),
+    loza::configure(
+        loza::Config::dev("my-service").with_collector_endpoint("http://localhost:9308"),
     )?;
 
-    let mut ctx = loxa::start_event(loxa::Params::new("order.created"));
-    loxa::enrich(&mut ctx, loxa::String("order_id", "ORD-12345"));
-    loxa::enrich(&mut ctx, loxa::String("customer_id", "CUST-789"));
-    loxa::enrich(&mut ctx, loxa::Int("total_cents", 5999));
-    loxa::finish(&mut ctx, "success");
-    loxa::emit(&mut ctx)?;
-    loxa::shutdown();
+    let mut ctx = loza::start_event(loza::Params::new("order.created"));
+    loza::enrich(&mut ctx, loza::String("order_id", "ORD-12345"));
+    loza::enrich(&mut ctx, loza::String("customer_id", "CUST-789"));
+    loza::enrich(&mut ctx, loza::Int("total_cents", 5999));
+    loza::finish(&mut ctx, "success");
+    loza::emit(&mut ctx)?;
+    loza::shutdown();
     Ok(())
 }
 ```
@@ -148,106 +148,106 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### JavaScript
 
 ```typescript
-import { loxa } from "loxa";
+import { loza } from "loza";
 
-loxa.configure(loxa.dev("my-service").withCollectorEndpoint("http://localhost:9308"));
+loza.configure(loza.dev("my-service").withCollectorEndpoint("http://localhost:9308"));
 
-const ctx = loxa.startEvent({ event: "order.created" });
-loxa.enrich(ctx,
-    loxa.string("order_id", "ORD-12345"),
-    loxa.string("customer_id", "CUST-789"),
-    loxa.int("total_cents", 5999),
+const ctx = loza.startEvent({ event: "order.created" });
+loza.enrich(ctx,
+    loza.string("order_id", "ORD-12345"),
+    loza.string("customer_id", "CUST-789"),
+    loza.int("total_cents", 5999),
 );
-loxa.finish(ctx, "success");
-await loxa.emit(ctx);
-await loxa.shutdown();
+loza.finish(ctx, "success");
+await loza.emit(ctx);
+await loza.shutdown();
 ```
 
-## Default API (`loxa.*`)
+## Default API (`loza.*`)
 
 All SDKs export a default logger for quick usage. No explicit construction needed:
 
 ### Go
 ```go
-loxa.Configure(loxa.Config{Service: "my-service", CollectorURL: "http://localhost:9308"})
-loxa.Info("server started", loxa.String("port", "8080"))
+loza.Configure(loza.Config{Service: "my-service", CollectorURL: "http://localhost:9308"})
+loza.Info("server started", loza.String("port", "8080"))
 ```
 
 ### Python
 ```python
-import loxa
-loxa.configure(loxa.Config(service="my-service", collector_endpoint="http://localhost:9308"))
-loxa.info("server started", port="8080")
+import loza
+loza.configure(loza.Config(service="my-service", collector_endpoint="http://localhost:9308"))
+loza.info("server started", port="8080")
 ```
 
 ### Rust
 ```rust
-loxa::configure(loxa::Config::dev("my-service").with_collector_endpoint("http://localhost:9308")).unwrap();
-loxa::info("server started");
+loza::configure(loza::Config::dev("my-service").with_collector_endpoint("http://localhost:9308")).unwrap();
+loza::info("server started");
 ```
 
 ### JavaScript
 ```typescript
-import { loxa } from "loxa";
-loxa.configure(loxa.production("my-service").withCollectorEndpoint("http://localhost:9308"));
-loxa.info("server started");
+import { loza } from "loza";
+loza.configure(loza.production("my-service").withCollectorEndpoint("http://localhost:9308"));
+loza.info("server started");
 ```
 
-## Custom Instances (`createLoxa` / `loxa.New`)
+## Custom Instances (`createLoza` / `loza.New`)
 
 Create isolated logger instances for different services or contexts:
 
 ### Go
 ```go
-logger, _ := loxa.New(loxa.Config{Service: "checkout-api", CollectorURL: "http://localhost:9308"})
+logger, _ := loza.New(loza.Config{Service: "checkout-api", CollectorURL: "http://localhost:9308"})
 logger.Info(ctx, "payment processed")
 ```
 
 ### Python
 ```python
-logger = loxa.create_loxa(service="checkout-api", collector_endpoint="http://localhost:9308")
+logger = loza.create_loza(service="checkout-api", collector_endpoint="http://localhost:9308")
 logger.info("payment processed")
 ```
 
 ### Rust
 ```rust
-let logger = loxa::create_loxa(loxa::Config::dev("checkout-api").with_collector_endpoint("http://localhost:9308"));
+let logger = loza::create_loza(loza::Config::dev("checkout-api").with_collector_endpoint("http://localhost:9308"));
 logger.info("payment processed");
 ```
 
 ### JavaScript
 ```typescript
-import { loxa } from "loxa";
-const logger = loxa.createLoxa({ service: "checkout-api", collectorUrl: "http://localhost:9308" });
+import { loza } from "loza";
+const logger = loza.createLoza({ service: "checkout-api", collectorUrl: "http://localhost:9308" });
 logger.info("payment processed");
 ```
 
-## Aliases (`loxa.alias`)
+## Aliases (`loza.alias`)
 
-Create a same-config variant that preserves `service` and emits `loxa.alias` metadata:
+Create a same-config variant that preserves `service` and emits `loza.alias` metadata:
 
 ### Go
 ```go
-audit, _ := loxa.Alias("audit-service")
+audit, _ := loza.Alias("audit-service")
 audit.Info(ctx, "permission changed")
 ```
 
 ### Python
 ```python
-audit = loxa.alias("audit-service")
+audit = loza.alias("audit-service")
 audit.info("permission changed")
 ```
 
 ### Rust
 ```rust
-let audit = loxa::alias("audit-service");
+let audit = loza::alias("audit-service");
 audit.info("permission changed");
 ```
 
 ### JavaScript
 ```typescript
-import { loxa } from "loxa";
-const audit = loxa.alias("audit-service");
+import { loza } from "loza";
+const audit = loza.alias("audit-service");
 audit.info("permission changed");
 ```
 
@@ -256,7 +256,7 @@ audit.info("permission changed");
 Use the CLI to query events stored by the collector:
 
 ```bash
-loxa query --event order.created --last 10
+loza query --event order.created --last 10
 ```
 
 Example output:
@@ -270,13 +270,13 @@ order.created    my-service    8ms        order_id=ORD-12346 customer_id=CUST-79
 Query with filters:
 
 ```bash
-loxa query --event order.created --attr "total_cents>5000" --last 5 --format json
+loza query --event order.created --attr "total_cents>5000" --last 5 --format json
 ```
 
 Tail live events as they arrive:
 
 ```bash
-loxa tail --event order.created
+loza tail --event order.created
 ```
 
 ## 4. Next Steps
@@ -284,6 +284,6 @@ loxa tail --event order.created
 - **Authentication**: [Authentication](authentication.md) and [Authorization](authorization.md) for API keys, RBAC, and ABAC
 - **SDK Documentation**: See `sdks/go/docs`, `sdks/py/docs`, `sdks/rs/docs`, `sdks/js/docs` for framework-specific guides
 - **Collector Configuration**: Review `collector/configs/` for production, queue, and fanout configurations
-- **CLI Reference**: Run `loxa --help` or see `cli/docs/` for all available commands
+- **CLI Reference**: Run `loza --help` or see `cli/docs/` for all available commands
 - **Cortex**: Enable the Persistent Context Engine for incident reconstruction and service graph analysis
 - **Conformance**: Run `cd spec && python conformance/runner.py` to verify SDK behavior

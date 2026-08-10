@@ -1,25 +1,25 @@
 # Middleware
 
-Python web framework middleware for automatic HTTP event creation. Each middleware captures request metadata and creates a LOXA event per request.
+Python web framework middleware for automatic HTTP event creation. Each middleware captures request metadata and creates a LOZA event per request.
 
 ## Available Middleware
 
 | Module | Framework | Description |
 |--------|-----------|-------------|
-| `loxa.middleware.asgi` | Generic ASGI | Base ASGI middleware for Starlette, FastAPI, and custom apps. |
-| `loxa.middleware.django` | Django | Django middleware for request/response event capture. |
-| `loxa.middleware.fastapi` | FastAPI | FastAPI dependency/middleware integration. |
-| `loxa.middleware.flask` | Flask | Flask WSGI middleware. |
-| `loxa.middleware.starlette` | Starlette | Starlette ASGI middleware. |
+| `loza.middleware.asgi` | Generic ASGI | Base ASGI middleware for Starlette, FastAPI, and custom apps. |
+| `loza.middleware.django` | Django | Django middleware for request/response event capture. |
+| `loza.middleware.fastapi` | FastAPI | FastAPI dependency/middleware integration. |
+| `loza.middleware.flask` | Flask | Flask WSGI middleware. |
+| `loza.middleware.starlette` | Starlette | Starlette ASGI middleware. |
 
 ## ASGI Middleware
 
 The generic ASGI middleware wraps any ASGI application:
 
 ```python
-from loxa.middleware.asgi import LoxaMiddleware
+from loza.middleware.asgi import LozaMiddleware
 
-app = LoxaMiddleware(asgi_app, service="my-service")
+app = LozaMiddleware(asgi_app, service="my-service")
 ```
 
 What it captures:
@@ -32,10 +32,10 @@ What it captures:
 
 ```python
 from fastapi import FastAPI
-from loxa.middleware.fastapi import LoxaMiddleware
+from loza.middleware.fastapi import LozaMiddleware
 
 app = FastAPI()
-app.add_middleware(LoxaMiddleware, service="my-service")
+app.add_middleware(LozaMiddleware, service="my-service")
 
 @app.get("/users/{user_id}")
 async def get_user(user_id: str):
@@ -48,7 +48,7 @@ Add to `MIDDLEWARE` in `settings.py`:
 
 ```python
 MIDDLEWARE = [
-    "loxa.middleware.django.LoxaMiddleware",
+    "loza.middleware.django.LozaMiddleware",
     # ... other middleware
 ]
 ```
@@ -57,20 +57,20 @@ MIDDLEWARE = [
 
 ```python
 from flask import Flask
-from loxa.middleware.flask import LoxaMiddleware
+from loza.middleware.flask import LozaMiddleware
 
 app = Flask(__name__)
-LoxaMiddleware(app, service="my-service")
+LozaMiddleware(app, service="my-service")
 ```
 
 ## Starlette
 
 ```python
 from starlette.applications import Starlette
-from loxa.middleware.starlette import LoxaMiddleware
+from loza.middleware.starlette import LozaMiddleware
 
 app = Starlette()
-app.add_middleware(LoxaMiddleware, service="my-service")
+app.add_middleware(LozaMiddleware, service="my-service")
 ```
 
 ## Common Behavior
@@ -85,8 +85,8 @@ All middleware implementations follow the same pattern:
 The middleware uses the global default logger. Configure it before adding middleware:
 
 ```python
-import loxa
-loxa.configure(loxa.production("my-service").with_sink(
-    loxa.HTTPBatchSink("http://collector:9308/events")
+import loza
+loza.configure(loza.production("my-service").with_sink(
+    loza.HTTPBatchSink("http://collector:9308/events")
 ))
 ```

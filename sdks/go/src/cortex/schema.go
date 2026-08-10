@@ -1,10 +1,10 @@
 package cortex
 
 import (
-	"github.com/astraive/loxa/sdks/go/src/core"
+	"github.com/astraive/loza/sdks/go/src/core"
 )
 
-// DefaultSchema returns the default LOXA event schema.
+// DefaultSchema returns the default LOZA event schema.
 func DefaultSchema() core.Schema { return core.DefaultSchema() }
 
 // FlatSchema returns a flat key-value schema.

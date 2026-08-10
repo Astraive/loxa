@@ -1,10 +1,10 @@
-# LOXA v0.0.1 Release Notes
+# LOZA v0.0.1 Release Notes
 
 **Release Date:** 2026-05-14
 
 ## Overview
 
-LOXA v0.0.1 is the first stable release of the canonical event observability system. This release includes production-ready SDKs (Go, Python, Rust), a scalable collector with multiple deployment modes, a comprehensive CLI, and extensive documentation.
+LOZA v0.0.1 is the first stable release of the canonical event observability system. This release includes production-ready SDKs (Go, Python, Rust), a scalable collector with multiple deployment modes, a comprehensive CLI, and extensive documentation.
 
 ## What's New
 
@@ -44,14 +44,14 @@ LOXA v0.0.1 is the first stable release of the canonical event observability sys
   - DLQ with replay capabilities
 
 #### CLI (Command Line Interface)
-- `loxa init` - Initialize workspace and configuration
-- `loxa dev` - Local development server
-- `loxa collector` - Run collector server
-- `loxa query` - SQL query interface to stored events
-- `loxa tail` - Real-time event streaming
-- `loxa doctor` - Health diagnostics
-- `loxa schema validate` - Schema compliance checking
-- `loxa config` - Configuration management and validation
+- `loza init` - Initialize workspace and configuration
+- `loza dev` - Local development server
+- `loza collector` - Run collector server
+- `loza query` - SQL query interface to stored events
+- `loza tail` - Real-time event streaming
+- `loza doctor` - Health diagnostics
+- `loza schema validate` - Schema compliance checking
+- `loza config` - Configuration management and validation
 
 #### Documentation
 - Comprehensive README with quick start and examples
@@ -121,48 +121,48 @@ If you were using pre-release versions:
 
 1. **Configuration**: The config format is stable in v0.0.1. Review new retention options if upgrading.
 2. **Schema**: Event schema v1 is stable. Custom schema registries are supported.
-3. **Data**: Existing DuckDB files are compatible. Run `loxa doctor` to verify.
+3. **Data**: Existing DuckDB files are compatible. Run `loza doctor` to verify.
 
 ### Getting Started
 
 ```bash
 # Initialize a new workspace
-loxa init --workspace my-app
+loza init --workspace my-app
 
 # Start the collector
-loxa collector run --config loxa.yaml
+loza collector run --config loza.yaml
 
 # Emit events from your application (see SDK docs)
 
 # Query events
-loxa query --sql "SELECT * FROM events LIMIT 10"
+loza query --sql "SELECT * FROM events LIMIT 10"
 ```
 
 ## Installation
 
 ### From Binary
 ```bash
-go install github.com/astraive/loxa/collector/cmd/loxa-collector@v0.0.1
-go install github.com/astraive/loxa/cli/cmd/loxa@v0.0.1
+go install github.com/astraive/loza/collector/cmd/loza-collector@v0.0.1
+go install github.com/astraive/loza/cli/cmd/loza@v0.0.1
 ```
 
 ### From Docker
 ```bash
-docker pull astraive/loxa:0.2.0
-docker pull astraive/loxa-cli:0.2.0
+docker pull astraive/loza:0.2.0
+docker pull astraive/loza-cli:0.2.0
 ```
 
 ### From Helm (Kubernetes)
 ```bash
-helm repo add loxa https://charts.loxa.dev
-helm install loxa loxa/loxa --version 0.2.0
+helm repo add loza https://charts.loza.dev
+helm install loza loza/loza --version 0.2.0
 ```
 
 ## SDK Versions
 
-- **Go**: `github.com/astraive/loxa/sdks/go v0.0.1`
-- **Python**: `loxa==0.2.0` (PyPI)
-- **Rust**: `loxa = "0.2.0"` (Crates.io)
+- **Go**: `github.com/astraive/loza/sdks/go v0.0.1`
+- **Python**: `loza==0.2.0` (PyPI)
+- **Rust**: `loza = "0.2.0"` (Crates.io)
 
 ## Changelog
 
@@ -192,18 +192,18 @@ None (initial release)
 
 ## Support & Documentation
 
-- **GitHub**: https://github.com/astraive/loxa
-- **Documentation**: https://docs.loxa.dev
-- **Issues**: https://github.com/astraive/loxa/issues
-- **Discussions**: https://github.com/astraive/loxa/discussions
+- **GitHub**: https://github.com/astraive/loza
+- **Documentation**: https://docs.loza.dev
+- **Issues**: https://github.com/astraive/loza/issues
+- **Discussions**: https://github.com/astraive/loza/discussions
 
 ## Acknowledgments
 
-LOXA v0.0.1 represents the culmination of comprehensive system design, rigorous testing, and production-readiness validation. We thank all contributors and testers who helped bring this release to maturity.
+LOZA v0.0.1 represents the culmination of comprehensive system design, rigorous testing, and production-readiness validation. We thank all contributors and testers who helped bring this release to maturity.
 
 ## License
 
-LOXA is distributed under the MIT License. See [LICENSE](../LICENSE) for details.
+LOZA is distributed under the MIT License. See [LICENSE](../LICENSE) for details.
 
 ---
 

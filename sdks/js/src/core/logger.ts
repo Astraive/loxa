@@ -36,7 +36,7 @@ function resolveSink(cfg: Config): Sink | null {
   return null;
 }
 
-/** The core LOXA logger. */
+/** The core LOZA logger. */
 export class Logger {
   private cfg: Config;
   private _resolvedSink: Sink | null;
@@ -51,7 +51,7 @@ export class Logger {
     return new Logger(withOptions(this.cfg, opts));
   }
 
-  /** Create an immutable child logger that preserves config and emits loxa.alias. */
+  /** Create an immutable child logger that preserves config and emits loza.alias. */
   alias(name: string): Logger {
     return this.child({ alias: name });
   }
@@ -67,7 +67,7 @@ export class Logger {
     if (!ev.service && this.cfg.service) ev.service = this.cfg.service;
     if (!ev.version && this.cfg.version) ev.version = this.cfg.version;
     if (!ev.environment && this.cfg.environment) ev.environment = this.cfg.environment;
-    if (this.cfg.alias) ev.set('loxa.alias', this.cfg.alias);
+    if (this.cfg.alias) ev.set('loza.alias', this.cfg.alias);
 
     // Apply custom attrs
     if (params.custom) {
@@ -205,7 +205,7 @@ export class Logger {
         await sink.write(encoded);
       } catch (err) {
         ctx.markDeliveryFailed();
-        console.error('[loxa] sink write failed:', err);
+        console.error('[loza] sink write failed:', err);
         return null;
       }
     }
@@ -410,7 +410,7 @@ export class Logger {
     return true;
   }
 
-  /** Reconfigure this logger in-place (used by configure() to update the exported loxa instance). */
+  /** Reconfigure this logger in-place (used by configure() to update the exported loza instance). */
   _reconfigure(cfg: Config): void {
     this.cfg = { ...cfg };
     this._resolvedSink = resolveSink(this.cfg);

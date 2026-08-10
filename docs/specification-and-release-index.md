@@ -1,4 +1,4 @@
-# LOXA v0.2.0 Specification & Release Index
+# LOZA v0.2.0 Specification & Release Index
 
 **Status**: ✅ **PRODUCTION READY**  
 **Release Date**: May 15, 2026  
@@ -14,7 +14,7 @@
 - **[Canonical Duplicate Policy](spec/docs/CANONICAL_DUPLICATE_POLICY.md)** - Duplicate field handling specification
 
 ### For Users
-- **[CLI Command Maturity](README.md#cli-command-maturity)** - Use `loxa maturity` to see command stability
+- **[CLI Command Maturity](README.md#cli-command-maturity)** - Use `loza maturity` to see command stability
 - **[SDK Maturity Status](README.md#current-status)** - Go, Python, Rust, JavaScript (all stable)
 - **[Quick Start Guide](README.md#quick-start)** - Get started in 5 minutes
 
@@ -79,7 +79,7 @@ All 7 P0 items from the release roadmap have been implemented:
 ### 6. CLI Command Maturity Labels ✅
 - **Status**: 9 stable, 6 beta, 3 experimental commands
 - **Location**: `cli/internal/cli/root.go`
-- **Commands**: `loxa maturity` shows all command stability levels
+- **Commands**: `loza maturity` shows all command stability levels
 - **Documentation**: Maturity table added to main README
 - **Stability Definitions**:
   - **stable**: Production-ready, covered by tests, API stable
@@ -90,10 +90,10 @@ All 7 P0 items from the release roadmap have been implemented:
 - **Status**: 4 production-grade reference configurations
 - **Location**: `collector/configs/`
 - **Configs**:
-  - `loxa.direct.duckdb.yaml` - Direct delivery (no durability)
-  - `loxa.spool.duckdb.yaml` - Spool mode (local crash recovery)
-  - `loxa.queue.kafka.yaml` - Queue mode (distributed HA)
-  - `loxa.fanout.loki.yaml` - Fanout (multi-sink delivery)
+  - `loza.direct.duckdb.yaml` - Direct delivery (no durability)
+  - `loza.spool.duckdb.yaml` - Spool mode (local crash recovery)
+  - `loza.queue.kafka.yaml` - Queue mode (distributed HA)
+  - `loza.fanout.loki.yaml` - Fanout (multi-sink delivery)
 - **Use Cases**: Documented in collector README
 
 ---
@@ -101,7 +101,7 @@ All 7 P0 items from the release roadmap have been implemented:
 ## Documentation Structure
 
 ```
-loxa/
+loza/
 ├── README.md                           # Main entry point (updated)
 ├── TEST_REPORT.md                      # Test coverage and results
 ├── spec/
@@ -193,7 +193,7 @@ loxa/
 | Go SDK Metrics | ✅ | events_emitted_total{status=success/failure} |
 | Go SDK Tests | ✅ | 50+ tests passing |
 | Python/Rust Status | ✅ | Stable labels in README |
-| CLI Maturity | ✅ | `loxa maturity` command + table |
+| CLI Maturity | ✅ | `loza maturity` command + table |
 | Collector Configs | ✅ | 4 reference configs (direct/spool/queue/fanout) |
 | Documentation | ✅ | ~50KB of spec + examples |
 | Zero Regressions | ✅ | All existing tests still passing |
@@ -242,7 +242,7 @@ See [MVP_CUT.md](spec/docs/MVP_CUT.md) for full v1.0 contract.
 2. Use appropriate reference config from `collector/configs/`
 3. See [Deployment Guide](docs/deployment.md) for setup
 4. Check [Configuration Reference](docs/configuration.md) for tuning
-5. Monitor with `loxa query`, `loxa tail`, `loxa tail --dlq`
+5. Monitor with `loza query`, `loza tail`, `loza tail --dlq`
 
 ### For SDK Contributors
 1. Review [SDK Conformance Contract](spec/docs/SDK_CONFORMANCE_CONTRACT.md)

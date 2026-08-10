@@ -6,8 +6,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
 )
 
 func AuditCommand(ctx context.Context, cfg config.Config, args []string) error {

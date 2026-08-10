@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 	ginpkg "github.com/gin-gonic/gin"
 )
 
@@ -30,7 +30,7 @@ func MiddlewareWithConfig(cfg Config) ginpkg.HandlerFunc {
 	}
 
 	return func(c *ginpkg.Context) {
-		ctx := loxa.StartEvent(c.Request.Context(), loxa.Params{
+		ctx := loza.StartEvent(c.Request.Context(), loza.Params{
 			Event:  eventName,
 			Method: c.Request.Method,
 			Path:   c.Request.URL.Path,
@@ -40,22 +40,22 @@ func MiddlewareWithConfig(cfg Config) ginpkg.HandlerFunc {
 
 		defer func() {
 			if rec := recover(); rec != nil {
-				if loxa.PanicRecoveryEnabled() {
+				if loza.PanicRecoveryEnabled() {
 					if c.Writer.Status() < http.StatusBadRequest {
 						c.AbortWithStatus(http.StatusInternalServerError)
 					}
-					loxa.FinishError(ctx, panicErr{value: rec}, loxa.Int("status_code", c.Writer.Status()))
-					_ = loxa.Emit(ctx)
+					loza.FinishError(ctx, panicErr{value: rec}, loza.Int("status_code", c.Writer.Status()))
+					_ = loza.Emit(ctx)
 					return
 				}
 				panic(rec)
 			}
 			if len(c.Errors) > 0 {
-				loxa.FinishError(ctx, c.Errors.Last(), loxa.Int("status_code", c.Writer.Status()))
+				loza.FinishError(ctx, c.Errors.Last(), loza.Int("status_code", c.Writer.Status()))
 			} else {
-				loxa.Finish(ctx, "success", loxa.Int("status_code", c.Writer.Status()))
+				loza.Finish(ctx, "success", loza.Int("status_code", c.Writer.Status()))
 			}
-			_ = loxa.Emit(ctx)
+			_ = loza.Emit(ctx)
 		}()
 
 		c.Next()

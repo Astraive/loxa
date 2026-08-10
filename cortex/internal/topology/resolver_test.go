@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/cortex/internal/models"
+	"github.com/astraive/loza/cortex/internal/models"
 )
 
 type fakeTopologyStore struct {

@@ -17,9 +17,9 @@ go vet ./...
 2. Verify all commands parse correctly:
 
 ```bash
-go run ./cmd/loxa --help
-go run ./cmd/loxa collector --help
-go run ./cmd/loxa schema --help
+go run ./cmd/loza --help
+go run ./cmd/loza collector --help
+go run ./cmd/loza schema --help
 ```
 
 3. Run the dependency boundary conformance test:
@@ -36,7 +36,7 @@ go test ./... -run TestDependencyBoundary
 
 ```bash
 cd cli
-go build -o loxa.exe ./cmd/loxa
+go build -o loza.exe ./cmd/loza
 ```
 
 ## Tagging
@@ -51,11 +51,11 @@ git push origin cli/v0.2.0
 The CLI is a single binary. Distribute via:
 
 - Direct download from GitHub releases
-- `go install github.com/astraive/loxa/cli/cmd/loxa@latest`
-- Build from source: `go build -o loxa.exe ./cmd/loxa`
+- `go install github.com/astraive/loza/cli/cmd/loza@latest`
+- Build from source: `go build -o loza.exe ./cmd/loza`
 
 ## Post-release
 
-1. Verify `loxa doctor` reports all checks passing.
-2. Verify `loxa status` connects to a running collector.
-3. Test `loxa query` and `loxa tail` against a live instance.
+1. Verify `loza doctor` reports all checks passing.
+2. Verify `loza status` connects to a running collector.
+3. Test `loza query` and `loza tail` against a live instance.

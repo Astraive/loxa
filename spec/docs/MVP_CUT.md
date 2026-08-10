@@ -2,7 +2,7 @@
 
 Milestone A: Contract Lock
 
-- `loxa-spec` schema
+- `loza-spec` schema
 - ingest envelope
 - response schema
 - golden fixtures

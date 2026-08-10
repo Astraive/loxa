@@ -6,27 +6,27 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func TestSamplingAndPolicyHelpers(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	cfg := loxa.Test().
+	sink, store := loza.MemorySink()
+	cfg := loza.Test().
 		WithSink(sink).
-		WithSampler(loxa.SampleByEvent("verification.sampled")).
-		WithRedactor(loxa.ComposeRedactors(loxa.DefaultRedactor(), loxa.RedactKeys("password")))
-	if err := loxa.Configure(cfg); err != nil {
+		WithSampler(loza.SampleByEvent("verification.sampled")).
+		WithRedactor(loza.ComposeRedactors(loza.DefaultRedactor(), loza.RedactKeys("password")))
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
-	ctx := loxa.StartEvent(context.Background(), loxa.Params{Event: "verification.sampled"})
-	if err := loxa.Enrich(ctx, loxa.String("password", "secret123")); err != nil {
+	ctx := loza.StartEvent(context.Background(), loza.Params{Event: "verification.sampled"})
+	if err := loza.Enrich(ctx, loza.String("password", "secret123")); err != nil {
 		t.Fatalf("enrich: %v", err)
 	}
-	if err := loxa.Finish(ctx, "success"); err != nil {
+	if err := loza.Finish(ctx, "success"); err != nil {
 		t.Fatalf("finish: %v", err)
 	}
-	if err := loxa.Emit(ctx); err != nil {
+	if err := loza.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
 	raw := store.Raw()
@@ -36,13 +36,13 @@ func TestSamplingAndPolicyHelpers(t *testing.T) {
 	if got := string(raw[0]); !json.Valid(raw[0]) || !strings.Contains(got, "[REDACTED]") {
 		t.Fatalf("expected encoded payload to contain redacted value, got %s", got)
 	}
-	if loxa.SampleByOutcome("error") == nil {
+	if loza.SampleByOutcome("error") == nil {
 		t.Fatalf("expected sample-by-outcome sampler")
 	}
-	if loxa.AllowFields("allowed") == nil {
+	if loza.AllowFields("allowed") == nil {
 		t.Fatalf("expected allow-fields sampler")
 	}
-	if loxa.BlockFields("blocked") == nil {
+	if loza.BlockFields("blocked") == nil {
 		t.Fatalf("expected block-fields sampler")
 	}
 }

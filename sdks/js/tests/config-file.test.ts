@@ -91,16 +91,16 @@ describe('mergeFileConfig', () => {
     assert.equal(result.collectorUrl, 'http://collector:9308');
   });
 
-  it('parses loxa:// DSN in collector_url', () => {
+  it('parses loza:// DSN in collector_url', () => {
     const base = defaultConfig();
-    const raw = { collector_url: 'loxa://localhost:9308/my-project' };
+    const raw = { collector_url: 'loza://localhost:9308/my-project' };
     const result = mergeFileConfig(base, raw);
     assert.equal(result.collectorUrl, 'http://localhost:9308');
   });
 
   it('extracts env from DSN when environment is default', () => {
     const base = defaultConfig();
-    const raw = { collector_url: 'loxa://localhost:9308/prod?env=staging' };
+    const raw = { collector_url: 'loza://localhost:9308/prod?env=staging' };
     const result = mergeFileConfig(base, raw);
     assert.equal(result.environment, 'staging');
   });
@@ -255,92 +255,92 @@ describe('loadFileConfig', () => {
 });
 
 describe('fromEnv with DSN', () => {
-  it('parses LOXA_DSN env var when set', () => {
-    const original = process.env.LOXA_DSN;
-    const originalUrl = process.env.LOXA_COLLECTOR_URL;
+  it('parses LOZA_DSN env var when set', () => {
+    const original = process.env.LOZA_DSN;
+    const originalUrl = process.env.LOZA_COLLECTOR_URL;
     try {
-      process.env.LOXA_DSN = 'loxa://collector.example.com/my-app?env=staging&service=api';
-      delete process.env.LOXA_COLLECTOR_URL;
+      process.env.LOZA_DSN = 'loza://collector.example.com/my-app?env=staging&service=api';
+      delete process.env.LOZA_COLLECTOR_URL;
       const cfg = fromEnv();
       assert.equal(cfg.collectorUrl, 'https://collector.example.com:443');
       assert.equal(cfg.environment, 'staging');
       assert.equal(cfg.service, 'api');
     } finally {
       if (original !== undefined) {
-        process.env.LOXA_DSN = original;
+        process.env.LOZA_DSN = original;
       } else {
-        delete process.env.LOXA_DSN;
+        delete process.env.LOZA_DSN;
       }
       if (originalUrl !== undefined) {
-        process.env.LOXA_COLLECTOR_URL = originalUrl;
+        process.env.LOZA_COLLECTOR_URL = originalUrl;
       } else {
-        delete process.env.LOXA_COLLECTOR_URL;
+        delete process.env.LOZA_COLLECTOR_URL;
       }
     }
   });
 
-  it('LOXA_COLLECTOR_URL overrides DSN-derived collectorUrl', () => {
-    const originalDsn = process.env.LOXA_DSN;
-    const originalUrl = process.env.LOXA_COLLECTOR_URL;
+  it('LOZA_COLLECTOR_URL overrides DSN-derived collectorUrl', () => {
+    const originalDsn = process.env.LOZA_DSN;
+    const originalUrl = process.env.LOZA_COLLECTOR_URL;
     try {
-      process.env.LOXA_DSN = 'loxa://collector.example.com/my-app';
-      process.env.LOXA_COLLECTOR_URL = 'http://override:9308';
+      process.env.LOZA_DSN = 'loza://collector.example.com/my-app';
+      process.env.LOZA_COLLECTOR_URL = 'http://override:9308';
       const cfg = fromEnv();
       assert.equal(cfg.collectorUrl, 'http://override:9308');
     } finally {
       if (originalDsn !== undefined) {
-        process.env.LOXA_DSN = originalDsn;
+        process.env.LOZA_DSN = originalDsn;
       } else {
-        delete process.env.LOXA_DSN;
+        delete process.env.LOZA_DSN;
       }
       if (originalUrl !== undefined) {
-        process.env.LOXA_COLLECTOR_URL = originalUrl;
+        process.env.LOZA_COLLECTOR_URL = originalUrl;
       } else {
-        delete process.env.LOXA_COLLECTOR_URL;
+        delete process.env.LOZA_COLLECTOR_URL;
       }
     }
   });
 
-  it('LOXA_SERVICE overrides DSN-derived service', () => {
-    const originalDsn = process.env.LOXA_DSN;
-    const originalSvc = process.env.LOXA_SERVICE;
+  it('LOZA_SERVICE overrides DSN-derived service', () => {
+    const originalDsn = process.env.LOZA_DSN;
+    const originalSvc = process.env.LOZA_SERVICE;
     try {
-      process.env.LOXA_DSN = 'loxa://collector.example.com/my-app?service=dsn-svc';
-      process.env.LOXA_SERVICE = 'env-svc';
+      process.env.LOZA_DSN = 'loza://collector.example.com/my-app?service=dsn-svc';
+      process.env.LOZA_SERVICE = 'env-svc';
       const cfg = fromEnv();
       assert.equal(cfg.service, 'env-svc');
     } finally {
       if (originalDsn !== undefined) {
-        process.env.LOXA_DSN = originalDsn;
+        process.env.LOZA_DSN = originalDsn;
       } else {
-        delete process.env.LOXA_DSN;
+        delete process.env.LOZA_DSN;
       }
       if (originalSvc !== undefined) {
-        process.env.LOXA_SERVICE = originalSvc;
+        process.env.LOZA_SERVICE = originalSvc;
       } else {
-        delete process.env.LOXA_SERVICE;
+        delete process.env.LOZA_SERVICE;
       }
     }
   });
 
   it('falls through gracefully on invalid DSN', () => {
-    const originalDsn = process.env.LOXA_DSN;
-    const originalUrl = process.env.LOXA_COLLECTOR_URL;
+    const originalDsn = process.env.LOZA_DSN;
+    const originalUrl = process.env.LOZA_COLLECTOR_URL;
     try {
-      process.env.LOXA_DSN = 'not-a-valid-dsn';
-      process.env.LOXA_COLLECTOR_URL = 'http://fallback:9308';
+      process.env.LOZA_DSN = 'not-a-valid-dsn';
+      process.env.LOZA_COLLECTOR_URL = 'http://fallback:9308';
       const cfg = fromEnv();
       assert.equal(cfg.collectorUrl, 'http://fallback:9308');
     } finally {
       if (originalDsn !== undefined) {
-        process.env.LOXA_DSN = originalDsn;
+        process.env.LOZA_DSN = originalDsn;
       } else {
-        delete process.env.LOXA_DSN;
+        delete process.env.LOZA_DSN;
       }
       if (originalUrl !== undefined) {
-        process.env.LOXA_COLLECTOR_URL = originalUrl;
+        process.env.LOZA_COLLECTOR_URL = originalUrl;
       } else {
-        delete process.env.LOXA_COLLECTOR_URL;
+        delete process.env.LOZA_COLLECTOR_URL;
       }
     }
   });

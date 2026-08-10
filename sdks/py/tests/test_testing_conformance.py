@@ -1,25 +1,25 @@
 from __future__ import annotations
 
-import loxa
+import loza
 
 
 def test_testing_and_conformance_helpers():
-    logger, sink = loxa.TestLogger()
+    logger, sink = loza.TestLogger()
     logger.info("hello")
-    events = loxa.DecodeEvents(sink)
+    events = loza.DecodeEvents(sink)
 
-    found = loxa.expect_event(events, message="hello")
+    found = loza.expect_event(events, message="hello")
     assert found is not None
-    loxa.expect_attr(found, "message", "hello")
+    loza.expect_attr(found, "message", "hello")
 
-    snap = loxa.snapshot_event(found)
+    snap = loza.snapshot_event(found)
     assert "event_id" not in snap
     assert "timestamp" not in snap
-    assert isinstance(loxa.mock_sink(), loxa.MemorySink)
+    assert isinstance(loza.mock_sink(), loza.MemorySink)
 
-    loxa.set_id_generator(lambda: "evt_fixed")
-    logger2, sink2 = loxa.TestLogger()
+    loza.set_id_generator(lambda: "evt_fixed")
+    logger2, sink2 = loza.TestLogger()
     logger2.info("id-fixed")
-    fixed = loxa.DecodeEvents(sink2)[0]
+    fixed = loza.DecodeEvents(sink2)[0]
     assert fixed.get("event_id") == "evt_fixed"
-    loxa.reset_for_test()
+    loza.reset_for_test()

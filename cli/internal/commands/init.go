@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/astraive/loxa/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/config"
 )
 
 func InitCommand(cfg config.Config, args []string) error {
@@ -18,7 +18,7 @@ func InitCommand(cfg config.Config, args []string) error {
 	if *valMode != "" {
 		cfg.ValidationMode = strings.ToLower(strings.TrimSpace(*valMode))
 	}
-	target := ".loxa-cli.yaml"
+	target := ".loza-cli.yaml"
 	if fs.NArg() > 0 && fs.Arg(0) != "" {
 		target = fs.Arg(0)
 	}

@@ -15,10 +15,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astraive/loxa/cortex/internal/config"
-	"github.com/astraive/loxa/cortex/internal/eventconv"
-	"github.com/astraive/loxa/cortex/internal/models"
-	transportcontracts "github.com/astraive/loxa/spec/transport/contracts"
+	"github.com/astraive/loza/cortex/internal/config"
+	"github.com/astraive/loza/cortex/internal/eventconv"
+	"github.com/astraive/loza/cortex/internal/models"
+	transportcontracts "github.com/astraive/loza/spec/transport/contracts"
 	"github.com/gorilla/websocket"
 )
 

@@ -21,22 +21,22 @@ def main() -> int:
     args = parser.parse_args()
 
     spec_root = Path(args.spec_root).resolve()
-    loxa_contract = build_contract(spec_root)
+    loza_contract = build_contract(spec_root)
     cortex_contract = build_cortex_contract(spec_root)
 
-    python_contract = render_python_contract(loxa_contract)
+    python_contract = render_python_contract(loza_contract)
     outputs = {
-        spec_root / "conformance" / "manifest.json": render_conformance_manifest(loxa_contract),
-        spec_root / "generated" / "contract" / "loxa-contract.json": render_contract_json(loxa_contract),
+        spec_root / "conformance" / "manifest.json": render_conformance_manifest(loza_contract),
+        spec_root / "generated" / "contract" / "loza-contract.json": render_contract_json(loza_contract),
         spec_root / "generated" / "contract" / "cortex-contract.json": render_cortex_contract_json(cortex_contract),
-        spec_root / "generated" / "contract" / "conformance_manifest.json": render_conformance_manifest(loxa_contract),
-        spec_root / "generated" / "conformance_manifest.json": render_conformance_manifest(loxa_contract),
-        spec_root / "generated" / "go" / "contract" / "contract.go": render_go_contract(loxa_contract),
-        spec_root / "generated" / "python" / "loxa_contract.py": python_contract,
-        spec_root / "generated" / "rust" / "contract.rs": render_rust_contract(loxa_contract),
-        spec_root / "generated" / "lql" / "schema.rs": render_lql_schema(loxa_contract),
+        spec_root / "generated" / "contract" / "conformance_manifest.json": render_conformance_manifest(loza_contract),
+        spec_root / "generated" / "conformance_manifest.json": render_conformance_manifest(loza_contract),
+        spec_root / "generated" / "go" / "contract" / "contract.go": render_go_contract(loza_contract),
+        spec_root / "generated" / "python" / "loza_contract.py": python_contract,
+        spec_root / "generated" / "rust" / "contract.rs": render_rust_contract(loza_contract),
+        spec_root / "generated" / "lql" / "schema.rs": render_lql_schema(loza_contract),
     }
-    sdk_contract = spec_root.parent / "sdks" / "py" / "src" / "loxa_contract.py"
+    sdk_contract = spec_root.parent / "sdks" / "py" / "src" / "loza_contract.py"
     if sdk_contract.parent.is_dir():
         outputs[sdk_contract] = python_contract
 

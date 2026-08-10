@@ -5,18 +5,18 @@ import (
 	"strings"
 	"time"
 
-	speccontract "github.com/astraive/loxa/spec/generated/go/contract"
-	"github.com/astraive/loxa/cortex/internal/models"
+	speccontract "github.com/astraive/loza/spec/generated/go/contract"
+	"github.com/astraive/loza/cortex/internal/models"
 )
 
 func FromRawMap(raw map[string]any, defaultProvenance string) (*models.Event, error) {
 	event := &models.Event{}
 
 	// Try spec contract validation if available
-	if speccontract.LooksLikeLoxaEventMap(raw) {
+	if speccontract.LooksLikeLozaEventMap(raw) {
 		speccontract.NormalizeEventAliasesMap(raw)
 		if err := speccontract.ValidateEventMap(raw, false); err != nil {
-			return nil, fmt.Errorf("loxa event contract validation failed: %w", err)
+			return nil, fmt.Errorf("loza event contract validation failed: %w", err)
 		}
 	}
 
@@ -224,7 +224,7 @@ func FromRawMap(raw map[string]any, defaultProvenance string) (*models.Event, er
 	if provenance, ok := raw["provenance"].(string); ok {
 		event.Provenance = normalizeProvenance(provenance, defaultProvenance)
 	} else {
-		event.Provenance = normalizeProvenance(defaultProvenance, "loxa")
+		event.Provenance = normalizeProvenance(defaultProvenance, "loza")
 	}
 
 	// Preserve raw payload (everything except lifecycle fields that are extracted)
@@ -332,8 +332,8 @@ func normalizeEventKind(kind string) models.EventKind {
 		return models.EventKindCollectorEvent
 	case "log":
 		return models.EventKindLog
-	case "http", "job", "queue", "cli", "cron", "event", "checkpoint", "loxa_event":
-		return models.EventKindLoxaEvent
+	case "http", "job", "queue", "cli", "cron", "event", "checkpoint", "loza_event":
+		return models.EventKindLozaEvent
 	default:
 		return models.EventKindCollectorEvent
 	}
@@ -351,11 +351,11 @@ func normalizeProvenance(value, fallback string) string {
 		return "grpc"
 	case strings.TrimSpace(value) == "":
 		if strings.TrimSpace(fallback) == "" {
-			return "loxa"
+			return "loza"
 		}
-		return normalizeProvenance(fallback, "loxa")
+		return normalizeProvenance(fallback, "loza")
 	default:
-		return "loxa"
+		return "loza"
 	}
 }
 
@@ -364,5 +364,5 @@ func NormalizeEventKind(kind string) models.EventKind {
 }
 
 func NormalizeProvenance(value string) string {
-	return normalizeProvenance(value, "loxa")
+	return normalizeProvenance(value, "loza")
 }

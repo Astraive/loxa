@@ -1,4 +1,4 @@
-/// Shared test vectors from loxa/spec/dsn/test-cases.json (25 cases: 12 valid, 13 invalid).
+/// Shared test vectors from loza/spec/dsn/test-cases.json (25 cases: 12 valid, 13 invalid).
 
 fn assert_valid(
     input: &str,
@@ -16,7 +16,7 @@ fn assert_valid(
     expect_otlp_url: Option<&str>,
     expect_tail_ws_url: Option<&str>,
 ) {
-    let dsn = loxa::dsn::parse(input).expect(&format!("expected valid DSN: {input}"));
+    let dsn = loza::dsn::parse(input).expect(&format!("expected valid DSN: {input}"));
     assert_eq!(dsn.scheme, expect_scheme, "scheme mismatch for {input}");
     assert_eq!(dsn.host, expect_host, "host mismatch for {input}");
     assert_eq!(dsn.port, expect_port, "port mismatch for {input}");
@@ -47,7 +47,7 @@ fn assert_valid(
 }
 
 fn assert_invalid(input: &str) {
-    let result = loxa::dsn::parse(input);
+    let result = loza::dsn::parse(input);
     assert!(result.is_err(), "expected invalid DSN but got: {result:?}");
 }
 
@@ -56,8 +56,8 @@ fn assert_invalid(input: &str) {
 #[test]
 fn localhost_dev_with_explicit_port() {
     assert_valid(
-        "loxa://localhost:9308/demo?tls=false",
-        "loxa",
+        "loza://localhost:9308/demo?tls=false",
+        "loza",
         "localhost",
         9308,
         "demo",
@@ -76,8 +76,8 @@ fn localhost_dev_with_explicit_port() {
 #[test]
 fn localhost_default_port_9308() {
     assert_valid(
-        "loxa://localhost/demo?tls=false",
-        "loxa",
+        "loza://localhost/demo?tls=false",
+        "loza",
         "localhost",
         9308,
         "demo",
@@ -96,8 +96,8 @@ fn localhost_default_port_9308() {
 #[test]
 fn prod_default_tls_true() {
     assert_valid(
-        "loxa://collector.example.com/demo",
-        "loxa",
+        "loza://collector.example.com/demo",
+        "loza",
         "collector.example.com",
         443,
         "demo",
@@ -116,8 +116,8 @@ fn prod_default_tls_true() {
 #[test]
 fn custom_env_and_service() {
     assert_valid(
-        "loxa://collector.example.com/demo?env=prod&service=api",
-        "loxa",
+        "loza://collector.example.com/demo?env=prod&service=api",
+        "loza",
         "collector.example.com",
         443,
         "demo",
@@ -136,8 +136,8 @@ fn custom_env_and_service() {
 #[test]
 fn otlp_transport() {
     assert_valid(
-        "loxa://collector.example.com/demo?transport=otlp",
-        "loxa",
+        "loza://collector.example.com/demo?transport=otlp",
+        "loza",
         "collector.example.com",
         443,
         "demo",
@@ -156,8 +156,8 @@ fn otlp_transport() {
 #[test]
 fn grpc_transport() {
     assert_valid(
-        "loxa://collector.example.com/demo?transport=grpc",
-        "loxa",
+        "loza://collector.example.com/demo?transport=grpc",
+        "loza",
         "collector.example.com",
         443,
         "demo",
@@ -176,8 +176,8 @@ fn grpc_transport() {
 #[test]
 fn loopback_127_defaults_tls_false() {
     assert_valid(
-        "loxa://127.0.0.1/demo",
-        "loxa",
+        "loza://127.0.0.1/demo",
+        "loza",
         "127.0.0.1",
         9308,
         "demo",
@@ -196,8 +196,8 @@ fn loopback_127_defaults_tls_false() {
 #[test]
 fn ipv6_loopback_defaults_tls_false() {
     assert_valid(
-        "loxa://[::1]/demo",
-        "loxa",
+        "loza://[::1]/demo",
+        "loza",
         "::1",
         9308,
         "demo",
@@ -216,8 +216,8 @@ fn ipv6_loopback_defaults_tls_false() {
 #[test]
 fn tls_auto_keeps_localhost_default() {
     assert_valid(
-        "loxa://localhost/demo?tls=auto",
-        "loxa",
+        "loza://localhost/demo?tls=auto",
+        "loza",
         "localhost",
         9308,
         "demo",
@@ -236,8 +236,8 @@ fn tls_auto_keeps_localhost_default() {
 #[test]
 fn tls_auto_keeps_remote_default() {
     assert_valid(
-        "loxa://collector.example.com/demo?tls=auto",
-        "loxa",
+        "loza://collector.example.com/demo?tls=auto",
+        "loza",
         "collector.example.com",
         443,
         "demo",
@@ -256,8 +256,8 @@ fn tls_auto_keeps_remote_default() {
 #[test]
 fn explicit_tls_true_on_localhost() {
     assert_valid(
-        "loxa://localhost:8443/demo?tls=true",
-        "loxa",
+        "loza://localhost:8443/demo?tls=true",
+        "loza",
         "localhost",
         8443,
         "demo",
@@ -276,8 +276,8 @@ fn explicit_tls_true_on_localhost() {
 #[test]
 fn explicit_port_4318_with_otlp() {
     assert_valid(
-        "loxa://collector.example.com:4318/backend?env=staging&service=auth&transport=otlp",
-        "loxa",
+        "loza://collector.example.com:4318/backend?env=staging&service=auth&transport=otlp",
+        "loza",
         "collector.example.com",
         4318,
         "backend",
@@ -312,55 +312,55 @@ fn reject_wrong_scheme_http() {
 
 #[test]
 fn reject_no_host() {
-    assert_invalid("loxa://");
+    assert_invalid("loza://");
 }
 
 #[test]
 fn reject_triple_slash_no_host() {
-    assert_invalid("loxa:///project");
+    assert_invalid("loza:///project");
 }
 
 #[test]
 fn reject_no_project() {
-    assert_invalid("loxa://collector.example.com");
+    assert_invalid("loza://collector.example.com");
 }
 
 #[test]
 fn reject_empty_project() {
-    assert_invalid("loxa://collector.example.com/");
+    assert_invalid("loza://collector.example.com/");
 }
 
 #[test]
 fn reject_userinfo_key() {
-    assert_invalid("loxa://key@collector.example.com/demo");
+    assert_invalid("loza://key@collector.example.com/demo");
 }
 
 #[test]
 fn reject_userinfo_with_password() {
-    assert_invalid("loxa://user:pass@collector.example.com/demo");
+    assert_invalid("loza://user:pass@collector.example.com/demo");
 }
 
 #[test]
 fn reject_invalid_tls_value() {
-    assert_invalid("loxa://collector.example.com/demo?tls=maybe");
+    assert_invalid("loza://collector.example.com/demo?tls=maybe");
 }
 
 #[test]
 fn reject_invalid_transport_value() {
-    assert_invalid("loxa://collector.example.com/demo?transport=random");
+    assert_invalid("loza://collector.example.com/demo?transport=random");
 }
 
 #[test]
 fn reject_port_zero() {
-    assert_invalid("loxa://collector.example.com:0/demo");
+    assert_invalid("loza://collector.example.com:0/demo");
 }
 
 #[test]
 fn reject_port_above_65535() {
-    assert_invalid("loxa://collector.example.com:99999/demo");
+    assert_invalid("loza://collector.example.com:99999/demo");
 }
 
 #[test]
 fn reject_non_numeric_port() {
-    assert_invalid("loxa://collector.example.com:abc/demo");
+    assert_invalid("loza://collector.example.com:abc/demo");
 }

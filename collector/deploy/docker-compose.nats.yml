@@ -1,4 +1,4 @@
-# Loxa Collector — NATS JetStream eventbus (recommended production default)
+# Loza Collector — NATS JetStream eventbus (recommended production default)
 # Usage: docker compose -f docker-compose.nats.yml up
 services:
   nats:
@@ -19,17 +19,17 @@ services:
     build:
       context: ../..
       dockerfile: collector/deploy/Dockerfile.collector
-    command: ["./loxa-collector", "run", "-c", "/app/build/loxa-collector.yaml"]
+    command: ["./loza-collector", "run", "-c", "/app/build/loza-collector.yaml"]
     ports:
       - "9308:9308"
     volumes:
       - ../../:/app
     environment:
-      LOXA_EVENTBUS: nats
-      LOXA_EVENTBUS_TOPIC: loxa.events.raw
-      LOXA_EVENTBUS_GROUP: loxa-worker
-      LOXA_EVENTBUS_NATS_URL: nats://nats:4222
-      LOXA_EVENTBUS_NATS_STREAM: LOXA
+      LOZA_EVENTBUS: nats
+      LOZA_EVENTBUS_TOPIC: loza.events.raw
+      LOZA_EVENTBUS_GROUP: loza-worker
+      LOZA_EVENTBUS_NATS_URL: nats://nats:4222
+      LOZA_EVENTBUS_NATS_STREAM: LOZA
       COLLECTOR_RELIABILITY_MODE: queue
     depends_on:
       nats:
@@ -39,15 +39,15 @@ services:
     build:
       context: ../..
       dockerfile: collector/deploy/Dockerfile.collector
-    command: ["./loxa-worker", "run", "-c", "/app/build/loxa-collector.yaml"]
+    command: ["./loza-worker", "run", "-c", "/app/build/loza-collector.yaml"]
     volumes:
       - ../../:/app
     environment:
-      LOXA_EVENTBUS: nats
-      LOXA_EVENTBUS_TOPIC: loxa.events.raw
-      LOXA_EVENTBUS_GROUP: loxa-worker
-      LOXA_EVENTBUS_NATS_URL: nats://nats:4222
-      LOXA_EVENTBUS_NATS_STREAM: LOXA
+      LOZA_EVENTBUS: nats
+      LOZA_EVENTBUS_TOPIC: loza.events.raw
+      LOZA_EVENTBUS_GROUP: loza-worker
+      LOZA_EVENTBUS_NATS_URL: nats://nats:4222
+      LOZA_EVENTBUS_NATS_STREAM: LOZA
       COLLECTOR_RELIABILITY_MODE: queue
     depends_on:
       nats:

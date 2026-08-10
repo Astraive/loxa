@@ -10,31 +10,31 @@ import (
 	"testing"
 	"time"
 
-	loxa "github.com/astraive/loxa/sdks/go"
+	loza "github.com/astraive/loza/sdks/go"
 )
 
 const defaultCollectorURL = "http://127.0.0.1:9308"
 
 func collectorURL() string {
-	if value := strings.TrimRight(os.Getenv("LOXA_TEST_COLLECTOR_URL"), "/"); value != "" {
+	if value := strings.TrimRight(os.Getenv("LOZA_TEST_COLLECTOR_URL"), "/"); value != "" {
 		return value
 	}
 	return defaultCollectorURL
 }
 
 func ingestAPIKey() string {
-	return os.Getenv("LOXA_API_KEY")
+	return os.Getenv("LOZA_API_KEY")
 }
 
 func adminAPIKey() string {
-	return os.Getenv("LOXA_TEST_COLLECTOR_ADMIN_KEY")
+	return os.Getenv("LOZA_TEST_COLLECTOR_ADMIN_KEY")
 }
 
 // newTestClient creates a SDK Logger that auto-installs HTTPBatchSink
 // when CollectorURL is set — this is the production path.
-func newTestClient(t *testing.T, opts ...loxa.ConfigOption) *loxa.Logger {
+func newTestClient(t *testing.T, opts ...loza.ConfigOption) *loza.Logger {
 	t.Helper()
-	cfg := loxa.Config{
+	cfg := loza.Config{
 		Service:      "e2e-test",
 		CollectorURL: collectorURL(),
 		APIKey:       ingestAPIKey(),
@@ -42,7 +42,7 @@ func newTestClient(t *testing.T, opts ...loxa.ConfigOption) *loxa.Logger {
 	for _, opt := range opts {
 		cfg = opt(cfg)
 	}
-	l, err := loxa.NewClient(cfg)
+	l, err := loza.NewClient(cfg)
 	if err != nil {
 		t.Fatalf("new client: %v", err)
 	}
@@ -54,10 +54,10 @@ func TestE2E_HTTPBatchSink_BasicEvent(t *testing.T) {
 	l := newTestClient(t)
 
 	ctx := context.Background()
-	l.StartEvent(ctx, loxa.Params{Event: "e2e.batch.basic"})
-	loxa.Set(ctx, loxa.String("test_id", "batch-001"))
-	loxa.Set(ctx, loxa.String("env", "e2e"))
-	if err := loxa.Finish(ctx, "success"); err != nil {
+	l.StartEvent(ctx, loza.Params{Event: "e2e.batch.basic"})
+	loza.Set(ctx, loza.String("test_id", "batch-001"))
+	loza.Set(ctx, loza.String("env", "e2e"))
+	if err := loza.Finish(ctx, "success"); err != nil {
 		t.Fatalf("finish: %v", err)
 	}
 
@@ -71,13 +71,13 @@ func TestE2E_HTTPBatchSink_BasicEvent(t *testing.T) {
 }
 
 func TestE2E_HTTPBatchSink_WithRedaction(t *testing.T) {
-	l := newTestClient(t, loxa.WithRedactor(loxa.DefaultRedactor()))
+	l := newTestClient(t, loza.WithRedactor(loza.DefaultRedactor()))
 
 	ctx := context.Background()
-	l.StartEvent(ctx, loxa.Params{Event: "e2e.batch.redaction"})
-	loxa.Set(ctx, loxa.String("password", "supersecret"))
-	loxa.Set(ctx, loxa.String("user_input", "normal value"))
-	if err := loxa.Finish(ctx, "success"); err != nil {
+	l.StartEvent(ctx, loza.Params{Event: "e2e.batch.redaction"})
+	loza.Set(ctx, loza.String("password", "supersecret"))
+	loza.Set(ctx, loza.String("user_input", "normal value"))
+	if err := loza.Finish(ctx, "success"); err != nil {
 		t.Fatalf("finish: %v", err)
 	}
 
@@ -91,15 +91,15 @@ func TestE2E_HTTPBatchSink_WithRedaction(t *testing.T) {
 
 func TestE2E_HTTPBatchSink_AsyncBatch(t *testing.T) {
 	l := newTestClient(t,
-		loxa.WithAsync(true),
-		loxa.WithWorkers(2),
+		loza.WithAsync(true),
+		loza.WithWorkers(2),
 	)
 
 	ctx := context.Background()
 	for i := range 10 {
-		l.StartEvent(ctx, loxa.Params{Event: "e2e.batch.async"})
-		loxa.Set(ctx, loxa.Int("seq", i))
-		if err := loxa.Finish(ctx, "success"); err != nil {
+		l.StartEvent(ctx, loza.Params{Event: "e2e.batch.async"})
+		loza.Set(ctx, loza.Int("seq", i))
+		if err := loza.Finish(ctx, "success"); err != nil {
 			t.Fatalf("finish %d: %v", i, err)
 		}
 	}
@@ -139,10 +139,10 @@ func TestE2E_HTTPBatchSink_MultipleFlushes(t *testing.T) {
 	ctx := context.Background()
 	for batch := range 3 {
 		for i := range 5 {
-			l.StartEvent(ctx, loxa.Params{Event: "e2e.batch.multi"})
-			loxa.Set(ctx, loxa.Int("batch", batch))
-			loxa.Set(ctx, loxa.Int("seq", i))
-			if err := loxa.Finish(ctx, "success"); err != nil {
+			l.StartEvent(ctx, loza.Params{Event: "e2e.batch.multi"})
+			loza.Set(ctx, loza.Int("batch", batch))
+			loza.Set(ctx, loza.Int("seq", i))
+			if err := loza.Finish(ctx, "success"); err != nil {
 				t.Fatalf("finish batch=%d seq=%d: %v", batch, i, err)
 			}
 		}

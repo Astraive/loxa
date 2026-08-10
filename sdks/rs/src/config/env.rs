@@ -2,18 +2,18 @@ use super::config::FileConfig;
 
 pub(crate) fn load_env_config() -> FileConfig {
     FileConfig {
-        service: env_string("LOXA_SERVICE_NAME"),
-        version: env_string("LOXA_SERVICE_VERSION"),
-        environment: env_string("LOXA_ENVIRONMENT"),
-        region: env_string("LOXA_REGION"),
-        level: env_string("LOXA_LOG_LEVEL"),
-        strict: env_bool("LOXA_STRICT"),
-        async_enabled: env_bool("LOXA_ASYNC_ENABLED"),
-        collector_endpoint: env_string("LOXA_COLLECTOR_ENDPOINT")
-            .or_else(|| env_string("LOXA_COLLECTOR_URL")),
-        api_key: env_string("LOXA_API_KEY").or_else(|| env_string("LOXA_COLLECTOR_API_KEY")),
-        duplicate_policy: env_string("LOXA_DUPLICATE_POLICY"),
-        max_event_bytes: env_usize("LOXA_MAX_EVENT_BYTES"),
+        service: env_string("LOZA_SERVICE_NAME"),
+        version: env_string("LOZA_SERVICE_VERSION"),
+        environment: env_string("LOZA_ENVIRONMENT"),
+        region: env_string("LOZA_REGION"),
+        level: env_string("LOZA_LOG_LEVEL"),
+        strict: env_bool("LOZA_STRICT"),
+        async_enabled: env_bool("LOZA_ASYNC_ENABLED"),
+        collector_endpoint: env_string("LOZA_COLLECTOR_ENDPOINT")
+            .or_else(|| env_string("LOZA_COLLECTOR_URL")),
+        api_key: env_string("LOZA_API_KEY").or_else(|| env_string("LOZA_COLLECTOR_API_KEY")),
+        duplicate_policy: env_string("LOZA_DUPLICATE_POLICY"),
+        max_event_bytes: env_usize("LOZA_MAX_EVENT_BYTES"),
     }
 }
 

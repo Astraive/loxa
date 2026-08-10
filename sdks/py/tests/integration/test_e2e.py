@@ -1,14 +1,14 @@
 """Integration tests for Python SDK with collector."""
 import json
 import time
-import loxa
+import loza
 
 
 def test_emit_to_collector_basic() -> None:
     """Verify event can be emitted to collector."""
     # Create event
-    logger = loxa.New(loxa.Test("integration_test"))
-    ctx = logger.start_event(loxa.Params(event="basic_event"))
+    logger = loza.New(loza.Test("integration_test"))
+    ctx = logger.start_event(loza.Params(event="basic_event"))
     logger.finish(ctx, "success")
     payload = logger.emit(ctx)
 
@@ -20,15 +20,15 @@ def test_emit_to_collector_basic() -> None:
 
 def test_event_integrity_through_pipeline() -> None:
     """Verify event integrity is preserved through pipeline."""
-    logger = loxa.New(loxa.Test("test_service"))
+    logger = loza.New(loza.Test("test_service"))
 
     # Create event with specific values
-    ctx = logger.start_event(loxa.Params(
+    ctx = logger.start_event(loza.Params(
         event="integrity_test",
         message="Test message",
         level="info"
     ))
-    logger.enrich(ctx, loxa.String("user_id", "user123"))
+    logger.enrich(ctx, loza.String("user_id", "user123"))
     logger.finish(ctx, "success")
     payload = logger.emit(ctx)
 
@@ -44,11 +44,11 @@ def test_event_integrity_through_pipeline() -> None:
 
 def test_multiple_events_ordering() -> None:
     """Verify multiple events maintain order."""
-    logger = loxa.New(loxa.Test("order_test"))
+    logger = loza.New(loza.Test("order_test"))
 
     events = []
     for i in range(5):
-        ctx = logger.start_event(loxa.Params(event=f"event_{i}"))
+        ctx = logger.start_event(loza.Params(event=f"event_{i}"))
         logger.finish(ctx, "success")
         payload = logger.emit(ctx)
         event = json.loads(payload)
@@ -62,13 +62,13 @@ def test_multiple_events_ordering() -> None:
 
 def test_error_event_collection() -> None:
     """Verify error events are properly collected."""
-    logger = loxa.New(loxa.Test("error_test"))
+    logger = loza.New(loza.Test("error_test"))
 
-    ctx = logger.start_event(loxa.Params(
+    ctx = logger.start_event(loza.Params(
         event="error_event",
         message="Something went wrong"
     ))
-    logger.enrich(ctx, loxa.String("error_code", "E001"))
+    logger.enrich(ctx, loza.String("error_code", "E001"))
     logger.finish(ctx, "error")
     payload = logger.emit(ctx)
 
@@ -80,9 +80,9 @@ def test_error_event_collection() -> None:
 
 def test_partial_event_outcome() -> None:
     """Verify partial outcome is tracked."""
-    logger = loxa.New(loxa.Test("partial_test"))
+    logger = loza.New(loza.Test("partial_test"))
 
-    ctx = logger.start_event(loxa.Params(event="partial_event"))
+    ctx = logger.start_event(loza.Params(event="partial_event"))
     logger.finish(ctx, "partial")
     payload = logger.emit(ctx)
 
@@ -92,9 +92,9 @@ def test_partial_event_outcome() -> None:
 
 def test_trace_context_preservation() -> None:
     """Verify trace context is preserved through pipeline."""
-    logger = loxa.New(loxa.Test("trace_test"))
+    logger = loza.New(loza.Test("trace_test"))
 
-    ctx = logger.start_event(loxa.Params(event="trace_event"))
+    ctx = logger.start_event(loza.Params(event="trace_event"))
     ctx.trace_id = "trace_abc123"
     ctx.span_id = "span_def456"
     logger.finish(ctx, "success")
@@ -109,9 +109,9 @@ def test_trace_context_preservation() -> None:
 
 def test_canonical_fields_immutable() -> None:
     """Verify canonical fields cannot be modified in pipeline."""
-    logger = loxa.New(loxa.Test("canon_test"))
+    logger = loza.New(loza.Test("canon_test"))
 
-    ctx = logger.start_event(loxa.Params(event="canon_event"))
+    ctx = logger.start_event(loza.Params(event="canon_event"))
     original_event_id = ctx.event_id
 
     logger.finish(ctx, "success")
@@ -127,12 +127,12 @@ def test_canonical_fields_immutable() -> None:
 def test_sampling_in_pipeline() -> None:
     """Verify sampling decision is consistent through pipeline."""
     # Create logger with deterministic sampling
-    logger = loxa.New(
-        loxa.Test("sample_test").with_sampler(loxa.SampleAll())
+    logger = loza.New(
+        loza.Test("sample_test").with_sampler(loza.SampleAll())
     )
 
     for i in range(3):
-        ctx = logger.start_event(loxa.Params(event=f"sampled_{i}"))
+        ctx = logger.start_event(loza.Params(event=f"sampled_{i}"))
         logger.finish(ctx, "success")
         payload = logger.emit(ctx)
         # With SampleAll, should always emit
@@ -141,10 +141,10 @@ def test_sampling_in_pipeline() -> None:
 
 def test_enrichment_preserved() -> None:
     """Verify enrichments are preserved through pipeline."""
-    logger = loxa.New(loxa.Test("enrich_test"))
+    logger = loza.New(loza.Test("enrich_test"))
 
-    ctx = logger.start_event(loxa.Params(event="enrich_event"))
-    logger.enrich(ctx, loxa.String("custom_field", "custom_value"))
+    ctx = logger.start_event(loza.Params(event="enrich_event"))
+    logger.enrich(ctx, loza.String("custom_field", "custom_value"))
     logger.finish(ctx, "success")
     payload = logger.emit(ctx)
 
@@ -157,9 +157,9 @@ def test_enrichment_preserved() -> None:
 def test_duration_calculated() -> None:
     """Verify duration is calculated through pipeline."""
 
-    logger = loxa.New(loxa.Test("duration_test"))
+    logger = loza.New(loza.Test("duration_test"))
 
-    ctx = logger.start_event(loxa.Params(event="duration_event"))
+    ctx = logger.start_event(loza.Params(event="duration_event"))
     time.sleep(0.01)  # 10ms
     logger.finish(ctx, "success")
     payload = logger.emit(ctx)
@@ -172,9 +172,9 @@ def test_duration_calculated() -> None:
 
 def test_schema_version_set() -> None:
     """Verify schema version is set in emitted events."""
-    logger = loxa.New(loxa.Test("schema_test"))
+    logger = loza.New(loza.Test("schema_test"))
 
-    ctx = logger.start_event(loxa.Params(event="schema_event"))
+    ctx = logger.start_event(loza.Params(event="schema_event"))
     logger.finish(ctx, "success")
     payload = logger.emit(ctx)
 
@@ -206,9 +206,9 @@ def test_collector_http_interface() -> None:
 
     # Create mock sink
     sink = MockHttpSink("http://localhost:4317")
-    logger = loxa.New(loxa.Test("http_test").with_sink(sink))
+    logger = loza.New(loza.Test("http_test").with_sink(sink))
 
-    ctx = logger.start_event(loxa.Params(event="http_event"))
+    ctx = logger.start_event(loza.Params(event="http_event"))
     logger.finish(ctx, "success")
     logger.emit(ctx)
 

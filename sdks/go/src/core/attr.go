@@ -82,7 +82,7 @@ func Stringer(key string, val fmt.Stringer) Attr {
 
 // Group creates a nested object Attr.
 //
-//	loxa.Group("user", loxa.String("id", uid), loxa.String("plan", "pro"))
+//	loza.Group("user", loza.String("id", uid), loza.String("plan", "pro"))
 //	→ {"user":{"id":"...","plan":"pro"}}
 func Group(key string, attrs ...Attr) Attr {
 	return Attr{Key: key, Kind: KindGroup, Value: attrs}

@@ -1,6 +1,6 @@
 # Benchmarking
 
-How to run and interpret benchmarks for the LOXA Python SDK.
+How to run and interpret benchmarks for the LOZA Python SDK.
 
 ## Running Benchmarks
 
@@ -83,19 +83,19 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-import loxa
+import loza
 
 
 def run_benchmark(iterations: int = 10000) -> dict:
-    sink = loxa.MemorySink()
-    logger = loxa.new(loxa.test("bench").with_sink(sink))
+    sink = loza.MemorySink()
+    logger = loza.new(loza.test("bench").with_sink(sink))
 
     latencies = []
     for _ in range(iterations):
         t0 = time.perf_counter()
-        ctx = loxa.start_event(loxa.Params(event="bench.test"))
-        loxa.finish(ctx, "success")
-        loxa.emit(ctx)
+        ctx = loza.start_event(loza.Params(event="bench.test"))
+        loza.finish(ctx, "success")
+        loza.emit(ctx)
         latencies.append((time.perf_counter() - t0) * 1_000_000)
 
     latencies.sort()

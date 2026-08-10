@@ -1,4 +1,4 @@
-# Loxa Collector — Kafka eventbus (enterprise/high-scale)
+# Loza Collector — Kafka eventbus (enterprise/high-scale)
 # Usage: docker compose -f docker-compose.kafka.yml up
 services:
   kafka:

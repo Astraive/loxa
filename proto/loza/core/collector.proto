@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package loza.core;
+
+option go_package = "github.com/astraive/loza/gen/go/loza/core;lozacore";
+
+import "loza/core/event.proto";
+import "loza/core/ingest.proto";
+
+message CollectorStatusRequest {}
+
+message CollectorStatusResponse {
+  string status = 1;
+}
+
+service CollectorService {
+  rpc Health(CollectorStatusRequest) returns (CollectorStatusResponse);
+  rpc Ready(CollectorStatusRequest) returns (CollectorStatusResponse);
+}
+
+// gRPC-based event ingestion for SDK lightweight connectors
+service CollectorIngest {
+  // Ingest a batch of events via gRPC (lightweight SDK connector)
+  rpc Ingest(IngestBatch) returns (IngestResponse);
+  // Stream events for high-throughput ingestion
+  rpc IngestStream(stream Event) returns (IngestResponse);
+  // Check ingestion health
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message IngestBatch {
+  repeated Event events = 1;
+  string api_key = 2;       // inline API key for SDK connectors
+  string source_service = 3; // SDK source service name
+  string source_sdk = 4;     // SDK name (e.g., "loza-js", "loza-py")
+  string source_sdk_version = 5;
+}
+
+message IngestResponse {
+  int64 accepted = 1;
+  int64 rejected = 2;
+  int64 invalid = 3;
+  int64 quarantined = 4;
+  int64 deduped = 5;
+  string error_message = 6;
+  repeated EventAck acks = 7;
+}
+
+message PingRequest {
+  string message = 1;
+}
+
+message PingResponse {
+  string status = 1;
+  string version = 2;
+}

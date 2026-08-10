@@ -1,8 +1,8 @@
 // --- Spec constants ---
 export {
-  LOXA_SPEC_VERSION,
-  LOXA_EVENT_VERSION,
-  LOXA_INGEST_API_VERSION,
+  LOZA_SPEC_VERSION,
+  LOZA_EVENT_VERSION,
+  LOZA_INGEST_API_VERSION,
   MAX_EVENT_BYTES,
   ALLOWED_KINDS,
   ALLOWED_LEVELS,
@@ -22,7 +22,7 @@ export type { CollectorAck, CollectorError, CollectorResponse } from './generate
 
 // --- Errors ---
 export {
-  LoxaError,
+  LozaError,
   DuplicateEmitError,
   EventClosedError,
   EventAlreadyFinishedError,
@@ -224,12 +224,12 @@ export {
 } from './testkit/helpers.ts';
 export type { TestLoggerResult } from './testkit/helpers.ts';
 
-// --- Default facade (loxa.*) ---
+// --- Default facade (loza.*) ---
 export {
-  loxa,
+  loza,
   defaultLogger,
   configure,
-  createLoxa,
+  createLoza,
   alias,
   startEvent, startHttpEvent, startJobEvent, startQueueEvent, startCliEvent, startCronEvent,
   append, enrich, set, merge, del, get, getGroup,
@@ -304,10 +304,10 @@ export {
   linkEvent as LinkEvent,
   currentEvent as CurrentEvent,
   configure as Configure,
-  createLoxa as CreateLoxa,
+  createLoza as CreateLoza,
   alias as Alias,
-} from './loxa.ts';
+} from './loza.ts';
 
 // Factory functions — these don't expose the Logger type name directly.
-export { reset } from './loxa.ts';
+export { reset } from './loza.ts';
 export { New, TryNew, Default } from './core/logger.ts';

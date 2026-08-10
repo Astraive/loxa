@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 	chipkg "github.com/go-chi/chi/v5"
 )
 
@@ -53,16 +53,16 @@ func TestMiddlewareUsesFallbackRouteExtractorWhenChiPatternUnavailable(t *testin
 	}
 }
 
-func configureMemoryStore(t *testing.T) *loxa.MemorySinkStore {
+func configureMemoryStore(t *testing.T) *loza.MemorySinkStore {
 	t.Helper()
-	sink, store := loxa.MemorySink()
-	if err := loxa.Configure(loxa.Test().WithSink(sink)); err != nil {
+	sink, store := loza.MemorySink()
+	if err := loza.Configure(loza.Test().WithSink(sink)); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 	return store
 }
 
-func singleEvent(t *testing.T, store *loxa.MemorySinkStore) *loxa.Event {
+func singleEvent(t *testing.T, store *loza.MemorySinkStore) *loza.Event {
 	t.Helper()
 	if store.Len() != 1 {
 		t.Fatalf("expected 1 event, got %d", store.Len())

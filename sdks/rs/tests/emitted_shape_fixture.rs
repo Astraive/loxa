@@ -1,4 +1,4 @@
-use loxa::{Config, New, Params, SinkConfig};
+use loza::{Config, New, Params, SinkConfig};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::BTreeMap;

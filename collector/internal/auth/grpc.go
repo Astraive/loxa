@@ -176,7 +176,7 @@ func grpcAuthenticate(ctx context.Context, store KeyStore, cache *MemoryKeyCache
 
 	// ABAC checks: AllowedEnvs
 	if len(ac.AllowedEnvs) > 0 {
-		env := getMetadataValue(md, "x-loxa-env")
+		env := getMetadataValue(md, "x-loza-env")
 		if !contains(ac.AllowedEnvs, env) {
 			return nil, status.Error(codes.PermissionDenied, "environment not permitted for this key")
 		}
@@ -184,7 +184,7 @@ func grpcAuthenticate(ctx context.Context, store KeyStore, cache *MemoryKeyCache
 
 	// ABAC checks: AllowedServices
 	if len(ac.AllowedServices) > 0 {
-		svc := getMetadataValue(md, "x-loxa-service")
+		svc := getMetadataValue(md, "x-loza-service")
 		if !contains(ac.AllowedServices, svc) {
 			return nil, status.Error(codes.PermissionDenied, "service not permitted for this key")
 		}

@@ -1,12 +1,12 @@
 # Instrumentation Guide
 
-> **Audience**: Application developers instrumenting checkout, payments, auth, jobs, queues, and cron flows with LOXA.
+> **Audience**: Application developers instrumenting checkout, payments, auth, jobs, queues, and cron flows with LOZA.
 
-LOXA is a collector-first wide-event observability stack. The SDKs stay lightweight and application-friendly. The collector owns validation, durability, fanout, deletion, DLQ, and production sinks.
+LOZA is a collector-first wide-event observability stack. The SDKs stay lightweight and application-friendly. The collector owns validation, durability, fanout, deletion, DLQ, and production sinks.
 
 For the v0.2.0 canonical product shape and full SDK method catalog, see [instrumentation-and-sdk-idea.md](./instrumentation-and-sdk-idea.md). For the concise business instrumentation guide, see [business-instrumentation.md](./business-instrumentation.md).
 
-This guide explains how to instrument real business flows using LOXA's event lifecycle:
+This guide explains how to instrument real business flows using LOZA's event lifecycle:
 
 ```
 startEvent → append/enrich → checkpoint → finish/finishError → emit
@@ -16,7 +16,7 @@ startEvent → append/enrich → checkpoint → finish/finishError → emit
 
 ## Mental Model
 
-### What LOXA Answers
+### What LOZA Answers
 
 - What business event happened?
 - Which user, tenant, cart, order, plan, or feature context mattered?
@@ -30,13 +30,13 @@ startEvent → append/enrich → checkpoint → finish/finishError → emit
 
 ```mermaid
 graph LR
-    App[Application] --> SDK[LOXA SDK]
+    App[Application] --> SDK[LOZA SDK]
     SDK -->|HTTP batch| Collector[Collector]
     Collector --> DuckDB[DuckDB]
     Collector --> Kafka[Kafka]
     Collector --> OTLP[OTLP]
     Collector --> S3[S3/GCS]
-    CLI[loxa CLI] --> Collector
+    CLI[loza CLI] --> Collector
 ```
 
 SDKs emit canonical wide events. The collector validates, redacts, deduplicates, and fans out to production sinks.
@@ -45,7 +45,7 @@ SDKs emit canonical wide events. The collector validates, redacts, deduplicates,
 
 ## Event Lifecycle
 
-Every LOXA event follows a strict state machine:
+Every LOZA event follows a strict state machine:
 
 ```mermaid
 stateDiagram-v2
@@ -81,7 +81,7 @@ StartEvent(ctx, Params)     → creates the event
 
 ## Timing Primitives
 
-LOXA provides five timing primitives for measuring and structuring event timelines:
+LOZA provides five timing primitives for measuring and structuring event timelines:
 
 | Primitive | Has Duration | Has Order | Best Use |
 |-----------|:---:|:---:|----------|
@@ -232,7 +232,7 @@ user.ltv_bucket → "lt_100" | "100_500" | "500_1000" | "1000_5000" | "gt_5000"
 
 ## Redaction and Privacy
 
-LOXA uses layered protection.
+LOZA uses layered protection.
 
 ### SDK Safety Net
 
@@ -443,7 +443,7 @@ redaction.applied
 
 ## Query Examples
 
-Because LOXA stores wide events, operators can query them directly with SQL.
+Because LOZA stores wide events, operators can query them directly with SQL.
 
 ### Recent Checkout Errors
 

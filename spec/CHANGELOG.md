@@ -1,4 +1,4 @@
-# Changelog for LOXA Spec
+# Changelog for LOZA Spec
 
 All notable changes to the contract repository are documented in this file.
 
@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenAPI specification
 - JSON Schema definitions
 - Conformance fixtures and runner
-- Initial protobuf definitions for loxa-collector API
+- Initial protobuf definitions for loza-collector API
 - OpenAPI specification
 - JSON Schema definitions
 

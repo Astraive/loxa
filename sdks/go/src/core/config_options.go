@@ -3,7 +3,7 @@ package core
 import (
 	"time"
 
-	"github.com/astraive/loxa/spec/dsn"
+	"github.com/astraive/loza/spec/dsn"
 )
 
 // ConfigOption mutates and returns a Config.
@@ -110,7 +110,7 @@ func WithStrict(strict bool) ConfigOption {
 }
 
 // WithValidateEncoded controls post-encode spec contract validation in strict mode.
-// Default true. Set false for custom schemas that deviate from LOXA shape.
+// Default true. Set false for custom schemas that deviate from LOZA shape.
 func WithValidateEncoded(validate bool) ConfigOption {
 	return func(cfg Config) Config { return cfg.WithValidateEncoded(validate) }
 }
@@ -290,7 +290,7 @@ func WithLogger(l *Logger) ConfigOption {
 	}
 }
 
-// WithDSN parses a loxa:// connection URI and applies the resolved values
+// WithDSN parses a loza:// connection URI and applies the resolved values
 // to the config. It sets CollectorURL, Environment, Service (if present in
 // the DSN), and Insecure (derived from TLS setting).
 //
@@ -300,7 +300,7 @@ func WithLogger(l *Logger) ConfigOption {
 // Example:
 //
 //	config.NewClient(config.Production(),
-//	    config.WithDSN("loxa://localhost:9308/demo?env=dev&tls=false"),
+//	    config.WithDSN("loza://localhost:9308/demo?env=dev&tls=false"),
 //	)
 func WithDSN(raw string) ConfigOption {
 	return func(cfg Config) Config {

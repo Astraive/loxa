@@ -1,4 +1,4 @@
-Loxa Cortex has been deployed.
+Loza Cortex has been deployed.
 
 Service:
   HTTP: {{ include "cortex.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}
@@ -20,4 +20,4 @@ Ingress:
   {{- end }}
 {{- end }}
 
-For more information, see: https://github.com/astraive/loxa
+For more information, see: https://github.com/astraive/loza

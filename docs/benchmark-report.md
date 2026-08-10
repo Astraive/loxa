@@ -1,4 +1,4 @@
-# Loxa v0.2.0 Pre-Release Benchmark Report
+# Loza v0.2.0 Pre-Release Benchmark Report
 
 **Date:** 2026-05-27
 **Branch:** main
@@ -29,9 +29,9 @@
 | LQL compile (simple query) | ~25 ms | PASS |
 | LQL compile (complex query) | ~20 ms | PASS |
 | LQL test suite (50 tests) | 1.7 s | PASS |
-| Loxana build time | 7-11 s | PASS |
-| Loxana JS bundle (gzip) | 261 KB | CONCERN |
-| Loxana CSS bundle (gzip) | 12 KB | PASS |
+| Lozana build time | 7-11 s | PASS |
+| Lozana JS bundle (gzip) | 261 KB | CONCERN |
+| Lozana CSS bundle (gzip) | 12 KB | PASS |
 | Collector test suite (24 packages) | 49 s | PASS |
 | Cortex test suite (14 packages) | 14 s | PASS |
 | JS SDK benchmarks | BROKEN | FAIL |
@@ -189,11 +189,11 @@ The `auth-emit.bench.ts` partially runs but produces `NaN` comparison ratios.
 
 **Status: NO BENCH TARGETS**
 
-The Rust SDK (`loxa/sdks/rs`) has no `[[bench]]` targets in `Cargo.toml`. The bench directory contains standalone `.rs` files that are not wired into the cargo bench harness. Running `cargo bench` compiles successfully but runs zero benchmarks (3 ignored unit tests).
+The Rust SDK (`loza/sdks/rs`) has no `[[bench]]` targets in `Cargo.toml`. The bench directory contains standalone `.rs` files that are not wired into the cargo bench harness. Running `cargo bench` compiles successfully but runs zero benchmarks (3 ignored unit tests).
 
 ---
 
-## 9. LQL (Loxa Query Language) Benchmarks
+## 9. LQL (Loza Query Language) Benchmarks
 
 ### 9.1 Compilation Timing
 
@@ -213,7 +213,7 @@ The Rust SDK (`loxa/sdks/rs`) has no `[[bench]]` targets in `Cargo.toml`. The be
 
 ---
 
-## 10. Loxana (Frontend) Build Benchmarks
+## 10. Lozana (Frontend) Build Benchmarks
 
 ### 10.1 Build Time
 
@@ -243,10 +243,10 @@ The Rust SDK (`loxa/sdks/rs`) has no `[[bench]]` targets in `Cargo.toml`. The be
 
 | Component | Build Time |
 |-----------|-----------|
-| Collector (`go build ./cmd/loxa-collector`) | 0.62s |
+| Collector (`go build ./cmd/loza-collector`) | 0.62s |
 | Cortex (`go build ./cmd/server`) | 0.29s |
 | LQL (`cargo build --release`) | ~2s (incremental) |
-| Loxana (`tsc -b && vite build`) | 8-11s |
+| Lozana (`tsc -b && vite build`) | 8-11s |
 | Rust SDK (`cargo build --release`) | ~31s (first build) |
 
 ---
@@ -276,7 +276,7 @@ The Rust SDK (`loxa/sdks/rs`) has no `[[bench]]` targets in `Cargo.toml`. The be
 
 ## Findings
 
-### FINDING-001: Loxana JS Bundle Exceeds 500 KB Limit
+### FINDING-001: Lozana JS Bundle Exceeds 500 KB Limit
 
 **Severity:** Medium
 **Category:** Bundle
@@ -357,8 +357,8 @@ The Go SDK is approximately **15-16x faster** than the Python SDK for equivalent
 | Go SDK emit | < 5 us/op | 3.2 us | PASS |
 | Python SDK emit | < 100 us/op | 50.8 us | PASS |
 | LQL compile | < 50 ms | 20 ms | PASS |
-| Loxana build | < 30 s | 8-11 s | PASS |
-| Loxana bundle (gzip) | < 250 KB | 273 KB | CONCERN |
+| Lozana build | < 30 s | 8-11 s | PASS |
+| Lozana bundle (gzip) | < 250 KB | 273 KB | CONCERN |
 | Collector test suite | < 120 s | 49 s | PASS |
 | Cortex test suite | < 60 s | 14 s | PASS |
 
@@ -368,45 +368,45 @@ The Go SDK is approximately **15-16x faster** than the Python SDK for equivalent
 
 ```bash
 # Collector benchmarks
-cd loxa/collector && go test ./bench/ -run='^$' -bench=. -benchmem -count=3
+cd loza/collector && go test ./bench/ -run='^$' -bench=. -benchmem -count=3
 
 # Collector DuckDB benchmarks
-cd loxa/collector && go test ./internal/sinks/duckdb -run='^$' -bench=. -benchmem -count=1
+cd loza/collector && go test ./internal/sinks/duckdb -run='^$' -bench=. -benchmem -count=1
 
 # Collector projection benchmarks
-cd loxa/collector && go test ./internal/sinks/internal/projection -run='^$' -bench=. -benchmem -count=3
+cd loza/collector && go test ./internal/sinks/internal/projection -run='^$' -bench=. -benchmem -count=3
 
 # Go SDK benchmarks
-cd loxa/sdks/go/bench && go test -bench=. -benchmem -count=3 ./...
+cd loza/sdks/go/bench && go test -bench=. -benchmem -count=3 ./...
 
 # Python SDK benchmarks
-cd loxa/sdks/py && python bench/auth_emit_bench.py
+cd loza/sdks/py && python bench/auth_emit_bench.py
 
 # JS SDK benchmarks (failed)
-cd loxa/sdks/js && npx vitest bench --run
+cd loza/sdks/js && npx vitest bench --run
 
 # Rust SDK benchmarks (no targets)
-cd loxa/sdks/rs && cargo bench
+cd loza/sdks/rs && cargo bench
 
 # LQL benchmarks
-cd loxa/lql && cargo bench
-cd loxa/lql && time ./target/release/lql compile '...'
+cd loza/lql && cargo bench
+cd loza/lql && time ./target/release/lql compile '...'
 
-# Loxana build
-cd loxana && time bun run build
+# Lozana build
+cd lozana && time bun run build
 
 # Test suites
-cd loxa/collector && go test ./... -count=1 -timeout 120s
-cd loxa/cortex && go test ./... -count=1 -timeout 120s
-cd loxa/lql && cargo test
+cd loza/collector && go test ./... -count=1 -timeout 120s
+cd loza/cortex && go test ./... -count=1 -timeout 120s
+cd loza/lql && cargo test
 
 # Conformance
-cd loxa/conformance && bash run-all.sh
-cd loxa/conformance && bash run-collector.sh
+cd loza/conformance && bash run-all.sh
+cd loza/conformance && bash run-collector.sh
 
 # Build times
-cd loxa/collector && time go build ./cmd/loxa-collector
-cd loxa/cortex && time go build ./cmd/server
+cd loza/collector && time go build ./cmd/loza-collector
+cd loza/cortex && time go build ./cmd/server
 ```
 
 ---
@@ -417,8 +417,8 @@ cd loxa/cortex && time go build ./cmd/server
 - `.nstack/benchmarks/raw/sdk-go-bench.txt`
 - `.nstack/benchmarks/raw/sdk-py-bench.txt`
 - `.nstack/benchmarks/raw/lql-compile.txt`
-- `.nstack/benchmarks/raw/loxana-build.txt`
-- `.nstack/benchmarks/raw/loxana-bundle-size.txt`
+- `.nstack/benchmarks/raw/lozana-build.txt`
+- `.nstack/benchmarks/raw/lozana-bundle-size.txt`
 - `.nstack/benchmarks/raw/collector-tests.txt`
 - `.nstack/benchmarks/raw/cortex-tests.txt`
 - `.nstack/benchmarks/raw/conformance.txt`

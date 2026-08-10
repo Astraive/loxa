@@ -10,16 +10,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astraive/loxa/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/config"
 )
 
 func DevCommand(ctx context.Context, cfg config.Config, _ []string) error {
-	collectorBin := filepath.Join(cfg.CollectorRepoPath, "cmd", "loxa-collector", "main.go")
+	collectorBin := filepath.Join(cfg.CollectorRepoPath, "cmd", "loza-collector", "main.go")
 	if _, err := os.Stat(collectorBin); err != nil {
 		return fmt.Errorf("collector not found at %s", cfg.CollectorRepoPath)
 	}
 
-	collectorCmd := exec.CommandContext(ctx, "go", "run", collectorBin, "-c", configPath(cfg, "loxa.local.yaml"))
+	collectorCmd := exec.CommandContext(ctx, "go", "run", collectorBin, "-c", configPath(cfg, "loza.local.yaml"))
 	collectorCmd.Stdout = os.Stdout
 	collectorCmd.Stderr = os.Stderr
 	collectorCmd.Dir = cfg.CollectorRepoPath
@@ -64,7 +64,7 @@ func DevCommand(ctx context.Context, cfg config.Config, _ []string) error {
 	}
 
 	fmt.Println("Starting cortex...")
-	cortexCmd := exec.CommandContext(ctx, "go", "run", cortexMain, "--config", filepath.Join(cfg.CortexRepoPath, "configs", "loxa-cortex.defaults.yaml"))
+	cortexCmd := exec.CommandContext(ctx, "go", "run", cortexMain, "--config", filepath.Join(cfg.CortexRepoPath, "configs", "loza-cortex.defaults.yaml"))
 	cortexCmd.Stdout = os.Stdout
 	cortexCmd.Stderr = os.Stderr
 	cortexCmd.Dir = cfg.CortexRepoPath

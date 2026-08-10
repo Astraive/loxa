@@ -1,6 +1,6 @@
 # Schema Evolution Policy
 
-LOXA schema versions follow compatibility-first evolution.
+LOZA schema versions follow compatibility-first evolution.
 
 Version rules:
 
@@ -18,7 +18,7 @@ Compatibility rules:
 
 Spec metadata annotations:
 
-- `x-loxa-since`: first schema version where the field is valid.
-- `x-loxa-deprecated`: human-readable deprecation reason.
-- `x-loxa-until`: last schema version where the field is accepted.
+- `x-loza-since`: first schema version where the field is valid.
+- `x-loza-deprecated`: human-readable deprecation reason.
+- `x-loza-until`: last schema version where the field is accepted.
 

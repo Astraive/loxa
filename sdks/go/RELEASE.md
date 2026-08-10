@@ -1,10 +1,10 @@
 # Release Process
 
-This document describes how to publish a new release of the LOXA Go SDK.
+This document describes how to publish a new release of the LOZA Go SDK.
 
 ## Prerequisites
 
-- Push access to the `astraive/loxa` repository.
+- Push access to the `astraive/loza` repository.
 - Go 1.25+ installed locally.
 - All tests passing: `go test ./... -race`.
 - Changelog updated in `CHANGELOG.md`.
@@ -44,13 +44,13 @@ The `go/` prefix is required because the Go SDK lives in a subdirectory of a mon
 After pushing the tag, verify that the module proxy has indexed the new version:
 
 ```bash
-GOPROXY=https://proxy.golang.org go list -m github.com/astraive/loxa/sdks/go@v0.2.0
+GOPROXY=https://proxy.golang.org go list -m github.com/astraive/loza/sdks/go@v0.2.0
 ```
 
 If the proxy has not yet indexed the version, wait a few minutes and retry. You can also force a re-fetch:
 
 ```bash
-curl https://proxy.golang.org/github.com/astraive/loxa/sdks/go/@v/v0.2.0.info
+curl https://proxy.golang.org/github.com/astraive/loza/sdks/go/@v/v0.2.0.info
 ```
 
 ### 4. Verify Downstream Consumers
@@ -58,9 +58,9 @@ curl https://proxy.golang.org/github.com/astraive/loxa/sdks/go/@v/v0.2.0.info
 Confirm that the new version resolves cleanly in a fresh module:
 
 ```bash
-mkdir /tmp/loxa-verify && cd /tmp/loxa-verify
+mkdir /tmp/loza-verify && cd /tmp/loza-verify
 go mod init verify
-go get github.com/astraive/loxa/sdks/go@v0.2.0
+go get github.com/astraive/loza/sdks/go@v0.2.0
 go build ./...
 ```
 

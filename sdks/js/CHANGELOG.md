@@ -24,10 +24,10 @@ All notable changes to this project are documented in this file.
 ## [0.2.3] - 2026-05-27
 
 ### Fixed
-- Create shared APP_VERSION constant in Loxana to eliminate duplicate version strings
-- Remove dead config files (routes.ts, nav.ts, features.ts) from Loxana
-- Remove stale template assets (next.svg, vercel.svg) from Loxana public/
-- Remove unnecessary "use client" directives from all Loxana .tsx files (Vite, not Next.js)
+- Create shared APP_VERSION constant in Lozana to eliminate duplicate version strings
+- Remove dead config files (routes.ts, nav.ts, features.ts) from Lozana
+- Remove stale template assets (next.svg, vercel.svg) from Lozana public/
+- Remove unnecessary "use client" directives from all Lozana .tsx files (Vite, not Next.js)
 - Add root README.md with architecture overview and quickstart
 - Add TESTING.md with unit, race, frontend, and security check commands
 - Fix stale version strings in SDK READMEs (Go, Python, Cortex)
@@ -42,7 +42,7 @@ All notable changes to this project are documented in this file.
 - Fix randomToken() CSPRNG failure fallback (now fails request instead of returning "local")
 - Fix SQL query leak in LQL error/success responses
 - Fix key rotation to actually store the new key in the key store
-- Fix LIKE wildcard injection in Loxana LQL compiler (escapeSQLString now escapes % and _)
+- Fix LIKE wildcard injection in Lozana LQL compiler (escapeSQLString now escapes % and _)
 - Add query(), printf(), format() to isSafeQuery blocklist
 - Fix isSafeQuery/isReadOnlyQuery pragma contradiction
 - Fix ReadTimeout copy-paste bug in HTTP server
@@ -53,16 +53,16 @@ All notable changes to this project are documented in this file.
 - Fix DLQ/quarantine mutex hold during sleep
 - Add dedupe map size cap (100K entries)
 - Exclude health/ready/version/metrics endpoints from Cortex auth
-- Fix Loxana escapeSQLString to escape LIKE wildcards
+- Fix Lozana escapeSQLString to escape LIKE wildcards
 
 ### Fixed
 - Bump all versions to 0.2.2
 - Fix 11 files still at 0.2.0 (Helm charts, CLI, quickstarts, SDK manifests)
 - Fix Python SDK README testkit section (wrong casing, wrong arg style)
-- Add React error boundary to Loxana
-- Add 404 catch-all route to Loxana
+- Add React error boundary to Lozana
+- Add 404 catch-all route to Lozana
 - Remove dead files from Vite migration
-- Fix Loxana Settings page stale version
+- Fix Lozana Settings page stale version
 - Fix nav config references to non-existent routes
 - Add collector .env.example
 - Expand cortex .env.example

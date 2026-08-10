@@ -9,10 +9,10 @@ _FALLBACK_PRODUCT_VERSION = "0.2.6"
 
 
 def _load_product_version(spec_root: Path) -> str:
-    """Read version from loxa-spec.yaml, falling back to hardcoded default."""
+    """Read version from loza-spec.yaml, falling back to hardcoded default."""
     candidates = [
-        spec_root / "loxa-spec.yaml",
-        spec_root.parent / "loxa-spec.yaml",
+        spec_root / "loza-spec.yaml",
+        spec_root.parent / "loza-spec.yaml",
     ]
     for path in candidates:
         if path.is_file():
@@ -262,13 +262,13 @@ def build_cortex_contract(spec_root: Path) -> dict[str, Any]:
         "event_kinds": [
             "event", "http", "job", "queue", "cli", "cron", "log",
             "checkpoint", "deploy", "metric", "trace", "topology",
-            "incident_signal", "remediation", "loxa_event", "otel_log",
+            "incident_signal", "remediation", "loza_event", "otel_log",
             "otel_span", "collector_event"
         ],
         "event_levels": ["debug", "info", "warning", "error", "critical"],
         "event_outcomes": ["success", "failure", "partial", "unknown"],
         "provenance": [
-            "loxa", "collector", "otlp", "jsonl", "manual", "replay"
+            "loza", "collector", "otlp", "jsonl", "manual", "replay"
         ],
         "graph_node_types": [
             "service", "event", "trace", "span", "request",

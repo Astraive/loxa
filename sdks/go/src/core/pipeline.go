@@ -9,7 +9,7 @@ import (
 )
 
 // SinkWriter is the minimal sink interface used by the pipeline.
-// This avoids importing the root loxa package from internal/core.
+// This avoids importing the root loza package from internal/core.
 type SinkWriter interface {
 	WriteEvent(ctx context.Context, encoded []byte, ev *Event) error
 	Flush(ctx context.Context) error

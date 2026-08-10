@@ -3,7 +3,7 @@ services:
     build:
       context: ../..
       dockerfile: collector/deploy/Dockerfile.collector
-    command: ["./loxa-collector", "run", "-c", "/app/build/loxa-collector.yaml"]
+    command: ["./loza-collector", "run", "-c", "/app/build/loza-collector.yaml"]
     ports:
       - "9308:9308"
     volumes:
@@ -66,7 +66,7 @@ services:
         NOW=$(date +%s%N)
         curl -sS -X POST http://loki:3100/loki/api/core/push \
           -H "Content-Type: application/json" \
-          --data "{\"streams\":[{\"stream\":{\"source\":\"loxa-demo\",\"service\":\"sample-app\"},\"values\":[[\"$NOW\",\"{\\\"event\\\":\\\"checkout.request\\\",\\\"outcome\\\":\\\"success\\\"}\"]]}]}"
+          --data "{\"streams\":[{\"stream\":{\"source\":\"loza-demo\",\"service\":\"sample-app\"},\"values\":[[\"$NOW\",\"{\\\"event\\\":\\\"checkout.request\\\",\\\"outcome\\\":\\\"success\\\"}\"]]}]}"
 
   grafana:
     image: grafana/grafana:12.1.2

@@ -1,6 +1,6 @@
 # Instrumentation Guide
 
-> A comprehensive guide to instrumenting real-world business flows with the LOXA Go SDK.
+> A comprehensive guide to instrumenting real-world business flows with the LOZA Go SDK.
 
 ---
 
@@ -8,11 +8,11 @@
 
 Instrumentation goes beyond basic request logging. It captures the **domain narrative** of what your system is doing -- which user placed which order, which payment provider was used, which feature flags were active, and where in a multi-step pipeline things went wrong.
 
-LOXA's Go SDK provides a **wide-event** model: a single canonical event per request, job, or queue message accumulates context as it flows through your code. Instead of scattered log lines that are hard to correlate, you emit one structured event at the end that tells the complete story.
+LOZA's Go SDK provides a **wide-event** model: a single canonical event per request, job, or queue message accumulates context as it flows through your code. Instead of scattered log lines that are hard to correlate, you emit one structured event at the end that tells the complete story.
 
 ### Why Wide Events?
 
-| Traditional Logging | LOXA Wide Events |
+| Traditional Logging | LOZA Wide Events |
 |---|---|
 | Many log lines per request | One event per lifecycle |
 | String interpolation | Typed key-value attrs |
@@ -44,88 +44,88 @@ import (
     "fmt"
     "time"
 
-    loxa "github.com/astraive/loxa/sdks/go"
+    loza "github.com/astraive/loza/sdks/go"
 )
 
 func main() {
     // Configure the logger for production.
-    logger, err := loxa.New(loxa.ApplyConfig(
-        loxa.Production(),
-        loxa.WithService("checkout-service"),
-        loxa.WithVersion("1.4.2"),
-        loxa.WithEnvironment("production"),
-        loxa.WithSink(loxa.StdoutSink()),
+    logger, err := loza.New(loza.ApplyConfig(
+        loza.Production(),
+        loza.WithService("checkout-service"),
+        loza.WithVersion("1.4.2"),
+        loza.WithEnvironment("production"),
+        loza.WithSink(loza.StdoutSink()),
     ))
     if err != nil {
         panic(err)
     }
-    loxa.SetDefault(logger)
-    defer loxa.MustShutdown(5 * time.Second)
+    loza.SetDefault(logger)
+    defer loza.MustShutdown(5 * time.Second)
 
     // Simulate a checkout request.
     ctx := context.Background()
     err = processCheckout(ctx, "user-42", "cart-789", "tok_abc123")
     if err != nil {
-        loxa.Error("checkout failed", loxa.Err(err))
+        loza.Error("checkout failed", loza.Err(err))
     }
 }
 
 func processCheckout(ctx context.Context, userID, cartID, paymentToken string) error {
     // Start a canonical event for this checkout.
-    ctx = loxa.StartHTTPEvent(ctx, loxa.Params{
+    ctx = loza.StartHTTPEvent(ctx, loza.Params{
         Event: "checkout.request",
         Kind:  "http",
     })
 
     // Attach the actor and business identifiers.
-    loxa.Enrich(ctx,
-        loxa.UserID(userID),
-        loxa.CartID(cartID),
-        loxa.String("payment.token", paymentToken),
-        loxa.String("checkout.source", "web"),
+    loza.Enrich(ctx,
+        loza.UserID(userID),
+        loza.CartID(cartID),
+        loza.String("payment.token", paymentToken),
+        loza.String("checkout.source", "web"),
     )
 
     // Step 1: Validate the cart.
-    p1, _ := loxa.Process(ctx, "validate_cart")
+    p1, _ := loza.Process(ctx, "validate_cart")
     if err := validateCart(ctx, cartID); err != nil {
         p1.FinishError(err, 400)
-        return loxa.FinishError(ctx, err, loxa.ErrorCode("INVALID_CART"))
+        return loza.FinishError(ctx, err, loza.ErrorCode("INVALID_CART"))
     }
     p1.Finish()
 
     // Step 2: Charge the payment.
-    p2, _ := loxa.Process(ctx, "charge_payment")
-    loxa.Checkpoint(ctx, "payment.initiated")
+    p2, _ := loza.Process(ctx, "charge_payment")
+    loza.Checkpoint(ctx, "payment.initiated")
     paymentResult, err := chargePayment(ctx, userID, paymentToken)
     if err != nil {
         p2.FinishError(err, 502)
-        return loxa.FinishError(ctx, err,
-            loxa.ErrorCode("PAYMENT_FAILED"),
-            loxa.Retryable(true),
+        return loza.FinishError(ctx, err,
+            loza.ErrorCode("PAYMENT_FAILED"),
+            loza.Retryable(true),
         )
     }
-    p2.Finish(loxa.String("payment.provider", paymentResult.Provider))
+    p2.Finish(loza.String("payment.provider", paymentResult.Provider))
 
     // Step 3: Create the order.
-    p3, _ := loxa.Process(ctx, "create_order")
+    p3, _ := loza.Process(ctx, "create_order")
     order, err := createOrder(ctx, userID, cartID, paymentResult)
     if err != nil {
         p3.FinishError(err, 500)
-        return loxa.FinishError(ctx, err)
+        return loza.FinishError(ctx, err)
     }
-    p3.Finish(loxa.OrderID(order.ID))
+    p3.Finish(loza.OrderID(order.ID))
 
     // Attach final business context and finish successfully.
-    loxa.Set(ctx,
-        loxa.OrderID(order.ID),
-        loxa.Amount(order.TotalCents),
-        loxa.Currency("USD"),
-        loxa.Plan("premium"),
+    loza.Set(ctx,
+        loza.OrderID(order.ID),
+        loza.Amount(order.TotalCents),
+        loza.Currency("USD"),
+        loza.Plan("premium"),
     )
 
-    return loxa.Finish(ctx, "success",
-        loxa.StatusCode(200),
-        loxa.OrderID(order.ID),
+    return loza.Finish(ctx, "success",
+        loza.StatusCode(200),
+        loza.OrderID(order.ID),
     )
 }
 
@@ -177,7 +177,7 @@ The emitted event JSON contains the complete story:
 
 ## 3. Core Lifecycle
 
-Every LOXA event follows a strict state machine. Understanding the lifecycle is essential for correct instrumentation.
+Every LOZA event follows a strict state machine. Understanding the lifecycle is essential for correct instrumentation.
 
 ### Event State Machine
 
@@ -211,30 +211,30 @@ Use the appropriate starter for your event kind. Each sets sensible defaults for
 
 ```go
 // Generic event -- supply all fields yourself.
-ctx = loxa.StartEvent(ctx, loxa.Params{
+ctx = loza.StartEvent(ctx, loza.Params{
     Event: "data.export",
     Kind:  "job",
-    Custom: []loxa.Attr{
-        loxa.String("export.format", "csv"),
+    Custom: []loza.Attr{
+        loza.String("export.format", "csv"),
     },
 })
 
 // HTTP event -- kind and event name are defaulted.
-ctx = loxa.StartHTTPEvent(ctx, loxa.Params{
+ctx = loza.StartHTTPEvent(ctx, loza.Params{
     Event: "user.profile.update",
 })
 
 // Queue event with convenience wrapper.
-ctx = loxa.StartQueueJob(ctx, "email-notifications", "msg-abc123")
+ctx = loza.StartQueueJob(ctx, "email-notifications", "msg-abc123")
 
 // Cron event with convenience wrapper.
-ctx = loxa.StartCron(ctx, "daily-report")
+ctx = loza.StartCron(ctx, "daily-report")
 ```
 
 The `Params` struct also accepts subject identifiers directly:
 
 ```go
-ctx = loxa.StartHTTPEvent(ctx, loxa.Params{
+ctx = loza.StartHTTPEvent(ctx, loza.Params{
     Event:        "order.create",
     UserID:       "user-42",
     TenantID:     "tenant-acme",
@@ -266,31 +266,31 @@ Enrichment adds context to the active event in the current `context.Context`. Th
 
 ```go
 // Enrich with new context.
-loxa.Enrich(ctx,
-    loxa.String("checkout.source", "mobile"),
-    loxa.Bool("checkout.gift_wrapped", true),
+loza.Enrich(ctx,
+    loza.String("checkout.source", "mobile"),
+    loza.Bool("checkout.gift_wrapped", true),
 )
 
 // Set overwrites existing keys (useful for late-binding values).
-loxa.Set(ctx, loxa.String("user.tier", "premium"))
+loza.Set(ctx, loza.String("user.tier", "premium"))
 
 // Merge into a named group -- creates the group if it doesn't exist.
-loxa.Merge(ctx, "payment",
-    loxa.String("provider", "stripe"),
-    loxa.String("method", "card"),
-    loxa.Amount(4999),
+loza.Merge(ctx, "payment",
+    loza.String("provider", "stripe"),
+    loza.String("method", "card"),
+    loza.Amount(4999),
 )
 
 // Delete sensitive data before emission.
-loxa.Delete(ctx, "payment.token", "raw_body")
+loza.Delete(ctx, "payment.token", "raw_body")
 
 // Add to an array field.
-loxa.Add(ctx, "promo_codes_applied", "SUMMER25")
-loxa.Add(ctx, "promo_codes_applied", "WELCOME10")
+loza.Add(ctx, "promo_codes_applied", "SUMMER25")
+loza.Add(ctx, "promo_codes_applied", "WELCOME10")
 
 // Get for conditional logic.
-if v, ok := loxa.Get(ctx, "user.tier"); ok && v == "enterprise" {
-    loxa.Enrich(ctx, loxa.Bool("sla.priority", true))
+if v, ok := loza.Get(ctx, "user.tier"); ok && v == "enterprise" {
+    loza.Enrich(ctx, loza.Bool("sla.priority", true))
 }
 ```
 
@@ -299,13 +299,13 @@ if v, ok := loxa.Get(ctx, "user.tier"); ok && v == "enterprise" {
 Checkpoints are lightweight breadcrumbs that record a name and elapsed time without blocking the event flow:
 
 ```go
-loxa.Checkpoint(ctx, "validation.started")
+loza.Checkpoint(ctx, "validation.started")
 // ... validation logic ...
-loxa.Checkpoint(ctx, "validation.completed")
+loza.Checkpoint(ctx, "validation.completed")
 
-loxa.Checkpoint(ctx, "db.query.begin")
+loza.Checkpoint(ctx, "db.query.begin")
 // ... database query ...
-loxa.Checkpoint(ctx, "db.query.end", loxa.String("query", "SELECT * FROM orders"))
+loza.Checkpoint(ctx, "db.query.end", loza.String("query", "SELECT * FROM orders"))
 ```
 
 Checkpoints appear in the emitted JSON under the `"checkpoints"` array, ordered by their `at_ms` timestamp. Use them for latency attribution within a step that doesn't warrant a full Process.
@@ -316,16 +316,16 @@ An event must be finished exactly once before emission:
 
 ```go
 // Successful outcome.
-loxa.Finish(ctx, "success", loxa.StatusCode(200))
+loza.Finish(ctx, "success", loza.StatusCode(200))
 
 // Custom outcome strings.
-loxa.Finish(ctx, "cached_hit")
-loxa.Finish(ctx, "rate_limited", loxa.StatusCode(429))
+loza.Finish(ctx, "cached_hit")
+loza.Finish(ctx, "rate_limited", loza.StatusCode(429))
 
 // Error outcome -- automatically sets outcome="error" and level=error.
-loxa.FinishError(ctx, err,
-    loxa.ErrorCode("PAYMENT_DECLINED"),
-    loxa.Retryable(false),
+loza.FinishError(ctx, err,
+    loza.ErrorCode("PAYMENT_DECLINED"),
+    loza.Retryable(false),
 )
 ```
 
@@ -334,8 +334,8 @@ loxa.FinishError(ctx, err,
 After finishing, emit the event to deliver it to configured sinks:
 
 ```go
-loxa.Finish(ctx, "success")
-if err := loxa.Emit(ctx); err != nil {
+loza.Finish(ctx, "success")
+if err := loza.Emit(ctx); err != nil {
     // Delivery failure -- event was not sent.
     log.Printf("emit failed: %v", err)
 }
@@ -347,13 +347,13 @@ Always flush pending events before your process exits:
 
 ```go
 // Flush drains the async queue.
-loxa.Flush(ctx)
+loza.Flush(ctx)
 
 // Shutdown drains and closes all sinks.
-loxa.ShutdownTimeout(5 * time.Second)
+loza.ShutdownTimeout(5 * time.Second)
 
 // Or panic on shutdown failure.
-loxa.MustShutdown(5 * time.Second)
+loza.MustShutdown(5 * time.Second)
 ```
 
 ### The RunEvent Pattern
@@ -361,7 +361,7 @@ loxa.MustShutdown(5 * time.Second)
 For simple cases, `RunEvent` and its variants wrap the entire lifecycle automatically:
 
 ```go
-err := loxa.RunHTTP(ctx, loxa.Params{
+err := loza.RunHTTP(ctx, loza.Params{
     Event: "health.check",
 }, func(ctx context.Context) error {
     // Your business logic here.
@@ -377,28 +377,28 @@ Available wrappers: `RunEvent`, `RunHTTP`, `RunJob`, `RunQueue`, `RunCLI`, `RunC
 
 ## 4. Timing Primitives
 
-LOXA provides four timing primitives for latency attribution. Each records structured timing data in the emitted event.
+LOZA provides four timing primitives for latency attribution. Each records structured timing data in the emitted event.
 
 ### Process
 
 A **Process** represents a discrete step in a multi-step workflow. Processes are auto-numbered and appear in the `"processes"` array:
 
 ```go
-p, _ := loxa.Process(ctx, "fetch_user_profile")
+p, _ := loza.Process(ctx, "fetch_user_profile")
 // ... do work ...
-p.Finish(loxa.Int("records_returned", 1))
+p.Finish(loza.Int("records_returned", 1))
 ```
 
 Processes support error completion:
 
 ```go
-p, _ := loxa.Process(ctx, "charge_payment")
+p, _ := loza.Process(ctx, "charge_payment")
 result, err := paymentProvider.Charge(ctx, amount)
 if err != nil {
-    p.FinishError(err, 502, loxa.String("provider", "stripe"))
-    return loxa.FinishError(ctx, err)
+    p.FinishError(err, 502, loza.String("provider", "stripe"))
+    return loza.FinishError(ctx, err)
 }
-p.Finish(loxa.String("provider", result.Provider))
+p.Finish(loza.String("provider", result.Provider))
 ```
 
 ### Group
@@ -406,18 +406,18 @@ p.Finish(loxa.String("provider", result.Provider))
 A **Group** is a parent phase that logically contains processes. Groups appear in the `"groups"` array:
 
 ```go
-g, _ := loxa.StartGroup(ctx, "payment_phase")
+g, _ := loza.StartGroup(ctx, "payment_phase")
 // ... payment processes ...
-g.Finish(loxa.String("payment.method", "card"))
+g.Finish(loza.String("payment.method", "card"))
 ```
 
 Groups support error completion with a status code:
 
 ```go
-g, _ := loxa.StartGroup(ctx, "import_phase")
+g, _ := loza.StartGroup(ctx, "import_phase")
 if err := runImport(ctx); err != nil {
-    g.FinishError(500, loxa.ErrorMessage(err.Error()))
-    return loxa.FinishError(ctx, err)
+    g.FinishError(500, loza.ErrorMessage(err.Error()))
+    return loza.FinishError(ctx, err)
 }
 g.Finish()
 ```
@@ -427,9 +427,9 @@ g.Finish()
 A **Timer** measures the duration of an arbitrary operation. Timers appear in the `"timers"` array:
 
 ```go
-t, _ := loxa.StartTimer(ctx, "external_api_call")
+t, _ := loza.StartTimer(ctx, "external_api_call")
 resp, err := httpClient.Do(req)
-t.Stop(loxa.Int("status_code", resp.StatusCode))
+t.Stop(loza.Int("status_code", resp.StatusCode))
 ```
 
 ### Stopwatch
@@ -437,10 +437,10 @@ t.Stop(loxa.Int("status_code", resp.StatusCode))
 A **Stopwatch** is a standalone elapsed-time measurer that does not require an active event. Use it for pre-event timing or benchmarking:
 
 ```go
-sw := loxa.Stopwatch()
+sw := loza.Stopwatch()
 // ... setup work ...
-ctx = loxa.StartHTTPEvent(ctx, loxa.Params{Event: "request"})
-loxa.Enrich(ctx, loxa.Duration("setup_duration", sw.Elapsed()))
+ctx = loza.StartHTTPEvent(ctx, loza.Params{Event: "request"})
+loza.Enrich(ctx, loza.Duration("setup_duration", sw.Elapsed()))
 ```
 
 ### Comparison Table
@@ -455,31 +455,31 @@ loxa.Enrich(ctx, loxa.Duration("setup_duration", sw.Elapsed()))
 ### Nested Example
 
 ```go
-ctx = loxa.StartHTTPEvent(ctx, loxa.Params{Event: "order.fulfill"})
+ctx = loza.StartHTTPEvent(ctx, loza.Params{Event: "order.fulfill"})
 
-g, _ := loxa.StartGroup(ctx, "fulfillment")
+g, _ := loza.StartGroup(ctx, "fulfillment")
 
-p1, _ := loxa.Process(ctx, "reserve_inventory")
+p1, _ := loza.Process(ctx, "reserve_inventory")
 // ...
 p1.Finish()
 
-p2, _ := loxa.Process(ctx, "generate_label")
-t, _ := loxa.StartTimer(ctx, "carrier_api_call")
+p2, _ := loza.Process(ctx, "generate_label")
+t, _ := loza.StartTimer(ctx, "carrier_api_call")
 // ... call carrier API ...
-t.Stop(loxa.String("carrier", "fedex"))
+t.Stop(loza.String("carrier", "fedex"))
 p2.Finish()
 
-g.Finish(loxa.String("fulfillment.center", "warehouse-east"))
+g.Finish(loza.String("fulfillment.center", "warehouse-east"))
 
-loxa.Finish(ctx, "success")
-loxa.Emit(ctx)
+loza.Finish(ctx, "success")
+loza.Emit(ctx)
 ```
 
 ---
 
 ## 5. Attribute Constructors
 
-LOXA provides typed attribute constructors that avoid reflection on the hot encoding path.
+LOZA provides typed attribute constructors that avoid reflection on the hot encoding path.
 
 ### Primitive Types
 
@@ -503,10 +503,10 @@ LOXA provides typed attribute constructors that avoid reflection on the hot enco
 `Group` creates a nested JSON object:
 
 ```go
-loxa.Group("user",
-    loxa.String("id", "user-42"),
-    loxa.String("plan", "premium"),
-    loxa.Bool("verified", true),
+loza.Group("user",
+    loza.String("id", "user-42"),
+    loza.String("plan", "premium"),
+    loza.Bool("verified", true),
 )
 // Produces: {"user":{"id":"user-42","plan":"premium","verified":true}}
 ```
@@ -516,15 +516,15 @@ loxa.Group("user",
 Helper constructors like `UserID`, `TenantID`, etc. use dot-keys that expand into nested objects automatically:
 
 ```go
-loxa.UserID("user-42")       // {"user":{"id":"user-42"}}
-loxa.TenantID("tenant-acme") // {"tenant":{"id":"tenant-acme"}}
+loza.UserID("user-42")       // {"user":{"id":"user-42"}}
+loza.TenantID("tenant-acme") // {"tenant":{"id":"tenant-acme"}}
 ```
 
 ---
 
 ## 6. Canonical Helpers
 
-Canonical helpers map to well-known fields in the LOXA event schema. Using them ensures your events are queryable across all services.
+Canonical helpers map to well-known fields in the LOZA event schema. Using them ensures your events are queryable across all services.
 
 ### Identity and Correlation
 
@@ -609,14 +609,14 @@ Business helpers represent domain-specific identifiers and values. They use dot-
 
 ```go
 // Feature flag -- creates a nested "feature" group.
-loxa.FeatureFlag("new_checkout", true)
+loza.FeatureFlag("new_checkout", true)
 // {"feature":{"new_checkout":true}}
 
-loxa.FeatureFlagBool("dark_mode", false)
+loza.FeatureFlagBool("dark_mode", false)
 // {"feature":{"dark_mode":false}}
 
 // Experiment variant -- creates a nested "experiment" group.
-loxa.Experiment("checkout_flow_v2", "variant_b")
+loza.Experiment("checkout_flow_v2", "variant_b")
 // {"experiment":{"checkout_flow_v2":"variant_b"}}
 ```
 
@@ -624,15 +624,15 @@ loxa.Experiment("checkout_flow_v2", "variant_b")
 
 ```go
 // Mark a field as sensitive -- prefix with "sensitive."
-loxa.SensitiveString("email", "user@example.com")
+loza.SensitiveString("email", "user@example.com")
 // {"sensitive.email":"user@example.com"}
 
 // Hash a value before storing.
-loxa.HashString("ssn", "123-45-6789")
+loza.HashString("ssn", "123-45-6789")
 // {"hash.ssn":"123-45-6789"}
 
 // Mark any attr as sensitive.
-loxa.MarkSensitive(loxa.String("phone", "+1-555-0123"))
+loza.MarkSensitive(loza.String("phone", "+1-555-0123"))
 // {"sensitive.phone":"+1-555-0123"}
 ```
 
@@ -640,7 +640,7 @@ loxa.MarkSensitive(loxa.String("phone", "+1-555-0123"))
 
 ## 8. Error Handling
 
-LOXA provides structured error recording through the `FinishError` pattern and the error attribute helpers.
+LOZA provides structured error recording through the `FinishError` pattern and the error attribute helpers.
 
 ### The FinishError Pattern
 
@@ -655,14 +655,14 @@ func processPayment(ctx context.Context, amount int64) error {
     result, err := paymentProvider.Charge(ctx, amount)
     if err != nil {
         // FinishError records the error and emits the event.
-        return loxa.FinishError(ctx, err,
-            loxa.ErrorCode("CHARGE_FAILED"),
-            loxa.ErrorMessage(fmt.Sprintf("amount=%d", amount)),
-            loxa.Retryable(true),
+        return loza.FinishError(ctx, err,
+            loza.ErrorCode("CHARGE_FAILED"),
+            loza.ErrorMessage(fmt.Sprintf("amount=%d", amount)),
+            loza.Retryable(true),
         )
     }
-    loxa.Enrich(ctx, loxa.String("payment.id", result.ID))
-    return loxa.Finish(ctx, "success")
+    loza.Enrich(ctx, loza.String("payment.id", result.ID))
+    return loza.Finish(ctx, "success")
 }
 ```
 
@@ -679,14 +679,14 @@ func processPayment(ctx context.Context, amount int64) error {
 ### Combining Error Helpers
 
 ```go
-loxa.FinishError(ctx, err,
-    loxa.ErrorType("PaymentDeclined"),
-    loxa.ErrorCode("PAY_4001"),
-    loxa.ErrorMessage("card was declined by issuer"),
-    loxa.ErrorStack(string(debug.Stack())),
-    loxa.Retryable(false),
-    loxa.String("payment.provider", "stripe"),
-    loxa.String("payment.decline_code", "insufficient_funds"),
+loza.FinishError(ctx, err,
+    loza.ErrorType("PaymentDeclined"),
+    loza.ErrorCode("PAY_4001"),
+    loza.ErrorMessage("card was declined by issuer"),
+    loza.ErrorStack(string(debug.Stack())),
+    loza.Retryable(false),
+    loza.String("payment.provider", "stripe"),
+    loza.String("payment.decline_code", "insufficient_funds"),
 )
 ```
 
@@ -695,16 +695,16 @@ loxa.FinishError(ctx, err,
 Process steps can independently track errors:
 
 ```go
-p, _ := loxa.Process(ctx, "validate_address")
+p, _ := loza.Process(ctx, "validate_address")
 if err := validateAddress(addr); err != nil {
     p.FinishError(err, 422,
-        loxa.String("validation.field", "zip_code"),
+        loza.String("validation.field", "zip_code"),
     )
     // Continue processing -- the process error is recorded,
     // but the event may still succeed overall.
-    loxa.Enrich(ctx, loxa.Bool("address.validated", false))
+    loza.Enrich(ctx, loza.Bool("address.validated", false))
 } else {
-    p.Finish(loxa.Bool("address.validated", true))
+    p.Finish(loza.Bool("address.validated", true))
 }
 ```
 
@@ -713,7 +713,7 @@ if err := validateAddress(addr); err != nil {
 `RunEvent` and its variants automatically handle the finish/emit lifecycle:
 
 ```go
-err := loxa.RunJob(ctx, loxa.Params{
+err := loza.RunJob(ctx, loza.Params{
     Event: "email.send",
 }, func(ctx context.Context) error {
     if err := sendEmail(ctx); err != nil {
@@ -721,7 +721,7 @@ err := loxa.RunJob(ctx, loxa.Params{
     }
     return nil // Automatically calls Finish("success") + Emit
 },
-    loxa.String("email.template", "welcome"), // Finish attrs
+    loza.String("email.template", "welcome"), // Finish attrs
 )
 ```
 
@@ -734,14 +734,14 @@ The `net/http` middleware automatically instruments HTTP request handlers.
 ### Basic Usage
 
 ```go
-import loxamw "github.com/astraive/loxa/sdks/go/src/middleware/nethttp"
+import lozamw "github.com/astraive/loza/sdks/go/src/middleware/nethttp"
 
 func main() {
     mux := http.NewServeMux()
     mux.HandleFunc("/api/orders", handleOrders)
 
-    // Wrap with LOXA middleware.
-    handler := loxamw.Middleware()(mux)
+    // Wrap with LOZA middleware.
+    handler := lozamw.Middleware()(mux)
 
     http.ListenAndServe(":8080", handler)
 }
@@ -758,7 +758,7 @@ The middleware automatically:
 ### Custom Configuration
 
 ```go
-handler := loxamw.MiddlewareWithConfig(loxamw.Config{
+handler := lozamw.MiddlewareWithConfig(lozamw.Config{
     Event: "api.request",
     RouteExtractor: func(r *http.Request) string {
         // Return a route template for grouping.
@@ -779,10 +779,10 @@ func handleOrders(w http.ResponseWriter, r *http.Request) {
     ctx := r.Context()
 
     // Enrich the event started by middleware.
-    loxa.Enrich(ctx,
-        loxa.UserID(getUserID(r)),
-        loxa.TenantID(getTenantID(r)),
-        loxa.String("request.version", "v2"),
+    loza.Enrich(ctx,
+        loza.UserID(getUserID(r)),
+        loza.TenantID(getTenantID(r)),
+        loza.String("request.version", "v2"),
     )
 
     // Your business logic...
@@ -804,7 +804,7 @@ func handleOrders(w http.ResponseWriter, r *http.Request) {
 
 ### Preset Configurations
 
-LOXA provides three preset configurations:
+LOZA provides three preset configurations:
 
 | Preset | Async | Level | Redactor | Use Case |
 |---|---|---|---|---|
@@ -815,32 +815,32 @@ LOXA provides three preset configurations:
 ### Production Configuration
 
 ```go
-logger, err := loxa.New(loxa.ApplyConfig(
-    loxa.Production(),
-    loxa.WithService("order-service"),
-    loxa.WithVersion("2.1.0"),
-    loxa.WithEnvironment("production"),
-    loxa.WithRegion("us-east-1"),
-    loxa.WithSink(loxa.HTTPBatchSink(loxa.HTTPBatchSinkConfig{
+logger, err := loza.New(loza.ApplyConfig(
+    loza.Production(),
+    loza.WithService("order-service"),
+    loza.WithVersion("2.1.0"),
+    loza.WithEnvironment("production"),
+    loza.WithRegion("us-east-1"),
+    loza.WithSink(loza.HTTPBatchSink(loza.HTTPBatchSinkConfig{
         Endpoint: "https://collector.internal:9309/ingest",
         BatchSize: 100,
         FlushInterval: 5 * time.Second,
     })),
-    loxa.WithAsync(true),
-    loxa.WithAsyncQueue(16384),
-    loxa.WithWorkers(8),
-    loxa.WithSampler(loxa.AnySampler(
-        loxa.SampleErrors(),
-        loxa.SampleSlowRequests(500 * time.Millisecond),
-        loxa.SampleRandom(0.1),
+    loza.WithAsync(true),
+    loza.WithAsyncQueue(16384),
+    loza.WithWorkers(8),
+    loza.WithSampler(loza.AnySampler(
+        loza.SampleErrors(),
+        loza.SampleSlowRequests(500 * time.Millisecond),
+        loza.SampleRandom(0.1),
     )),
-    loxa.WithRedactor(loxa.ComposeRedactors(
-        loxa.DefaultRedactor(),
-        loxa.HashKeys("ssn", "credit_card"),
-        loxa.DropKeys("raw_body", "debug_payload"),
+    loza.WithRedactor(loza.ComposeRedactors(
+        loza.DefaultRedactor(),
+        loza.HashKeys("ssn", "credit_card"),
+        loza.DropKeys("raw_body", "debug_payload"),
     )),
-    loxa.WithDuplicatePolicy(loxa.CanonicalWins),
-    loxa.WithPanicRecovery(true),
+    loza.WithDuplicatePolicy(loza.CanonicalWins),
+    loza.WithPanicRecovery(true),
 ))
 ```
 
@@ -862,16 +862,16 @@ logger, err := loxa.New(loxa.ApplyConfig(
 `LoadFromEnv` reads configuration from environment variables:
 
 ```go
-cfg := loxa.LoadFromEnv(loxa.Production())
-logger, err := loxa.New(cfg)
+cfg := loza.LoadFromEnv(loza.Production())
+logger, err := loza.New(cfg)
 ```
 
-Supported variables: `LOXA_SERVICE`, `LOXA_VERSION`, `LOXA_ENVIRONMENT`, `LOXA_COLLECTOR_URL`, `LOXA_LEVEL`, `LOXA_ASYNC`, etc.
+Supported variables: `LOZA_SERVICE`, `LOZA_VERSION`, `LOZA_ENVIRONMENT`, `LOZA_COLLECTOR_URL`, `LOZA_LEVEL`, `LOZA_ASYNC`, etc.
 
 ### File-Based Configuration
 
 ```go
-fileCfg, err := loxa.LoadFromFile("loxa.yaml")
+fileCfg, err := loza.LoadFromFile("loza.yaml")
 // Then merge with code-level overrides.
 ```
 
@@ -885,35 +885,35 @@ Sampling controls which events are emitted. Combine samplers with logical operat
 
 ```go
 // Keep all errors, all slow requests, and 10% of everything else.
-sampler := loxa.AnySampler(
-    loxa.SampleErrors(),
-    loxa.SampleSlowRequests(500 * time.Millisecond),
-    loxa.SampleRandom(0.1),
+sampler := loza.AnySampler(
+    loza.SampleErrors(),
+    loza.SampleSlowRequests(500 * time.Millisecond),
+    loza.SampleRandom(0.1),
 )
 
 // Keep events only for specific tenants.
-sampler := loxa.SampleTenants("tenant-acme", "tenant-beta")
+sampler := loza.SampleTenants("tenant-acme", "tenant-beta")
 
 // Keep events for users in an experiment.
-sampler := loxa.SampleFeatureFlag("new_checkout", true)
+sampler := loza.SampleFeatureFlag("new_checkout", true)
 
 // Rate-limit to 1000 events per second.
-sampler := loxa.SampleRateLimited(1000, time.Second)
+sampler := loza.SampleRateLimited(1000, time.Second)
 
 // Keep only 5xx status codes.
-sampler := loxa.SampleStatusCodes(500, 502, 503, 504)
+sampler := loza.SampleStatusCodes(500, 502, 503, 504)
 
 // Keep only specific routes.
-sampler := loxa.SampleRoutes("/api/orders", "/api/payments")
+sampler := loza.SampleRoutes("/api/orders", "/api/payments")
 
 // Combine with AND logic.
-sampler := loxa.AllSampler(
-    loxa.SampleTenants("tenant-acme"),
-    loxa.SampleSlowRequests(200*time.Millisecond),
+sampler := loza.AllSampler(
+    loza.SampleTenants("tenant-acme"),
+    loza.SampleSlowRequests(200*time.Millisecond),
 )
 
 // Invert a sampler.
-sampler := loxa.NotSampler(loxa.SampleRoutes("/health"))
+sampler := loza.NotSampler(loza.SampleRoutes("/health"))
 ```
 
 ### Full Sampler Reference
@@ -942,23 +942,23 @@ Redaction transforms sensitive data before emission:
 
 ```go
 // Hash PII fields -- irreversible.
-redactor := loxa.HashKeys("ssn", "credit_card", "passport_number")
+redactor := loza.HashKeys("ssn", "credit_card", "passport_number")
 
 // Mask fields -- partial visibility for debugging.
-redactor := loxa.MaskKeys("email", "phone")
+redactor := loza.MaskKeys("email", "phone")
 
 // Drop fields entirely.
-redactor := loxa.DropKeys("raw_request_body", "debug_stack")
+redactor := loza.DropKeys("raw_request_body", "debug_stack")
 
 // Redact fields by regex pattern.
-redactor := loxa.RedactPatterns(`\b\d{4}-\d{4}-\d{4}-\d{4}\b`)
+redactor := loza.RedactPatterns(`\b\d{4}-\d{4}-\d{4}-\d{4}\b`)
 
 // Compose multiple redactors.
-redactor := loxa.ComposeRedactors(
-    loxa.DefaultRedactor(),          // Redact keys with "password", "secret", etc.
-    loxa.HashKeys("ssn"),
-    loxa.MaskKeys("email"),
-    loxa.DropKeys("raw_body"),
+redactor := loza.ComposeRedactors(
+    loza.DefaultRedactor(),          // Redact keys with "password", "secret", etc.
+    loza.HashKeys("ssn"),
+    loza.MaskKeys("email"),
+    loza.DropKeys("raw_body"),
 )
 ```
 
@@ -978,7 +978,7 @@ redactor := loxa.ComposeRedactors(
 
 ## 12. Testing
 
-LOXA provides testing utilities that let you capture and assert on emitted events without a real sink.
+LOZA provides testing utilities that let you capture and assert on emitted events without a real sink.
 
 ### TestLogger
 
@@ -986,11 +986,11 @@ LOXA provides testing utilities that let you capture and assert on emitted event
 
 ```go
 func TestCheckoutInstrumentation(t *testing.T) {
-    logger, store, err := loxa.TestLogger()
+    logger, store, err := loza.TestLogger()
     if err != nil {
         t.Fatal(err)
     }
-    loxa.SetDefault(logger)
+    loza.SetDefault(logger)
 
     // Run your business logic.
     ctx := context.Background()
@@ -1003,10 +1003,10 @@ func TestCheckoutInstrumentation(t *testing.T) {
     }
 
     ev := events[0]
-    loxa.AssertEvent(t, ev, "event", "checkout.request")
-    loxa.AssertEvent(t, ev, "outcome", "success")
-    loxa.AssertEvent(t, ev, "user_id", "user-1")
-    loxa.AssertEvent(t, ev, "cart_id", "cart-1")
+    loza.AssertEvent(t, ev, "event", "checkout.request")
+    loza.AssertEvent(t, ev, "outcome", "success")
+    loza.AssertEvent(t, ev, "user_id", "user-1")
+    loza.AssertEvent(t, ev, "cart_id", "cart-1")
 }
 ```
 
@@ -1016,12 +1016,12 @@ func TestCheckoutInstrumentation(t *testing.T) {
 
 ```go
 func TestPaymentFlow(t *testing.T) {
-    events, err := loxa.Capture(func() {
+    events, err := loza.Capture(func() {
         ctx := context.Background()
-        ctx = loxa.StartHTTPEvent(ctx, loxa.Params{Event: "payment.charge"})
-        loxa.Enrich(ctx, loxa.Amount(4999))
-        loxa.Finish(ctx, "success")
-        loxa.Emit(ctx)
+        ctx = loza.StartHTTPEvent(ctx, loza.Params{Event: "payment.charge"})
+        loza.Enrich(ctx, loza.Amount(4999))
+        loza.Finish(ctx, "success")
+        loza.Emit(ctx)
     })
     if err != nil {
         t.Fatal(err)
@@ -1030,7 +1030,7 @@ func TestPaymentFlow(t *testing.T) {
     if len(events) != 1 {
         t.Fatalf("expected 1 event, got %d", len(events))
     }
-    loxa.AssertEvent(t, events[0], "payment_amount", int64(4999))
+    loza.AssertEvent(t, events[0], "payment_amount", int64(4999))
 }
 ```
 
@@ -1040,13 +1040,13 @@ func TestPaymentFlow(t *testing.T) {
 
 ```go
 func TestEventHasUserID(t *testing.T) {
-    ev := loxa.NewEvent(loxa.Params{
+    ev := loza.NewEvent(loza.Params{
         Event: "test.event",
-        Custom: []loxa.Attr{
-            loxa.UserID("user-42"),
+        Custom: []loza.Attr{
+            loza.UserID("user-42"),
         },
     })
-    loxa.AssertEvent(t, ev, "user.id", "user-42")
+    loza.AssertEvent(t, ev, "user.id", "user-42")
 }
 ```
 
@@ -1054,24 +1054,24 @@ func TestEventHasUserID(t *testing.T) {
 
 ```go
 func TestProcessesRecorded(t *testing.T) {
-    events, _ := loxa.Capture(func() {
-        ctx := loxa.StartHTTPEvent(context.Background(), loxa.Params{
+    events, _ := loza.Capture(func() {
+        ctx := loza.StartHTTPEvent(context.Background(), loza.Params{
             Event: "order.process",
         })
 
-        p1, _ := loxa.Process(ctx, "validate")
+        p1, _ := loza.Process(ctx, "validate")
         p1.Finish()
 
-        p2, _ := loxa.Process(ctx, "charge")
+        p2, _ := loza.Process(ctx, "charge")
         p2.Finish()
 
-        loxa.Finish(ctx, "success")
-        loxa.Emit(ctx)
+        loza.Finish(ctx, "success")
+        loza.Emit(ctx)
     })
 
     ev := events[0]
     // The processes are recorded in the event's Processes slice.
-    loxa.AssertEvent(t, ev, "outcome", "success")
+    loza.AssertEvent(t, ev, "outcome", "success")
 }
 ```
 
@@ -1085,42 +1085,42 @@ A complete e-commerce checkout with payment, inventory, and order creation:
 
 ```go
 func handleCheckout(ctx context.Context, req CheckoutRequest) error {
-    ctx = loxa.StartHTTPEvent(ctx, loxa.Params{
+    ctx = loza.StartHTTPEvent(ctx, loza.Params{
         Event: "checkout.complete",
         Kind:  "http",
     })
 
-    loxa.Enrich(ctx,
-        loxa.UserID(req.UserID),
-        loxa.CartID(req.CartID),
-        loxa.String("checkout.source", req.Source),
-        loxa.Country(req.Country),
-        loxa.Device(req.Device),
-        loxa.Platform(req.Platform),
+    loza.Enrich(ctx,
+        loza.UserID(req.UserID),
+        loza.CartID(req.CartID),
+        loza.String("checkout.source", req.Source),
+        loza.Country(req.Country),
+        loza.Device(req.Device),
+        loza.Platform(req.Platform),
     )
 
     // Validate cart.
-    p1, _ := loxa.Process(ctx, "validate_cart")
+    p1, _ := loza.Process(ctx, "validate_cart")
     cart, err := cartService.Validate(ctx, req.CartID)
     if err != nil {
         p1.FinishError(err, 400)
-        return loxa.FinishError(ctx, err, loxa.ErrorCode("INVALID_CART"))
+        return loza.FinishError(ctx, err, loza.ErrorCode("INVALID_CART"))
     }
-    p1.Finish(loxa.Int("items", len(cart.Items)))
+    p1.Finish(loza.Int("items", len(cart.Items)))
 
     // Apply promotions.
-    loxa.Checkpoint(ctx, "promotions.start")
+    loza.Checkpoint(ctx, "promotions.start")
     discount, _ := promoService.Apply(ctx, req.PromoCodes...)
-    loxa.Checkpoint(ctx, "promotions.applied",
-        loxa.Int64("discount_cents", discount),
+    loza.Checkpoint(ctx, "promotions.applied",
+        loza.Int64("discount_cents", discount),
     )
 
     // Charge payment.
-    p2, _ := loxa.Process(ctx, "charge_payment")
-    loxa.Merge(ctx, "payment",
-        loxa.String("provider", req.PaymentProvider),
-        loxa.Currency(req.Currency),
-        loxa.Amount(cart.TotalCents - discount),
+    p2, _ := loza.Process(ctx, "charge_payment")
+    loza.Merge(ctx, "payment",
+        loza.String("provider", req.PaymentProvider),
+        loza.Currency(req.Currency),
+        loza.Amount(cart.TotalCents - discount),
     )
     payResult, err := paymentService.Charge(ctx, PaymentCharge{
         Amount:   cart.TotalCents - discount,
@@ -1129,15 +1129,15 @@ func handleCheckout(ctx context.Context, req CheckoutRequest) error {
     })
     if err != nil {
         p2.FinishError(err, 402)
-        return loxa.FinishError(ctx, err,
-            loxa.ErrorCode("PAYMENT_DECLINED"),
-            loxa.Retryable(false),
+        return loza.FinishError(ctx, err,
+            loza.ErrorCode("PAYMENT_DECLINED"),
+            loza.Retryable(false),
         )
     }
-    p2.Finish(loxa.String("payment.id", payResult.ID))
+    p2.Finish(loza.String("payment.id", payResult.ID))
 
     // Create order.
-    p3, _ := loxa.Process(ctx, "create_order")
+    p3, _ := loza.Process(ctx, "create_order")
     order, err := orderService.Create(ctx, OrderInput{
         UserID:       req.UserID,
         CartID:       req.CartID,
@@ -1147,20 +1147,20 @@ func handleCheckout(ctx context.Context, req CheckoutRequest) error {
     })
     if err != nil {
         p3.FinishError(err, 500)
-        return loxa.FinishError(ctx, err)
+        return loza.FinishError(ctx, err)
     }
-    p3.Finish(loxa.OrderID(order.ID))
+    p3.Finish(loza.OrderID(order.ID))
 
     // Send confirmation.
-    loxa.Checkpoint(ctx, "email.queue")
+    loza.Checkpoint(ctx, "email.queue")
     emailService.Queue(ctx, EmailJob{
         To:       req.Email,
         Template: "order_confirmation",
         Data:     map[string]any{"order_id": order.ID},
     })
 
-    loxa.Set(ctx, loxa.OrderID(order.ID))
-    return loxa.Finish(ctx, "success", loxa.StatusCode(201))
+    loza.Set(ctx, loza.OrderID(order.ID))
+    return loza.Finish(ctx, "success", loza.StatusCode(201))
 }
 ```
 
@@ -1168,49 +1168,49 @@ func handleCheckout(ctx context.Context, req CheckoutRequest) error {
 
 ```go
 func processPaymentWithRetry(ctx context.Context, charge PaymentCharge) error {
-    ctx = loxa.StartJobEvent(ctx, loxa.Params{
+    ctx = loza.StartJobEvent(ctx, loza.Params{
         Event: "payment.process",
     })
 
-    loxa.Enrich(ctx,
-        loxa.UserID(charge.UserID),
-        loxa.Currency(charge.Currency),
-        loxa.Amount(charge.Amount),
+    loza.Enrich(ctx,
+        loza.UserID(charge.UserID),
+        loza.Currency(charge.Currency),
+        loza.Amount(charge.Amount),
     )
 
     maxRetries := 3
     for attempt := 1; attempt <= maxRetries; attempt++ {
-        loxa.Enrich(ctx, loxa.Attempt(attempt))
-        loxa.Checkpoint(ctx, fmt.Sprintf("attempt.%d.start", attempt))
+        loza.Enrich(ctx, loza.Attempt(attempt))
+        loza.Checkpoint(ctx, fmt.Sprintf("attempt.%d.start", attempt))
 
-        t, _ := loxa.StartTimer(ctx, "provider_call")
+        t, _ := loza.StartTimer(ctx, "provider_call")
         result, err := paymentProvider.Charge(ctx, charge)
         t.Stop()
 
         if err == nil {
-            loxa.Set(ctx, loxa.String("payment.id", result.ID))
-            loxa.Checkpoint(ctx, fmt.Sprintf("attempt.%d.success", attempt))
-            return loxa.Finish(ctx, "success",
-                loxa.Int("total_attempts", attempt),
+            loza.Set(ctx, loza.String("payment.id", result.ID))
+            loza.Checkpoint(ctx, fmt.Sprintf("attempt.%d.success", attempt))
+            return loza.Finish(ctx, "success",
+                loza.Int("total_attempts", attempt),
             )
         }
 
-        loxa.Checkpoint(ctx, fmt.Sprintf("attempt.%d.failed", attempt),
-            loxa.ErrorMessage(err.Error()),
+        loza.Checkpoint(ctx, fmt.Sprintf("attempt.%d.failed", attempt),
+            loza.ErrorMessage(err.Error()),
         )
 
         if !isRetryable(err) || attempt == maxRetries {
-            return loxa.FinishError(ctx, err,
-                loxa.ErrorCode("PAYMENT_FAILED"),
-                loxa.Int("total_attempts", attempt),
-                loxa.Retryable(attempt < maxRetries),
+            return loza.FinishError(ctx, err,
+                loza.ErrorCode("PAYMENT_FAILED"),
+                loza.Int("total_attempts", attempt),
+                loza.Retryable(attempt < maxRetries),
             )
         }
 
         time.Sleep(time.Duration(attempt*100) * time.Millisecond)
     }
 
-    return loxa.FinishError(ctx, fmt.Errorf("exhausted retries"))
+    return loza.FinishError(ctx, fmt.Errorf("exhausted retries"))
 }
 
 func isRetryable(err error) bool {
@@ -1223,61 +1223,61 @@ func isRetryable(err error) bool {
 
 ```go
 func handleLogin(ctx context.Context, req LoginRequest) error {
-    ctx = loxa.StartHTTPEvent(ctx, loxa.Params{
+    ctx = loza.StartHTTPEvent(ctx, loza.Params{
         Event: "auth.login",
         Kind:  "http",
     })
 
-    loxa.Enrich(ctx,
-        loxa.String("auth.method", req.Method),
-        loxa.String("auth.provider", req.Provider),
-        loxa.Device(req.Device),
-        loxa.Platform(req.Platform),
-        loxa.Country(req.Country),
+    loza.Enrich(ctx,
+        loza.String("auth.method", req.Method),
+        loza.String("auth.provider", req.Provider),
+        loza.Device(req.Device),
+        loza.Platform(req.Platform),
+        loza.Country(req.Country),
     )
 
     // Rate limit check.
-    p1, _ := loxa.Process(ctx, "rate_limit_check")
+    p1, _ := loza.Process(ctx, "rate_limit_check")
     allowed, err := rateLimiter.Allow(ctx, req.Email)
     if err != nil || !allowed {
-        p1.Finish(loxa.Bool("allowed", false))
-        return loxa.FinishError(ctx, fmt.Errorf("rate limited"),
-            loxa.ErrorCode("RATE_LIMITED"),
-            loxa.StatusCode(429),
+        p1.Finish(loza.Bool("allowed", false))
+        return loza.FinishError(ctx, fmt.Errorf("rate limited"),
+            loza.ErrorCode("RATE_LIMITED"),
+            loza.StatusCode(429),
         )
     }
-    p1.Finish(loxa.Bool("allowed", true))
+    p1.Finish(loza.Bool("allowed", true))
 
     // Credential verification.
-    p2, _ := loxa.Process(ctx, "verify_credentials")
-    t, _ := loxa.StartTimer(ctx, "password_hash_verify")
+    p2, _ := loza.Process(ctx, "verify_credentials")
+    t, _ := loza.StartTimer(ctx, "password_hash_verify")
     user, err := authService.Verify(ctx, req.Email, req.Password)
     t.Stop()
     if err != nil {
         p2.FinishError(err, 401)
-        return loxa.FinishError(ctx, err,
-            loxa.ErrorCode("INVALID_CREDENTIALS"),
-            loxa.StatusCode(401),
+        return loza.FinishError(ctx, err,
+            loza.ErrorCode("INVALID_CREDENTIALS"),
+            loza.StatusCode(401),
         )
     }
-    p2.Finish(loxa.UserID(user.ID))
+    p2.Finish(loza.UserID(user.ID))
 
     // Generate token.
-    p3, _ := loxa.Process(ctx, "generate_token")
+    p3, _ := loza.Process(ctx, "generate_token")
     token, err := tokenService.Generate(ctx, user)
     if err != nil {
         p3.FinishError(err, 500)
-        return loxa.FinishError(ctx, err)
+        return loza.FinishError(ctx, err)
     }
     p3.Finish()
 
-    loxa.Enrich(ctx,
-        loxa.UserID(user.ID),
-        loxa.TenantID(user.TenantID),
-        loxa.String("auth.token_type", "bearer"),
+    loza.Enrich(ctx,
+        loza.UserID(user.ID),
+        loza.TenantID(user.TenantID),
+        loza.String("auth.token_type", "bearer"),
     )
 
-    return loxa.Finish(ctx, "success", loxa.StatusCode(200))
+    return loza.Finish(ctx, "success", loza.StatusCode(200))
 }
 ```
 
@@ -1285,53 +1285,53 @@ func handleLogin(ctx context.Context, req LoginRequest) error {
 
 ```go
 func runImageResizeJob(ctx context.Context, job ImageResizeJob) error {
-    ctx = loxa.StartJobEvent(ctx, loxa.Params{
+    ctx = loza.StartJobEvent(ctx, loza.Params{
         Event: "image.resize",
     })
 
-    loxa.Enrich(ctx,
-        loxa.JobName("image_resize"),
-        loxa.UserID(job.UserID),
-        loxa.String("image.source_url", job.SourceURL),
-        loxa.String("image.target_format", job.Format),
-        loxa.Int("image.target_width", job.Width),
-        loxa.Int("image.target_height", job.Height),
+    loza.Enrich(ctx,
+        loza.JobName("image_resize"),
+        loza.UserID(job.UserID),
+        loza.String("image.source_url", job.SourceURL),
+        loza.String("image.target_format", job.Format),
+        loza.Int("image.target_width", job.Width),
+        loza.Int("image.target_height", job.Height),
     )
 
     // Download.
-    p1, _ := loxa.Process(ctx, "download")
-    t1, _ := loxa.StartTimer(ctx, "download_time")
+    p1, _ := loza.Process(ctx, "download")
+    t1, _ := loza.StartTimer(ctx, "download_time")
     data, err := storage.Download(ctx, job.SourceURL)
     t1.Stop()
     if err != nil {
         p1.FinishError(err, 502)
-        return loxa.FinishError(ctx, err, loxa.Retryable(true))
+        return loza.FinishError(ctx, err, loza.Retryable(true))
     }
-    p1.Finish(loxa.Int64("bytes", int64(len(data))))
+    p1.Finish(loza.Int64("bytes", int64(len(data))))
 
     // Resize.
-    p2, _ := loxa.Process(ctx, "resize")
-    t2, _ := loxa.StartTimer(ctx, "resize_time")
+    p2, _ := loza.Process(ctx, "resize")
+    t2, _ := loza.StartTimer(ctx, "resize_time")
     resized, err := imageProcessor.Resize(ctx, data, job.Width, job.Height)
     t2.Stop()
     if err != nil {
         p2.FinishError(err, 500)
-        return loxa.FinishError(ctx, err)
+        return loza.FinishError(ctx, err)
     }
-    p2.Finish(loxa.Int64("output_bytes", int64(len(resized))))
+    p2.Finish(loza.Int64("output_bytes", int64(len(resized))))
 
     // Upload.
-    p3, _ := loxa.Process(ctx, "upload")
-    t3, _ := loxa.StartTimer(ctx, "upload_time")
+    p3, _ := loza.Process(ctx, "upload")
+    t3, _ := loza.StartTimer(ctx, "upload_time")
     url, err := storage.Upload(ctx, resized, job.Format)
     t3.Stop()
     if err != nil {
         p3.FinishError(err, 502)
-        return loxa.FinishError(ctx, err, loxa.Retryable(true))
+        return loza.FinishError(ctx, err, loza.Retryable(true))
     }
-    p3.Finish(loxa.String("output_url", url))
+    p3.Finish(loza.String("output_url", url))
 
-    return loxa.Finish(ctx, "success")
+    return loza.Finish(ctx, "success")
 }
 ```
 
@@ -1339,51 +1339,51 @@ func runImageResizeJob(ctx context.Context, job ImageResizeJob) error {
 
 ```go
 func processEmailQueue(ctx context.Context, msg QueueMessage) error {
-    ctx = loxa.StartQueueEvent(ctx, loxa.Params{
+    ctx = loza.StartQueueEvent(ctx, loza.Params{
         Event: "email.send",
     })
 
-    loxa.Enrich(ctx,
-        loxa.QueueName("email-notifications"),
-        loxa.MessageID(msg.ID),
-        loxa.Attempt(msg.Attempt),
-        loxa.String("email.to", msg.To),
-        loxa.String("email.template", msg.Template),
+    loza.Enrich(ctx,
+        loza.QueueName("email-notifications"),
+        loza.MessageID(msg.ID),
+        loza.Attempt(msg.Attempt),
+        loza.String("email.to", msg.To),
+        loza.String("email.template", msg.Template),
     )
 
-    g, _ := loxa.StartGroup(ctx, "email_delivery")
+    g, _ := loza.StartGroup(ctx, "email_delivery")
 
     // Render template.
-    p1, _ := loxa.Process(ctx, "render_template")
+    p1, _ := loza.Process(ctx, "render_template")
     body, err := templateService.Render(ctx, msg.Template, msg.Data)
     if err != nil {
         p1.FinishError(err, 500)
         g.FinishError(500)
-        return loxa.FinishError(ctx, err)
+        return loza.FinishError(ctx, err)
     }
-    p1.Finish(loxa.Int("body_bytes", len(body)))
+    p1.Finish(loza.Int("body_bytes", len(body)))
 
     // Send via provider.
-    p2, _ := loxa.Process(ctx, "send")
-    t, _ := loxa.StartTimer(ctx, "provider_latency")
+    p2, _ := loza.Process(ctx, "send")
+    t, _ := loza.StartTimer(ctx, "provider_latency")
     err = emailProvider.Send(ctx, EmailMessage{
         To:      msg.To,
         Subject: msg.Subject,
         Body:    body,
     })
-    t.Stop(loxa.String("provider", "sendgrid"))
+    t.Stop(loza.String("provider", "sendgrid"))
     if err != nil {
         p2.FinishError(err, 502)
         g.FinishError(502)
-        return loxa.FinishError(ctx, err,
-            loxa.ErrorCode("EMAIL_SEND_FAILED"),
-            loxa.Retryable(true),
+        return loza.FinishError(ctx, err,
+            loza.ErrorCode("EMAIL_SEND_FAILED"),
+            loza.Retryable(true),
         )
     }
     p2.Finish()
 
     g.Finish()
-    return loxa.Finish(ctx, "success")
+    return loza.Finish(ctx, "success")
 }
 ```
 
@@ -1391,38 +1391,38 @@ func processEmailQueue(ctx context.Context, msg QueueMessage) error {
 
 ```go
 func runDailyReport(ctx context.Context) error {
-    ctx = loxa.StartCronEvent(ctx, loxa.Params{
+    ctx = loza.StartCronEvent(ctx, loza.Params{
         Event: "report.daily",
     })
 
-    loxa.Enrich(ctx,
-        loxa.JobName("daily_report"),
-        loxa.String("report.type", "revenue"),
-        loxa.String("report.date", time.Now().Format("2006-01-02")),
+    loza.Enrich(ctx,
+        loza.JobName("daily_report"),
+        loza.String("report.type", "revenue"),
+        loza.String("report.date", time.Now().Format("2006-01-02")),
     )
 
-    sw := loxa.Stopwatch()
+    sw := loza.Stopwatch()
 
     // Query data.
-    p1, _ := loxa.Process(ctx, "query_data")
+    p1, _ := loza.Process(ctx, "query_data")
     data, err := reportingService.QueryDailyRevenue(ctx, time.Now())
     if err != nil {
         p1.FinishError(err, 500)
-        return loxa.FinishError(ctx, err)
+        return loza.FinishError(ctx, err)
     }
-    p1.Finish(loxa.Int("rows", len(data)))
+    p1.Finish(loza.Int("rows", len(data)))
 
     // Generate PDF.
-    p2, _ := loxa.Process(ctx, "generate_pdf")
+    p2, _ := loza.Process(ctx, "generate_pdf")
     pdf, err := pdfService.Generate(ctx, data)
     if err != nil {
         p2.FinishError(err, 500)
-        return loxa.FinishError(ctx, err)
+        return loza.FinishError(ctx, err)
     }
-    p2.Finish(loxa.Int64("pdf_bytes", int64(len(pdf))))
+    p2.Finish(loza.Int64("pdf_bytes", int64(len(pdf))))
 
     // Send email.
-    p3, _ := loxa.Process(ctx, "send_report")
+    p3, _ := loza.Process(ctx, "send_report")
     err = emailService.Send(ctx, EmailMessage{
         To:      "team@company.com",
         Subject: "Daily Revenue Report",
@@ -1430,12 +1430,12 @@ func runDailyReport(ctx context.Context) error {
     })
     if err != nil {
         p3.FinishError(err, 502)
-        return loxa.FinishError(ctx, err, loxa.Retryable(true))
+        return loza.FinishError(ctx, err, loza.Retryable(true))
     }
     p3.Finish()
 
-    loxa.Enrich(ctx, loxa.Duration("total_elapsed", sw.Elapsed()))
-    return loxa.Finish(ctx, "success")
+    loza.Enrich(ctx, loza.Duration("total_elapsed", sw.Elapsed()))
+    return loza.Finish(ctx, "success")
 }
 ```
 
@@ -1443,7 +1443,7 @@ func runDailyReport(ctx context.Context) error {
 
 ```go
 func handleFeatureRequest(ctx context.Context, req FeatureRequest) error {
-    ctx = loxa.StartHTTPEvent(ctx, loxa.Params{
+    ctx = loza.StartHTTPEvent(ctx, loza.Params{
         Event:     "feature.request",
         UserID:    req.UserID,
         TenantID:  req.TenantID,
@@ -1452,20 +1452,20 @@ func handleFeatureRequest(ctx context.Context, req FeatureRequest) error {
         Route:     "/api/v2/features",
     })
 
-    loxa.Enrich(ctx,
-        loxa.WorkspaceID(req.WorkspaceID),
-        loxa.OrganizationID(req.OrgID),
-        loxa.SessionID(req.SessionID),
-        loxa.String("feature.name", req.FeatureName),
+    loza.Enrich(ctx,
+        loza.WorkspaceID(req.WorkspaceID),
+        loza.OrganizationID(req.OrgID),
+        loza.SessionID(req.SessionID),
+        loza.String("feature.name", req.FeatureName),
     )
 
     // Check feature flags.
     flags := featureFlagService.Evaluate(ctx, req.TenantID, req.UserID)
-    loxa.Enrich(ctx,
-        loxa.FeatureFlag("new_dashboard", flags.NewDashboard),
-        loxa.FeatureFlag("beta_api", flags.BetaAPI),
-        loxa.FeatureFlagBool("dark_mode", flags.DarkMode),
-        loxa.Experiment("onboarding_v2", flags.OnboardingVariant),
+    loza.Enrich(ctx,
+        loza.FeatureFlag("new_dashboard", flags.NewDashboard),
+        loza.FeatureFlag("beta_api", flags.BetaAPI),
+        loza.FeatureFlagBool("dark_mode", flags.DarkMode),
+        loza.Experiment("onboarding_v2", flags.OnboardingVariant),
     )
 
     // Route based on feature flag.

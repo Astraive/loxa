@@ -4,7 +4,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
-        eprintln!("Loxa Query Language (LQL) compiler");
+        eprintln!("Loza Query Language (LQL) compiler");
         eprintln!();
         eprintln!("Usage:");
         eprintln!("  lql compile <query>          Compile LQL to DuckDB SQL");
@@ -41,21 +41,21 @@ fn main() {
             }
 
             match command {
-                "compile" => match loxa_lql::compile_to_duckdb(query) {
+                "compile" => match loza_lql::compile_to_duckdb(query) {
                     Ok(sql) => println!("{}", sql),
                     Err(e) => {
                         eprintln!("error: {}", e);
                         std::process::exit(1);
                     }
                 },
-                "compile-ch" => match loxa_lql::compile_to_clickhouse(query) {
+                "compile-ch" => match loza_lql::compile_to_clickhouse(query) {
                     Ok(sql) => println!("{}", sql),
                     Err(e) => {
                         eprintln!("error: {}", e);
                         std::process::exit(1);
                     }
                 },
-                "check" => match loxa_lql::validate_query(query) {
+                "check" => match loza_lql::validate_query(query) {
                     Ok(()) => {
                         println!("ok");
                     }
@@ -68,13 +68,13 @@ fn main() {
             }
         }
         "fields" => {
-            let fields = loxa_lql::known_fields();
+            let fields = loza_lql::known_fields();
             for f in fields {
                 println!("{}", f);
             }
         }
         "--help" | "-h" => {
-            println!("Loxa Query Language (LQL) compiler");
+            println!("Loza Query Language (LQL) compiler");
             println!();
             println!("Usage: lql <command> [query]");
             println!();
@@ -85,7 +85,7 @@ fn main() {
             println!("  fields                List known event fields");
         }
         "--version" | "-v" => {
-            println!("loxa-lql {}", env!("CARGO_PKG_VERSION"));
+            println!("loza-lql {}", env!("CARGO_PKG_VERSION"));
         }
         _ => {
             eprintln!("unknown command: {}", command);

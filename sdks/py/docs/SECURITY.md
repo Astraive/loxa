@@ -1,6 +1,6 @@
 # Security
 
-SDK-side security controls for the LOXA Python SDK. Redaction runs before final schema encoding, ensuring sensitive data never reaches sinks.
+SDK-side security controls for the LOZA Python SDK. Redaction runs before final schema encoding, ensuring sensitive data never reaches sinks.
 
 ## Redactors
 
@@ -17,7 +17,7 @@ ssn, social_security, private_key, connection_string
 Usage:
 
 ```python
-cfg = loxa.production("my-service").with_redactor(loxa.DefaultRedactor())
+cfg = loza.production("my-service").with_redactor(loza.DefaultRedactor())
 ```
 
 ### RedactKeys
@@ -25,8 +25,8 @@ cfg = loxa.production("my-service").with_redactor(loxa.DefaultRedactor())
 Replace the values of specified keys with `[REDACTED]`:
 
 ```python
-redactor = loxa.RedactKeys("email", "phone", "address")
-cfg = loxa.production("my-service").with_redactor(redactor)
+redactor = loza.RedactKeys("email", "phone", "address")
+cfg = loza.production("my-service").with_redactor(redactor)
 ```
 
 ### HashKeys
@@ -34,8 +34,8 @@ cfg = loxa.production("my-service").with_redactor(redactor)
 Replace the values of specified keys with their SHA-256 hash. Useful when you need to correlate events without exposing the original value:
 
 ```python
-redactor = loxa.HashKeys("user.email", "user.phone")
-cfg = loxa.production("my-service").with_redactor(redactor)
+redactor = loza.HashKeys("user.email", "user.phone")
+cfg = loza.production("my-service").with_redactor(redactor)
 ```
 
 ### DropKeys
@@ -43,8 +43,8 @@ cfg = loxa.production("my-service").with_redactor(redactor)
 Remove keys entirely from the event before encoding:
 
 ```python
-redactor = loxa.DropKeys("internal.debug_info", "raw_request_body")
-cfg = loxa.production("my-service").with_redactor(redactor)
+redactor = loza.DropKeys("internal.debug_info", "raw_request_body")
+cfg = loza.production("my-service").with_redactor(redactor)
 ```
 
 ### MaskKeys
@@ -52,7 +52,7 @@ cfg = loxa.production("my-service").with_redactor(redactor)
 Mask values, showing only a prefix and suffix of characters. Default shows first 2 and last 2 characters:
 
 ```python
-redactor = loxa.MaskKeys("credit_card", prefix=4, suffix=4)
+redactor = loza.MaskKeys("credit_card", prefix=4, suffix=4)
 # "4111222233334444" -> "4111********4444"
 ```
 
@@ -61,7 +61,7 @@ redactor = loxa.MaskKeys("credit_card", prefix=4, suffix=4)
 Redact values that match regular expression patterns:
 
 ```python
-redactor = loxa.RedactPatterns(r"\b\d{3}-\d{2}-\d{4}\b")
+redactor = loza.RedactPatterns(r"\b\d{3}-\d{2}-\d{4}\b")
 # Redacts SSN-pattern values
 ```
 
@@ -70,12 +70,12 @@ redactor = loxa.RedactPatterns(r"\b\d{3}-\d{2}-\d{4}\b")
 Chain multiple redactors together. They run in order:
 
 ```python
-redactor = loxa.ComposeRedactors(
-    loxa.DefaultRedactor(),
-    loxa.RedactKeys("email"),
-    loxa.HashKeys("user.phone"),
+redactor = loza.ComposeRedactors(
+    loza.DefaultRedactor(),
+    loza.RedactKeys("email"),
+    loza.HashKeys("user.phone"),
 )
-cfg = loxa.production("my-service").with_redactor(redactor)
+cfg = loza.production("my-service").with_redactor(redactor)
 ```
 
 ## SensitiveString and HashString
@@ -83,9 +83,9 @@ cfg = loxa.production("my-service").with_redactor(redactor)
 Mark individual attributes as sensitive at construction time:
 
 ```python
-loxa.enrich(ctx,
-    loxa.SensitiveString("credit_card", "4111222233334444"),
-    loxa.HashString("user.email", "alice@example.com"),
+loza.enrich(ctx,
+    loza.SensitiveString("credit_card", "4111222233334444"),
+    loza.HashString("user.email", "alice@example.com"),
 )
 ```
 
@@ -96,8 +96,8 @@ loxa.enrich(ctx,
 Mark any existing attribute as sensitive:
 
 ```python
-attr = loxa.String("field", "value")
-sensitive_attr = loxa.MarkSensitive(attr)
+attr = loza.String("field", "value")
+sensitive_attr = loza.MarkSensitive(attr)
 ```
 
 ## 14-Key Safety Net

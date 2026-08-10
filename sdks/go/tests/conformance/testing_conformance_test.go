@@ -5,16 +5,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func TestTestingAndConformanceHelpers(t *testing.T) {
-	captured, err := loxa.Capture(func() {
-		ctx := loxa.StartEvent(context.Background(), loxa.Params{Event: "capture.event"})
-		_ = loxa.Enrich(ctx, loxa.String("family", "testkit"))
-		_ = loxa.Checkpoint(ctx, "captured")
-		_ = loxa.Finish(ctx, "success")
-		_ = loxa.Emit(ctx)
+	captured, err := loza.Capture(func() {
+		ctx := loza.StartEvent(context.Background(), loza.Params{Event: "capture.event"})
+		_ = loza.Enrich(ctx, loza.String("family", "testkit"))
+		_ = loza.Checkpoint(ctx, "captured")
+		_ = loza.Finish(ctx, "success")
+		_ = loza.Emit(ctx)
 	})
 	if err != nil {
 		t.Fatalf("capture: %v", err)
@@ -22,13 +22,13 @@ func TestTestingAndConformanceHelpers(t *testing.T) {
 	if len(captured) == 0 {
 		t.Fatalf("expected captured events")
 	}
-	loxa.AssertEvent(t, captured[0], "family", "testkit")
-	loxa.ExpectAttr(t, captured[0], "family", "testkit")
-	_ = loxa.SnapshotEvent(t, captured[0])
-	if loxa.NewMockSink() == nil {
+	loza.AssertEvent(t, captured[0], "family", "testkit")
+	loza.ExpectAttr(t, captured[0], "family", "testkit")
+	_ = loza.SnapshotEvent(t, captured[0])
+	if loza.NewMockSink() == nil {
 		t.Fatalf("expected mock sink")
 	}
-	if loxa.NewFakeClock(time.Unix(0, 0)) == nil {
+	if loza.NewFakeClock(time.Unix(0, 0)) == nil {
 		t.Fatalf("expected fake clock")
 	}
 }

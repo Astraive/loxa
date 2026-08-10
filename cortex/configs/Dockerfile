@@ -22,17 +22,17 @@ RUN cd cortex && go mod download
 # Copy the entire repo (proto/ and gen/ are needed for proto generation)
 COPY . .
 
-# Generate protobuf code from proto/loxa/core/ into gen/go/loxa/core/
+# Generate protobuf code from proto/loza/core/ into gen/go/loza/core/
 RUN protoc -I proto -I /usr/include \
     --go_out=gen/go --go_opt=paths=source_relative \
     --go-grpc_out=gen/go --go-grpc_opt=paths=source_relative \
-    proto/loxa/core/event.proto \
-    proto/loxa/core/ingest.proto \
-    proto/loxa/core/collector.proto \
-    proto/loxa/core/cortex.proto
+    proto/loza/core/event.proto \
+    proto/loza/core/ingest.proto \
+    proto/loza/core/collector.proto \
+    proto/loza/core/cortex.proto
 
 # Build the cortex binary
-RUN cd cortex && CGO_ENABLED=1 go build -o /build/loxa-cortex ./cmd/server
+RUN cd cortex && CGO_ENABLED=1 go build -o /build/loza-cortex ./cmd/server
 
 FROM debian:trixie-slim
 
@@ -41,7 +41,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 
 WORKDIR /app
 
-COPY --from=builder /build/loxa-cortex ./cortex
+COPY --from=builder /build/loza-cortex ./cortex
 COPY --from=builder /build/cortex/configs ./configs
 
 EXPOSE 9312 9313
@@ -54,7 +54,7 @@ ENV CORTEX_SERVER_PORT=9312
 ENV CORTEX_STORAGE_BACKEND=postgres
 ENV CORTEX_LOG_LEVEL=info
 
-RUN useradd -r -s /bin/false -u 10001 loxa && chown -R loxa:loxa /app
-USER loxa
+RUN useradd -r -s /bin/false -u 10001 loza && chown -R loza:loza /app
+USER loza
 
 ENTRYPOINT ["/app/cortex"]

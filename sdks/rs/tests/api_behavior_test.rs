@@ -1,4 +1,4 @@
-use loxa::{
+use loza::{
     AnySampler, CollectorSink, Config, ContextCarrier, EventContext, HashString, MarkSensitive,
     New, NotSampler, Params, SampleErrors, SampleRandom, SensitiveString, SinkConfig, StartEvent,
     TryNew,
@@ -59,18 +59,18 @@ fn context_carrier_parses_traceparent() {
 fn sensitive_helpers_mark_attributes() {
     assert!(SensitiveString("user.email", "a@example.com").sensitive);
     assert!(HashString("user.email", "a@example.com").hash_value);
-    assert!(MarkSensitive(loxa::String("token", "secret")).sensitive);
+    assert!(MarkSensitive(loza::String("token", "secret")).sensitive);
 }
 
 #[test]
 fn sampler_combinators_are_real() {
     let allow_logger =
         New(Config::test("checkout")
-            .with_sampler(AnySampler(&[loxa::SampleNone(), SampleErrors()])));
+            .with_sampler(AnySampler(&[loza::SampleNone(), SampleErrors()])));
     let deny_logger = New(Config::test("checkout").with_sampler(NotSampler(SampleErrors())));
     let random_deny =
         New(Config::test("checkout")
-            .with_sampler(AnySampler(&[loxa::SampleNone(), SampleRandom(0.0)])));
+            .with_sampler(AnySampler(&[loza::SampleNone(), SampleRandom(0.0)])));
 
     let mut allow_ctx = EventContext::new("checkout", Params::new("request"));
     let _ = allow_ctx.finish_error("boom");
@@ -89,7 +89,7 @@ fn sampler_combinators_are_real() {
 fn try_new_rejects_invalid_config() {
     let cfg = Config::test("").with_environment("test");
     let err = TryNew(cfg).expect_err("strict config without service should fail");
-    assert!(matches!(err, loxa::LoxaError::Validation(_)));
+    assert!(matches!(err, loza::LozaError::Validation(_)));
 }
 
 #[test]
@@ -101,5 +101,5 @@ fn oversized_events_return_validation_error() {
         .finish(&mut ctx, "success")
         .expect("finish should work");
     let err = logger.emit(&ctx).expect_err("oversized event should fail");
-    assert!(matches!(err, loxa::LoxaError::Validation(_)));
+    assert!(matches!(err, loza::LozaError::Validation(_)));
 }

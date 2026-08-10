@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/astraive/loxa/cli/internal/client"
-	"github.com/astraive/loxa/cli/internal/config"
-	"github.com/astraive/loxa/cli/internal/schema"
+	"github.com/astraive/loza/cli/internal/client"
+	"github.com/astraive/loza/cli/internal/config"
+	"github.com/astraive/loza/cli/internal/schema"
 )
 
 func SchemaCommand(cfg config.Config, args []string) error {

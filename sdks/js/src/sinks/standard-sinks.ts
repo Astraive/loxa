@@ -153,7 +153,7 @@ export class MemorySink implements Sink {
   clear(): void { this.events = []; }
 }
 
-/** HTTP batch sink — sends events to loxa-collector via HTTP. */
+/** HTTP batch sink — sends events to loza-collector via HTTP. */
 export class HTTPBatchSink implements Sink {
   private endpoint: string;
   private apiKey: string;
@@ -194,7 +194,7 @@ export class HTTPBatchSink implements Sink {
     this.endpoint = opts.endpoint;
     this.apiKey = opts.apiKey || '';
     this.authHeader = opts.authHeader || 'Authorization';
-    this.sdkName = opts.sdkName || 'loxa-js';
+    this.sdkName = opts.sdkName || 'loza-js';
     this.sdkVersion = opts.sdkVersion || SDK_VERSION;
     this.service = opts.service || '';
     this.timeout = opts.timeout || 2000;

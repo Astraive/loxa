@@ -1,6 +1,6 @@
 # Benchmarking
 
-How to run and interpret benchmarks for the LOXA Go SDK.
+How to run and interpret benchmarks for the LOZA Go SDK.
 
 ## Running Benchmarks
 
@@ -25,10 +25,10 @@ benchstat old.txt new.txt
 
 | Benchmark | Function | Measures |
 |-----------|----------|----------|
-| `BenchmarkEmit` | `loxa.Emit` | Full emit cycle: startEvent, finish, encode, deliver to MemorySink. |
-| `BenchmarkEncoder` | `loxa.Emit` with enrichment | Emit cycle with 2 enriched attributes (string + int). Measures JSON encoding overhead. |
-| `BenchmarkSampler` | `loxa.SampleRandom(0.5)` | Emit cycle with a 50% random sampler. Measures sampler decision + drop overhead. |
-| `BenchmarkNetHTTPMiddleware` | `loxahttp.Middleware` | Full HTTP round-trip through net/http middleware, including request capture, event creation, finish, and emit. |
+| `BenchmarkEmit` | `loza.Emit` | Full emit cycle: startEvent, finish, encode, deliver to MemorySink. |
+| `BenchmarkEncoder` | `loza.Emit` with enrichment | Emit cycle with 2 enriched attributes (string + int). Measures JSON encoding overhead. |
+| `BenchmarkSampler` | `loza.SampleRandom(0.5)` | Emit cycle with a 50% random sampler. Measures sampler decision + drop overhead. |
+| `BenchmarkNetHTTPMiddleware` | `lozahttp.Middleware` | Full HTTP round-trip through net/http middleware, including request capture, event creation, finish, and emit. |
 
 ## Expected Results
 
@@ -61,13 +61,13 @@ package bench
 import (
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func BenchmarkMyFeature(b *testing.B) {
-	sink, _ := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
-	_ = loxa.Configure(cfg)
+	sink, _ := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
+	_ = loza.Configure(cfg)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {

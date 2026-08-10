@@ -1,32 +1,32 @@
-package loxa_test
+package loza_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/astraive/loxa/sdks/go"
+	"github.com/astraive/loza/sdks/go"
 )
 
 func TestDuplicatePolicyCanonicalWinsDropsConflicts(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
-	cfg.DuplicateFieldPolicy = loxa.CanonicalWins
-	if err := loxa.Configure(cfg); err != nil {
+	sink, store := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
+	cfg.DuplicateFieldPolicy = loza.CanonicalWins
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
-	ctx := loxa.StartEvent(context.Background(), loxa.Params{
+	ctx := loza.StartEvent(context.Background(), loza.Params{
 		Event:   "duplicate.canonical_wins",
 		Service: "svc-original",
 	})
-	_ = loxa.Enrich(ctx,
-		loxa.String("service", "svc-attr"),
-		loxa.Int("status_code", 299),
-		loxa.String("tenant.id", "t-1"),
+	_ = loza.Enrich(ctx,
+		loza.String("service", "svc-attr"),
+		loza.Int("status_code", 299),
+		loza.String("tenant.id", "t-1"),
 	)
-	_ = loxa.Finish(ctx, "success")
-	if err := loxa.Emit(ctx); err != nil {
+	_ = loza.Finish(ctx, "success")
+	if err := loza.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
 
@@ -45,23 +45,23 @@ func TestDuplicatePolicyCanonicalWinsDropsConflicts(t *testing.T) {
 }
 
 func TestDuplicatePolicyAttrWinsOverwritesCanonical(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
-	cfg.DuplicateFieldPolicy = loxa.UserWins
-	if err := loxa.Configure(cfg); err != nil {
+	sink, store := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
+	cfg.DuplicateFieldPolicy = loza.UserWins
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
-	ctx := loxa.StartEvent(context.Background(), loxa.Params{
+	ctx := loza.StartEvent(context.Background(), loza.Params{
 		Event:   "duplicate.attr_wins",
 		Service: "svc-original",
 	})
-	_ = loxa.Enrich(ctx,
-		loxa.String("service", "svc-attr"),
-		loxa.Int("status_code", 201),
+	_ = loza.Enrich(ctx,
+		loza.String("service", "svc-attr"),
+		loza.Int("status_code", 201),
 	)
-	_ = loxa.Finish(ctx, "success")
-	if err := loxa.Emit(ctx); err != nil {
+	_ = loza.Finish(ctx, "success")
+	if err := loza.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
 
@@ -80,20 +80,20 @@ func TestDuplicatePolicyAttrWinsOverwritesCanonical(t *testing.T) {
 }
 
 func TestDuplicatePolicyKeepBothMovesUnderAttrs(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
-	cfg.DuplicateFieldPolicy = loxa.KeepBothUnderAttrs
-	if err := loxa.Configure(cfg); err != nil {
+	sink, store := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
+	cfg.DuplicateFieldPolicy = loza.KeepBothUnderAttrs
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
-	ctx := loxa.StartEvent(context.Background(), loxa.Params{
+	ctx := loza.StartEvent(context.Background(), loza.Params{
 		Event:   "duplicate.keep_both",
 		Service: "svc-original",
 	})
-	_ = loxa.Enrich(ctx, loxa.String("service", "svc-attr"))
-	_ = loxa.Finish(ctx, "success")
-	if err := loxa.Emit(ctx); err != nil {
+	_ = loza.Enrich(ctx, loza.String("service", "svc-attr"))
+	_ = loza.Finish(ctx, "success")
+	if err := loza.Emit(ctx); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
 
@@ -116,24 +116,24 @@ func TestDuplicatePolicyKeepBothMovesUnderAttrs(t *testing.T) {
 }
 
 func TestDuplicatePolicyErrorOnDuplicate(t *testing.T) {
-	sink, store := loxa.MemorySink()
-	cfg := loxa.Test().WithSink(sink)
-	cfg.DuplicateFieldPolicy = loxa.ErrorOnDuplicate
-	if err := loxa.Configure(cfg); err != nil {
+	sink, store := loza.MemorySink()
+	cfg := loza.Test().WithSink(sink)
+	cfg.DuplicateFieldPolicy = loza.ErrorOnDuplicate
+	if err := loza.Configure(cfg); err != nil {
 		t.Fatalf("configure: %v", err)
 	}
 
-	ctx := loxa.StartEvent(context.Background(), loxa.Params{
+	ctx := loza.StartEvent(context.Background(), loza.Params{
 		Event:   "duplicate.error",
 		Service: "svc-original",
 	})
-	_ = loxa.Enrich(ctx, loxa.String("service", "svc-attr"))
-	_ = loxa.Finish(ctx, "success")
-	err := loxa.Emit(ctx)
+	_ = loza.Enrich(ctx, loza.String("service", "svc-attr"))
+	_ = loza.Finish(ctx, "success")
+	err := loza.Emit(ctx)
 	if err == nil {
 		t.Fatalf("expected duplicate policy error")
 	}
-	var dupErr *loxa.DuplicateFieldError
+	var dupErr *loza.DuplicateFieldError
 	if !errors.As(err, &dupErr) {
 		t.Fatalf("expected DuplicateFieldError, got %T", err)
 	}

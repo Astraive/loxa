@@ -40,7 +40,7 @@ func EncryptBytes(plain []byte, key string) ([]byte, error) {
 
 func buildAEAD(key string) (cipher.AEAD, error) {
 	derived := make([]byte, 32)
-	reader := hkdf.New(sha256.New, []byte(key), []byte("loxa-at-rest-v1"), []byte("aes-256-gcm"))
+	reader := hkdf.New(sha256.New, []byte(key), []byte("loza-at-rest-v1"), []byte("aes-256-gcm"))
 	if _, err := io.ReadFull(reader, derived); err != nil {
 		return nil, err
 	}

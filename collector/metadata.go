@@ -1,15 +1,15 @@
-// Package loxacollector provides build-time metadata for the loxa-collector module.
-package loxacollector
+// Package lozacollector provides build-time metadata for the loza-collector module.
+package lozacollector
 
 import (
 	_ "embed"
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed loxa.yaml
+//go:embed loza.yaml
 var metadataYAML []byte
 
-// Version is the module version read from loxa.yaml at build time.
+// Version is the module version read from loza.yaml at build time.
 var Version = loadVersion()
 
 func loadVersion() string {

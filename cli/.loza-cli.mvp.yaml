@@ -1,0 +1,7 @@
+collector_repo_path: ..\loza-collector
+spec_repo_path: ..\loza-spec
+collector_url: http://127.0.0.1:9308
+duckdb_path: loza.db
+spool_dir: loza-spool
+spool_file: spool.ndjson
+dlq_path: loza-dlq.ndjson

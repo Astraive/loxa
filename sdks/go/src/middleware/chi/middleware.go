@@ -3,8 +3,8 @@ package chi
 import (
 	"net/http"
 
-	"github.com/astraive/loxa/sdks/go"
-	"github.com/astraive/loxa/sdks/go/src/middleware/nethttp"
+	"github.com/astraive/loza/sdks/go"
+	"github.com/astraive/loza/sdks/go/src/middleware/nethttp"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -38,7 +38,7 @@ func MiddlewareWithConfig(cfg Config) func(http.Handler) http.Handler {
 				route = fallbackExtractor(r)
 			}
 			if route != "" {
-				loxa.Set(r.Context(), loxa.Route(route))
+				loza.Set(r.Context(), loza.Route(route))
 			}
 		}))
 	}

@@ -23,7 +23,7 @@ const (
 	EventKindTopology        EventKind = "topology"
 	EventKindIncidentSignal EventKind = "incident_signal"
 	EventKindRemediation     EventKind = "remediation"
-	EventKindLoxaEvent     EventKind = "loxa_event"
+	EventKindLozaEvent     EventKind = "loza_event"
 	EventKindOTELLog       EventKind = "otel_log"
 	EventKindOTELSpan       EventKind = "otel_span"
 	EventKindCollectorEvent EventKind = "collector_event"
@@ -44,7 +44,7 @@ var validEventKinds = map[EventKind]bool{
 	EventKindTopology:       true,
 	EventKindIncidentSignal: true,
 	EventKindRemediation:    true,
-	EventKindLoxaEvent:      true,
+	EventKindLozaEvent:      true,
 	EventKindOTELLog:        true,
 	EventKindOTELSpan:       true,
 	EventKindCollectorEvent: true,
@@ -126,7 +126,7 @@ type HttpContext struct {
 	Host       string `json:"host,omitempty"`
 }
 
-// Event is the full Loxa business event with complete lifecycle support
+// Event is the full Loza business event with complete lifecycle support
 type Event struct {
 	// Core identifiers
 	ID          string    `json:"id" db:"id"`
@@ -205,7 +205,7 @@ func (e *Event) Validate() error {
 }
 
 var validProvenances = map[string]bool{
-	"loxa":      true,
+	"loza":      true,
 	"otlp":     true,
 	"collector": true,
 	"jsonl":    true,

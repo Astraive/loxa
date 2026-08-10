@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import json
 
-import loxa
+import loza
 
 
 def test_level_notice():
-    assert loxa.LevelNotice == "notice"
-    assert loxa.ParseLevel("notice") == "notice"
+    assert loza.LevelNotice == "notice"
+    assert loza.ParseLevel("notice") == "notice"
 
 
 def test_notice_facade():
-    logger, sink = loxa.TestLogger()
+    logger, sink = loza.TestLogger()
     logger.notice("test notice", foo="bar")
     payload = json.loads(sink.events[0])
     assert payload["level"] == "notice"
@@ -19,28 +19,28 @@ def test_notice_facade():
 
 
 def test_event_facade():
-    logger, sink = loxa.TestLogger()
+    logger, sink = loza.TestLogger()
     logger.event("my.event", foo="bar")
     payload = json.loads(sink.events[0])
     assert payload["event"] == "my.event"
 
 
 def test_track_facade():
-    logger, sink = loxa.TestLogger()
+    logger, sink = loza.TestLogger()
     logger.track("page_view", page="/home")
     payload = json.loads(sink.events[0])
     assert payload["event"] == "page_view"
 
 
 def test_audit_facade():
-    logger, sink = loxa.TestLogger()
+    logger, sink = loza.TestLogger()
     logger.audit("user.login", user_id="abc")
     payload = json.loads(sink.events[0])
     assert payload["event"] == "user.login"
 
 
 def test_security_facade():
-    logger, sink = loxa.TestLogger()
+    logger, sink = loza.TestLogger()
     logger.security("auth.fail", reason="bad_password")
     payload = json.loads(sink.events[0])
     assert payload["event"] == "auth.fail"
@@ -48,7 +48,7 @@ def test_security_facade():
 
 
 def test_metric_facade():
-    logger, sink = loxa.TestLogger()
+    logger, sink = loza.TestLogger()
     logger.metric("api.latency", 42, unit="ms")
     payload = json.loads(sink.events[0])
     assert payload["attrs"]["metric_value"] == 42
@@ -56,7 +56,7 @@ def test_metric_facade():
 
 
 def test_count_facade():
-    logger, sink = loxa.TestLogger()
+    logger, sink = loza.TestLogger()
     logger.count("api.requests", 5)
     payload = json.loads(sink.events[0])
     assert payload["attrs"]["count"] == 5
@@ -64,7 +64,7 @@ def test_count_facade():
 
 
 def test_gauge_facade():
-    logger, sink = loxa.TestLogger()
+    logger, sink = loza.TestLogger()
     logger.gauge("cpu.usage", 78.5)
     payload = json.loads(sink.events[0])
     assert payload["attrs"]["gauge"] == 78.5
@@ -72,7 +72,7 @@ def test_gauge_facade():
 
 
 def test_histogram_facade():
-    logger, sink = loxa.TestLogger()
+    logger, sink = loza.TestLogger()
     logger.histogram("response.size", 2048.0)
     payload = json.loads(sink.events[0])
     assert payload["attrs"]["histogram_value"] == 2048.0
@@ -80,7 +80,7 @@ def test_histogram_facade():
 
 
 def test_breadcrumb_facade():
-    logger, sink = loxa.TestLogger()
+    logger, sink = loza.TestLogger()
     logger.breadcrumb("nav.click", button="submit")
     payload = json.loads(sink.events[0])
     assert payload["event"] == "nav.click"
@@ -89,7 +89,7 @@ def test_breadcrumb_facade():
 
 
 def test_uppercase_facade_methods():
-    logger, sink = loxa.TestLogger()
+    logger, sink = loza.TestLogger()
     logger.notice("hello notice", foo="bar")
     payload = json.loads(sink.events[-1])
     assert payload["level"] == "notice"
