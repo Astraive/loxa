@@ -7,13 +7,13 @@ LOZA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector t
 ## Installation
 
 ```bash
-npm install loza
+npm install @astraive/loza
 ```
 
 ## Quick Start
 
 ```typescript
-import { loza } from 'loza';
+import { loza } from '@astraive/loza';
 
 // Configure
 loza.configure(
@@ -58,7 +58,7 @@ import {
   startCliEvent, startCronEvent,
   append, enrich, set, merge, del, get, getGroup,
   checkpoint, finish, finishError, emit, flush, shutdown,
-} from 'loza';
+} from '@astraive/loza';
 
 // Start an event
 const ctx = startEvent({
@@ -125,7 +125,7 @@ await shutdown();
 import {
   string, int, int64, uint64, float64, bool, time, duration, any, group, nullAttr,
   String, Int, Int64, Uint64, Float64, Bool, Time, Duration, Any, Group, Null,
-} from 'loza';
+} from '@astraive/loza';
 
 enrich(ctx,
   string('user.id', 'u_123'),
@@ -162,7 +162,7 @@ import {
   featureFlag, featureFlagBool, experiment,
   // PascalCase aliases:
   UserID, TenantID, RequestID, TraceID, FeatureFlag, Experiment,
-} from 'loza';
+} from '@astraive/loza';
 
 enrich(ctx,
   userId('u_123'),
@@ -185,7 +185,7 @@ enrich(ctx,
 import {
   orderId, cartId, productId, customerId,
   plan, currency, amount, country, device, platform, appVersion,
-} from 'loza';
+} from '@astraive/loza';
 
 enrich(ctx,
   orderId('ord_123'),
@@ -207,7 +207,7 @@ enrich(ctx,
 ```typescript
 import {
   errorType, errorCode, errorMessage, errorStack, retryable,
-} from 'loza';
+} from '@astraive/loza';
 
 try {
   process();
@@ -225,7 +225,7 @@ try {
 One-shot events without requiring `startEvent`:
 
 ```typescript
-import { loza } from 'loza';
+import { loza } from '@astraive/loza';
 
 await loza.info('worker started', loza.string('queue', 'emails'));
 await loza.error('payment failed', loza.string('provider', 'stripe'));
@@ -234,7 +234,7 @@ await loza.error('payment failed', loza.string('provider', 'stripe'));
 ## Logger Instances
 
 ```typescript
-import { loza, createLoza } from 'loza';
+import { loza, createLoza } from '@astraive/loza';
 
 // Default API — configure once, use everywhere
 loza.configure(loza.production('checkout').withCollectorEndpoint('http://127.0.0.1:9308'));
@@ -274,7 +274,7 @@ import {
   stdoutSink, fileSink, memorySink, httpBatchSink,
   sampleAll, sampleErrors, sampleRandom, sampleSlowRequests,
   defaultRedactor, redactKeys, hashKeys, dropKeys,
-} from 'loza';
+} from '@astraive/loza';
 
 const cfg = production('checkout')
   .withVersion('0.0.2')
@@ -288,7 +288,7 @@ const cfg = production('checkout')
 ## Levels
 
 ```typescript
-import { LevelDebug, LevelInfo, LevelWarn, LevelError, LevelFatal, parseLevel } from 'loza';
+import { LevelDebug, LevelInfo, LevelWarn, LevelError, LevelFatal, parseLevel } from '@astraive/loza';
 
 const level = parseLevel('info'); // LevelInfo
 ```
@@ -298,7 +298,7 @@ const level = parseLevel('info'); // LevelInfo
 ```typescript
 import {
   stdoutSink, stderrSink, fileSink, memorySink, noopSink, httpBatchSink,
-} from 'loza';
+} from '@astraive/loza';
 
 const cfg = production('checkout').withSink(stdoutSink());
 const cfg2 = production('checkout').withSink(fileSink('/var/log/app.log'));
@@ -322,7 +322,7 @@ import {
   sampleUsers, sampleTenants, sampleFeatureFlag,
   sampleRateLimited, sampleByHeader,
   anySampler, allSampler, notSampler,
-} from 'loza';
+} from '@astraive/loza';
 
 const cfg = production('checkout').withSampler(sampleAll());
 const cfg2 = production('checkout').withSampler(sampleRandom(0.01));
@@ -347,7 +347,7 @@ const cfg7 = production('checkout').withSampler(
 import {
   defaultRedactor, redactKeys, redactPatterns, hashKeys, maskKeys, dropKeys,
   composeRedactors, sensitiveString, markSensitive, hashString,
-} from 'loza';
+} from '@astraive/loza';
 
 const cfg = production('checkout').withRedactor(defaultRedactor());
 const cfg2 = production('checkout').withRedactor(redactKeys('password', 'token'));
@@ -376,7 +376,7 @@ enrich(ctx,
 import {
   defaultSchema, flatSchema, nestedSchema, otelLogSchema, ecSchema,
   datadogSchema, customSchema,
-} from 'loza';
+} from '@astraive/loza';
 
 const cfg = production('checkout').withSchema(defaultSchema());
 const cfg2 = production('checkout').withSchema(flatSchema());
@@ -399,7 +399,7 @@ const cfg4 = production('checkout').withSchema(
 ```typescript
 import {
   CanonicalWins, UserWins, FirstWins, LastWins, KeepBoth, ErrorOnDuplicate,
-} from 'loza';
+} from '@astraive/loza';
 
 const cfg = production('checkout').withDuplicatePolicy(CanonicalWins);
 const cfg2 = production('checkout').withDuplicatePolicy(LastWins);
@@ -408,7 +408,7 @@ const cfg2 = production('checkout').withDuplicatePolicy(LastWins);
 ## Context Mutation
 
 ```typescript
-import { append, enrich, set, merge, del, get, getGroup } from 'loza';
+import { append, enrich, set, merge, del, get, getGroup } from '@astraive/loza';
 
 append(ctx, string('user.id', 'u_123'), string('cart.id', 'cart_456'));
 enrich(ctx, int('payment.attempt', 1));
@@ -423,7 +423,7 @@ const group = getGroup(ctx, 'payment');
 
 ```typescript
 // Express
-import { lozaMiddleware } from 'loza/middleware/express';
+import { lozaMiddleware } from '@astraive/loza/middleware/express';
 
 app.use(lozaMiddleware({ service: 'checkout' }));
 ```
@@ -431,7 +431,7 @@ app.use(lozaMiddleware({ service: 'checkout' }));
 ## Feature Flags
 
 ```typescript
-import { featureFlag, featureFlagBool, experiment } from 'loza';
+} from '@astraive/loza';
 
 enrich(ctx,
   featureFlag('checkout_v2', 'enabled'),
@@ -443,7 +443,7 @@ enrich(ctx,
 ## Security
 
 ```typescript
-import { sensitiveString, markSensitive, hashString } from 'loza';
+import { sensitiveString, markSensitive, hashString } from '@astraive/loza';
 
 enrich(ctx,
   sensitiveString('user.email', email),
@@ -455,7 +455,7 @@ enrich(ctx,
 ## Context Helpers
 
 ```typescript
-import { getEvent, hasEvent, eventId } from 'loza';
+import { getEvent, hasEvent, eventId } from '@astraive/loza';
 
 const ev = getEvent(ctx);
 if (hasEvent(ctx)) {
@@ -466,7 +466,7 @@ if (hasEvent(ctx)) {
 ## Testing
 
 ```typescript
-import { testLogger, capture, assertEvent, assertRedacted, assertHasCheckpoint } from 'loza/testkit';
+import { testLogger, capture, assertEvent, assertRedacted, assertHasCheckpoint } from '@astraive/loza/testkit';
 
 // Test logger with memory sink
 const { logger, sink } = testLogger();
@@ -487,7 +487,7 @@ assertHasCheckpoint(events[0], 'payment_started');
 ## HTTP Client Instrumentation
 
 ```typescript
-import { wrapHttpClient, newRoundTripper } from 'loza';
+import { wrapHttpClient, newRoundTripper } from '@astraive/loza';
 
 // Wrap fetch or http client
 const client = wrapHttpClient(originalClient);

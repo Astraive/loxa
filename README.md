@@ -69,7 +69,7 @@ irm https://raw.githubusercontent.com/astraive/loza/main/cli/install/install.ps1
 ## Install SDKs
 
 ```bash
-npm install loza
+npm install @astraive/loza
 pip install loza
 cargo add loza
 go get github.com/astraive/loza/sdks/go
@@ -323,7 +323,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #### JavaScript / TypeScript
 
 ```ts
-import { loza } from 'loza';
+import { loza } from '@astraive/loza';
 
 loza.configure(
   loza.production('checkout')
@@ -423,7 +423,7 @@ flowchart TD
 | Go                      | `go get github.com/astraive/loza/sdks/go@v0.2.6` |
 | Python                  | `pip install loza`                               |
 | Rust                    | `cargo add loza`                                 |
-| JavaScript / TypeScript | `npm install loza`                               |
+| JavaScript / TypeScript | `npm install @astraive/loza`               |
 
 ## Current Status
 

@@ -9,7 +9,7 @@ The JS SDK can be used as a structured logging backend. Events follow the LOZA w
 ### Using LOZA as a Logging Backend
 
 ```typescript
-import { loza } from 'loza';
+import { loza } from '@astraive/loza';
 
 // These create and emit events with the appropriate level
 loza.info('User signed up', loza.userId('u-123'), loza.string('method', 'oauth'));
@@ -21,7 +21,7 @@ loza.error('Payment failed', loza.errorCode('PAYMENT_DECLINED'), loza.string('or
 Replace `console.log` with LOZA structured events:
 
 ```typescript
-import { loza } from 'loza';
+import { loza } from '@astraive/loza';
 
 function structuredLog(message: string, meta?: Record<string, any>) {
   const attrs = Object.entries(meta || {}).map(([k, v]) => loza.string(k, String(v)));
@@ -34,7 +34,7 @@ function structuredLog(message: string, meta?: Record<string, any>) {
 The SDK supports OpenTelemetry trace context propagation. When an OTel span is active, the SDK automatically extracts trace IDs:
 
 ```typescript
-import { startEvent, traceId, spanId } from 'loza';
+import { startEvent, traceId, spanId } from '@astraive/loza';
 
 // If OTel context is available, traceId/spanId are auto-populated
 const ctx = startEvent({ event: 'my.operation' });
@@ -52,7 +52,7 @@ Create a Winston transport that emits LOZA events:
 
 ```typescript
 import winston from 'winston';
-import { loza } from 'loza';
+import { loza } from '@astraive/loza';
 
 const lozaTransport = new winston.transports.Console({
   log: (logInfo: any) => {
@@ -74,7 +74,7 @@ Pino is a popular fast JSON logger for Node.js. Bridge it to LOZA:
 
 ```typescript
 import pino from 'pino';
-import { loza } from 'loza';
+import { loza } from '@astraive/loza';
 
 const pinoLogger = pino({
   hooks: {

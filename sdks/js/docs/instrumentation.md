@@ -42,8 +42,8 @@ loza exports **camelCase** as the primary API and **PascalCase** aliases for eve
 
 ```typescript
 // These are identical — use whichever style you prefer
-import { startEvent, userId, string } from "loza";
-import { StartEvent, UserID, String } from "loza";
+import { startEvent, userId, string } from "@astraive/loza";
+import { StartEvent, UserID, String } from "@astraive/loza";
 ```
 
 ### Event Anatomy
@@ -67,7 +67,7 @@ Every event flows through this pipeline. You can add attributes at any point bef
 This example instruments a complete e-commerce checkout flow:
 
 ```typescript
-import { loza } from "loza";
+import { loza } from "@astraive/loza";
 
 // --- One-time setup ---
 loza.configure(
@@ -692,7 +692,7 @@ loza includes a drop-in Express middleware that instruments every request:
 
 ```typescript
 import express from "express";
-import { lozaMiddleware } from "loza/middleware/express";
+import { lozaMiddleware } from "@astraive/loza/middleware/express";
 
 const app = express();
 
@@ -973,7 +973,7 @@ loza.append(ctx,
 Creates a logger with a `MemorySink` for capturing events in tests:
 
 ```typescript
-import { testLogger, assertEvent, assertHasCheckpoint, assertRedacted } from "loza";
+import { testLogger, assertEvent, assertHasCheckpoint, assertRedacted } from "@astraive/loza";
 
 describe("checkout flow", () => {
   it("should emit checkout event with correct attrs", async () => {
@@ -1005,7 +1005,7 @@ describe("checkout flow", () => {
 One-shot capture helper for quick assertions:
 
 ```typescript
-import { capture, assertEvent, assertAttr } from "loza";
+import { capture, assertEvent, assertAttr } from "@astraive/loza";
 
 it("should track error outcome", async () => {
   const events = await capture(async (logger) => {
@@ -1031,7 +1031,7 @@ it("should track error outcome", async () => {
 | `assertHasCheckpoint(json, name)` | Assert a checkpoint with the given name exists |
 
 ```typescript
-import { capture, assertEvent, assertRedacted, assertHasCheckpoint } from "loza";
+import { capture, assertEvent, assertRedacted, assertHasCheckpoint } from "@astraive/loza";
 
 it("should redact sensitive fields", async () => {
   const events = await capture(async (logger) => {
@@ -1063,7 +1063,7 @@ it("should record checkpoints", async () => {
 **With Jest/Vitest:**
 
 ```typescript
-import { testLogger, assertEvent } from "loza";
+import { testLogger, assertEvent } from "@astraive/loza";
 
 // In beforeEach or test setup
 const { logger, sink } = testLogger();
@@ -1116,7 +1116,7 @@ it("should track process steps", async () => {
 ### 13.1 E-Commerce Checkout Flow
 
 ```typescript
-import { loza } from "loza";
+import { loza } from "@astraive/loza";
 
 async function handleCheckout(req: CheckoutRequest) {
   const ctx = loza.startEvent({
@@ -1469,7 +1469,7 @@ const mySchema = loza.CustomSchema((view) => ({
 For accessing the current event from deep call stacks without passing `ctx`:
 
 ```typescript
-import { getEvent, hasEvent, eventId, runWithEvent } from "loza";
+import { getEvent, hasEvent, eventId, runWithEvent } from "@astraive/loza";
 
 // Check if an event is in context
 if (hasEvent()) {

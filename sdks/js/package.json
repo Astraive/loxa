@@ -1,5 +1,5 @@
 {
-  "name": "loza",
+  "name": "@astraive/loza",
   "type": "module",
   "version": "0.2.6",
   "description": "LOZA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loza-collector",

@@ -2,7 +2,7 @@
  * loza-js default facade — the `loza` default Logger instance + module-level functions.
  *
  * Usage:
- *   import { loza, createLoza } from "loza";
+ *   import { loza, createLoza } from "@astraive/loza";
  *   loza.configure(loza.production("checkout").withSink(loza.httpBatchSink({...})));
  *   const ctx = loza.startEvent({ event: "checkout.request" });
  *   loza.append(ctx, loza.userId("u_123"));

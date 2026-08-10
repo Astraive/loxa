@@ -34,7 +34,7 @@ For Go modules, the manifest version must match the component tag.
 SDK installs are independent:
 
 ```txt
-npm install loza
+npm install @astraive/loza
 pip install loza
 cargo add loza
 go get github.com/astraive/loza/sdks/go

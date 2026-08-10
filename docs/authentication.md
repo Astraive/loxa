@@ -142,7 +142,7 @@ let logger = loza::create_loza(
 ### JavaScript
 
 ```typescript
-import { loza } from "loza";
+import { loza } from "@astraive/loza";
 
 loza.configure(
     loza.production("checkout-api")
@@ -154,7 +154,7 @@ loza.configure(
 Or create a custom instance:
 
 ```typescript
-import { createLoza } from "loza";
+import { createLoza } from "@astraive/loza";
 
 const logger = createLoza({
     service: "checkout-api",

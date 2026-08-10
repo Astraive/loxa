@@ -7,8 +7,8 @@ The JS SDK (`loza`) public API surface, aligned with the cross-language parity m
 The SDK exports from `loza` (main entry) and sub-path exports for middleware:
 
 ```typescript
-import { ... } from 'loza';
-import { lozaMiddleware } from 'loza/middleware/express';
+import { ... } from '@astraive/loza';
+import { lozaMiddleware } from '@astraive/loza/middleware/express';
 ```
 
 ## Lifecycle
@@ -60,7 +60,7 @@ import { lozaMiddleware } from 'loza/middleware/express';
 ### ConfigBuilder
 
 ```typescript
-import { production, httpBatchSink, sampleErrors } from 'loza';
+import { production, httpBatchSink, sampleErrors } from '@astraive/loza';
 
 const config = production('my-service')
   .withSink(httpBatchSink({ endpoint: 'http://collector:9308/events' }))

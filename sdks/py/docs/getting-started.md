@@ -205,7 +205,7 @@ All four LOZA SDKs follow the same API pattern. The table below shows equivalent
 
 | Operation | Python | JavaScript | Go | Rust |
 |---|---|---|---|---|
-| Import | `import loza` | `import { loza } from "loza"` | `import "github.com/astraive/loza/sdks/go"` | `use loza_rs::prelude::*` |
+| Import | `import loza` | `import { loza } from "@astraive/loza"` | `import "github.com/astraive/loza/sdks/go"` | `use loza_rs::prelude::*` |
 | Configure default | `loza.configure(...)` | `loza.configure(...)` | `loza.Configure(...)` | `loza::configure(...)` |
 | Custom instance | `loza.create_loza(service="x")` | `createLoza({ service: "x" })` | `loza.New(loza.WithService("x"))` | `loza::create_loza(config)` |
 | Alias | `loza.alias("x")` | `loza.alias("x")` | `loza.Default().Alias("x")` | `loza::alias("x")` |

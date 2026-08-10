@@ -7,7 +7,7 @@ JS framework middleware for automatic HTTP event creation. The SDK provides Expr
 Import from the sub-path export:
 
 ```typescript
-import { lozaMiddleware } from 'loza/middleware/express';
+import { lozaMiddleware } from '@astraive/loza/middleware/express';
 import express from 'express';
 
 const app = express();
@@ -37,7 +37,7 @@ For raw `http.createServer` applications, use the middleware wrapper:
 
 ```typescript
 import http from 'http';
-import { configure, production } from 'loza';
+import { configure, production } from '@astraive/loza';
 
 configure(production('my-service'));
 
@@ -52,7 +52,7 @@ const server = http.createServer((req, res) => {
 The SDK uses Node.js `AsyncLocalStorage` to propagate event context across async operations. This means `getEvent()` works in any async function within the same request:
 
 ```typescript
-import { startEvent, enrich, getEvent, hasEvent, finish, emit } from 'loza';
+import { startEvent, enrich, getEvent, hasEvent, finish, emit } from '@astraive/loza';
 
 async function handleRequest() {
   const ctx = startEvent({ event: 'request', kind: 'http' });
@@ -113,7 +113,7 @@ All middleware implementations:
 Configure the global logger before adding middleware:
 
 ```typescript
-import { configure, production, httpBatchSink } from 'loza';
+import { configure, production, httpBatchSink } from '@astraive/loza';
 
 configure(
   production('my-service').withSink(

@@ -148,7 +148,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### JavaScript
 
 ```typescript
-import { loza } from "loza";
+import { loza } from "@astraive/loza";
 
 loza.configure(loza.dev("my-service").withCollectorEndpoint("http://localhost:9308"));
 
@@ -188,7 +188,7 @@ loza::info("server started");
 
 ### JavaScript
 ```typescript
-import { loza } from "loza";
+import { loza } from "@astraive/loza";
 loza.configure(loza.production("my-service").withCollectorEndpoint("http://localhost:9308"));
 loza.info("server started");
 ```
@@ -217,7 +217,7 @@ logger.info("payment processed");
 
 ### JavaScript
 ```typescript
-import { loza } from "loza";
+import { loza } from "@astraive/loza";
 const logger = loza.createLoza({ service: "checkout-api", collectorUrl: "http://localhost:9308" });
 logger.info("payment processed");
 ```
@@ -246,7 +246,7 @@ audit.info("permission changed");
 
 ### JavaScript
 ```typescript
-import { loza } from "loza";
+import { loza } from "@astraive/loza";
 const audit = loza.alias("audit-service");
 audit.info("permission changed");
 ```

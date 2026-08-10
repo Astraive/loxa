@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "loza",
+      "name": "@astraive/loza",
       "devDependencies": {
         "@types/node": "^25.9.1",
         "typescript": "^6.0.3",

@@ -17,7 +17,7 @@ JS maps to the v0.0.2 parity family as `loza`, `createLoza`, optional `new Loza`
 ## Install
 
 ```bash
-npm install loza
+npm install @astraive/loza
 ```
 
 Or from the monorepo:
@@ -42,7 +42,7 @@ import {
   tenantId,
   string,
   int,
-} from 'loza';
+} from '@astraive/loza';
 
 async function main() {
   // 1. Configure the default loza instance with a service name, sink, and sampler.
@@ -103,7 +103,7 @@ main().catch(console.error);
 In production, send events to the LOZA collector with authentication:
 
 ```typescript
-import { configure, production, httpBatchSink, sampleErrors } from 'loza';
+import { configure, production, httpBatchSink, sampleErrors } from '@astraive/loza';
 
 configure(
   production('checkout-service')
@@ -122,7 +122,7 @@ The SDK automatically sets `Authorization: Bearer <key>` headers.
 | `apiKey` | `LOZA_API_KEY` | Ingest API key (`lx_sec_live_k_xxx_yyyy`) |
 
 ```typescript
-import { configure, production, dev } from 'loza';
+import { configure, production, dev } from '@astraive/loza';
 
 // Production
 configure(production('my-service').withApiKey('lx_sec_live_k_xxx_yyyy'));
@@ -138,7 +138,7 @@ See [Security](../../docs/security.md) for key types and RBAC roles.
 For simple log lines that do not need the full start/enrich/finish/emit lifecycle, use the convenience methods directly on `loza`:
 
 ```typescript
-import { loza, configure, production, string } from 'loza';
+import { loza, configure, production, string } from '@astraive/loza';
 
 configure(production('my-service'));
 
@@ -154,7 +154,7 @@ These create an event internally, set the level, enrich with any extra attrs, fi
 Use `createLoza` when you need a logger with a different config than the default:
 
 ```typescript
-import { createLoza, stdoutSink, string } from 'loza';
+import { createLoza, stdoutSink, string } from '@astraive/loza';
 
 const logger = createLoza({
   service: 'checkout-api',
@@ -174,7 +174,7 @@ Custom instances are independent -- they do not share config or state with the d
 Use `alias` to create a logger that shares the same config as `loza` and adds `loza.alias` metadata. This is useful for emitting events from a logical subsystem without duplicating configuration:
 
 ```typescript
-import { loza, configure, production, httpBatchSink, string } from 'loza';
+import { loza, configure, production, httpBatchSink, string } from '@astraive/loza';
 
 configure(
   production('checkout-service')
