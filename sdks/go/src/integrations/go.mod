@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/astraive/loza/spec v0.0.0 // indirect
+	github.com/astraive/loza/spec v0.2.6 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect

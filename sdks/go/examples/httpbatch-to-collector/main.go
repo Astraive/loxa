@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/astraive/loza/sdks/go"
-	"github.com/astraive/loza/sdks/go/sinks/httpbatch"
+	"github.com/astraive/loza/sdks/go/src/sinks/httpbatch"
 )
 
 func main() {
