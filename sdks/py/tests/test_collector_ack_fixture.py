@@ -45,10 +45,14 @@ def test_collector_ack_behavior_fixtures() -> None:
         try:
             sink = HTTPBatchSink(url, service="checkout")
             if fixture["expected"]["outcome"] == "success":
-                sink.write('{"event_id":"evt_1","service":"checkout","event":"payment.completed","schema_version":"v1","event_version":"v1","timestamp":"2026-01-01T00:00:00Z"}')
+                sink.write(
+                    '{"event_id":"evt_1","service":"checkout","event":"payment.completed","schema_version":"v1","event_version":"v1","timestamp":"2026-01-01T00:00:00Z"}'
+                )
             else:
                 with pytest.raises(RuntimeError, match=fixture["expected"].get("message_contains", "")):
-                    sink.write('{"event_id":"evt_1","service":"checkout","event":"payment.completed","schema_version":"v1","event_version":"v1","timestamp":"2026-01-01T00:00:00Z"}')
+                    sink.write(
+                        '{"event_id":"evt_1","service":"checkout","event":"payment.completed","schema_version":"v1","event_version":"v1","timestamp":"2026-01-01T00:00:00Z"}'
+                    )
         finally:
             server.shutdown()
             server.server_close()

@@ -14,6 +14,7 @@ def test_collector_base_url_targets_ingest_route(logger_type):
 
     assert sink.endpoint == "https://collector.example/events"
 
+
 @pytest.mark.parametrize(
     ("dsn", "username", "password", "collector"),
     [
@@ -31,9 +32,7 @@ def test_collector_base_url_targets_ingest_route(logger_type):
         ),
     ],
 )
-def test_credentialed_dsn_installs_scoped_credential_free_endpoint(
-    dsn, username, password, collector
-):
+def test_credentialed_dsn_installs_scoped_credential_free_endpoint(dsn, username, password, collector):
     logger = ClientLogger(Config.production("checkout").with_collector_endpoint(dsn))
 
     sink = next(sink for sink in logger._config.sinks if isinstance(sink, HTTPBatchSink))

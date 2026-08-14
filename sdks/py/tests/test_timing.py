@@ -1,4 +1,5 @@
 """Tests for timing primitives: Process, Timer, Group, Stopwatch."""
+
 import time
 import loza
 

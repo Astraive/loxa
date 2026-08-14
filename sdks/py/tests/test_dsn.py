@@ -10,9 +10,7 @@ import pytest
 from loza.core.dsn import LozaDSN, parse
 
 
-_TEST_CASES_PATH = (
-    Path(__file__).resolve().parents[3] / "spec" / "dsn" / "test-cases.json"
-)
+_TEST_CASES_PATH = Path(__file__).resolve().parents[3] / "spec" / "dsn" / "test-cases.json"
 
 
 def _load_cases():

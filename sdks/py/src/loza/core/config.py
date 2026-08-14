@@ -180,7 +180,6 @@ class Config:
     def with_collector_name(self, collector_name: str) -> "Config":
         return replace(self, collector_name=collector_name)
 
-
     def with_basic_auth(self, username: str, password: str) -> "Config":
         return replace(self, username=username, password=password)
 
@@ -243,9 +242,7 @@ class Config:
         if not self.username and self.password:
             raise ValueError("collector basic auth password requires a username")
         if self.username and not self.password and not is_public_dsn_username(self.username):
-            raise ValueError(
-                "collector basic auth requires a password unless username is an lx_pub_ capability"
-            )
+            raise ValueError("collector basic auth requires a password unless username is an lx_pub_ capability")
         if self.username and self.collector_endpoint.lower().startswith("http://"):
             from urllib.parse import urlparse
 
@@ -303,6 +300,7 @@ def _collector_ingest_endpoint(endpoint: str, collector_name: str = "") -> str:
     if endpoint.endswith("/events"):
         return endpoint
     return f"{endpoint}/events"
+
 
 def _apply_dsn(cfg: Config, raw: str, *, include_credentials: bool = True) -> None:
     from .dsn import parse

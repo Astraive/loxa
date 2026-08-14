@@ -309,9 +309,7 @@ def _validate_basic_auth_endpoint(endpoint: str, username: str, password: str) -
     if not username and password:
         raise ValueError("collector basic auth password requires a username")
     if username and not password and not is_public_dsn_username(username):
-        raise ValueError(
-            "collector basic auth requires a password unless username is an lx_pub_ capability"
-        )
+        raise ValueError("collector basic auth requires a password unless username is an lx_pub_ capability")
     if not username:
         return
     parsed = urlparse(endpoint)

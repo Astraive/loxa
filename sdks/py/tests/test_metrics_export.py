@@ -1,4 +1,5 @@
 """Test metrics export from Python SDK (Prometheus format)."""
+
 import json
 import loza
 
@@ -29,13 +30,17 @@ def test_events_emitted_total() -> None:
 
 def test_delivery_attempts_recorded() -> None:
     """Verify delivery attempts are recorded."""
+
     class CountingSink:
         def __init__(self):
             self.write_count = 0
+
         def write(self, payload: str) -> None:
             self.write_count += 1
+
         def flush(self) -> None:
             pass
+
         def close(self) -> None:
             pass
 
@@ -53,9 +58,7 @@ def test_delivery_attempts_recorded() -> None:
 def test_sampling_rate_gauge() -> None:
     """Verify sampling rate is tracked."""
     # Create logger with 50% sampling
-    logger = loza.New(
-        loza.Test("test").with_sampler(loza.SampleRandom(0.5))
-    )
+    logger = loza.New(loza.Test("test").with_sampler(loza.SampleRandom(0.5)))
 
     # Emit multiple events and count how many are sampled
     sampled_count = 0
@@ -78,12 +81,15 @@ def test_sink_latency_recorded() -> None:
     class SlowSink:
         def __init__(self):
             self.latencies = []
+
         def write(self, payload: str) -> None:
             start = time.time()
             time.sleep(0.001)  # 1ms simulated latency
             self.latencies.append(time.time() - start)
+
         def flush(self) -> None:
             pass
+
         def close(self) -> None:
             pass
 
@@ -194,9 +200,7 @@ def test_concurrent_emissions_tracked() -> None:
 def test_dropped_event_count() -> None:
     """Verify dropped events are counted."""
     # Create logger with none sampler (0% sampling)
-    logger = loza.New(
-        loza.Test("test").with_sampler(loza.SampleNone())
-    )
+    logger = loza.New(loza.Test("test").with_sampler(loza.SampleNone()))
 
     dropped_count = 0
     for i in range(10):

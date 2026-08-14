@@ -11,6 +11,7 @@ Private credentials use username:password. Public `lx_pub_...` bearer
 capabilities use an explicitly empty password (`lx_pub_...:`).
 
 """
+
 from __future__ import annotations
 
 import os
@@ -68,11 +69,13 @@ def _decode_userinfo(value: str, label: str) -> str:
     except UnicodeDecodeError as exc:
         raise ValueError(f"invalid Loza DSN: {label} must be valid UTF-8") from exc
 
+
 _LOCALHOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
 def _is_localhost(host: str) -> bool:
     return host in _LOCALHOSTS
+
 
 def is_public_dsn_username(username: str) -> bool:
     prefix = "lx_pub_"
@@ -130,9 +133,7 @@ def parse(raw: str) -> LozaDSN:
     # a compatibility alias for existing SDK consumers.
     collector_name = u.path.lstrip("/")
     if not collector_name:
-        raise ValueError(
-            "invalid Loza DSN: collector path is required, e.g. loza://host/my-collector"
-        )
+        raise ValueError("invalid Loza DSN: collector path is required, e.g. loza://host/my-collector")
 
     q = parse_qs(u.query)
 
@@ -147,9 +148,7 @@ def parse(raw: str) -> LozaDSN:
         elif tls_val == "auto":
             pass  # keep computed default
         else:
-            raise ValueError(
-                f"invalid Loza DSN: tls must be true, false, or auto, got {tls_val!r}"
-            )
+            raise ValueError(f"invalid Loza DSN: tls must be true, false, or auto, got {tls_val!r}")
 
     # --- Port default -------------------------------------------------------
     if tls:
@@ -172,9 +171,7 @@ def parse(raw: str) -> LozaDSN:
         if transport_val in ("http", "otlp", "grpc"):
             transport = transport_val
         else:
-            raise ValueError(
-                f"invalid Loza DSN: transport must be http, otlp, or grpc, got {transport_val!r}"
-            )
+            raise ValueError(f"invalid Loza DSN: transport must be http, otlp, or grpc, got {transport_val!r}")
 
     # --- Env ----------------------------------------------------------------
     env = q.get("env", ["default"])[0]

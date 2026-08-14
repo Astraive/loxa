@@ -51,6 +51,7 @@ class HTTPBatchSink:
     ndjson: bool = False
     stats_handler: Any = None
     _last_response: dict | None = field(default=None, init=False, repr=False)
+
     def __post_init__(self) -> None:
         _validate_collector_endpoint(self.endpoint)
         _validate_basic_auth_endpoint(self.endpoint, self.username, self.password)
