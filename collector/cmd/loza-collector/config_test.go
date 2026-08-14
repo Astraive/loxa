@@ -16,9 +16,9 @@ import (
 func TestMain(m *testing.M) {
 	for key, value := range map[string]string{
 		"COLLECTOR_AUTH_SERVER_SECRET": "test-auth-server-secret",
-		"COLLECTOR_INGEST_KEY_SECRET": "test-ingest-key-secret",
-		"COLLECTOR_ADMIN_KEY_SECRET":  "test-admin-key-secret",
-		"LOZA_STORAGE_ENCRYPTION_KEY": "test-storage-encryption-key",
+		"COLLECTOR_INGEST_KEY_SECRET":  "test-ingest-key-secret",
+		"COLLECTOR_ADMIN_KEY_SECRET":   "test-admin-key-secret",
+		"LOZA_STORAGE_ENCRYPTION_KEY":  "test-storage-encryption-key",
 	} {
 		if err := os.Setenv(key, value); err != nil {
 			panic(err)
@@ -161,6 +161,82 @@ storage:
 	}
 }
 
+func TestResolveCollectorAuthGrantsBuildsPrivateAndPublicCredentials(t *testing.T) {
+	publicID := "lx_pub_0123456789abcdefghijklmnopqrstuv"
+	t.Setenv("COLLECTOR_PRIVATE_GRANT_PASSWORD", "private-grant-password")
+	t.Setenv("COLLECTOR_PUBLIC_ACCESS_ID", publicID)
+	cfg := validFileConfig()
+	cfg.Auth.Collectors = []collectorconfig.AuthCollectorConfig{{Slug: "browser-events"}}
+	cfg.Auth.DefaultCollector = "browser-events"
+	cfg.Auth.Grants = []collectorconfig.AuthGrantConfig{
+		{
+			Name:        "service",
+			Collector:   "browser-events",
+			Username:    "service-writer",
+			PasswordEnv: "COLLECTOR_PRIVATE_GRANT_PASSWORD",
+			Permissions: []string{"events:write"},
+			AllowedEnvs: []string{"prod"},
+		},
+		{
+			Name:           "browser",
+			Collector:      "browser-events",
+			PublicIDEnv:    "COLLECTOR_PUBLIC_ACCESS_ID",
+			Permissions:    []string{"events:write"},
+			AllowedEnvs:    []string{"prod"},
+			AllowedOrigins: []string{"https://console.example.test"},
+		},
+	}
+
+	collectors, grants, err := resolveCollectorAuthGrants(cfg)
+	if err != nil {
+		t.Fatalf("resolve grants: %v", err)
+	}
+	if len(collectors) != 1 || collectors[0] != "browser-events" || len(grants) != 2 {
+		t.Fatalf("unexpected resolved grants: collectors=%v grants=%+v", collectors, grants)
+	}
+	if grants[0].kind != auth.KeyKindSecret || grants[0].secret != "private-grant-password" || grants[0].keyID != "service-writer" {
+		t.Fatalf("private grant was not resolved: %+v", grants[0])
+	}
+	if grants[1].kind != auth.KeyKindPublic || grants[1].secret != "" || grants[1].keyID != publicID {
+		t.Fatalf("public grant was not constructed as a passwordless capability: %+v", grants[1])
+	}
+}
+
+func TestValidateFileConfigRejectsInvalidCollectorGrantConfiguration(t *testing.T) {
+	publicID := "lx_pub_0123456789abcdefghijklmnopqrstuv"
+	t.Setenv("COLLECTOR_PUBLIC_ACCESS_ID", publicID)
+	cfg := validFileConfig()
+	cfg.Auth.Collectors = []collectorconfig.AuthCollectorConfig{{Slug: "web"}, {Slug: "web"}}
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "duplicates") {
+		t.Fatalf("expected duplicate collector rejection, got %v", err)
+	}
+
+	cfg = validFileConfig()
+	cfg.Auth.Collectors = []collectorconfig.AuthCollectorConfig{{Slug: "Not_valid"}}
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "valid collector slug") {
+		t.Fatalf("expected invalid collector slug rejection, got %v", err)
+	}
+
+	cfg = validFileConfig()
+	cfg.Auth.Collectors = []collectorconfig.AuthCollectorConfig{{Slug: "web"}}
+	cfg.Auth.Grants = []collectorconfig.AuthGrantConfig{{
+		Collector:      "unknown",
+		PublicIDEnv:    "COLLECTOR_PUBLIC_ACCESS_ID",
+		Permissions:    []string{"events:write"},
+		AllowedEnvs:    []string{"prod"},
+		AllowedOrigins: []string{"https://console.example.test"},
+	}}
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "configured collector") {
+		t.Fatalf("expected unknown collector rejection, got %v", err)
+	}
+
+	cfg.Auth.Grants[0].Collector = "web"
+	t.Setenv("COLLECTOR_PUBLIC_ACCESS_ID", "lx_pub_invalid")
+	if err := validateFileConfig(cfg); err == nil || strings.Contains(err.Error(), "lx_pub_invalid") {
+		t.Fatalf("expected redacted malformed public ID rejection, got %v", err)
+	}
+}
+
 func TestValidateFileConfigRejectsInvalidConfiguredAuth(t *testing.T) {
 	cfg := validFileConfig()
 	cfg.Auth.Enabled = true
@@ -170,6 +246,7 @@ func TestValidateFileConfigRejectsInvalidConfiguredAuth(t *testing.T) {
 	cfg.Storage.EncryptionKey = "test-storage-encryption-key"
 	cfg.Auth.Keys = []collectorconfig.AuthKeyConfig{
 		{KeyID: "duplicate", SecretEnv: "COLLECTOR_INGEST_KEY_SECRET", Kind: "sec", Roles: []string{"collector_ingest_server"}},
+
 		{KeyID: "duplicate", SecretEnv: "COLLECTOR_ADMIN_KEY_SECRET", Kind: "sec", Roles: []string{"not-a-role"}},
 	}
 	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "must be unique") {

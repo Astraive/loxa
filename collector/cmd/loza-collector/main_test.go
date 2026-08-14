@@ -71,6 +71,8 @@ func testCollectorConfig() collectorConfig {
 	cfg.retryMaxAttempts = 1
 	cfg.retryInitialBackoff = time.Millisecond
 	cfg.retryMaxBackoff = time.Millisecond
+	cfg.authDefaultCollector = "default"
+	cfg.authCollectors = []string{"default"}
 	return cfg
 }
 
@@ -179,11 +181,11 @@ func TestConfiguredAdminKeyCanReadStatus(t *testing.T) {
 	cfg.authNegativeCacheTTL = time.Second
 	cfg.authKeys = []collectorAuthKey{
 		{
-			name:    "admin",
-			keyID:   "kadmin",
-			secret:  "adminsecret",
-			kind:    auth.KeyKindSecret,
-			roles:   []auth.Role{auth.RoleProjectAdmin},
+			name:   "admin",
+			keyID:  "kadmin",
+			secret: "adminsecret",
+			kind:   auth.KeyKindSecret,
+			roles:  []auth.Role{auth.RoleProjectAdmin},
 		},
 	}
 	state := &collectorState{

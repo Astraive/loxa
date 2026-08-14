@@ -23,13 +23,15 @@ var cidrCache sync.Map // map[string]*parsedCIDRNet
 
 // KeyRecord holds the stored metadata for an API key.
 type KeyRecord struct {
-	ID                   string
-	OrgID                string
-	ProjectID            string
-	KeyID                string
-	SecretHash           []byte
-	Kind                 KeyKind
-	Roles                []Role
+	ID              string
+	OrgID           string
+	ProjectID       string
+	KeyID           string
+	SecretHash      []byte
+	Kind            KeyKind
+	Roles           []Role
+	CollectorGrants []CollectorGrant
+
 	AllowedEnvs          []string
 	AllowedServices      []string
 	AllowedOrigins       []string
@@ -152,7 +154,8 @@ func MakeRouteProtector() func(next http.Handler, perm string) http.Handler {
 
 func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, serverSecret []byte, rateLimiter *KeyRateLimiter, allowLocalDevKeys bool, trustedProxies []*net.IPNet) (*AuthContext, string, string) {
 	// 1. Parse Authorization header. Basic credentials use the username as
-	// the configured key ID and the password as the HMAC input. Keep the
+	// the configured key ID and the password as the HMAC input. A public
+	// access ID is an intentionally passwordless bearer credential. Keep the
 	// existing Bearer/X-API-Key extraction path unchanged.
 	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
 	var keyID, secret string
@@ -160,7 +163,7 @@ func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, server
 	isBasic := strings.HasPrefix(strings.ToLower(authHeader), "basic ")
 	if isBasic {
 		username, password, ok := r.BasicAuth()
-		if !ok || !validBasicUsername(username) || password == "" {
+		if !ok || !validBasicUsername(username) {
 			return nil, "invalid_basic_auth", "invalid basic credentials"
 		}
 		keyID = username
@@ -217,10 +220,19 @@ func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, server
 		}
 	}
 
-	// Basic authentication only accepts configured non-local keys. Existing
-	// API-key authentication retains its parsed key-kind check below.
-	if isBasic && record.Kind == KeyKindLocal {
-		return nil, "key_kind_mismatch", "api key kind mismatch"
+	// Private Basic credentials require a password. A passwordless Basic
+	// credential is valid only for a syntactically valid public access ID.
+	if isBasic {
+		if record.Kind == KeyKindLocal {
+			return nil, "key_kind_mismatch", "api key kind mismatch"
+		}
+		if record.Kind == KeyKindPublic {
+			if secret != "" || !IsPublicAccessID(keyID) {
+				return nil, "invalid_basic_auth", "invalid basic credentials"
+			}
+		} else if secret == "" {
+			return nil, "invalid_basic_auth", "invalid basic credentials"
+		}
 	}
 
 	// 5. Check revoked / expired
@@ -251,6 +263,7 @@ func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, server
 		KeyKind:              record.Kind,
 		Roles:                record.Roles,
 		Permissions:          permissions,
+		CollectorGrants:      cloneCollectorGrants(record.CollectorGrants),
 		AllowedEnvs:          record.AllowedEnvs,
 		AllowedServices:      record.AllowedServices,
 		AllowedOrigins:       record.AllowedOrigins,

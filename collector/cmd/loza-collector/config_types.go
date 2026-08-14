@@ -40,6 +40,24 @@ type collectorAuthKey struct {
 	maxEventsPerMinute   int
 }
 
+// collectorAuthGrant is the resolved runtime representation of a
+// collector-bound Basic credential.
+type collectorAuthGrant struct {
+	name                 string
+	collector            string
+	keyID                string
+	secret               string
+	kind                 auth.KeyKind
+	permissions          []auth.Permission
+	allowedEnvs          []string
+	allowedServices      []string
+	allowedOrigins       []string
+	allowedIPs           []string
+	maxPayloadBytes      int
+	maxRequestsPerMinute int
+	maxEventsPerMinute   int
+}
+
 type collectorConfig struct {
 	configFile              string
 	configArgs              []string
@@ -55,6 +73,9 @@ type collectorConfig struct {
 	authCacheTTL            time.Duration
 	authNegativeCacheTTL    time.Duration
 	authKeys                []collectorAuthKey
+	authDefaultCollector    string
+	authCollectors          []string
+	authGrants              []collectorAuthGrant
 	apiKeyHeader            string
 	apiKey                  string
 	rateLimitEnabled        bool

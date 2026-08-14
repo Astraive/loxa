@@ -18,8 +18,9 @@ import (
 )
 
 var (
-	configIdentPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
-	configPathPattern  = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$`)
+	configIdentPattern   = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+	configPathPattern    = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$`)
+	collectorSlugPattern = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,62})?$`)
 )
 
 type fileConfig = collectorconfig.Config
@@ -604,6 +605,184 @@ func resolveAuthConfig(fc fileConfig) (string, []collectorAuthKey, error) {
 	return serverSecret, keys, nil
 }
 
+func resolveCollectorAuthGrants(fc fileConfig) ([]string, []collectorAuthGrant, error) {
+	collectors := make([]string, 0, len(fc.Auth.Collectors))
+	knownCollectors := make(map[string]struct{}, len(fc.Auth.Collectors))
+	for i, configured := range fc.Auth.Collectors {
+		slug := configured.Slug
+		if !collectorSlugPattern.MatchString(slug) {
+			return nil, nil, fmt.Errorf("auth.collectors[%d].slug must be a valid collector slug", i)
+		}
+		if _, exists := knownCollectors[slug]; exists {
+			return nil, nil, fmt.Errorf("auth.collectors[%d].slug duplicates a configured collector", i)
+		}
+		knownCollectors[slug] = struct{}{}
+		collectors = append(collectors, slug)
+	}
+
+	defaultCollector := fc.Auth.DefaultCollector
+	if defaultCollector != "" {
+		if _, exists := knownCollectors[defaultCollector]; !exists {
+			return nil, nil, errors.New("auth.default_collector must name a configured collector")
+		}
+	}
+
+	grants := make([]collectorAuthGrant, 0, len(fc.Auth.Grants))
+	seenCredentialIDs := make(map[string]struct{}, len(fc.Auth.Grants))
+	for i, configured := range fc.Auth.Grants {
+		collector := configured.Collector
+		if _, exists := knownCollectors[collector]; !exists {
+			return nil, nil, fmt.Errorf("auth.grants[%d].collector must name a configured collector", i)
+		}
+
+		username := configured.Username
+		publicIDEnv := strings.TrimSpace(configured.PublicIDEnv)
+		if username != "" && publicIDEnv != "" {
+			return nil, nil, fmt.Errorf("auth.grants[%d] must configure either username/password_env or public_id_env", i)
+		}
+
+		var keyID, secret string
+		var kind auth.KeyKind
+		switch {
+		case publicIDEnv != "":
+			if configured.PasswordEnv != "" {
+				return nil, nil, fmt.Errorf("auth.grants[%d].password_env is not permitted for public grants", i)
+			}
+			if !configIdentPattern.MatchString(publicIDEnv) {
+				return nil, nil, fmt.Errorf("auth.grants[%d].public_id_env must name an environment variable", i)
+			}
+			publicID := strings.TrimSpace(os.Getenv(publicIDEnv))
+			if !auth.IsPublicAccessID(publicID) {
+				return nil, nil, fmt.Errorf("auth.grants[%d].public_id_env did not resolve to a valid public access ID", i)
+			}
+			keyID = publicID
+			kind = auth.KeyKindPublic
+		case username != "":
+			keyID = username
+			if !validConfigBasicUsername(username) {
+				return nil, nil, fmt.Errorf("auth.grants[%d].username is invalid", i)
+			}
+			passwordEnv := strings.TrimSpace(configured.PasswordEnv)
+			if !configIdentPattern.MatchString(passwordEnv) {
+				return nil, nil, fmt.Errorf("auth.grants[%d].password_env must name an environment variable", i)
+			}
+			secret = strings.TrimSpace(os.Getenv(passwordEnv))
+			if secret == "" {
+				return nil, nil, fmt.Errorf("auth.grants[%d].password_env did not resolve to a non-empty value", i)
+			}
+			kind = auth.KeyKindSecret
+		default:
+			return nil, nil, fmt.Errorf("auth.grants[%d] must configure username/password_env or public_id", i)
+		}
+		if _, exists := seenCredentialIDs[keyID]; exists {
+			return nil, nil, errors.New("configured credential identifiers must be unique")
+		}
+		seenCredentialIDs[keyID] = struct{}{}
+
+		permissions, err := resolveCollectorGrantPermissions(configured.Permissions, i)
+		if err != nil {
+			return nil, nil, err
+		}
+		environments, err := resolveCollectorGrantEnvironments(configured.AllowedEnvs, i)
+		if err != nil {
+			return nil, nil, err
+		}
+		if kind == auth.KeyKindPublic && !hasNonEmptyString(configured.AllowedOrigins) {
+			return nil, nil, fmt.Errorf("auth.grants[%d].allowed_origins must not be empty for public grants", i)
+		}
+
+		grants = append(grants, collectorAuthGrant{
+			name:                 strings.TrimSpace(configured.Name),
+			collector:            collector,
+			keyID:                keyID,
+			secret:               secret,
+			kind:                 kind,
+			permissions:          permissions,
+			allowedEnvs:          environments,
+			allowedServices:      trimStrings(configured.AllowedServices),
+			allowedOrigins:       trimStrings(configured.AllowedOrigins),
+			allowedIPs:           trimStrings(configured.AllowedIPs),
+			maxPayloadBytes:      configured.MaxPayloadBytes,
+			maxRequestsPerMinute: configured.MaxRequestsPerMinute,
+			maxEventsPerMinute:   configured.MaxEventsPerMinute,
+		})
+	}
+	return collectors, grants, nil
+}
+
+func validConfigBasicUsername(username string) bool {
+	if username == "" || strings.TrimSpace(username) != username || strings.Contains(username, ":") {
+		return false
+	}
+	for _, r := range username {
+		if r == ' ' || r == '\t' || r == '\r' || r == '\n' {
+			return false
+		}
+	}
+	return true
+}
+
+func resolveCollectorGrantPermissions(raw []string, grantIndex int) ([]auth.Permission, error) {
+	if len(raw) == 0 {
+		return nil, fmt.Errorf("auth.grants[%d].permissions must not be empty", grantIndex)
+	}
+	permissions := make([]auth.Permission, 0, len(raw))
+	seen := make(map[auth.Permission]struct{}, len(raw))
+	for permissionIndex, value := range raw {
+		permission := auth.Permission(strings.TrimSpace(value))
+		switch permission {
+		case auth.PermEventsRead, auth.PermEventsWrite, auth.PermEventsDelete, auth.PermProjectAdmin:
+		default:
+			return nil, fmt.Errorf("auth.grants[%d].permissions[%d] is not a collector grant permission", grantIndex, permissionIndex)
+		}
+		if _, exists := seen[permission]; exists {
+			return nil, fmt.Errorf("auth.grants[%d].permissions must not contain duplicates", grantIndex)
+		}
+		seen[permission] = struct{}{}
+		permissions = append(permissions, permission)
+	}
+	return permissions, nil
+}
+
+func resolveCollectorGrantEnvironments(raw []string, grantIndex int) ([]string, error) {
+	if len(raw) == 0 {
+		return nil, fmt.Errorf("auth.grants[%d].allowed_envs must not be empty", grantIndex)
+	}
+	environments := make([]string, 0, len(raw))
+	seen := make(map[string]struct{}, len(raw))
+	for environmentIndex, value := range raw {
+		environment := strings.TrimSpace(value)
+		if environment == "" {
+			return nil, fmt.Errorf("auth.grants[%d].allowed_envs[%d] must not be empty", grantIndex, environmentIndex)
+		}
+		if _, exists := seen[environment]; exists {
+			return nil, fmt.Errorf("auth.grants[%d].allowed_envs must not contain duplicates", grantIndex)
+		}
+		seen[environment] = struct{}{}
+		environments = append(environments, environment)
+	}
+	return environments, nil
+}
+
+func hasNonEmptyString(values []string) bool {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func trimStrings(values []string) []string {
+	trimmed := make([]string, 0, len(values))
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			trimmed = append(trimmed, value)
+		}
+	}
+	return trimmed
+}
+
 func resolveConfigSecret(field, raw string) (string, error) {
 	value := strings.TrimSpace(raw)
 	if value == "" {
@@ -654,9 +833,23 @@ func validateFileConfig(fc fileConfig) error {
 	if strings.TrimSpace(fc.Auth.Header) == "" {
 		return errors.New("auth.header must not be empty")
 	}
-	authServerSecret, _, err := resolveAuthConfig(fc)
+	authServerSecret, authKeys, err := resolveAuthConfig(fc)
 	if err != nil {
 		return err
+	}
+	_, authGrants, err := resolveCollectorAuthGrants(fc)
+	if err != nil {
+		return err
+	}
+	configuredCredentialIDs := make(map[string]struct{}, len(authKeys)+len(authGrants))
+	for _, key := range authKeys {
+		configuredCredentialIDs[key.keyID] = struct{}{}
+	}
+	for _, grant := range authGrants {
+		if _, exists := configuredCredentialIDs[grant.keyID]; exists {
+			return errors.New("configured credential identifiers must be unique")
+		}
+		configuredCredentialIDs[grant.keyID] = struct{}{}
 	}
 	if fc.Auth.Enabled {
 		if authServerSecret == "" {
@@ -673,8 +866,8 @@ func validateFileConfig(fc fileConfig) error {
 				return fmt.Errorf("auth.value must be a valid LOZA API key: %w", err)
 			}
 		}
-		if len(fc.Auth.Keys) == 0 && strings.TrimSpace(fc.Auth.Value) == "" {
-			return errors.New("auth enabled but no configured key or valid legacy API key")
+		if len(fc.Auth.Keys) == 0 && len(fc.Auth.Grants) == 0 && strings.TrimSpace(fc.Auth.Value) == "" {
+			return errors.New("auth enabled but no configured grant, key, or valid legacy API key")
 		}
 	}
 	if strings.TrimSpace(fc.Storage.EncryptionKey) == "" {
@@ -1057,6 +1250,7 @@ func validateComponentRegistry(reg collectorconfig.ComponentRegistryConfig) erro
 
 func runtimeConfigFromFile(fc fileConfig) collectorConfig {
 	authServerSecret, authKeys, _ := resolveAuthConfig(fc)
+	authCollectors, authGrants, _ := resolveCollectorAuthGrants(fc)
 	return collectorConfig{
 		addr:                fc.Collector.Addr,
 		readHeaderTimeout:   fc.Collector.ReadHeaderTimeout,
@@ -1112,14 +1306,17 @@ func runtimeConfigFromFile(fc fileConfig) collectorConfig {
 				BatchLimit: fc.Collector.Server.GraphQL.BatchLimit,
 			},
 		},
-		authEnabled:           fc.Auth.Enabled,
-		authAllowLocalDevKeys: fc.Auth.AllowLocalDevKeys,
-		authServerSecret:      authServerSecret,
-		authCacheTTL:          fc.Auth.CacheTTL,
-		authNegativeCacheTTL:  fc.Auth.NegativeCacheTTL,
-		authKeys:              authKeys,
-		apiKeyHeader:          fc.Auth.Header,
-		apiKey:                fc.Auth.Value,
+		authEnabled:             fc.Auth.Enabled,
+		authAllowLocalDevKeys:   fc.Auth.AllowLocalDevKeys,
+		authServerSecret:        authServerSecret,
+		authCacheTTL:            fc.Auth.CacheTTL,
+		authNegativeCacheTTL:    fc.Auth.NegativeCacheTTL,
+		authDefaultCollector:    strings.TrimSpace(fc.Auth.DefaultCollector),
+		authCollectors:          authCollectors,
+		authGrants:              authGrants,
+		authKeys:                authKeys,
+		apiKeyHeader:            fc.Auth.Header,
+		apiKey:                  fc.Auth.Value,
 		rateLimitEnabled:        fc.RateLimit.Enabled,
 		rateLimitRPS:            fc.RateLimit.RPS,
 		rateLimitBurst:          fc.RateLimit.Burst,
@@ -1359,10 +1556,12 @@ func parseConfigBool(raw string) (bool, error) {
 }
 
 func marshalPrintableConfig(fc fileConfig) ([]byte, error) {
+	redacted := fc
+
 	var out bytes.Buffer
 	enc := yaml.NewEncoder(&out)
 	enc.SetIndent(2)
-	if err := enc.Encode(fc); err != nil {
+	if err := enc.Encode(redacted); err != nil {
 		_ = enc.Close()
 		return nil, err
 	}
@@ -1371,4 +1570,3 @@ func marshalPrintableConfig(fc fileConfig) ([]byte, error) {
 	}
 	return out.Bytes(), nil
 }
-

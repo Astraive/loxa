@@ -17,6 +17,36 @@ const (
 	KeyKindLocal  KeyKind = "local" // lx_local_dev_yyyy (dev only)
 )
 
+const (
+	publicAccessIDPrefix   = "lx_pub_"
+	minPublicAccessIDToken = 32
+	maxPublicAccessIDToken = 128
+)
+
+// IsPublicAccessID reports whether id is a valid opaque public Basic
+// credential. The random component is intentionally constrained to URL-safe
+// characters and a minimum entropy-bearing length; callers must never include
+// an invalid value in an error because the entire ID is a bearer capability.
+func IsPublicAccessID(id string) bool {
+	if !strings.HasPrefix(id, publicAccessIDPrefix) {
+		return false
+	}
+	token := id[len(publicAccessIDPrefix):]
+	if len(token) < minPublicAccessIDToken || len(token) > maxPublicAccessIDToken {
+		return false
+	}
+	for i := range len(token) {
+		c := token[i]
+		if !((c >= 'a' && c <= 'z') ||
+			(c >= 'A' && c <= 'Z') ||
+			(c >= '0' && c <= '9') ||
+			c == '-' || c == '_') {
+			return false
+		}
+	}
+	return true
+}
+
 // ParsedKey holds the components of a parsed LOZA API key.
 type ParsedKey struct {
 	Raw    string
