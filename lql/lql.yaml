@@ -1,7 +1,7 @@
 name: loza-lql
 kind: package
 language: rust
-version: 0.2.6
+version: 0.3.0
 description: LOZA Query Language compiler and tooling
 license: MIT
 repository: https://github.com/Astraive/loza

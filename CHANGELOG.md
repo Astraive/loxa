@@ -4,6 +4,22 @@ All notable changes to the LOZA project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/0.2.0/).
 
+## [0.3.0] - 2026-08-14
+
+### Security
+
+- **Collector-scoped API keys**: Bearer API keys can now bind directly to one
+  configured collector with explicit `events:read`, `events:write`,
+  `events:delete`, or `project:admin` permissions and required environments.
+  Canonical collector routes reject mismatched collector, environment, and
+  permission scopes by default.
+
+### Changed
+
+- **Authorization configuration**: Documented scoped API-key configuration and
+  canonical `/collectors/{collector}/...` usage. Legacy unscoped API keys
+  remain restricted to explicit root-route migration paths.
+
 ## [0.2.6] - 2026-05-30
 
 ### Security

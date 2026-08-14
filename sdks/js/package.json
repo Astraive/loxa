@@ -1,7 +1,7 @@
 {
   "name": "@astraive/loza",
   "type": "module",
-  "version": "0.2.6",
+  "version": "0.3.0",
   "description": "LOZA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loza-collector",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

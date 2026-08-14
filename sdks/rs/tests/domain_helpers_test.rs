@@ -343,7 +343,7 @@ fn test_collector_api_stubs() {
     // Test client construction and URL formatting without making HTTP calls
     assert_eq!(client.tail_endpoint(), "http://localhost:9308/tail");
     assert_eq!(client.sdk_name, "loza-rs");
-    assert_eq!(client.sdk_version, "0.2.6");
+    assert_eq!(client.sdk_version, env!("CARGO_PKG_VERSION"));
     // Envelope building test
     let envelope = client.envelope(&["{\"event\":\"test\"}".to_string()]);
     assert_eq!(
