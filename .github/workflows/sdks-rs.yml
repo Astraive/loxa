@@ -102,7 +102,7 @@ jobs:
       - name: Install conformance dependencies
         run: |
           pip install pytest
-          pip install -e sdks/py
+          pip install -e ../../py
 
       - name: Conformance runner
         working-directory: spec
