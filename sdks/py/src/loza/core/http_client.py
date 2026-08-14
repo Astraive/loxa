@@ -280,7 +280,7 @@ class CollectorClient:
 def _validate_collector_endpoint(endpoint: str) -> None:
     try:
         parsed = urlparse(endpoint)
-        port = parsed.port
+        parsed.port
     except ValueError as exc:
         raise ValueError("collector endpoint is malformed") from exc
     if parsed.scheme not in {"http", "https"}:

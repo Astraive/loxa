@@ -1,22 +1,37 @@
-/// Shared test vectors from loza/spec/dsn/test-cases.json (25 cases: 12 valid, 13 invalid).
+// Shared test vectors from loza/spec/dsn/test-cases.json (25 cases: 12 valid, 13 invalid).
+type ExpectedDsn<'a> = (
+    &'a str,
+    &'a str,
+    u16,
+    &'a str,
+    &'a str,
+    &'a str,
+    bool,
+    &'a str,
+    &'a str,
+    Option<&'a str>,
+    Option<&'a str>,
+    Option<&'a str>,
+    Option<&'a str>,
+);
 
-fn assert_valid(
-    input: &str,
-    expect_scheme: &str,
-    expect_host: &str,
-    expect_port: u16,
-    expect_project: &str,
-    expect_env: &str,
-    expect_service: &str,
-    expect_tls: bool,
-    expect_transport: &str,
-    expect_base_url: &str,
-    expect_events_url: Option<&str>,
-    expect_batch_url: Option<&str>,
-    expect_otlp_url: Option<&str>,
-    expect_tail_ws_url: Option<&str>,
-) {
-    let dsn = loza::dsn::parse(input).expect(&format!("expected valid DSN: {input}"));
+fn assert_valid(input: &str, expected: ExpectedDsn<'_>) {
+    let (
+        expect_scheme,
+        expect_host,
+        expect_port,
+        expect_project,
+        expect_env,
+        expect_service,
+        expect_tls,
+        expect_transport,
+        expect_base_url,
+        expect_events_url,
+        expect_batch_url,
+        expect_otlp_url,
+        expect_tail_ws_url,
+    ) = expected;
+    let dsn = loza::dsn::parse(input).unwrap_or_else(|_| panic!("expected valid DSN: {input}"));
     assert_eq!(dsn.scheme, expect_scheme, "scheme mismatch for {input}");
     assert_eq!(dsn.host, expect_host, "host mismatch for {input}");
     assert_eq!(dsn.port, expect_port, "port mismatch for {input}");
@@ -61,19 +76,21 @@ fn assert_invalid(input: &str) {
 fn localhost_dev_with_explicit_port() {
     assert_valid(
         "loza://localhost:9308/demo?tls=false",
-        "loza",
-        "localhost",
-        9308,
-        "demo",
-        "default",
-        "",
-        false,
-        "http",
-        "http://localhost:9308",
-        Some("http://localhost:9308/collectors/demo/events"),
-        Some("http://localhost:9308/collectors/demo/events/batch"),
-        Some("http://localhost:9308/collectors/demo/otlp/logs"),
-        Some("ws://localhost:9308/collectors/demo/tail"),
+        (
+            "loza",
+            "localhost",
+            9308,
+            "demo",
+            "default",
+            "",
+            false,
+            "http",
+            "http://localhost:9308",
+            Some("http://localhost:9308/collectors/demo/events"),
+            Some("http://localhost:9308/collectors/demo/events/batch"),
+            Some("http://localhost:9308/collectors/demo/otlp/logs"),
+            Some("ws://localhost:9308/collectors/demo/tail"),
+        ),
     );
 }
 
@@ -81,19 +98,21 @@ fn localhost_dev_with_explicit_port() {
 fn localhost_default_port_9308() {
     assert_valid(
         "loza://localhost/demo?tls=false",
-        "loza",
-        "localhost",
-        9308,
-        "demo",
-        "default",
-        "",
-        false,
-        "http",
-        "http://localhost:9308",
-        Some("http://localhost:9308/collectors/demo/events"),
-        Some("http://localhost:9308/collectors/demo/events/batch"),
-        Some("http://localhost:9308/collectors/demo/otlp/logs"),
-        Some("ws://localhost:9308/collectors/demo/tail"),
+        (
+            "loza",
+            "localhost",
+            9308,
+            "demo",
+            "default",
+            "",
+            false,
+            "http",
+            "http://localhost:9308",
+            Some("http://localhost:9308/collectors/demo/events"),
+            Some("http://localhost:9308/collectors/demo/events/batch"),
+            Some("http://localhost:9308/collectors/demo/otlp/logs"),
+            Some("ws://localhost:9308/collectors/demo/tail"),
+        ),
     );
 }
 
@@ -101,19 +120,21 @@ fn localhost_default_port_9308() {
 fn prod_default_tls_true() {
     assert_valid(
         "loza://collector.example.com/demo",
-        "loza",
-        "collector.example.com",
-        443,
-        "demo",
-        "default",
-        "",
-        true,
-        "http",
-        "https://collector.example.com:443",
-        Some("https://collector.example.com:443/collectors/demo/events"),
-        Some("https://collector.example.com:443/collectors/demo/events/batch"),
-        Some("https://collector.example.com:443/collectors/demo/otlp/logs"),
-        Some("wss://collector.example.com:443/collectors/demo/tail"),
+        (
+            "loza",
+            "collector.example.com",
+            443,
+            "demo",
+            "default",
+            "",
+            true,
+            "http",
+            "https://collector.example.com:443",
+            Some("https://collector.example.com:443/collectors/demo/events"),
+            Some("https://collector.example.com:443/collectors/demo/events/batch"),
+            Some("https://collector.example.com:443/collectors/demo/otlp/logs"),
+            Some("wss://collector.example.com:443/collectors/demo/tail"),
+        ),
     );
 }
 
@@ -121,19 +142,21 @@ fn prod_default_tls_true() {
 fn custom_env_and_service() {
     assert_valid(
         "loza://collector.example.com/demo?env=prod&service=api",
-        "loza",
-        "collector.example.com",
-        443,
-        "demo",
-        "prod",
-        "api",
-        true,
-        "http",
-        "https://collector.example.com:443",
-        None,
-        None,
-        None,
-        None,
+        (
+            "loza",
+            "collector.example.com",
+            443,
+            "demo",
+            "prod",
+            "api",
+            true,
+            "http",
+            "https://collector.example.com:443",
+            None,
+            None,
+            None,
+            None,
+        ),
     );
 }
 
@@ -141,19 +164,21 @@ fn custom_env_and_service() {
 fn otlp_transport() {
     assert_valid(
         "loza://collector.example.com/demo?transport=otlp",
-        "loza",
-        "collector.example.com",
-        443,
-        "demo",
-        "default",
-        "",
-        true,
-        "otlp",
-        "https://collector.example.com:443",
-        None,
-        None,
-        Some("https://collector.example.com:443/collectors/demo/otlp/logs"),
-        None,
+        (
+            "loza",
+            "collector.example.com",
+            443,
+            "demo",
+            "default",
+            "",
+            true,
+            "otlp",
+            "https://collector.example.com:443",
+            None,
+            None,
+            Some("https://collector.example.com:443/collectors/demo/otlp/logs"),
+            None,
+        ),
     );
 }
 
@@ -161,19 +186,21 @@ fn otlp_transport() {
 fn grpc_transport() {
     assert_valid(
         "loza://collector.example.com/demo?transport=grpc",
-        "loza",
-        "collector.example.com",
-        443,
-        "demo",
-        "default",
-        "",
-        true,
-        "grpc",
-        "https://collector.example.com:443",
-        None,
-        None,
-        None,
-        None,
+        (
+            "loza",
+            "collector.example.com",
+            443,
+            "demo",
+            "default",
+            "",
+            true,
+            "grpc",
+            "https://collector.example.com:443",
+            None,
+            None,
+            None,
+            None,
+        ),
     );
 }
 
@@ -181,19 +208,21 @@ fn grpc_transport() {
 fn loopback_127_defaults_tls_false() {
     assert_valid(
         "loza://127.0.0.1/demo",
-        "loza",
-        "127.0.0.1",
-        9308,
-        "demo",
-        "default",
-        "",
-        false,
-        "http",
-        "http://127.0.0.1:9308",
-        None,
-        None,
-        None,
-        None,
+        (
+            "loza",
+            "127.0.0.1",
+            9308,
+            "demo",
+            "default",
+            "",
+            false,
+            "http",
+            "http://127.0.0.1:9308",
+            None,
+            None,
+            None,
+            None,
+        ),
     );
 }
 
@@ -201,19 +230,21 @@ fn loopback_127_defaults_tls_false() {
 fn ipv6_loopback_defaults_tls_false() {
     assert_valid(
         "loza://[::1]/demo",
-        "loza",
-        "::1",
-        9308,
-        "demo",
-        "default",
-        "",
-        false,
-        "http",
-        "http://[::1]:9308",
-        None,
-        None,
-        None,
-        None,
+        (
+            "loza",
+            "::1",
+            9308,
+            "demo",
+            "default",
+            "",
+            false,
+            "http",
+            "http://[::1]:9308",
+            None,
+            None,
+            None,
+            None,
+        ),
     );
 }
 
@@ -221,19 +252,21 @@ fn ipv6_loopback_defaults_tls_false() {
 fn tls_auto_keeps_localhost_default() {
     assert_valid(
         "loza://localhost/demo?tls=auto",
-        "loza",
-        "localhost",
-        9308,
-        "demo",
-        "default",
-        "",
-        false,
-        "http",
-        "http://localhost:9308",
-        None,
-        None,
-        None,
-        None,
+        (
+            "loza",
+            "localhost",
+            9308,
+            "demo",
+            "default",
+            "",
+            false,
+            "http",
+            "http://localhost:9308",
+            None,
+            None,
+            None,
+            None,
+        ),
     );
 }
 
@@ -241,19 +274,21 @@ fn tls_auto_keeps_localhost_default() {
 fn tls_auto_keeps_remote_default() {
     assert_valid(
         "loza://collector.example.com/demo?tls=auto",
-        "loza",
-        "collector.example.com",
-        443,
-        "demo",
-        "default",
-        "",
-        true,
-        "http",
-        "https://collector.example.com:443",
-        None,
-        None,
-        None,
-        None,
+        (
+            "loza",
+            "collector.example.com",
+            443,
+            "demo",
+            "default",
+            "",
+            true,
+            "http",
+            "https://collector.example.com:443",
+            None,
+            None,
+            None,
+            None,
+        ),
     );
 }
 
@@ -261,19 +296,21 @@ fn tls_auto_keeps_remote_default() {
 fn explicit_tls_true_on_localhost() {
     assert_valid(
         "loza://localhost:8443/demo?tls=true",
-        "loza",
-        "localhost",
-        8443,
-        "demo",
-        "default",
-        "",
-        true,
-        "http",
-        "https://localhost:8443",
-        None,
-        None,
-        None,
-        None,
+        (
+            "loza",
+            "localhost",
+            8443,
+            "demo",
+            "default",
+            "",
+            true,
+            "http",
+            "https://localhost:8443",
+            None,
+            None,
+            None,
+            None,
+        ),
     );
 }
 
@@ -281,19 +318,21 @@ fn explicit_tls_true_on_localhost() {
 fn explicit_port_4318_with_otlp() {
     assert_valid(
         "loza://collector.example.com:4318/backend?env=staging&service=auth&transport=otlp",
-        "loza",
-        "collector.example.com",
-        4318,
-        "backend",
-        "staging",
-        "auth",
-        true,
-        "otlp",
-        "https://collector.example.com:4318",
-        None,
-        None,
-        None,
-        None,
+        (
+            "loza",
+            "collector.example.com",
+            4318,
+            "backend",
+            "staging",
+            "auth",
+            true,
+            "otlp",
+            "https://collector.example.com:4318",
+            None,
+            None,
+            None,
+            None,
+        ),
     );
 }
 
