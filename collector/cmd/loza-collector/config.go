@@ -1251,10 +1251,16 @@ func validateComponentRegistry(reg collectorconfig.ComponentRegistryConfig) erro
 func runtimeConfigFromFile(fc fileConfig) collectorConfig {
 	authServerSecret, authKeys, _ := resolveAuthConfig(fc)
 	authCollectors, authGrants, _ := resolveCollectorAuthGrants(fc)
+	authDefaultCollector := strings.TrimSpace(fc.Auth.DefaultCollector)
+	if len(authCollectors) == 0 {
+		// Configurations created before collector-scoped routes used the root
+		// API. Bind those legacy routes to an implicit default scope so they
+		// retain their documented behavior while keeping ownership explicit.
+		authDefaultCollector = "default"
+	}
 	return collectorConfig{
 		addr:                fc.Collector.Addr,
 		readHeaderTimeout:   fc.Collector.ReadHeaderTimeout,
-		shutdownTimeout:     fc.Collector.ShutdownTimeout,
 		maxBodyBytes:        fc.Collector.MaxBodyBytes,
 		maxEventsPerRequest: fc.Collector.MaxEventsPerReq,
 		serverConfig: serverConfig{
@@ -1311,7 +1317,7 @@ func runtimeConfigFromFile(fc fileConfig) collectorConfig {
 		authServerSecret:        authServerSecret,
 		authCacheTTL:            fc.Auth.CacheTTL,
 		authNegativeCacheTTL:    fc.Auth.NegativeCacheTTL,
-		authDefaultCollector:    strings.TrimSpace(fc.Auth.DefaultCollector),
+		authDefaultCollector:    authDefaultCollector,
 		authCollectors:          authCollectors,
 		authGrants:              authGrants,
 		authKeys:                authKeys,

@@ -159,6 +159,9 @@ storage:
 	if cfg.authKeys[0].secret != "test-ingest-key-secret" || cfg.authKeys[1].kind != auth.KeyKindSecret {
 		t.Fatalf("configured key secrets or kind were not resolved")
 	}
+	if cfg.authDefaultCollector != "default" {
+		t.Fatalf("legacy root routes must retain the implicit default collector, got %q", cfg.authDefaultCollector)
+	}
 }
 
 func TestResolveCollectorAuthGrantsBuildsPrivateAndPublicCredentials(t *testing.T) {
