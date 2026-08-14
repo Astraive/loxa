@@ -244,9 +244,10 @@ export function mergeFileConfig(base: Config, raw: YamlRecord): Config {
     try {
       const dsn = parseDSN(cfg.collectorUrl);
       cfg.collectorUrl = dsn.baseURL;
-      if (dsn.username !== undefined && dsn.password !== undefined) {
+      cfg.collectorName = dsn.collectorName;
+      if (dsn.username !== undefined) {
         cfg.username = dsn.username;
-        cfg.password = dsn.password;
+        cfg.password = dsn.password ?? '';
       }
       // Extract DSN-derived values (only override if not already set from YAML)
       if (dsn.env && dsn.env !== 'default' && cfg.environment === 'development') {

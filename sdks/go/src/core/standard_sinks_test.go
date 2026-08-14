@@ -236,6 +236,38 @@ func TestHTTPBatchSink_BasicAuthAndSafeEndpoint(t *testing.T) {
 	}
 }
 
+func TestHTTPBatchSink_PublicBasicAuthUsesEmptyPassword(t *testing.T) {
+	const capability = "lx_pub_6DJvd3D0izOaQx3n5BhKqN"
+	var gotUser, gotPassword, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUser, gotPassword, _ = r.BasicAuth()
+		gotPath = r.URL.Path
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	sink, err := HTTPBatchSink(HTTPBatchSinkConfig{
+		Endpoint:      srv.URL + "/collectors/public-collector/events",
+		BasicUsername: capability,
+		BasicPassword: "",
+		Insecure:      true,
+		BatchSize:     1,
+	})
+	if err != nil {
+		t.Fatalf("HTTPBatchSink() error = %v", err)
+	}
+	defer sink.Close(context.Background())
+	if err := sink.WriteEvent(context.Background(), []byte(`{"event":"test"}`), nil); err != nil {
+		t.Fatalf("WriteEvent() error = %v", err)
+	}
+	if gotUser != capability || gotPassword != "" {
+		t.Fatalf("BasicAuth = %q/%q, want public capability with empty password", gotUser, gotPassword)
+	}
+	if gotPath != "/collectors/public-collector/events" {
+		t.Fatalf("request path = %q, want collector-scoped events route", gotPath)
+	}
+}
+
 func TestHTTPBatchSink_PreservesCaseInsensitiveAuthorizationHeader(t *testing.T) {
 	var gotAuthorization string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

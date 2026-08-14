@@ -5,14 +5,17 @@ It resolves to HTTP/HTTPS/OTLP/gRPC/WebSocket endpoints — it is NOT a wire pro
 
 Format::
 
-    loza://[host][:port]/[project]?env=<env>&service=<service>&tls=<true|false|auto>&transport=<http|otlp|grpc>
-"""
+    loza://[username:password@][host][:port]/[collector]?env=<env>&service=<service>&tls=<true|false|auto>&transport=<http|otlp|grpc>
 
+Private credentials use username:password. Public `lx_pub_...` bearer
+capabilities use an explicitly empty password (`lx_pub_...:`).
+
+"""
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from urllib.parse import parse_qs, unquote_to_bytes, urlparse
+from urllib.parse import parse_qs, quote, unquote_to_bytes, urlparse
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,6 +25,7 @@ class LozaDSN:
     scheme: str
     host: str
     port: int
+    collector_name: str
     project: str
     env: str
     service: str
@@ -36,16 +40,16 @@ class LozaDSN:
     password: str = field(default="", repr=False)
 
     def __repr__(self) -> str:
-        password = "***" if self.password else ""
+        credentials = "<redacted>" if self.username else ""
         return (
             "LozaDSN("
             f"scheme={self.scheme!r}, host={self.host!r}, port={self.port!r}, "
-            f"project={self.project!r}, env={self.env!r}, service={self.service!r}, "
-            f"tls={self.tls!r}, transport={self.transport!r}, "
-            f"base_url={self.base_url!r}, events_url={self.events_url!r}, "
-            f"batch_url={self.batch_url!r}, otlp_url={self.otlp_url!r}, "
-            f"tail_ws_url={self.tail_ws_url!r}, username={self.username!r}, "
-            f"password={password!r})"
+            f"collector_name={self.collector_name!r}, project={self.project!r}, "
+            f"env={self.env!r}, service={self.service!r}, tls={self.tls!r}, "
+            f"transport={self.transport!r}, base_url={self.base_url!r}, "
+            f"events_url={self.events_url!r}, batch_url={self.batch_url!r}, "
+            f"otlp_url={self.otlp_url!r}, tail_ws_url={self.tail_ws_url!r}, "
+            f"credentials={credentials!r})"
         )
 
     __str__ = __repr__
@@ -69,6 +73,10 @@ _LOCALHOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 def _is_localhost(host: str) -> bool:
     return host in _LOCALHOSTS
+
+def is_public_dsn_username(username: str) -> bool:
+    prefix = "lx_pub_"
+    return username.startswith(prefix) and len(username) > len(prefix)
 
 
 def parse(raw: str) -> LozaDSN:
@@ -95,14 +103,14 @@ def parse(raw: str) -> LozaDSN:
         if ":" not in raw_userinfo:
             raise ValueError("invalid Loza DSN: userinfo must include username and password")
         raw_username, raw_password = raw_userinfo.split(":", 1)
-        if not raw_username or not raw_password:
-            raise ValueError("invalid Loza DSN: username and password must be non-empty")
+        if not raw_username:
+            raise ValueError("invalid Loza DSN: credentials require username:password or lx_pub_...:")
         if any(char in _PASSWORD_RESERVED for char in raw_password):
             raise ValueError("invalid Loza DSN: reserved password characters must be percent-encoded")
         username = _decode_userinfo(raw_username, "username")
         password = _decode_userinfo(raw_password, "password")
-        if not username or not password:
-            raise ValueError("invalid Loza DSN: username and password must be non-empty")
+        if not username or (not password and not is_public_dsn_username(username)):
+            raise ValueError("invalid Loza DSN: credentials require username:password or lx_pub_...:")
         if ":" in username or any(char.isspace() for char in username):
             raise ValueError("invalid Loza DSN: username must not contain ':' or whitespace")
     elif u.username is not None or u.password is not None:
@@ -118,11 +126,12 @@ def parse(raw: str) -> LozaDSN:
     except ValueError:
         raise ValueError("invalid Loza DSN: invalid port")
 
-    # Project is the path segment without leading slash.
-    project = u.path.lstrip("/")
-    if not project:
+    # The required path is the canonical collector identity. project remains
+    # a compatibility alias for existing SDK consumers.
+    collector_name = u.path.lstrip("/")
+    if not collector_name:
         raise ValueError(
-            "invalid Loza DSN: project path is required, e.g. loza://host/my-project"
+            "invalid Loza DSN: collector path is required, e.g. loza://host/my-collector"
         )
 
     q = parse_qs(u.query)
@@ -182,21 +191,25 @@ def parse(raw: str) -> LozaDSN:
     host_part = f"[{host}]" if ":" in host else host
 
     base_url = f"{scheme}://{host_part}:{port}"
+    collector_path = quote(collector_name, safe="")
+    collector_base_url = f"{base_url}/collectors/{collector_path}"
+    collector_tail_base_url = f"{ws_scheme}://{host_part}:{port}/collectors/{collector_path}"
 
     return LozaDSN(
         scheme="loza",
         host=host,
         port=port,
-        project=project,
+        collector_name=collector_name,
+        project=collector_name,
         env=env,
         service=service,
         tls=tls,
         transport=transport,
         base_url=base_url,
-        events_url=base_url + "/events",
-        batch_url=base_url + "/events/batch",
-        otlp_url=base_url + "/otlp/logs",
-        tail_ws_url=f"{ws_scheme}://{host_part}:{port}/tail",
+        events_url=collector_base_url + "/events",
+        batch_url=collector_base_url + "/events/batch",
+        otlp_url=collector_base_url + "/otlp/logs",
+        tail_ws_url=collector_tail_base_url + "/tail",
         username=username,
         password=password,
     )

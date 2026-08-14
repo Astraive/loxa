@@ -14,29 +14,33 @@ func TestWithDSN(t *testing.T) {
 		wantEnv       string
 		wantService   string
 		wantInsecure  bool
+		wantCollector string
 		wantParseFail bool
 	}{
 		{
-			name:         "localhost dev",
-			dsn:          "loza://localhost:9308/demo?env=dev&tls=false",
-			wantURL:      "http://localhost:9308",
-			wantEnv:      "dev",
-			wantInsecure: true,
+			name:          "localhost dev",
+			dsn:           "loza://localhost:9308/demo?env=dev&tls=false",
+			wantURL:       "http://localhost:9308",
+			wantEnv:       "dev",
+			wantInsecure:  true,
+			wantCollector: "demo",
 		},
 		{
-			name:         "prod default tls",
-			dsn:          "loza://collector.example.com/demo?env=prod",
-			wantURL:      "https://collector.example.com:443",
-			wantEnv:      "prod",
-			wantInsecure: false,
+			name:          "prod default tls",
+			dsn:           "loza://collector.example.com/demo?env=prod",
+			wantURL:       "https://collector.example.com:443",
+			wantEnv:       "prod",
+			wantInsecure:  false,
+			wantCollector: "demo",
 		},
 		{
-			name:         "with service",
-			dsn:          "loza://collector.example.com/demo?env=staging&service=auth",
-			wantURL:      "https://collector.example.com:443",
-			wantEnv:      "staging",
-			wantService:  "auth",
-			wantInsecure: false,
+			name:          "with service",
+			dsn:           "loza://collector.example.com/demo?env=staging&service=auth",
+			wantURL:       "https://collector.example.com:443",
+			wantEnv:       "staging",
+			wantService:   "auth",
+			wantInsecure:  false,
+			wantCollector: "demo",
 		},
 		{
 			name:          "invalid DSN",
@@ -72,6 +76,9 @@ func TestWithDSN(t *testing.T) {
 			}
 			if cfg.Insecure != tt.wantInsecure {
 				t.Errorf("Insecure = %v, want %v", cfg.Insecure, tt.wantInsecure)
+			}
+			if cfg.CollectorName != tt.wantCollector {
+				t.Errorf("CollectorName = %q, want %q", cfg.CollectorName, tt.wantCollector)
 			}
 		})
 	}
@@ -209,6 +216,28 @@ func TestCredentialedDSNMappingAndPrecedence(t *testing.T) {
 	}
 	if code.APIKey != "api-key" {
 		t.Fatalf("APIKey = %q, want explicit code API key", code.APIKey)
+	}
+}
+
+func TestPublicDSNUsesScopedEndpointAndEmptyBasicPassword(t *testing.T) {
+	const capability = "lx_pub_6DJvd3D0izOaQx3n5BhKqN"
+	cfg := ApplyConfig(
+		Config{},
+		WithDSN("loza://"+capability+":@collector.example.com/public-collector?env=prod"),
+		WithAPIKey("api-key"),
+	)
+
+	if cfg.CollectorName != "public-collector" {
+		t.Fatalf("CollectorName = %q, want public-collector", cfg.CollectorName)
+	}
+	if cfg.DSNUsername != capability || cfg.DSNPassword != "" {
+		t.Fatalf("DSN credentials = %q/%q, want public capability and empty password", cfg.DSNUsername, cfg.DSNPassword)
+	}
+	if strings.Contains(cfg.CollectorURL, capability) {
+		t.Fatalf("CollectorURL leaked public capability: %q", cfg.CollectorURL)
+	}
+	if cfg.APIKey != "api-key" {
+		t.Fatalf("API key precedence was not retained")
 	}
 }
 

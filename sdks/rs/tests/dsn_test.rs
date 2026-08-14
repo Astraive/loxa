@@ -21,6 +21,10 @@ fn assert_valid(
     assert_eq!(dsn.host, expect_host, "host mismatch for {input}");
     assert_eq!(dsn.port, expect_port, "port mismatch for {input}");
     assert_eq!(dsn.project, expect_project, "project mismatch for {input}");
+    assert_eq!(
+        dsn.collector_name, expect_project,
+        "collector_name mismatch for {input}"
+    );
     assert_eq!(dsn.env, expect_env, "env mismatch for {input}");
     assert_eq!(dsn.service, expect_service, "service mismatch for {input}");
     assert_eq!(dsn.tls, expect_tls, "tls mismatch for {input}");
@@ -66,10 +70,10 @@ fn localhost_dev_with_explicit_port() {
         false,
         "http",
         "http://localhost:9308",
-        Some("http://localhost:9308/events"),
-        Some("http://localhost:9308/events/batch"),
-        Some("http://localhost:9308/otlp/logs"),
-        Some("ws://localhost:9308/tail"),
+        Some("http://localhost:9308/collectors/demo/events"),
+        Some("http://localhost:9308/collectors/demo/events/batch"),
+        Some("http://localhost:9308/collectors/demo/otlp/logs"),
+        Some("ws://localhost:9308/collectors/demo/tail"),
     );
 }
 
@@ -86,10 +90,10 @@ fn localhost_default_port_9308() {
         false,
         "http",
         "http://localhost:9308",
-        Some("http://localhost:9308/events"),
-        Some("http://localhost:9308/events/batch"),
-        Some("http://localhost:9308/otlp/logs"),
-        Some("ws://localhost:9308/tail"),
+        Some("http://localhost:9308/collectors/demo/events"),
+        Some("http://localhost:9308/collectors/demo/events/batch"),
+        Some("http://localhost:9308/collectors/demo/otlp/logs"),
+        Some("ws://localhost:9308/collectors/demo/tail"),
     );
 }
 
@@ -106,10 +110,10 @@ fn prod_default_tls_true() {
         true,
         "http",
         "https://collector.example.com:443",
-        Some("https://collector.example.com:443/events"),
-        Some("https://collector.example.com:443/events/batch"),
-        Some("https://collector.example.com:443/otlp/logs"),
-        Some("wss://collector.example.com:443/tail"),
+        Some("https://collector.example.com:443/collectors/demo/events"),
+        Some("https://collector.example.com:443/collectors/demo/events/batch"),
+        Some("https://collector.example.com:443/collectors/demo/otlp/logs"),
+        Some("wss://collector.example.com:443/collectors/demo/tail"),
     );
 }
 
@@ -148,7 +152,7 @@ fn otlp_transport() {
         "https://collector.example.com:443",
         None,
         None,
-        Some("https://collector.example.com:443/otlp/logs"),
+        Some("https://collector.example.com:443/collectors/demo/otlp/logs"),
         None,
     );
 }
@@ -344,6 +348,24 @@ fn parse_userinfo_credentials() {
     assert!(!dsn.base_url.contains("user"));
     assert!(!dsn.base_url.contains("pass"));
     assert!(!format!("{dsn:?}").contains("Some(\"pass\")"));
+}
+
+#[test]
+fn public_credentials_route_and_redact_bearer_capability() {
+    let capability = "lx_pub_6DJvd3D0izOaQx3n5BhKqN";
+    let dsn = loza::dsn::parse(&format!(
+        "loza://{capability}:@collector.example.com/public-collector"
+    ))
+    .expect("public DSN must parse");
+
+    assert_eq!(dsn.username.as_deref(), Some(capability));
+    assert_eq!(dsn.password.as_deref(), Some(""));
+    assert_eq!(dsn.collector_name, "public-collector");
+    assert_eq!(
+        dsn.events_url,
+        "https://collector.example.com:443/collectors/public-collector/events"
+    );
+    assert!(!format!("{dsn:?}").contains(capability));
 }
 
 #[test]

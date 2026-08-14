@@ -38,10 +38,10 @@ func TestParse(t *testing.T) {
 			tls:       false,
 			transport: "http",
 			baseURL:   "http://localhost:9308",
-			eventsURL: "http://localhost:9308/events",
-			batchURL:  "http://localhost:9308/events/batch",
-			otlpURL:   "http://localhost:9308/otlp/logs",
-			tailWSURL: "ws://localhost:9308/tail",
+			eventsURL: "http://localhost:9308/collectors/demo/events",
+			batchURL:  "http://localhost:9308/collectors/demo/events/batch",
+			otlpURL:   "http://localhost:9308/collectors/demo/otlp/logs",
+			tailWSURL: "ws://localhost:9308/collectors/demo/tail",
 		},
 		{
 			name:      "localhost default port 9308",
@@ -53,8 +53,8 @@ func TestParse(t *testing.T) {
 			tls:       false,
 			transport: "http",
 			baseURL:   "http://localhost:9308",
-			eventsURL: "http://localhost:9308/events",
-			tailWSURL: "ws://localhost:9308/tail",
+			eventsURL: "http://localhost:9308/collectors/demo/events",
+			tailWSURL: "ws://localhost:9308/collectors/demo/tail",
 		},
 		{
 			name:      "prod default tls=true",
@@ -67,10 +67,10 @@ func TestParse(t *testing.T) {
 			tls:       true,
 			transport: "http",
 			baseURL:   "https://collector.example.com:443",
-			eventsURL: "https://collector.example.com:443/events",
-			batchURL:  "https://collector.example.com:443/events/batch",
-			otlpURL:   "https://collector.example.com:443/otlp/logs",
-			tailWSURL: "wss://collector.example.com:443/tail",
+			eventsURL: "https://collector.example.com:443/collectors/demo/events",
+			batchURL:  "https://collector.example.com:443/collectors/demo/events/batch",
+			otlpURL:   "https://collector.example.com:443/collectors/demo/otlp/logs",
+			tailWSURL: "wss://collector.example.com:443/collectors/demo/tail",
 		},
 		{
 			name:      "custom env and service",
@@ -106,10 +106,10 @@ func TestParse(t *testing.T) {
 			tls:       true,
 			transport: "grpc",
 			baseURL:   "https://collector.example.com:443",
-			eventsURL: "https://collector.example.com:443/events",
-			batchURL:  "https://collector.example.com:443/events/batch",
-			otlpURL:   "https://collector.example.com:443/otlp/logs",
-			tailWSURL: "wss://collector.example.com:443/tail",
+			eventsURL: "https://collector.example.com:443/collectors/demo/events",
+			batchURL:  "https://collector.example.com:443/collectors/demo/events/batch",
+			otlpURL:   "https://collector.example.com:443/collectors/demo/otlp/logs",
+			tailWSURL: "wss://collector.example.com:443/collectors/demo/tail",
 		},
 		{
 			name:    "127.0.0.1 defaults to tls=false and port 9308",
@@ -187,6 +187,24 @@ func TestParse(t *testing.T) {
 			tls:       true,
 			transport: "http",
 			baseURL:   "https://collector.example.com:443",
+		},
+		{
+			name:      "public credential DSN",
+			input:     "loza://lx_pub_6DJvd3D0izOaQx3n5BhKqN:@collector.example.com/public-collector?env=prod",
+			valid:     true,
+			username:  "lx_pub_6DJvd3D0izOaQx3n5BhKqN",
+			password:  "",
+			host:      "collector.example.com",
+			port:      443,
+			project:   "public-collector",
+			env:       "prod",
+			tls:       true,
+			transport: "http",
+			baseURL:   "https://collector.example.com:443",
+			eventsURL: "https://collector.example.com:443/collectors/public-collector/events",
+			batchURL:  "https://collector.example.com:443/collectors/public-collector/events/batch",
+			otlpURL:   "https://collector.example.com:443/collectors/public-collector/otlp/logs",
+			tailWSURL: "wss://collector.example.com:443/collectors/public-collector/tail",
 		},
 		{
 			name:      "credentialed DSN with percent-encoded username",
@@ -331,6 +349,9 @@ func TestParse(t *testing.T) {
 			if dsn.Project != tt.project {
 				t.Errorf("Project = %q, want %q", dsn.Project, tt.project)
 			}
+			if dsn.CollectorName != tt.project {
+				t.Errorf("CollectorName = %q, want %q", dsn.CollectorName, tt.project)
+			}
 			if dsn.Username != tt.username {
 				t.Errorf("Username = %q, want %q", dsn.Username, tt.username)
 			}
@@ -390,6 +411,19 @@ func TestParseStringRedactsCredentials(t *testing.T) {
 		rendered := fmt.Sprintf(format, dsn)
 		if strings.Contains(rendered, "s@cret:value") || strings.Contains(rendered, "key-id") {
 			t.Fatalf("format %q exposed credentials: %s", format, rendered)
+		}
+	}
+}
+
+func TestParsePublicCredentialRedactsBearerCapability(t *testing.T) {
+	const capability = "lx_pub_6DJvd3D0izOaQx3n5BhKqN"
+	dsn, err := Parse("loza://" + capability + ":@collector.example.com/demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, format := range []string{"%v", "%+v", "%#v"} {
+		if rendered := fmt.Sprintf(format, dsn); strings.Contains(rendered, capability) {
+			t.Fatalf("format %q leaked public capability: %q", format, rendered)
 		}
 	}
 }

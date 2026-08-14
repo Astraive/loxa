@@ -17,10 +17,10 @@
         "tls": false,
         "transport": "http",
         "baseURL": "http://localhost:9308",
-        "eventsURL": "http://localhost:9308/events",
-        "batchURL": "http://localhost:9308/events/batch",
-        "otlpURL": "http://localhost:9308/otlp/logs",
-        "tailWSURL": "ws://localhost:9308/tail"
+        "eventsURL": "http://localhost:9308/collectors/demo/events",
+        "batchURL": "http://localhost:9308/collectors/demo/events/batch",
+        "otlpURL": "http://localhost:9308/collectors/demo/otlp/logs",
+        "tailWSURL": "ws://localhost:9308/collectors/demo/tail"
       }
     },
     {
@@ -37,10 +37,10 @@
         "tls": false,
         "transport": "http",
         "baseURL": "http://localhost:9308",
-        "eventsURL": "http://localhost:9308/events",
-        "batchURL": "http://localhost:9308/events/batch",
-        "otlpURL": "http://localhost:9308/otlp/logs",
-        "tailWSURL": "ws://localhost:9308/tail"
+        "eventsURL": "http://localhost:9308/collectors/demo/events",
+        "batchURL": "http://localhost:9308/collectors/demo/events/batch",
+        "otlpURL": "http://localhost:9308/collectors/demo/otlp/logs",
+        "tailWSURL": "ws://localhost:9308/collectors/demo/tail"
       }
     },
     {
@@ -57,10 +57,10 @@
         "tls": true,
         "transport": "http",
         "baseURL": "https://collector.example.com:443",
-        "eventsURL": "https://collector.example.com:443/events",
-        "batchURL": "https://collector.example.com:443/events/batch",
-        "otlpURL": "https://collector.example.com:443/otlp/logs",
-        "tailWSURL": "wss://collector.example.com:443/tail"
+        "eventsURL": "https://collector.example.com:443/collectors/demo/events",
+        "batchURL": "https://collector.example.com:443/collectors/demo/events/batch",
+        "otlpURL": "https://collector.example.com:443/collectors/demo/otlp/logs",
+        "tailWSURL": "wss://collector.example.com:443/collectors/demo/tail"
       }
     },
     {
@@ -93,7 +93,7 @@
         "tls": true,
         "transport": "otlp",
         "baseURL": "https://collector.example.com:443",
-        "otlpURL": "https://collector.example.com:443/otlp/logs"
+        "otlpURL": "https://collector.example.com:443/collectors/demo/otlp/logs"
       }
     },
     {
@@ -219,6 +219,7 @@
         "host": "collector.example.com",
         "port": 443,
         "project": "demo",
+        "collectorName": "demo",
         "env": "default",
         "service": "",
         "tls": true,
@@ -241,7 +242,31 @@
         "service": "",
         "tls": true,
         "transport": "http",
-        "baseURL": "https://collector.example.com:443"
+        "baseURL": "https://collector.example.com:443",
+        "collectorName": "demo"
+      }
+    },
+    {
+      "name": "public credential DSN",
+      "input": "loza://lx_pub_6DJvd3D0izOaQx3n5BhKqN:@collector.example.com/public-collector?env=prod",
+      "valid": true,
+      "expected": {
+        "scheme": "loza",
+        "username": "lx_pub_6DJvd3D0izOaQx3n5BhKqN",
+        "password": "",
+        "host": "collector.example.com",
+        "port": 443,
+        "project": "public-collector",
+        "collectorName": "public-collector",
+        "env": "prod",
+        "service": "",
+        "tls": true,
+        "transport": "http",
+        "baseURL": "https://collector.example.com:443",
+        "eventsURL": "https://collector.example.com:443/collectors/public-collector/events",
+        "batchURL": "https://collector.example.com:443/collectors/public-collector/events/batch",
+        "otlpURL": "https://collector.example.com:443/collectors/public-collector/otlp/logs",
+        "tailWSURL": "wss://collector.example.com:443/collectors/public-collector/tail"
       }
     },
     {

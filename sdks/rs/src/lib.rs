@@ -1832,6 +1832,10 @@ pub fn WithCollectorEndpoint(endpoint: impl Into<String>) -> core::options::Conf
     core::options::with_collector_endpoint(endpoint)
 }
 
+pub fn WithCollectorName(collector_name: impl Into<String>) -> core::options::ConfigOption {
+    core::options::with_collector_name(collector_name)
+}
+
 pub fn WithDuplicatePolicy(policy: impl Into<String>) -> core::options::ConfigOption {
     core::options::with_duplicate_policy(policy)
 }

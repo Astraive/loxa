@@ -8,14 +8,19 @@ import type { Schema } from '../core/schema.ts';
 import { DefaultSchema } from '../core/schema.ts';
 import type { Level } from '../core/level.ts';
 import { loadFileConfig, mergeFileConfig } from './config-file.ts';
-import { parse as parseDSN } from './dsn.ts';
+import { isPublicDSNUsername, parse as parseDSN } from './dsn.ts';
 
 function isLocalhost(host: string): boolean {
   return host === 'localhost' || host === '127.0.0.1' || host === '::1';
 }
 
 function hasBasicCredentials(cfg: Pick<Config, 'apiKey' | 'username' | 'password'>): boolean {
-  return !cfg.apiKey && !!cfg.username && !!cfg.password;
+  return !cfg.apiKey && !!cfg.username && (!!cfg.password || isPublicDSNUsername(cfg.username));
+}
+
+export function collectorRouteURL(baseURL: string, collectorName: string, route: string): string {
+  const base = baseURL.replace(/\/+$/, '');
+  return collectorName ? `${base}/collectors/${encodeURIComponent(collectorName)}${route}` : `${base}${route}`;
 }
 
 /** Apply a collector endpoint, resolving loza:// DSNs without retaining userinfo. */
@@ -26,9 +31,10 @@ function applyCollectorURL(cfg: Config, raw: string): void {
   }
   const dsn = parseDSN(raw);
   cfg.collectorUrl = dsn.baseURL;
-  if (dsn.username !== undefined && dsn.password !== undefined) {
+  cfg.collectorName = dsn.collectorName;
+  if (dsn.username !== undefined) {
     cfg.username = dsn.username;
-    cfg.password = dsn.password;
+    cfg.password = dsn.password ?? '';
   }
   if (dsn.env && dsn.env !== 'default') cfg.environment = dsn.env;
   if (dsn.service) cfg.service = dsn.service;
@@ -41,8 +47,11 @@ export function validateConfig(cfg: Config): Config {
   if (endpoint.username || endpoint.password) {
     throw new Error('invalid Loza config: credentials must not be embedded in the collector URL');
   }
-  if (Boolean(cfg.username) !== Boolean(cfg.password)) {
-    throw new Error('invalid Loza config: Basic credentials require both username and password');
+  if (!cfg.username && cfg.password) {
+    throw new Error('invalid Loza config: Basic password requires a username');
+  }
+  if (cfg.username && !cfg.password && !isPublicDSNUsername(cfg.username)) {
+    throw new Error('invalid Loza config: Basic credentials require a password unless username is an lx_pub_ capability');
   }
   if (hasBasicCredentials(cfg) && endpoint.protocol === 'http:' && !isLocalhost(endpoint.hostname)) {
     throw new Error('invalid Loza config: Basic credentials require HTTPS (HTTP is allowed only for localhost)');
@@ -78,6 +87,7 @@ export interface Config {
   environment: string;
   namespace: string;
   collectorUrl: string;
+  collectorName: string;
   apiKey: string;
   username: string;
   password: string;
@@ -167,6 +177,7 @@ export function defaultConfig(): Config {
     release: '',
     namespace: '',
     collectorUrl: '',
+    collectorName: '',
     apiKey: (typeof process !== 'undefined' && process.env?.LOZA_API_KEY) || '',
     username: '',
     password: '',
@@ -240,6 +251,7 @@ export interface ConfigOptions {
   release?: string;
   namespace?: string;
   collectorUrl?: string;
+  collectorName?: string;
   apiKey?: string;
   username?: string;
   password?: string;
@@ -271,6 +283,7 @@ export class ConfigBuilder implements Config {
   environment: string;
   namespace: string;
   collectorUrl: string;
+  collectorName: string;
   apiKey: string;
   username: string;
   password: string;
@@ -302,6 +315,7 @@ export class ConfigBuilder implements Config {
     this.environment = base.environment;
     this.namespace = base.namespace;
     this.collectorUrl = base.collectorUrl;
+    this.collectorName = base.collectorName;
     this.apiKey = base.apiKey;
     this.username = base.username;
     this.password = base.password;
@@ -334,6 +348,7 @@ export class ConfigBuilder implements Config {
     Object.assign(this, withOptions(this, { collectorUrl: url }));
     return this;
   }
+  withCollectorName(collectorName: string): this { this.collectorName = collectorName; return this; }
   withApiKey(apiKey: string): this { this.apiKey = apiKey.trim(); return this; }
   withBasicAuth(username: string, password: string): this {
     this.username = username;
@@ -381,6 +396,7 @@ export function withOptions(base: Config, opts: ConfigOptions): Config {
   if (opts.release !== undefined) cfg.release = opts.release;
   if (opts.namespace !== undefined) cfg.namespace = opts.namespace;
   if (opts.collectorUrl !== undefined) applyCollectorURL(cfg, opts.collectorUrl);
+  if (opts.collectorName !== undefined) cfg.collectorName = opts.collectorName;
   if (opts.apiKey !== undefined) cfg.apiKey = opts.apiKey.trim();
   if (opts.username !== undefined) cfg.username = opts.username;
   if (opts.password !== undefined) cfg.password = opts.password;

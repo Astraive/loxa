@@ -6,6 +6,7 @@ pub struct LozaDSN {
     pub scheme: String,
     pub host: String,
     pub port: u16,
+    pub collector_name: String,
     pub project: String,
     pub env: String,
     pub service: String,
@@ -26,6 +27,7 @@ impl fmt::Debug for LozaDSN {
             .field("scheme", &self.scheme)
             .field("host", &self.host)
             .field("port", &self.port)
+            .field("collector_name", &self.collector_name)
             .field("project", &self.project)
             .field("env", &self.env)
             .field("service", &self.service)
@@ -36,8 +38,7 @@ impl fmt::Debug for LozaDSN {
             .field("batch_url", &self.batch_url)
             .field("otlp_url", &self.otlp_url)
             .field("tail_ws_url", &self.tail_ws_url)
-            .field("username", &self.username)
-            .field("password", &self.password.as_ref().map(|_| "<redacted>"))
+            .field("credentials", &self.username.as_ref().map(|_| "<redacted>"))
             .finish()
     }
 }
@@ -64,9 +65,9 @@ impl std::error::Error for DsnError {}
 /// Validation rules:
 /// - Scheme must be `loza://`
 /// - Host is required
-/// - Project path is required
-/// - Optional userinfo must contain a non-empty username and password
-/// - Userinfo components use strict percent encoding
+/// - Collector path is required
+/// - Private userinfo must contain a non-empty username and password
+/// - Public lx_pub_... userinfo uses an explicitly empty password
 /// - tls must be "true", "false", or "auto"
 /// - transport must be "http", "otlp", or "grpc"
 /// - Port must be 1-65535 if specified
@@ -114,16 +115,18 @@ pub fn parse(raw: &str) -> Result<LozaDSN, DsnError> {
             let (raw_username, raw_password) = value
                 .split_once(':')
                 .ok_or_else(|| DsnError("userinfo must be username:password".into()))?;
-            if raw_username.is_empty() || raw_password.is_empty() {
+            if raw_username.is_empty() {
                 return Err(DsnError(
-                    "userinfo username and password must not be empty".into(),
+                    "userinfo requires username:password or lx_pub_...:".into(),
                 ));
             }
             let username = percent_decode_userinfo(raw_username, "username")?;
             let password = percent_decode_userinfo(raw_password, "password")?;
-            if username.is_empty() || password.is_empty() {
+            if username.is_empty()
+                || (password.is_empty() && !is_public_credential_username(&username))
+            {
                 return Err(DsnError(
-                    "userinfo username and password must not be empty".into(),
+                    "userinfo requires username:password or lx_pub_...:".into(),
                 ));
             }
             if username.contains(':') || username.chars().any(char::is_whitespace) {
@@ -187,10 +190,10 @@ pub fn parse(raw: &str) -> Result<LozaDSN, DsnError> {
         None => (path_query, ""),
     };
 
-    let project = path_part.trim_start_matches('/');
-    if project.is_empty() {
+    let collector_name = path_part.trim_start_matches('/');
+    if collector_name.is_empty() {
         return Err(DsnError(
-            "project path is required, e.g. loza://host/my-project".into(),
+            "collector path is required, e.g. loza://host/my-collector".into(),
         ));
     }
 
@@ -274,20 +277,25 @@ pub fn parse(raw: &str) -> Result<LozaDSN, DsnError> {
 
     let base_url = format!("{scheme}://{host_part}:{port}");
 
+    let collector_base_url = format!("{base_url}/collectors/{collector_name}");
+    let collector_tail_base_url =
+        format!("{ws_scheme}://{host_part}:{port}/collectors/{collector_name}");
+
     Ok(LozaDSN {
         scheme: "loza".to_string(),
         host: host.to_string(),
         port,
-        project: project.to_string(),
+        collector_name: collector_name.to_string(),
+        project: collector_name.to_string(),
         env,
         service,
         tls,
         transport,
         base_url: base_url.clone(),
-        events_url: format!("{base_url}/events"),
-        batch_url: format!("{base_url}/events/batch"),
-        otlp_url: format!("{base_url}/otlp/logs"),
-        tail_ws_url: format!("{ws_scheme}://{host_part}:{port}/tail"),
+        events_url: format!("{collector_base_url}/events"),
+        batch_url: format!("{collector_base_url}/events/batch"),
+        otlp_url: format!("{collector_base_url}/otlp/logs"),
+        tail_ws_url: format!("{collector_tail_base_url}/tail"),
         username,
         password,
     })
@@ -339,6 +347,11 @@ fn hex_value(byte: u8) -> Option<u8> {
         b'A'..=b'F' => Some(byte - b'A' + 10),
         _ => None,
     }
+}
+
+pub fn is_public_credential_username(username: &str) -> bool {
+    const PREFIX: &str = "lx_pub_";
+    username.starts_with(PREFIX) && username.len() > PREFIX.len()
 }
 
 fn is_localhost(host: &str) -> bool {

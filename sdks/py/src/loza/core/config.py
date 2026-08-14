@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from dataclasses import dataclass, field, replace
 from typing import Any, Callable, Protocol, runtime_checkable
+from urllib.parse import quote
 
 from ..sinks.stdout import StdoutSink
 from ..generated.spec_contract import LOZA_EVENT_VERSION, LOZA_INGEST_API_VERSION, LOZA_SPEC_VERSION
@@ -99,6 +100,7 @@ class Config:
     strict: bool = False
     sinks: list[Any] = field(default_factory=list)
     collector_endpoint: str = ""
+    collector_name: str = ""
     api_key: str = ""
     username: str = field(default="", repr=False)
     password: str = field(default="", repr=False)
@@ -175,6 +177,10 @@ class Config:
     def with_collector_endpoint(self, endpoint: str) -> "Config":
         return replace(self, collector_endpoint=endpoint)
 
+    def with_collector_name(self, collector_name: str) -> "Config":
+        return replace(self, collector_name=collector_name)
+
+
     def with_basic_auth(self, username: str, password: str) -> "Config":
         return replace(self, username=username, password=password)
 
@@ -232,8 +238,14 @@ class Config:
             raise ValueError("max_event_bytes must be positive")
         if self.strict and not self.service:
             raise ValueError("strict mode requires service")
-        if bool(self.username) != bool(self.password):
-            raise ValueError("collector basic auth requires both username and password")
+        from .dsn import is_public_dsn_username
+
+        if not self.username and self.password:
+            raise ValueError("collector basic auth password requires a username")
+        if self.username and not self.password and not is_public_dsn_username(self.username):
+            raise ValueError(
+                "collector basic auth requires a password unless username is an lx_pub_ capability"
+            )
         if self.username and self.collector_endpoint.lower().startswith("http://"):
             from urllib.parse import urlparse
 
@@ -284,8 +296,10 @@ def new_client(code_config: Config):  # -> Logger
     return Logger(merged)
 
 
-def _collector_ingest_endpoint(endpoint: str) -> str:
+def _collector_ingest_endpoint(endpoint: str, collector_name: str = "") -> str:
     endpoint = endpoint.strip().rstrip("/")
+    if collector_name:
+        return f"{endpoint}/collectors/{quote(collector_name, safe='')}/events"
     if endpoint.endswith("/events"):
         return endpoint
     return f"{endpoint}/events"
@@ -295,6 +309,7 @@ def _apply_dsn(cfg: Config, raw: str, *, include_credentials: bool = True) -> No
 
     dsn = parse(raw)
     cfg.collector_endpoint = dsn.base_url
+    cfg.collector_name = dsn.collector_name
     if dsn.env != "default":
         cfg.environment = dsn.env
     if dsn.service:
@@ -388,6 +403,8 @@ def _merge_file_config(base: Config, file_cfg: Config) -> Config:
         base.strict = file_cfg.strict
     if file_cfg.collector_endpoint and not base.collector_endpoint:
         _resolve_endpoint_source(base, file_cfg.collector_endpoint, include_credentials=True)
+    if file_cfg.collector_name and not base.collector_name:
+        base.collector_name = file_cfg.collector_name
     if file_cfg.api_key and not base.api_key:
         base.api_key = file_cfg.api_key
     if file_cfg.username and not base.username and not base.api_key:
@@ -418,6 +435,8 @@ def _merge_code_config(base: Config, code: Config) -> Config:
         _resolve_endpoint_source(base, code.collector_endpoint, include_credentials=not bool(code.api_key))
     if code.api_key:
         base.api_key = code.api_key.strip()
+    if code.collector_name:
+        base.collector_name = code.collector_name
     if code.username and not code.api_key:
         base.username = code.username
         base.password = code.password
@@ -485,6 +504,7 @@ def _config_from_mapping(data: dict[str, Any]) -> Config:
         level=str(data.get("level", "info")),
         strict=bool(data.get("strict", False)),
         collector_endpoint=str(data.get("collector_endpoint", "")),
+        collector_name=str(data.get("collector_name", "")),
         api_key=str(data.get("api_key", "")),
         username=str(data.get("username", "")),
         password=str(data.get("password", "")),

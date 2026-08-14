@@ -57,6 +57,7 @@ impl Config {
             strict: false,
             async_enabled: false,
             collector_endpoint: String::new(),
+            collector_name: String::new(),
             api_key: String::new(),
             basic_username: None,
             basic_password: None,

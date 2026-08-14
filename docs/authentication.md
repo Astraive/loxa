@@ -231,6 +231,65 @@ storage:
 
 All configured key IDs must be unique. `kind` is `sec` or `pub`; public keys require a non-empty origin allowlist. Auth startup requires a non-empty resolved server secret, every configured key secret, and the storage encryption key. An explicit `auth.enabled: false` remains an operator override, not a tracked default.
 
+## Multi-Collector Access
+
+Each DSN path identifies one Collector resource. SDKs send events to the
+canonical scoped resource path:
+
+```text
+loza://kingest:s%40cret@collector.example.com/payments?env=prod
+                                  └──────── collector name
+```
+
+The resolved ingest URL is
+`https://collector.example.com/collectors/payments/events`; userinfo is never
+included in that URL.
+
+Collector grants bind an authenticated credential to one or more named
+collectors, explicit environments, and permissions. The Collector defaults to
+deny when no grant matches the route collector, `X-Loza-Env`, and required
+permission. `project_admin` manages the named collector; `events:read`,
+`events:write`, and `events:delete` remain distinct.
+
+```yaml
+auth:
+  default_collector: payments # temporary legacy /events compatibility only
+  collectors:
+    - name: payments
+    - name: analytics
+  grants:
+    - name: payments-ingest
+      collector: payments
+      username: payments-writer
+      password_env: PAYMENTS_WRITER_PASSWORD
+      permissions: [events:write]
+      allowed_envs: [prod, staging]
+    - name: payments-browser
+      collector: payments
+      public_id_env: PAYMENTS_BROWSER_ACCESS_ID
+      permissions: [events:write]
+      allowed_envs: [prod]
+      allowed_origins: [https://app.example.com]
+```
+
+Private grants require `username:password` and a password sourced from a
+secret environment variable. A public DSN uses an opaque, high-entropy
+`lx_pub_...` access ID as its username and no password:
+
+```text
+loza://lx_pub_<random>@collector.example.com/payments?env=prod
+```
+
+Despite appearing in the username position, a public access ID is a revocable
+bearer capability. Store it in a secret manager, redact it in logs and DSN
+representations, constrain it by collector/environment/origin/IP/rate limit,
+and rotate it like any other credential. A human-readable username without a
+password is forgeable and is not a valid authorization identity.
+
+Unscoped legacy routes such as `/events` work only when `default_collector` is
+configured. New clients and integrations MUST use `/collectors/{collector}/...`
+and MUST NOT rely on event payload fields to choose collector or environment.
+
 ## Token Storage Security
 
 The collector never stores raw API keys. Keys are stored as HMAC-SHA256 hashes:

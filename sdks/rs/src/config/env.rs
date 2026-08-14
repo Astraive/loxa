@@ -7,6 +7,7 @@ pub(crate) fn load_env_config() -> FileConfig {
         .map(|value| value.service.clone())
         .filter(|value| !value.is_empty());
     let dsn_environment = dsn.as_ref().map(|value| value.env.clone());
+    let dsn_collector_name = dsn.as_ref().map(|value| value.collector_name.clone());
     let dsn_username = dsn.as_ref().and_then(|value| value.username.clone());
     let dsn_password = dsn.as_ref().and_then(|value| value.password.clone());
     let dsn_insecure = dsn.as_ref().map(|value| !value.tls);
@@ -21,6 +22,7 @@ pub(crate) fn load_env_config() -> FileConfig {
         collector_endpoint: env_string("LOZA_COLLECTOR_URL")
             .or_else(|| env_string("LOZA_COLLECTOR_ENDPOINT"))
             .or_else(|| dsn.as_ref().map(|value| value.base_url.clone())),
+        collector_name: dsn_collector_name,
         api_key: env_string("LOZA_API_KEY").or_else(|| env_string("LOZA_COLLECTOR_API_KEY")),
         basic_username: dsn_username,
         basic_password: dsn_password,

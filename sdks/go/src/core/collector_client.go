@@ -16,6 +16,7 @@ const maxCollectorClientResponseBytes = 10 << 20
 // CollectorClient communicates with the LOZA collector REST API.
 type CollectorClient struct {
 	endpoint      string
+	collectorName string
 	apiKey        string
 	basicUsername string
 	basicPassword string
@@ -26,6 +27,7 @@ type CollectorClient struct {
 // CollectorClientConfig configures the collector client.
 type CollectorClientConfig struct {
 	Endpoint      string
+	CollectorName string
 	APIKey        string
 	BasicUsername string
 	BasicPassword string
@@ -47,12 +49,20 @@ func NewCollectorClient(cfg CollectorClientConfig) *CollectorClient {
 	}
 	return &CollectorClient{
 		endpoint:      strings.TrimRight(endpoint, "/"),
+		collectorName: cfg.CollectorName,
 		apiKey:        cfg.APIKey,
 		basicUsername: cfg.BasicUsername,
 		basicPassword: cfg.BasicPassword,
 		initErr:       initErr,
 		client:        cfg.Client,
 	}
+}
+
+func (c *CollectorClient) collectorPath(route string) string {
+	if c.collectorName == "" {
+		return route
+	}
+	return "/collectors/" + url.PathEscape(c.collectorName) + route
 }
 
 func (c *CollectorClient) do(ctx context.Context, method, path string, body []byte) ([]byte, error) {
@@ -73,7 +83,7 @@ func (c *CollectorClient) do(ctx context.Context, method, path string, body []by
 	req.Header.Set("Content-Type", "application/json")
 	if c.apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)
-	} else if c.basicUsername != "" && c.basicPassword != "" {
+	} else if c.basicUsername != "" {
 		req.Header.Set("Authorization", basicAuthorization(c.basicUsername, c.basicPassword))
 	}
 	resp, err := c.client.Do(req)
@@ -102,7 +112,7 @@ func (c *CollectorClient) Ingest(ctx context.Context, events []json.RawMessage) 
 	if err != nil {
 		return nil, fmt.Errorf("collector: marshal: %w", err)
 	}
-	return c.do(ctx, http.MethodPost, "/ingest", body)
+	return c.do(ctx, http.MethodPost, c.collectorPath("/events"), body)
 }
 
 // Query queries events from the collector.
@@ -112,12 +122,12 @@ func (c *CollectorClient) Query(ctx context.Context, query json.RawMessage) ([]b
 
 // Tail tails events from the collector (server-sent events).
 func (c *CollectorClient) Tail(ctx context.Context, filter json.RawMessage) ([]byte, error) {
-	return c.do(ctx, http.MethodPost, "/tail", filter)
+	return c.do(ctx, http.MethodPost, c.collectorPath("/tail"), filter)
 }
 
 // Delete deletes events from the collector.
 func (c *CollectorClient) Delete(ctx context.Context, filter json.RawMessage) ([]byte, error) {
-	return c.do(ctx, http.MethodDelete, "/events", filter)
+	return c.do(ctx, http.MethodDelete, c.collectorPath("/events"), filter)
 }
 
 // Replay replays events through the collector.

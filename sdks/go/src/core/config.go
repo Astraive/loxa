@@ -142,12 +142,13 @@ type Config struct {
 
 	// ── Authentication ───────────────────────────────────────────────────────
 	APIKey      string // Ingest API key (e.g., "lx_sec_live_k_xxx_yyyy")
-	DSNUsername string // Basic-auth username from a credentialed DSN.
-	DSNPassword string // Basic-auth password from a credentialed DSN.
+	DSNUsername string // Private Basic username or public bearer capability from a DSN.
+	DSNPassword string // Basic password; intentionally empty for lx_pub_ DSNs.
 	Insecure    bool   // Allow plain HTTP (local dev only). Default: false.
 
 	// ── Collector configuration ───────────────────────────────────────────────
-	CollectorURL string // URL of the LOZA collector (required)
+	CollectorURL  string // Credential-free base URL of the LOZA collector (required)
+	CollectorName string // Collector slug derived from a loza:// DSN path
 	// ── Batching configuration ────────────────────────────────────────────────
 	BatchSize     int           // Number of events per batch (default: 100)
 	FlushInterval time.Duration // Time between automatic flushes (default: 5s)
@@ -577,10 +578,16 @@ func (c Config) Validate() error {
 			Problem: "collector credentials must be supplied through DSN or Basic-auth fields, not embedded in the endpoint URL",
 		}
 	}
-	if (c.DSNUsername == "") != (c.DSNPassword == "") {
+	if c.DSNUsername == "" && c.DSNPassword != "" {
 		return &ConfigValidationError{
 			Field:   "DSNUsername/DSNPassword",
-			Problem: "basic auth username and password must be provided together",
+			Problem: "basic auth password requires a username",
+		}
+	}
+	if c.DSNUsername != "" && c.DSNPassword == "" && !dsn.IsPublicCredentialUsername(c.DSNUsername) {
+		return &ConfigValidationError{
+			Field:   "DSNUsername/DSNPassword",
+			Problem: "basic auth username requires a password unless it is an lx_pub_ capability",
 		}
 	}
 	if c.DSNUsername != "" {
@@ -649,6 +656,14 @@ func basicAuthorization(username, password string) string {
 	return "Basic " + token
 }
 
+func collectorRouteURL(baseURL, collectorName, route string) string {
+	baseURL = strings.TrimRight(baseURL, "/")
+	if collectorName == "" {
+		return baseURL + route
+	}
+	return baseURL + "/collectors/" + url.PathEscape(collectorName) + route
+}
+
 func isLocalCollectorHost(host string) bool {
 	switch strings.ToLower(strings.TrimSpace(host)) {
 	case "localhost", "127.0.0.1", "::1":
@@ -663,8 +678,11 @@ func validateCollectorCredentials(endpoint, username, password string, insecure 
 		endpointURL.User != nil {
 		return fmt.Errorf("loza: collector credentials must not be embedded in the endpoint URL")
 	}
-	if (username == "") != (password == "") {
-		return fmt.Errorf("loza: basic auth username and password must be provided together")
+	if username == "" && password != "" {
+		return fmt.Errorf("loza: basic auth password requires a username")
+	}
+	if username != "" && password == "" && !dsn.IsPublicCredentialUsername(username) {
+		return fmt.Errorf("loza: basic auth username requires a password unless it is an lx_pub_ capability")
 	}
 	if username == "" {
 		return nil
@@ -855,12 +873,13 @@ func LoadFromEnv(base Config) Config {
 	if rawDSN := os.Getenv("LOZA_DSN"); rawDSN != "" {
 		if d, username, password, err := parseSDKDSN(rawDSN); err == nil {
 			cfg.CollectorURL = d.BaseURL
+			cfg.CollectorName = d.CollectorName
 			cfg.Environment = d.Env
 			if d.Service != "" {
 				cfg.Service = d.Service
 			}
 			cfg.Insecure = !d.TLS
-			if username != "" && password != "" {
+			if username != "" {
 				cfg.DSNUsername = username
 				cfg.DSNPassword = password
 			}
@@ -956,7 +975,7 @@ func parseSDKDSN(raw string) (*dsn.LozaDSN, string, string, error) {
 	username, password := parsedURL.User.Username(), ""
 	var hasPassword bool
 	password, hasPassword = parsedURL.User.Password()
-	if username == "" || !hasPassword || password == "" {
+	if username == "" || !hasPassword || (password == "" && !dsn.IsPublicCredentialUsername(username)) {
 		return nil, "", "", err
 	}
 	parsedURL.User = nil
@@ -1078,7 +1097,7 @@ func NewClient(cfg Config) (*Logger, error) {
 		headers := make(map[string]string)
 		if merged.APIKey != "" {
 			headers["Authorization"] = "Bearer " + merged.APIKey
-		} else if merged.DSNUsername != "" && merged.DSNPassword != "" {
+		} else if merged.DSNUsername != "" {
 			headers["Authorization"] = basicAuthorization(merged.DSNUsername, merged.DSNPassword)
 		}
 		if merged.Service != "" {
@@ -1089,7 +1108,7 @@ func NewClient(cfg Config) (*Logger, error) {
 		}
 
 		batchSink, err := HTTPBatchSink(HTTPBatchSinkConfig{
-			Endpoint:      strings.TrimRight(merged.CollectorURL, "/") + "/events",
+			Endpoint:      collectorRouteURL(merged.CollectorURL, merged.CollectorName, "/events"),
 			Headers:       headers,
 			BatchSize:     merged.BatchSize,
 			FlushInterval: merged.Async.FlushInterval,
@@ -1134,8 +1153,6 @@ func mergeCodeConfig(base, code Config) Config {
 	}
 	if code.DSNUsername != "" {
 		base.DSNUsername = code.DSNUsername
-	}
-	if code.DSNPassword != "" {
 		base.DSNPassword = code.DSNPassword
 	}
 	if code.codeSetInsecure || code.Insecure {
@@ -1152,6 +1169,9 @@ func mergeCodeConfig(base, code Config) Config {
 	}
 	if code.TenantID != "" {
 		base.TenantID = code.TenantID
+	}
+	if code.CollectorName != "" {
+		base.CollectorName = code.CollectorName
 	}
 	if code.BatchSize != 0 {
 		base.BatchSize = code.BatchSize

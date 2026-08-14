@@ -6,8 +6,8 @@ import { gzip as zlibGzip } from 'node:zlib';
 import { promisify } from 'node:util';
 import { parseCollectorResponse } from '../generated/spec-contract.ts';
 import type { CollectorResponse } from '../generated/spec-contract.ts';
+import { isPublicDSNUsername } from '../config/dsn.ts';
 import { SDK_VERSION } from '../config/version.ts';
-
 const gzipAsync = promisify(zlibGzip);
 
 /** Stats handler for collector acknowledgements. */
@@ -203,10 +203,13 @@ export class HTTPBatchSink implements Sink {
     this.apiKey = opts.apiKey || '';
     this.username = opts.username || '';
     this.password = opts.password || '';
-    if (Boolean(this.username) !== Boolean(this.password)) {
-      throw new Error('invalid HTTP sink options: Basic credentials require both username and password');
+    if (!this.username && this.password) {
+      throw new Error('invalid HTTP sink options: Basic password requires a username');
     }
-    if (!this.apiKey && this.username && this.password &&
+    if (this.username && !this.password && !isPublicDSNUsername(this.username)) {
+      throw new Error('invalid HTTP sink options: Basic credentials require a password unless username is an lx_pub_ capability');
+    }
+    if (!this.apiKey && this.username &&
       endpoint.protocol === 'http:' &&
       !['localhost', '127.0.0.1', '::1'].includes(endpoint.hostname)) {
       throw new Error('invalid HTTP sink options: Basic credentials require HTTPS (HTTP is allowed only for localhost)');
@@ -393,7 +396,7 @@ export class HTTPBatchSink implements Sink {
         headers[this.authHeader] = this.authHeader.toLowerCase() === 'authorization'
           ? `Bearer ${this.apiKey}`
           : this.apiKey;
-      } else if (this.username && this.password) {
+      } else if (this.username && (this.password || isPublicDSNUsername(this.username))) {
         headers.Authorization = `Basic ${Buffer.from(`${this.username}:${this.password}`, 'utf8').toString('base64')}`;
       }
 

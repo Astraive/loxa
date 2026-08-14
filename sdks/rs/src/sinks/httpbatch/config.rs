@@ -19,10 +19,9 @@ impl std::fmt::Debug for HttpBatchSinkConfig {
         f.debug_struct("HttpBatchSinkConfig")
             .field("endpoint", &self.endpoint)
             .field("api_key", &self.api_key.as_ref().map(|_| "<redacted>"))
-            .field("basic_username", &self.basic_username)
             .field(
-                "basic_password",
-                &self.basic_password.as_ref().map(|_| "<redacted>"),
+                "basic_credentials",
+                &self.basic_username.as_ref().map(|_| "<redacted>"),
             )
             .field("timeout_ms", &self.timeout_ms)
             .field("max_batch_bytes", &self.max_batch_bytes)

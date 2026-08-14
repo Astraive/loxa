@@ -733,8 +733,8 @@ fn install_default_collector_sink(config: &mut Config) {
     }
 
     let http_batch = crate::SinkConfig::HttpBatch {
-        endpoint: endpoint.to_string(),
-        api_key: None,
+        endpoint: crate::config::collector_events_endpoint(endpoint, &config.collector_name),
+        api_key: (!config.api_key.is_empty()).then(|| config.api_key.clone()),
         basic_username: config.basic_username.clone(),
         basic_password: config.basic_password.clone(),
         insecure: config.insecure,

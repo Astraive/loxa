@@ -5,26 +5,29 @@
  * It resolves to HTTP/HTTPS/OTLP/gRPC/WebSocket endpoints — it is NOT a wire protocol.
  *
  * Format:
- *   loza://[username:password@][host][:port]/[project]?env=<env>&service=<service>&tls=<true|false|auto>&transport=<http|otlp|grpc>
- */
+ *   loza://[username:password@][host][:port]/[collector]?env=<env>&service=<service>&tls=<true|false|auto>&transport=<http|otlp|grpc>
+ *
+ * Private credentials use username:password. Public lx_pub_... credentials use
+ * an explicitly empty password (lx_pub_...:) as a bearer capability.
 
 /** Parsed and resolved values from a loza:// connection URI. */
 export interface LozaDSN {
-  scheme: string;    // always "loza"
-  username?: string; // decoded Collector key ID
-  password?: string; // decoded Collector key secret
-  host: string;      // hostname (no port)
-  port: number;      // resolved port number
-  project: string;   // path segment (project name)
-  env: string;       // environment name (default: "default")
-  service: string;   // optional service name
-  tls: boolean;      // whether to use HTTPS
-  transport: string; // "http", "otlp", or "grpc" (default: "http")
-  baseURL: string;   // resolved http(s)://host:port (never includes userinfo)
-  eventsURL: string; // base + /events
-  batchURL: string;  // base + /events/batch
-  otlpURL: string;   // base + /otlp/logs
-  tailWSURL: string; // ws(s)://host:port/tail
+  scheme: string;         // always "loza"
+  username?: string;      // decoded private key ID or public bearer capability
+  password?: string;      // decoded private key secret; empty for public capabilities
+  host: string;           // hostname (no port)
+  port: number;           // resolved port number
+  collectorName: string;  // canonical collector slug from the required path
+  project: string;        // compatibility alias for collectorName
+  env: string;            // environment name (default: "default")
+  service: string;        // optional service name
+  tls: boolean;           // whether to use HTTPS
+  transport: string;      // "http", "otlp", or "grpc" (default: "http")
+  baseURL: string;        // resolved http(s)://host:port (never includes userinfo)
+  eventsURL: string;      // base + /collectors/{collector}/events
+  batchURL: string;       // base + /collectors/{collector}/events/batch
+  otlpURL: string;        // base + /collectors/{collector}/otlp/logs
+  tailWSURL: string;      // ws(s)://host:port/collectors/{collector}/tail
   toString(): string;
   toJSON(): Omit<LozaDSN, 'username' | 'password' | 'toString' | 'toJSON'>;
 }
@@ -36,14 +39,18 @@ function isLocalhost(host: string): boolean {
   return host === 'localhost' || host === '127.0.0.1' || host === '::1';
 }
 
+export function isPublicDSNUsername(username: string): boolean {
+  const prefix = 'lx_pub_';
+  return username.startsWith(prefix) && username.length > prefix.length;
+}
+
 /**
  * Parse a raw loza:// connection URI into a LozaDSN.
  *
  * Validation rules:
- *   - Scheme must be loza://
- *   - Host is required (loza:// or loza:///project are rejected)
- *   - Project path is required (loza://host is rejected)
- *   - Userinfo, when present, must contain non-empty username/password.
+ *   - Collector path is required (loza://host is rejected)
+ *   - Private userinfo must contain non-empty username/password.
+ *   - Public userinfo is lx_pub_...: with an explicitly empty password.
  *   - Userinfo is percent-decoded and malformed escapes are rejected.
  *   - Basic usernames cannot contain ':' or whitespace.
  *   - Password reserved characters must be percent-encoded.
@@ -91,8 +98,8 @@ export function parse(raw: string): LozaDSN {
     }
     const rawUsername = userinfo.slice(0, separator);
     const rawPassword = userinfo.slice(separator + 1);
-    if (!rawUsername || !rawPassword) {
-      throw new Error('invalid Loza DSN: username and password are required');
+    if (!rawUsername) {
+      throw new Error('invalid Loza DSN: credentials require username:password or lx_pub_...:');
     }
     if (PASSWORD_RESERVED.test(rawPassword)) {
       throw new Error('invalid Loza DSN: reserved password characters must be percent-encoded');
@@ -103,8 +110,8 @@ export function parse(raw: string): LozaDSN {
     } catch {
       throw new Error('invalid Loza DSN: malformed percent-encoded userinfo');
     }
-    if (!username || !password) {
-      throw new Error('invalid Loza DSN: username and password are required');
+    if (!username || (password === '' && !isPublicDSNUsername(username))) {
+      throw new Error('invalid Loza DSN: credentials require username:password or lx_pub_...:');
     }
     if (USERINFO_RESERVED.test(username)) {
       throw new Error('invalid Loza DSN: username must not contain ":" or whitespace');
@@ -123,10 +130,11 @@ export function parse(raw: string): LozaDSN {
     throw new Error('invalid Loza DSN: host is required');
   }
 
-  // Project is the path segment without leading slash.
-  const project = url.pathname.replace(/^\//, '');
-  if (!project) {
-    throw new Error('invalid Loza DSN: project path is required, e.g. loza://host/my-project');
+  // The required path is the canonical collector identity. project remains
+  // available for compatibility with existing SDK consumers.
+  const collectorName = url.pathname.replace(/^\//, '');
+  if (!collectorName) {
+    throw new Error('invalid Loza DSN: collector path is required, e.g. loza://host/my-collector');
   }
 
   // ── TLS default ──────────────────────────────────────────────────────────
@@ -188,20 +196,24 @@ export function parse(raw: string): LozaDSN {
   const hostPart = host.includes(':') ? `[${host}]` : host;
   const baseURL = `${scheme}://${hostPart}:${port}`;
 
+  const collectorPath = encodeURIComponent(collectorName);
+  const collectorBaseURL = `${baseURL}/collectors/${collectorPath}`;
+  const collectorTailBaseURL = `${wsScheme}://${hostPart}:${port}/collectors/${collectorPath}`;
   const redacted = {
     scheme: 'loza',
     host,
     port,
-    project,
+    collectorName,
+    project: collectorName,
     env,
     service,
     tls,
     transport,
     baseURL,
-    eventsURL: `${baseURL}/events`,
-    batchURL: `${baseURL}/events/batch`,
-    otlpURL: `${baseURL}/otlp/logs`,
-    tailWSURL: `${wsScheme}://${hostPart}:${port}/tail`,
+    eventsURL: `${collectorBaseURL}/events`,
+    batchURL: `${collectorBaseURL}/events/batch`,
+    otlpURL: `${collectorBaseURL}/otlp/logs`,
+    tailWSURL: `${collectorTailBaseURL}/tail`,
   };
 
   return {

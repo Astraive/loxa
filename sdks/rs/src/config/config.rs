@@ -40,6 +40,7 @@ pub struct Config {
     pub strict: bool,
     pub async_enabled: bool,
     pub collector_endpoint: String,
+    pub collector_name: String,
     pub api_key: String,
     pub basic_username: Option<String>,
     pub basic_password: Option<String>,
@@ -69,14 +70,14 @@ impl std::fmt::Debug for Config {
             .field("level", &self.level)
             .field("strict", &self.strict)
             .field("collector_endpoint", &self.collector_endpoint)
+            .field("collector_name", &self.collector_name)
             .field(
                 "api_key",
                 &(!self.api_key.is_empty()).then_some("<redacted>"),
             )
-            .field("basic_username", &self.basic_username)
             .field(
-                "basic_password",
-                &self.basic_password.as_ref().map(|_| "<redacted>"),
+                "basic_credentials",
+                &self.basic_username.as_ref().map(|_| "<redacted>"),
             )
             .field("insecure", &self.insecure)
             .field("duplicate_policy", &self.duplicate_policy)
@@ -104,6 +105,7 @@ pub(crate) struct FileConfig {
     pub(crate) strict: Option<bool>,
     pub(crate) async_enabled: Option<bool>,
     pub(crate) collector_endpoint: Option<String>,
+    pub(crate) collector_name: Option<String>,
     pub(crate) api_key: Option<String>,
     pub(crate) basic_username: Option<String>,
     pub(crate) basic_password: Option<String>,
@@ -168,7 +170,7 @@ impl std::fmt::Debug for SinkConfig {
                 endpoint,
                 api_key,
                 basic_username,
-                basic_password,
+                basic_password: _basic_password,
                 insecure,
                 timeout_ms,
                 max_batch_bytes,
@@ -179,10 +181,9 @@ impl std::fmt::Debug for SinkConfig {
                 .debug_struct("HttpBatch")
                 .field("endpoint", endpoint)
                 .field("api_key", &api_key.as_ref().map(|_| "<redacted>"))
-                .field("basic_username", basic_username)
                 .field(
-                    "basic_password",
-                    &basic_password.as_ref().map(|_| "<redacted>"),
+                    "basic_credentials",
+                    &basic_username.as_ref().map(|_| "<redacted>"),
                 )
                 .field("insecure", insecure)
                 .field("timeout_ms", timeout_ms)
@@ -339,6 +340,11 @@ impl Config {
         }
     }
 
+    pub fn with_collector_name(mut self, collector_name: impl Into<String>) -> Self {
+        self.collector_name = collector_name.into();
+        self
+    }
+
     pub fn with_api_key(mut self, api_key: impl Into<String>) -> Self {
         self.api_key = api_key.into();
         self
@@ -357,6 +363,7 @@ impl Config {
         match super::dsn::parse(raw.as_ref()) {
             Ok(dsn) => {
                 self.collector_endpoint = dsn.base_url;
+                self.collector_name = dsn.collector_name;
                 self.environment = dsn.env;
                 if !dsn.service.is_empty() {
                     self.service = dsn.service;
@@ -569,7 +576,14 @@ impl FileConfig {
             cfg.async_enabled = value;
         }
         if let Some(value) = self.collector_endpoint {
-            cfg.collector_endpoint = value;
+            if value.starts_with("loza://") {
+                cfg = cfg.with_dsn(value);
+            } else {
+                cfg.collector_endpoint = value;
+            }
+        }
+        if let Some(value) = self.collector_name {
+            cfg.collector_name = value;
         }
         if let Some(value) = self.api_key {
             cfg.api_key = value;
@@ -626,7 +640,7 @@ pub fn new_client(code_config: Config) -> Result<crate::Logger, crate::errors::L
             .any(|s| matches!(s, SinkConfig::HttpBatch { .. }))
     {
         merged.sinks = vec![SinkConfig::HttpBatch {
-            endpoint: merged.collector_endpoint.clone(),
+            endpoint: collector_events_endpoint(&merged.collector_endpoint, &merged.collector_name),
             api_key: if !merged.api_key.is_empty() {
                 Some(merged.api_key.clone())
             } else {
@@ -684,6 +698,9 @@ fn merge_code_config(mut base: Config, code: Config) -> Config {
     }
     if code.collector_endpoint != defaults.collector_endpoint {
         base.collector_endpoint = code.collector_endpoint;
+    }
+    if code.collector_name != defaults.collector_name {
+        base.collector_name = code.collector_name;
     }
     if code.api_key != defaults.api_key {
         base.api_key = code.api_key;
@@ -746,6 +763,9 @@ fn overlay_file_config(mut base: FileConfig, override_cfg: FileConfig) -> FileCo
     if override_cfg.collector_endpoint.is_some() {
         base.collector_endpoint = override_cfg.collector_endpoint;
     }
+    if override_cfg.collector_name.is_some() {
+        base.collector_name = override_cfg.collector_name;
+    }
     if override_cfg.api_key.is_some() {
         base.api_key = override_cfg.api_key;
     }
@@ -792,6 +812,14 @@ fn is_local_endpoint(endpoint: &str) -> bool {
         authority.split(':').next().unwrap_or_default()
     };
     matches!(host, "localhost" | "127.0.0.1" | "::1")
+}
+
+pub(crate) fn collector_events_endpoint(endpoint: &str, collector_name: &str) -> String {
+    let base = endpoint.trim().trim_end_matches('/');
+    if collector_name.is_empty() {
+        return base.to_string();
+    }
+    format!("{base}/collectors/{collector_name}/events")
 }
 fn load_file_config(path: impl AsRef<Path>) -> Result<FileConfig, std::io::Error> {
     let raw = fs::read_to_string(path)?;

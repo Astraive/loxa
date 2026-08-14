@@ -173,10 +173,9 @@ impl std::fmt::Debug for CollectorHttpClient {
         f.debug_struct("CollectorHttpClient")
             .field("endpoint", &self.endpoint)
             .field("api_key", &self.api_key.as_ref().map(|_| "<redacted>"))
-            .field("basic_username", &self.basic_username)
             .field(
-                "basic_password",
-                &self.basic_password.as_ref().map(|_| "<redacted>"),
+                "basic_credentials",
+                &self.basic_username.as_ref().map(|_| "<redacted>"),
             )
             .field("insecure", &self.insecure)
             .field("auth_header", &self.auth_header)

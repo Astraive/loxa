@@ -72,7 +72,7 @@ class Logger:
                 self._config,
                 sinks=[
                     HTTPBatchSink(
-                        _collector_ingest_endpoint(endpoint),
+                        _collector_ingest_endpoint(endpoint, self._config.collector_name),
                         api_key=self._config.api_key,
                         username=self._config.username,
                         password=self._config.password,

@@ -156,6 +156,14 @@ func WithCollectorURL(url string) ConfigOption {
 	}
 }
 
+// WithCollectorName applies the canonical collector slug used for scoped routes.
+func WithCollectorName(name string) ConfigOption {
+	return func(cfg Config) Config {
+		cfg.CollectorName = name
+		return cfg
+	}
+}
+
 // WithTenantID applies the tenant ID.
 func WithTenantID(tenantID string) ConfigOption {
 	return func(cfg Config) Config {
@@ -308,9 +316,9 @@ func WithLogger(l *Logger) ConfigOption {
 }
 
 // WithDSN parses a loza:// connection URI and applies the resolved values
-// to the config. It sets CollectorURL, Environment, Service (if present in
-// the DSN), credentials (when userinfo is present), and Insecure (derived
-// from TLS setting).
+// to the config. It retains the credential-free collector base URL and records
+// the required collector slug so the default transport targets canonical
+// /collectors/{collector}/events routes.
 //
 // Individual config options or env vars applied after WithDSN will override
 // the DSN-derived values.
@@ -329,11 +337,12 @@ func WithDSN(raw string) ConfigOption {
 			return cfg
 		}
 		cfg.CollectorURL = d.BaseURL
+		cfg.CollectorName = d.CollectorName
 		cfg.Environment = d.Env
 		if d.Service != "" {
 			cfg.Service = d.Service
 		}
-		if username != "" && password != "" {
+		if username != "" {
 			cfg.DSNUsername = username
 			cfg.DSNPassword = password
 		}

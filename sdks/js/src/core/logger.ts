@@ -4,7 +4,7 @@ import {
   String as StringAttr,
 } from './event.ts';
 import type { Attr, Params } from './event.ts';
-import { defaultConfig, withOptions, dev, production, test, validateConfig } from '../config/config.ts';
+import { collectorRouteURL, defaultConfig, withOptions, dev, production, test, validateConfig } from '../config/config.ts';
 import type { Config, ConfigOptions } from '../config/config.ts';
 import type { Sink } from '../sinks/sink.ts';
 import { HTTPBatchSink } from '../sinks/standard-sinks.ts';
@@ -21,7 +21,7 @@ function resolveSink(cfg: Config): Sink | null {
   if (cfg.sink) return cfg.sink;
   if (cfg.collectorUrl) {
     return new HTTPBatchSink({
-      endpoint: cfg.collectorUrl,
+      endpoint: collectorRouteURL(cfg.collectorUrl, cfg.collectorName, '/events'),
       apiKey: cfg.apiKey,
       username: cfg.username,
       password: cfg.password,

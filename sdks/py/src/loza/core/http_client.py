@@ -20,6 +20,7 @@ from ..generated.spec_contract import (
     validate_event_payload,
 )
 from ..version import SDK_VERSION
+from .dsn import is_public_dsn_username
 
 
 class InstrumentedHTTPClient:
@@ -305,8 +306,12 @@ def _validate_collector_endpoint(endpoint: str) -> None:
 
 
 def _validate_basic_auth_endpoint(endpoint: str, username: str, password: str) -> None:
-    if bool(username) != bool(password):
-        raise ValueError("collector basic auth requires both username and password")
+    if not username and password:
+        raise ValueError("collector basic auth password requires a username")
+    if username and not password and not is_public_dsn_username(username):
+        raise ValueError(
+            "collector basic auth requires a password unless username is an lx_pub_ capability"
+        )
     if not username:
         return
     parsed = urlparse(endpoint)
