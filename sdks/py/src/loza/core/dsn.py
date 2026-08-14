@@ -11,8 +11,8 @@ Format::
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
-from urllib.parse import urlparse, parse_qs
+from dataclasses import dataclass, field
+from urllib.parse import parse_qs, unquote_to_bytes, urlparse
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,7 +32,37 @@ class LozaDSN:
     batch_url: str
     otlp_url: str
     tail_ws_url: str
+    username: str = field(default="", repr=False)
+    password: str = field(default="", repr=False)
 
+    def __repr__(self) -> str:
+        password = "***" if self.password else ""
+        return (
+            "LozaDSN("
+            f"scheme={self.scheme!r}, host={self.host!r}, port={self.port!r}, "
+            f"project={self.project!r}, env={self.env!r}, service={self.service!r}, "
+            f"tls={self.tls!r}, transport={self.transport!r}, "
+            f"base_url={self.base_url!r}, events_url={self.events_url!r}, "
+            f"batch_url={self.batch_url!r}, otlp_url={self.otlp_url!r}, "
+            f"tail_ws_url={self.tail_ws_url!r}, username={self.username!r}, "
+            f"password={password!r})"
+        )
+
+    __str__ = __repr__
+
+
+_HEX = frozenset("0123456789abcdefABCDEF")
+_PASSWORD_RESERVED = frozenset(":/?#[]@!$&'()*+,;=")
+
+
+def _decode_userinfo(value: str, label: str) -> str:
+    for index, char in enumerate(value):
+        if char == "%" and (index + 2 >= len(value) or value[index + 1] not in _HEX or value[index + 2] not in _HEX):
+            raise ValueError(f"invalid Loza DSN: malformed percent-encoding in {label}")
+    try:
+        return unquote_to_bytes(value).decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"invalid Loza DSN: {label} must be valid UTF-8") from exc
 
 _LOCALHOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
@@ -53,13 +83,30 @@ def parse(raw: str) -> LozaDSN:
     if not raw.startswith("loza://"):
         raise ValueError("invalid Loza DSN: scheme must be loza://")
 
-    u = urlparse(raw)
+    try:
+        u = urlparse(raw)
+    except ValueError as exc:
+        raise ValueError("invalid Loza DSN: malformed URL") from exc
 
-    # Reject userinfo (API keys must not be in the URL).
-    if u.username:
-        raise ValueError(
-            "invalid Loza DSN: do not put API keys in the URL, use LOZA_API_KEY instead"
-        )
+    username = ""
+    password = ""
+    if "@" in u.netloc:
+        raw_userinfo = u.netloc.rsplit("@", 1)[0]
+        if ":" not in raw_userinfo:
+            raise ValueError("invalid Loza DSN: userinfo must include username and password")
+        raw_username, raw_password = raw_userinfo.split(":", 1)
+        if not raw_username or not raw_password:
+            raise ValueError("invalid Loza DSN: username and password must be non-empty")
+        if any(char in _PASSWORD_RESERVED for char in raw_password):
+            raise ValueError("invalid Loza DSN: reserved password characters must be percent-encoded")
+        username = _decode_userinfo(raw_username, "username")
+        password = _decode_userinfo(raw_password, "password")
+        if not username or not password:
+            raise ValueError("invalid Loza DSN: username and password must be non-empty")
+        if ":" in username or any(char.isspace() for char in username):
+            raise ValueError("invalid Loza DSN: username must not contain ':' or whitespace")
+    elif u.username is not None or u.password is not None:
+        raise ValueError("invalid Loza DSN: malformed userinfo")
 
     host = u.hostname or ""
     if not host:
@@ -150,6 +197,8 @@ def parse(raw: str) -> LozaDSN:
         batch_url=base_url + "/events/batch",
         otlp_url=base_url + "/otlp/logs",
         tail_ws_url=f"{ws_scheme}://{host_part}:{port}/tail",
+        username=username,
+        password=password,
     )
 
 

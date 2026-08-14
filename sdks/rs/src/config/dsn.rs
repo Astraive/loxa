@@ -1,7 +1,7 @@
 use std::fmt;
 
 /// Parsed and resolved loza:// DSN.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct LozaDSN {
     pub scheme: String,
     pub host: String,
@@ -16,6 +16,36 @@ pub struct LozaDSN {
     pub batch_url: String,
     pub otlp_url: String,
     pub tail_ws_url: String,
+    pub username: Option<String>,
+    pub password: Option<String>,
+}
+
+impl fmt::Debug for LozaDSN {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LozaDSN")
+            .field("scheme", &self.scheme)
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .field("project", &self.project)
+            .field("env", &self.env)
+            .field("service", &self.service)
+            .field("tls", &self.tls)
+            .field("transport", &self.transport)
+            .field("base_url", &self.base_url)
+            .field("events_url", &self.events_url)
+            .field("batch_url", &self.batch_url)
+            .field("otlp_url", &self.otlp_url)
+            .field("tail_ws_url", &self.tail_ws_url)
+            .field("username", &self.username)
+            .field("password", &self.password.as_ref().map(|_| "<redacted>"))
+            .finish()
+    }
+}
+
+impl fmt::Display for LozaDSN {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.base_url)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -35,7 +65,8 @@ impl std::error::Error for DsnError {}
 /// - Scheme must be `loza://`
 /// - Host is required
 /// - Project path is required
-/// - No userinfo allowed
+/// - Optional userinfo must contain a non-empty username and password
+/// - Userinfo components use strict percent encoding
 /// - tls must be "true", "false", or "auto"
 /// - transport must be "http", "otlp", or "grpc"
 /// - Port must be 1-65535 if specified
@@ -65,15 +96,51 @@ pub fn parse(raw: &str) -> Result<LozaDSN, DsnError> {
         None => (rest, ""),
     };
 
-    // Reject userinfo (API keys must not be in the URL).
-    if authority.contains('@') {
-        return Err(DsnError(
-            "do not put API keys in the URL, use LOZA_API_KEY instead".into(),
-        ));
-    }
+    // Split optional userinfo from the authority. The final `@` is the
+    // delimiter; an additional raw `@` belongs to malformed userinfo.
+    let (userinfo, authority) = match authority.rsplit_once('@') {
+        Some((userinfo, authority)) => {
+            if userinfo.contains('@') {
+                return Err(DsnError("userinfo contains an unescaped @".into()));
+            }
+            (Some(userinfo), authority)
+        }
+        None => (None, authority),
+    };
+
+    let (username, password) = match userinfo {
+        None => (None, None),
+        Some(value) => {
+            let (raw_username, raw_password) = value
+                .split_once(':')
+                .ok_or_else(|| DsnError("userinfo must be username:password".into()))?;
+            if raw_username.is_empty() || raw_password.is_empty() {
+                return Err(DsnError(
+                    "userinfo username and password must not be empty".into(),
+                ));
+            }
+            let username = percent_decode_userinfo(raw_username, "username")?;
+            let password = percent_decode_userinfo(raw_password, "password")?;
+            if username.is_empty() || password.is_empty() {
+                return Err(DsnError(
+                    "userinfo username and password must not be empty".into(),
+                ));
+            }
+            if username.contains(':') || username.chars().any(char::is_whitespace) {
+                return Err(DsnError(
+                    "userinfo username must not contain ':' or whitespace".into(),
+                ));
+            }
+            (Some(username), Some(password))
+        }
+    };
 
     if authority.is_empty() {
         return Err(DsnError("host is required".into()));
+    }
+
+    if authority.contains('@') {
+        return Err(DsnError("authority contains an unescaped @".into()));
     }
 
     // Parse host and port from authority.
@@ -221,7 +288,57 @@ pub fn parse(raw: &str) -> Result<LozaDSN, DsnError> {
         batch_url: format!("{base_url}/events/batch"),
         otlp_url: format!("{base_url}/otlp/logs"),
         tail_ws_url: format!("{ws_scheme}://{host_part}:{port}/tail"),
+        username,
+        password,
     })
+}
+
+fn percent_decode_userinfo(value: &str, field: &str) -> Result<String, DsnError> {
+    let bytes = value.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        match bytes[index] {
+            b'%' => {
+                if index + 2 >= bytes.len() {
+                    return Err(DsnError(format!(
+                        "userinfo {field} has an incomplete percent escape"
+                    )));
+                }
+                let high = hex_value(bytes[index + 1]).ok_or_else(|| {
+                    DsnError(format!("userinfo {field} has an invalid percent escape"))
+                })?;
+                let low = hex_value(bytes[index + 2]).ok_or_else(|| {
+                    DsnError(format!("userinfo {field} has an invalid percent escape"))
+                })?;
+                decoded.push((high << 4) | low);
+                index += 3;
+            }
+            byte if is_unreserved(byte) => {
+                decoded.push(byte);
+                index += 1;
+            }
+            _ => {
+                return Err(DsnError(format!(
+                    "userinfo {field} contains a character that must be percent-encoded"
+                )))
+            }
+        }
+    }
+    String::from_utf8(decoded).map_err(|_| DsnError(format!("userinfo {field} is not valid UTF-8")))
+}
+
+fn is_unreserved(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~')
+}
+
+fn hex_value(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
 }
 
 fn is_localhost(host: &str) -> bool {
@@ -243,6 +360,24 @@ mod tests {
     }
 
     #[test]
+    fn parses_and_redacts_credentials() {
+        let dsn = parse("loza://key%2Did:s%40cret%3Avalue@host/project").unwrap();
+        assert_eq!(dsn.username.as_deref(), Some("key-id"));
+        assert_eq!(dsn.password.as_deref(), Some("s@cret:value"));
+        assert!(!dsn.base_url.contains("s@cret"));
+        assert!(!format!("{dsn:?}").contains("s@cret"));
+    }
+
+    #[test]
+    fn rejects_invalid_credentials() {
+        assert!(parse("loza://key@host/project").is_err());
+        assert!(parse("loza://key:@host/project").is_err());
+        assert!(parse("loza://:secret@host/project").is_err());
+        assert!(parse("loza://key:secret%ZZ@host/project").is_err());
+        assert!(parse("loza://key%3Aname:secret@host/project").is_err());
+    }
+
+    #[test]
     fn reject_empty() {
         assert!(parse("").is_err());
     }
@@ -260,10 +395,5 @@ mod tests {
     #[test]
     fn reject_no_project() {
         assert!(parse("loza://host").is_err());
-    }
-
-    #[test]
-    fn reject_userinfo() {
-        assert!(parse("loza://key@host/project").is_err());
     }
 }

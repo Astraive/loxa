@@ -204,3 +204,74 @@ func TestCollectorSink_CompressesRequestBodyWhenEnabled(t *testing.T) {
 		t.Fatalf("expected compressed collector envelope, got %s", string(decompressed))
 	}
 }
+
+func TestHTTPBatchSink_BasicAuthAndSafeEndpoint(t *testing.T) {
+	var gotUser, gotPassword string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUser, gotPassword, _ = r.BasicAuth()
+		if strings.Contains(r.URL.String(), "dsn-secret") {
+			t.Errorf("request URL contains credential material: %q", r.URL.String())
+		}
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	endpoint := srv.URL + "/events"
+	sink, err := HTTPBatchSink(HTTPBatchSinkConfig{
+		Endpoint:      endpoint,
+		BasicUsername: "dsn-user",
+		BasicPassword: "dsn-secret",
+		Insecure:      true,
+		BatchSize:     1,
+	})
+	if err != nil {
+		t.Fatalf("HTTPBatchSink() error = %v", err)
+	}
+	defer sink.Close(context.Background())
+	if err := sink.WriteEvent(context.Background(), []byte(`{"event":"test"}`), nil); err != nil {
+		t.Fatalf("WriteEvent() error = %v", err)
+	}
+	if gotUser != "dsn-user" || gotPassword != "dsn-secret" {
+		t.Fatalf("BasicAuth = %q/%q, want DSN credentials", gotUser, gotPassword)
+	}
+}
+
+func TestHTTPBatchSink_PreservesCaseInsensitiveAuthorizationHeader(t *testing.T) {
+	var gotAuthorization string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuthorization = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	sink, err := HTTPBatchSink(HTTPBatchSinkConfig{
+		Endpoint:      srv.URL + "/events",
+		Headers:       map[string]string{"authorization": "Bearer existing"},
+		BasicUsername: "dsn-user",
+		BasicPassword: "dsn-secret",
+		Insecure:      true,
+		BatchSize:     1,
+	})
+	if err != nil {
+		t.Fatalf("HTTPBatchSink() error = %v", err)
+	}
+	defer sink.Close(context.Background())
+	if err := sink.WriteEvent(context.Background(), []byte(`{"event":"test"}`), nil); err != nil {
+		t.Fatalf("WriteEvent() error = %v", err)
+	}
+	if gotAuthorization != "Bearer existing" {
+		t.Fatalf("Authorization = %q, want existing Bearer header", gotAuthorization)
+	}
+}
+
+func TestCollectorClient_RejectsRemotePlaintextBasicAuth(t *testing.T) {
+	client := NewCollectorClient(CollectorClientConfig{
+		Endpoint:      "http://collector.example.com",
+		BasicUsername: "dsn-user",
+		BasicPassword: "dsn-secret",
+	})
+	_, err := client.Ingest(context.Background(), nil)
+	if err == nil || !strings.Contains(err.Error(), "require TLS") {
+		t.Fatalf("Ingest() error = %v, want plaintext Basic-auth rejection", err)
+	}
+}

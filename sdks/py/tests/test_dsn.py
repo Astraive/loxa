@@ -63,3 +63,10 @@ def test_valid_dsn(case):
 def test_invalid_dsn(case):
     with pytest.raises(ValueError):
         parse(case["input"])
+
+
+def test_dsn_repr_redacts_credentials() -> None:
+    dsn = parse("loza://key-id:s%40cret%3Avalue@example.com/project")
+    rendered = repr(dsn)
+    assert "s@cret:value" not in rendered
+    assert "password='***'" in rendered

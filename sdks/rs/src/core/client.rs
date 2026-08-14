@@ -1,4 +1,6 @@
+use base64::Engine as _;
 use serde_json::Value;
+
 use std::collections::BTreeMap;
 use std::io;
 use std::time::Duration;
@@ -152,15 +154,38 @@ impl HTTPClient {
 }
 
 /// Collector-specific HTTP client with envelope support.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct CollectorHttpClient {
     pub endpoint: String,
     pub api_key: Option<String>,
+    pub basic_username: Option<String>,
+    pub basic_password: Option<String>,
+    pub insecure: bool,
     pub auth_header: String,
     pub timeout_ms: u64,
     pub sdk_name: String,
     pub sdk_version: String,
     pub service: Option<String>,
+}
+
+impl std::fmt::Debug for CollectorHttpClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CollectorHttpClient")
+            .field("endpoint", &self.endpoint)
+            .field("api_key", &self.api_key.as_ref().map(|_| "<redacted>"))
+            .field("basic_username", &self.basic_username)
+            .field(
+                "basic_password",
+                &self.basic_password.as_ref().map(|_| "<redacted>"),
+            )
+            .field("insecure", &self.insecure)
+            .field("auth_header", &self.auth_header)
+            .field("timeout_ms", &self.timeout_ms)
+            .field("sdk_name", &self.sdk_name)
+            .field("sdk_version", &self.sdk_version)
+            .field("service", &self.service)
+            .finish()
+    }
 }
 
 impl CollectorHttpClient {
@@ -169,6 +194,9 @@ impl CollectorHttpClient {
         Self {
             endpoint,
             api_key: None,
+            basic_username: None,
+            basic_password: None,
+            insecure: false,
             auth_header: "Authorization".to_string(),
             timeout_ms: 2_000,
             sdk_name: "loza-rs".to_string(),
@@ -179,6 +207,21 @@ impl CollectorHttpClient {
 
     pub fn with_api_key(mut self, api_key: impl Into<String>) -> Self {
         self.api_key = Some(api_key.into());
+        self
+    }
+
+    pub fn with_basic_auth(
+        mut self,
+        username: impl Into<String>,
+        password: impl Into<String>,
+    ) -> Self {
+        self.basic_username = Some(username.into());
+        self.basic_password = Some(password.into());
+        self
+    }
+
+    pub fn with_insecure(mut self, insecure: bool) -> Self {
+        self.insecure = insecure;
         self
     }
 
@@ -235,6 +278,24 @@ impl CollectorHttpClient {
 
         if let Some(api_key) = &self.api_key {
             request = request.with_header(&self.auth_header, format!("Bearer {}", api_key));
+        } else {
+            match (&self.basic_username, &self.basic_password) {
+                (Some(username), Some(password)) => {
+                    validate_basic_auth_endpoint(
+                        &self.endpoint,
+                        username,
+                        password,
+                        self.insecure,
+                    )?;
+                    let token = base64::engine::general_purpose::STANDARD
+                        .encode(format!("{username}:{password}"));
+                    request = request.with_header(&self.auth_header, format!("Basic {token}"));
+                }
+                (None, None) => {}
+                _ => {
+                    return Err("basic username and password must be configured together".into());
+                }
+            }
         }
 
         request = request
@@ -408,6 +469,38 @@ pub fn inject_http_headers(request: &mut HTTPRequest, event: &crate::EventContex
 }
 
 /// Extract trace context from HTTP headers.
+fn validate_basic_auth_endpoint(
+    endpoint: &str,
+    username: &str,
+    _password: &str,
+    insecure: bool,
+) -> Result<(), String> {
+    if username.is_empty() || username.contains(':') || username.chars().any(char::is_whitespace) {
+        return Err(
+            "basic auth username must be non-empty and contain no ':' or whitespace".into(),
+        );
+    }
+    let Some((scheme, rest)) = endpoint.split_once("://") else {
+        return Ok(());
+    };
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
+    if authority.contains('@') {
+        return Err("collector credentials must not be embedded in the endpoint URL".into());
+    }
+    if !scheme.eq_ignore_ascii_case("http") || insecure {
+        return Ok(());
+    }
+    let host = if let Some(ipv6) = authority.strip_prefix('[') {
+        ipv6.split(']').next().unwrap_or(ipv6)
+    } else {
+        authority.split(':').next().unwrap_or(authority)
+    };
+    if matches!(host, "localhost" | "127.0.0.1" | "::1") {
+        return Ok(());
+    }
+    Err("credentialed HTTP requires TLS (set insecure explicitly for local development)".into())
+}
+
 pub fn extract_http_headers(
     headers: &BTreeMap<String, String>,
 ) -> (Option<String>, Option<String>, Option<String>) {

@@ -2,11 +2,23 @@
 
 ## Overview
 
-LOZA uses scoped API keys with the `Authorization: Bearer` header for all ingest and control-plane requests. Keys follow the `lx_` format and carry built-in RBAC roles and ABAC restrictions.
+LOZA supports scoped API keys with the `Authorization: Bearer` header and credentialed DSNs with HTTP Basic authentication. Bearer keys follow the `lx_` format and carry built-in RBAC roles and ABAC restrictions; DSN userinfo supplies the Collector key ID and its secret.
 
-```
+Bearer example:
+
+```http
 Authorization: Bearer lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
 ```
+
+Credentialed DSN example:
+
+```text
+loza://kingest:s%40cret%3Avalue@collector.example.com/payments?env=prod
+```
+
+In this PostgreSQL-style form, `username` is the Collector configured `key_id` and `password` is that key's secret. SDKs percent-decode both values; empty values are invalid, username `:`/whitespace is invalid, and URL-reserved password characters must be percent-encoded. SDKs send these credentials as `Authorization: Basic base64(username:password)` over TLS by default. Plain HTTP with credentials is rejected during SDK configuration unless explicitly local (`tls=false`/insecure).
+
+Credentialed DSN passwords are never included in resolved endpoint URLs or normal DSN/debug output, and must never be logged. Use a secret environment variable or secret manager for DSNs and do not commit them.
 
 ## Key Format
 
@@ -71,7 +83,7 @@ lx_local_dev_mydevtoken
 
 ## SDK Configuration
 
-Set the `LOZA_API_KEY` environment variable, then configure the SDK:
+Set `LOZA_API_KEY` for the existing Bearer-token flow, or set `LOZA_DSN` to a credentialed DSN for Basic auth. Explicit SDK credentials can be supplied in code as shown below.
 
 ### Go
 
@@ -163,15 +175,28 @@ const logger = createLoza({
 });
 ```
 
+## Credential Precedence
+
+Credential sources are applied in this order:
+
+1. Explicit code API key or Basic credentials.
+2. Credentials in an explicitly supplied code DSN.
+3. Environment credentials (`LOZA_API_KEY` and userinfo in `LOZA_DSN`).
+
+`LOZA_API_KEY` remains the highest-priority token credential. `LOZA_COLLECTOR_URL` changes only the endpoint; it does not override DSN-derived environment, service, or credentials. A DSN without userinfo does not clear credentials configured separately.
+
 ## Headers
 
-When an API key is configured, the SDK automatically sends these headers:
+When an API key is configured, the SDK sends Bearer authentication. When a credentialed DSN is configured, it sends Basic authentication from the DSN userinfo:
 
 | Header | Value | Description |
 |--------|-------|-------------|
-| `Authorization` | `Bearer lx_sec_live_k_xxx_yyyy` | The API key |
+| `Authorization` | `Bearer lx_sec_live_k_xxx_yyyy` | Existing API-key authentication |
+| `Authorization` | `Basic <base64(key_id:secret)>` | Credentialed DSN authentication |
 | `X-Loza-Service` | `checkout-api` | Service name from config |
 | `X-Loza-Env` | `prod` | Environment from config |
+
+Basic credentials are sent over TLS by default. Never put the password in query parameters, paths, resolved endpoint URLs, logs, or unredacted DSN/debug output.
 
 ## Collector Configuration
 
@@ -221,10 +246,11 @@ hash = hmac_sha256(server_secret, token_secret)
 
 ## Key Rotation
 
-1. Create a new key in the dashboard (or control plane API)
-2. Deploy your application with the new key
-3. The collector accepts both keys during the overlap window
-4. Revoke the old key after all deployments are updated
+1. Create a new key in the dashboard (or control plane API).
+2. Store the new secret in the application secret environment/secret manager; if using a DSN, percent-encode reserved password characters.
+3. Deploy your application with the new key or DSN.
+4. The collector accepts both keys during the overlap window.
+5. Revoke the old key after all deployments are updated.
 
 ## Legacy Bootstrap Token
 

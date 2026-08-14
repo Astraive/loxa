@@ -36,6 +36,34 @@ fmt.Println(d.EventsURL)  // http://localhost:9308/events
 fmt.Println(d.TailWSURL)  // ws://localhost:9308/tail
 ```
 
+## Credentialed DSNs
+
+Credentials are optional userinfo in PostgreSQL-style form:
+
+```text
+loza://<username>:<password>@<host>/<project>?env=prod
+```
+
+The username is the Collector key ID and the password is that key's secret.
+Both values are percent-decoded by the parser; URL-reserved password characters
+must be percent-encoded (for example, `s%40cret%3Avalue`). Empty credentials,
+malformed escapes, usernames containing `:` or whitespace, and unencoded
+reserved password characters are rejected.
+
+Parsed credentials are exposed as `Username` and `Password`, but never appear
+in `BaseURL`, `EventsURL`, `BatchURL`, `OTLPURL`, or `TailWSURL`. SDKs send
+credentialed DSNs as HTTP Basic authentication and use TLS by default. Do not
+place secrets in logs or general-purpose DSN strings; use a redacted
+representation when displaying configuration.
+
+For SDK configuration, explicitly supplied code credentials take precedence
+over credentials in a code-supplied DSN, which take precedence over
+environment DSN credentials (`LOZA_DSN`). `LOZA_API_KEY` remains the
+highest-priority token credential. `LOZA_COLLECTOR_URL` changes only the
+endpoint and does not override DSN-derived environment, service, or
+credentials. A DSN without userinfo does not clear credentials configured
+separately.
+
 ## Cross-SDK validation
 
 Each SDK should load `test-cases.json` and run its parser against all cases,

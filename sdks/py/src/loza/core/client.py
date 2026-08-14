@@ -70,7 +70,15 @@ class Logger:
         if not self._config.sinks or all(self._is_default_terminal_sink(sink) for sink in self._config.sinks):
             self._config = replace(
                 self._config,
-                sinks=[HTTPBatchSink(_collector_ingest_endpoint(endpoint), api_key=self._config.api_key, service=self._config.service)],
+                sinks=[
+                    HTTPBatchSink(
+                        _collector_ingest_endpoint(endpoint),
+                        api_key=self._config.api_key,
+                        username=self._config.username,
+                        password=self._config.password,
+                        service=self._config.service,
+                    )
+                ],
             )
 
     @staticmethod

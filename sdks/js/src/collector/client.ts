@@ -11,6 +11,8 @@ const gzipAsync = promisify(zlibGzip);
 export interface CollectorClientOptions {
   url: string;
   apiKey?: string;
+  username?: string;
+  password?: string;
   authHeader?: string;
   timeout?: number;
   enableCompression?: boolean;
@@ -27,13 +29,29 @@ export interface VersionInfo {
 export class CollectorClient {
   private url: string;
   private apiKey: string;
+  private username: string;
+  private password: string;
   private authHeader: string;
   private timeout: number;
   private enableCompression: boolean;
 
   constructor(opts: CollectorClientOptions) {
     this.url = opts.url.replace(/\/$/, '');
+    const endpoint = new URL(this.url);
+    if (endpoint.username || endpoint.password) {
+      throw new Error('invalid CollectorClient URL: credentials must not be embedded in the URL');
+    }
     this.apiKey = opts.apiKey || '';
+    this.username = opts.username || '';
+    this.password = opts.password || '';
+    if (Boolean(this.username) !== Boolean(this.password)) {
+      throw new Error('invalid CollectorClient options: Basic credentials require both username and password');
+    }
+    if (!this.apiKey && this.username && this.password &&
+      endpoint.protocol === 'http:' &&
+      !['localhost', '127.0.0.1', '::1'].includes(endpoint.hostname)) {
+      throw new Error('invalid CollectorClient options: Basic credentials require HTTPS (HTTP is allowed only for localhost)');
+    }
     this.authHeader = opts.authHeader || 'x-loza-api-key';
     this.timeout = opts.timeout || 5000;
     this.enableCompression = opts.enableCompression ?? true;
@@ -211,7 +229,11 @@ export class CollectorClient {
       const mod = isHttps ? https : http;
 
       const headers: Record<string, string> = { ...extraHeaders };
-      if (this.apiKey && !headers[this.authHeader]) headers[this.authHeader] = this.apiKey;
+      if (this.apiKey && !headers[this.authHeader]) headers[this.authHeader] =
+        this.authHeader.toLowerCase() === 'authorization' ? `Bearer ${this.apiKey}` : this.apiKey;
+      if (!this.apiKey && this.username && this.password && !headers.Authorization) {
+        headers.Authorization = `Basic ${Buffer.from(`${this.username}:${this.password}`, 'utf8').toString('base64')}`;
+      }
       if (body) headers['Content-Length'] = body.length.toString();
 
       const req = mod.request({

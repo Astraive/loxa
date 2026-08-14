@@ -1046,6 +1046,7 @@ version = "0.2.6"
 dependencies = [
  "actix-web",
  "axum",
+ "base64",
  "fastrand",
  "flate2",
  "futures-util",

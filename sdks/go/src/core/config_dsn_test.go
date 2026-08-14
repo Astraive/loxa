@@ -2,6 +2,7 @@ package core
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -188,4 +189,35 @@ func TestLoadFromEnv_DSN(t *testing.T) {
 			t.Errorf("CollectorURL should be empty for invalid DSN, got %q", cfg.CollectorURL)
 		}
 	})
+}
+
+func TestCredentialedDSNMappingAndPrecedence(t *testing.T) {
+	t.Setenv("LOZA_DSN", "loza://dsn-user:dsn%2Fsecret@collector.example.com/project?env=prod")
+	t.Setenv("LOZA_API_KEY", "")
+
+	cfg := LoadFromEnv(Config{})
+	if cfg.DSNUsername != "dsn-user" || cfg.DSNPassword != "dsn/secret" {
+		t.Fatalf("DSN credentials = %q/%q, want decoded userinfo", cfg.DSNUsername, cfg.DSNPassword)
+	}
+	if strings.Contains(cfg.CollectorURL, "dsn-user") || strings.Contains(cfg.CollectorURL, "secret") {
+		t.Fatalf("CollectorURL contains DSN credentials: %q", cfg.CollectorURL)
+	}
+
+	code := ApplyConfig(cfg, WithDSN("loza://code-user:code-secret@collector.example.com/project?env=prod"), WithAPIKey("api-key"))
+	if code.DSNUsername != "code-user" || code.DSNPassword != "code-secret" {
+		t.Fatalf("code DSN credentials = %q/%q", code.DSNUsername, code.DSNPassword)
+	}
+	if code.APIKey != "api-key" {
+		t.Fatalf("APIKey = %q, want explicit code API key", code.APIKey)
+	}
+}
+
+func TestCredentialedDSNRejectsRemotePlaintext(t *testing.T) {
+	cfg := ApplyConfig(
+		Config{},
+		WithDSN("loza://dsn-user:dsn-secret@collector.example.com/project?tls=false"),
+	)
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected remote plaintext Basic-auth DSN to be rejected")
+	}
 }

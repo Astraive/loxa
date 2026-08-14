@@ -15,16 +15,16 @@ import (
 )
 
 type Auth struct {
-	cfg       *config.AuthenticationConfig
-	keyCache  map[string]*hashedAPIKey
+	cfg        *config.AuthenticationConfig
+	keyCache   map[string]*hashedAPIKey
 	hmacSecret []byte
-	once      sync.Once
+	once       sync.Once
 }
 
 type hashedAPIKey struct {
-	Name     string
-	KeyHash  []byte
-	Role     string
+	Name    string
+	KeyHash []byte
+	Role    string
 }
 
 // AutoGenerateHMACSecret derives a deterministic HMAC key from the configured API keys.
@@ -80,9 +80,9 @@ func hmacSHA256(data, secret []byte) []byte {
 
 type AuthResult struct {
 	Authorized  bool
-	KeyName    string
-	Role      string
-	Failure   string
+	KeyName     string
+	Role        string
+	Failure     string
 	FailureCode string
 }
 
@@ -254,7 +254,7 @@ func logAuthJSON(level, event string, fields map[string]interface{}) {
 
 func (a *Auth) logAuthFailure(r *http.Request, keyName, reason, code string) {
 	logAuthJSON("warn", "auth_failure", map[string]interface{}{
-		"key_name":      keyName,
+		"key_name":     keyName,
 		"path":         r.URL.Path,
 		"method":       r.Method,
 		"remote_addr":  r.RemoteAddr,

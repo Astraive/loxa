@@ -4,7 +4,7 @@ import {
   String as StringAttr,
 } from './event.ts';
 import type { Attr, Params } from './event.ts';
-import { defaultConfig, withOptions, dev, production, test } from '../config/config.ts';
+import { defaultConfig, withOptions, dev, production, test, validateConfig } from '../config/config.ts';
 import type { Config, ConfigOptions } from '../config/config.ts';
 import type { Sink } from '../sinks/sink.ts';
 import { HTTPBatchSink } from '../sinks/standard-sinks.ts';
@@ -23,6 +23,8 @@ function resolveSink(cfg: Config): Sink | null {
     return new HTTPBatchSink({
       endpoint: cfg.collectorUrl,
       apiKey: cfg.apiKey,
+      username: cfg.username,
+      password: cfg.password,
       service: cfg.service,
       batchSize: cfg.batchSize,
       flushIntervalMs: cfg.flushIntervalMs,
@@ -42,7 +44,7 @@ export class Logger {
   private _resolvedSink: Sink | null;
 
   constructor(cfg?: Partial<Config>) {
-    this.cfg = { ...defaultConfig(), ...cfg };
+    this.cfg = validateConfig({ ...defaultConfig(), ...cfg });
     this._resolvedSink = resolveSink(this.cfg);
   }
 

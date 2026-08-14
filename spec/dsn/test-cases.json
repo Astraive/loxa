@@ -209,6 +209,42 @@
       }
     },
     {
+      "name": "credentialed DSN with percent-encoded password",
+      "input": "loza://key-id:s%40cret%3Avalue%2Fpart@collector.example.com/demo",
+      "valid": true,
+      "expected": {
+        "scheme": "loza",
+        "username": "key-id",
+        "password": "s@cret:value/part",
+        "host": "collector.example.com",
+        "port": 443,
+        "project": "demo",
+        "env": "default",
+        "service": "",
+        "tls": true,
+        "transport": "http",
+        "baseURL": "https://collector.example.com:443"
+      }
+    },
+    {
+      "name": "credentialed DSN with percent-encoded username",
+      "input": "loza://key%2Did:secret@collector.example.com/demo?env=prod",
+      "valid": true,
+      "expected": {
+        "scheme": "loza",
+        "username": "key-id",
+        "password": "secret",
+        "host": "collector.example.com",
+        "port": 443,
+        "project": "demo",
+        "env": "prod",
+        "service": "",
+        "tls": true,
+        "transport": "http",
+        "baseURL": "https://collector.example.com:443"
+      }
+    },
+    {
       "name": "reject empty string",
       "input": "",
       "valid": false,
@@ -251,14 +287,44 @@
       "expected": null
     },
     {
-      "name": "reject userinfo (API key in URL)",
+      "name": "reject empty username",
+      "input": "loza://:secret@collector.example.com/demo",
+      "valid": false,
+      "expected": null
+    },
+    {
+      "name": "reject empty password",
+      "input": "loza://key:@collector.example.com/demo",
+      "valid": false,
+      "expected": null
+    },
+    {
+      "name": "reject userinfo without password",
       "input": "loza://key@collector.example.com/demo",
       "valid": false,
       "expected": null
     },
     {
-      "name": "reject userinfo with password",
-      "input": "loza://user:pass@collector.example.com/demo",
+      "name": "reject username containing encoded colon",
+      "input": "loza://key%3Aid:secret@collector.example.com/demo",
+      "valid": false,
+      "expected": null
+    },
+    {
+      "name": "reject username containing encoded whitespace",
+      "input": "loza://key%20id:secret@collector.example.com/demo",
+      "valid": false,
+      "expected": null
+    },
+    {
+      "name": "reject unencoded reserved password character",
+      "input": "loza://key:secret:part@collector.example.com/demo",
+      "valid": false,
+      "expected": null
+    },
+    {
+      "name": "reject malformed percent escape in credentials",
+      "input": "loza://key:secret%ZZ@collector.example.com/demo",
       "valid": false,
       "expected": null
     },

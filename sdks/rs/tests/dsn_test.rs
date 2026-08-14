@@ -336,8 +336,14 @@ fn reject_userinfo_key() {
 }
 
 #[test]
-fn reject_userinfo_with_password() {
-    assert_invalid("loza://user:pass@collector.example.com/demo");
+fn parse_userinfo_credentials() {
+    let dsn = loza::dsn::parse("loza://user:pass@collector.example.com/demo")
+        .expect("credentialed DSN should parse");
+    assert_eq!(dsn.username.as_deref(), Some("user"));
+    assert_eq!(dsn.password.as_deref(), Some("pass"));
+    assert!(!dsn.base_url.contains("user"));
+    assert!(!dsn.base_url.contains("pass"));
+    assert!(!format!("{dsn:?}").contains("Some(\"pass\")"));
 }
 
 #[test]

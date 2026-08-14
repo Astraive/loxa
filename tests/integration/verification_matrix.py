@@ -311,15 +311,15 @@ def run_collector_smoke() -> list[StepResult]:
             )
 
             unauthorized_status, unauthorized_body = _http_request("GET", collector.base_url + "/status")
+            unauthorized_ok = (
+                unauthorized_status == 401
+                and unauthorized_body.strip() == '{"error":"unauthorized"}'
+            )
             results.append(
                 StepResult(
                     id="collector.unauthenticated_request",
                     category="collector_runtime",
-                    status=(
-                        "implemented_and_passing"
-                        if unauthorized_status == 401 and unauthorized_body.strip() == '{"error":"unauthorized"}'
-                        else "implemented_and_failing"
-                    ),
+                    status="implemented_and_passing" if unauthorized_ok else "implemented_and_failing",
                     duration_s=0.0,
                     details={"response": unauthorized_body},
                 )
@@ -499,17 +499,18 @@ def run_cortex_full_stack() -> list[StepResult]:
         up.details["reason"] = "docker engine is unavailable"
     results.append(up)
     if up.status != "implemented_and_passing":
-        results.append(
-            _run(
-                "cortex.compose.down",
-                "cortex_runtime",
-                ["docker", "compose", "-f", "configs/docker-compose.yml", "down", "--remove-orphans"],
-                CORTEX_ROOT,
-                env=compose_env,
-                ok_returncodes=(0,),
-                timeout_s=60,
+        if up.status != "environment_blocked":
+            results.append(
+                _run(
+                    "cortex.compose.down",
+                    "cortex_runtime",
+                    ["docker", "compose", "-f", "configs/docker-compose.yml", "down", "--remove-orphans"],
+                    CORTEX_ROOT,
+                    env=compose_env,
+                    ok_returncodes=(0,),
+                    timeout_s=60,
+                )
             )
-        )
         return results
 
     try:

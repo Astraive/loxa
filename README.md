@@ -22,11 +22,11 @@
   <a href="https://github.com/astraive/loza/actions/workflows/sdks-go.yml">
     <img src="https://github.com/astraive/loza/actions/workflows/sdks-go.yml/badge.svg" alt="Go SDK CI">
   </a>
-  <a href="https://github.com/astraive/loza/actions/workflows/sdks-py-ci.yml">
-    <img src="https://github.com/astraive/loza/actions/workflows/sdks-py-ci.yml/badge.svg" alt="Python SDK CI">
+  <a href="https://github.com/astraive/loza/actions/workflows/sdks-py.yml">
+    <img src="https://github.com/astraive/loza/actions/workflows/sdks-py.yml/badge.svg" alt="Python SDK CI">
   </a>
-  <a href="https://github.com/astraive/loza/actions/workflows/sdks-rs-ci.yml">
-    <img src="https://github.com/astraive/loza/actions/workflows/sdks-rs-ci.yml/badge.svg" alt="Rust SDK CI">
+  <a href="https://github.com/astraive/loza/actions/workflows/sdks-rs.yml">
+    <img src="https://github.com/astraive/loza/actions/workflows/sdks-rs.yml/badge.svg" alt="Rust SDK CI">
   </a>
   <a href="https://github.com/Astraive/lozana/actions/workflows/lozana-ci.yml">
     <img src="https://github.com/Astraive/lozana/actions/workflows/lozana-ci.yml/badge.svg" alt="Lozana CI">

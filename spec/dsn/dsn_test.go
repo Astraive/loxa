@@ -1,6 +1,8 @@
 package dsn
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -9,6 +11,8 @@ func TestParse(t *testing.T) {
 		name      string
 		input     string
 		valid     bool
+		username  string
+		password  string
 		host      string
 		port      int
 		project   string
@@ -158,20 +162,86 @@ func TestParse(t *testing.T) {
 			baseURL: "https://localhost:8443",
 		},
 		{
-			name:    "explicit port 4318 with otlp",
-			input:   "loza://collector.example.com:4318/backend?env=staging&service=auth&transport=otlp",
-			valid:   true,
-			host:    "collector.example.com",
-			port:    4318,
-			project: "backend",
-			env:     "staging",
-			service: "auth",
-			tls:     true,
+			name:      "explicit port 4318 with otlp",
+			input:     "loza://collector.example.com:4318/backend?env=staging&service=auth&transport=otlp",
+			valid:     true,
+			host:      "collector.example.com",
+			port:      4318,
+			project:   "backend",
+			env:       "staging",
+			service:   "auth",
+			tls:       true,
 			transport: "otlp",
-			baseURL: "https://collector.example.com:4318",
+			baseURL:   "https://collector.example.com:4318",
+		},
+		{
+			name:      "credentialed DSN with percent-encoded password",
+			input:     "loza://key-id:s%40cret%3Avalue%2Fpart@collector.example.com/demo",
+			valid:     true,
+			username:  "key-id",
+			password:  "s@cret:value/part",
+			host:      "collector.example.com",
+			port:      443,
+			project:   "demo",
+			env:       "default",
+			tls:       true,
+			transport: "http",
+			baseURL:   "https://collector.example.com:443",
+		},
+		{
+			name:      "credentialed DSN with percent-encoded username",
+			input:     "loza://key%2Did:secret@collector.example.com/demo?env=prod",
+			valid:     true,
+			username:  "key-id",
+			password:  "secret",
+			host:      "collector.example.com",
+			port:      443,
+			project:   "demo",
+			env:       "prod",
+			tls:       true,
+			transport: "http",
+			baseURL:   "https://collector.example.com:443",
+		},
+
+		// ── Invalid credential cases ─────────────────────────────────────────
+		{
+			name:  "reject empty username",
+			input: "loza://:secret@collector.example.com/demo",
+			valid: false,
+		},
+		{
+			name:  "reject empty password",
+			input: "loza://key:@collector.example.com/demo",
+			valid: false,
+		},
+		{
+			name:  "reject userinfo without password",
+			input: "loza://key@collector.example.com/demo",
+			valid: false,
+		},
+		{
+			name:  "reject username containing encoded colon",
+			input: "loza://key%3Aid:secret@collector.example.com/demo",
+			valid: false,
+		},
+		{
+			name:  "reject username containing encoded whitespace",
+			input: "loza://key%20id:secret@collector.example.com/demo",
+			valid: false,
+		},
+		{
+			name:  "reject unencoded reserved password character",
+			input: "loza://key:secret:part@collector.example.com/demo",
+			valid: false,
+		},
+		{
+			name:  "reject malformed percent escape in credentials",
+			input: "loza://key:secret%ZZ@collector.example.com/demo",
+			valid: false,
 		},
 
 		// ── Invalid cases ────────────────────────────────────────────────────
+
 		{
 			name:  "reject empty string",
 			input: "",
@@ -205,16 +275,6 @@ func TestParse(t *testing.T) {
 		{
 			name:  "reject empty project",
 			input: "loza://collector.example.com/",
-			valid: false,
-		},
-		{
-			name:  "reject userinfo (API key in URL)",
-			input: "loza://key@collector.example.com/demo",
-			valid: false,
-		},
-		{
-			name:  "reject userinfo with password",
-			input: "loza://user:pass@collector.example.com/demo",
 			valid: false,
 		},
 		{
@@ -271,6 +331,12 @@ func TestParse(t *testing.T) {
 			if dsn.Project != tt.project {
 				t.Errorf("Project = %q, want %q", dsn.Project, tt.project)
 			}
+			if dsn.Username != tt.username {
+				t.Errorf("Username = %q, want %q", dsn.Username, tt.username)
+			}
+			if dsn.Password != tt.password {
+				t.Errorf("Password = %q, want %q", dsn.Password, tt.password)
+			}
 			if dsn.TLS != tt.tls {
 				t.Errorf("TLS = %v, want %v", dsn.TLS, tt.tls)
 			}
@@ -301,6 +367,30 @@ func TestParse(t *testing.T) {
 				t.Errorf("Service = %q, want %q", dsn.Service, tt.service)
 			}
 		})
+	}
+}
+
+func TestParseCredentialErrorsDoNotEchoPassword(t *testing.T) {
+	const password = "super-secret"
+	_, err := Parse("loza://key:" + password + ":part@collector.example.com/demo")
+	if err == nil {
+		t.Fatal("expected an error for an unencoded reserved password character")
+	}
+	if strings.Contains(err.Error(), password) {
+		t.Fatalf("credential error echoed password: %q", err)
+	}
+}
+
+func TestParseStringRedactsCredentials(t *testing.T) {
+	dsn, err := Parse("loza://key-id:s%40cret%3Avalue@collector.example.com/demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, format := range []string{"%v", "%+v", "%#v"} {
+		rendered := fmt.Sprintf(format, dsn)
+		if strings.Contains(rendered, "s@cret:value") || strings.Contains(rendered, "key-id") {
+			t.Fatalf("format %q exposed credentials: %s", format, rendered)
+		}
 	}
 }
 

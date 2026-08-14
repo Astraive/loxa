@@ -735,6 +735,9 @@ fn install_default_collector_sink(config: &mut Config) {
     let http_batch = crate::SinkConfig::HttpBatch {
         endpoint: endpoint.to_string(),
         api_key: None,
+        basic_username: config.basic_username.clone(),
+        basic_password: config.basic_password.clone(),
+        insecure: config.insecure,
         timeout_ms: 2_000,
         max_batch_bytes: 256 * 1024,
         max_retries: 3,

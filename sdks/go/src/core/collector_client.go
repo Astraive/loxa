@@ -15,38 +15,57 @@ const maxCollectorClientResponseBytes = 10 << 20
 
 // CollectorClient communicates with the LOZA collector REST API.
 type CollectorClient struct {
-	endpoint string
-	apiKey   string
-	client   *http.Client
+	endpoint      string
+	apiKey        string
+	basicUsername string
+	basicPassword string
+	initErr       error
+	client        *http.Client
 }
 
 // CollectorClientConfig configures the collector client.
 type CollectorClientConfig struct {
-	Endpoint string
-	APIKey   string
-	Client   *http.Client
+	Endpoint      string
+	APIKey        string
+	BasicUsername string
+	BasicPassword string
+	Insecure      bool
+	Client        *http.Client
 }
 
 // NewCollectorClient creates a new collector client.
 func NewCollectorClient(cfg CollectorClientConfig) *CollectorClient {
+	endpoint := safeCollectorEndpoint(cfg.Endpoint)
+	initErr := validateCollectorCredentials(
+		cfg.Endpoint,
+		cfg.BasicUsername,
+		cfg.BasicPassword,
+		cfg.Insecure,
+	)
 	if cfg.Client == nil {
 		cfg.Client = &http.Client{}
 	}
 	return &CollectorClient{
-		endpoint: strings.TrimRight(cfg.Endpoint, "/"),
-		apiKey:   cfg.APIKey,
-		client:   cfg.Client,
+		endpoint:      strings.TrimRight(endpoint, "/"),
+		apiKey:        cfg.APIKey,
+		basicUsername: cfg.BasicUsername,
+		basicPassword: cfg.BasicPassword,
+		initErr:       initErr,
+		client:        cfg.Client,
 	}
 }
 
 func (c *CollectorClient) do(ctx context.Context, method, path string, body []byte) ([]byte, error) {
-	url := c.endpoint + path
+	if c.initErr != nil {
+		return nil, c.initErr
+	}
+	endpoint := c.endpoint + path
 	var req *http.Request
 	var err error
 	if body != nil {
-		req, err = http.NewRequestWithContext(ctx, method, url, bytes.NewReader(body))
+		req, err = http.NewRequestWithContext(ctx, method, endpoint, bytes.NewReader(body))
 	} else {
-		req, err = http.NewRequestWithContext(ctx, method, url, nil)
+		req, err = http.NewRequestWithContext(ctx, method, endpoint, nil)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("collector: request: %w", err)
@@ -54,6 +73,8 @@ func (c *CollectorClient) do(ctx context.Context, method, path string, body []by
 	req.Header.Set("Content-Type", "application/json")
 	if c.apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	} else if c.basicUsername != "" && c.basicPassword != "" {
+		req.Header.Set("Authorization", basicAuthorization(c.basicUsername, c.basicPassword))
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {

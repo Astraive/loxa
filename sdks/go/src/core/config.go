@@ -2,7 +2,9 @@ package core
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -139,12 +141,13 @@ type Config struct {
 	TenantID     string // Multi-tenant identifier
 
 	// ── Authentication ───────────────────────────────────────────────────────
-	APIKey   string // Ingest API key (e.g., "lx_sec_live_k_xxx_yyyy")
-	Insecure bool   // Allow plain HTTP (local dev only). Default: false.
+	APIKey      string // Ingest API key (e.g., "lx_sec_live_k_xxx_yyyy")
+	DSNUsername string // Basic-auth username from a credentialed DSN.
+	DSNPassword string // Basic-auth password from a credentialed DSN.
+	Insecure    bool   // Allow plain HTTP (local dev only). Default: false.
 
 	// ── Collector configuration ───────────────────────────────────────────────
 	CollectorURL string // URL of the LOZA collector (required)
-
 	// ── Batching configuration ────────────────────────────────────────────────
 	BatchSize     int           // Number of events per batch (default: 100)
 	FlushInterval time.Duration // Time between automatic flushes (default: 5s)
@@ -189,8 +192,8 @@ type Config struct {
 	PanicRecovery        bool
 	// OTelBridge enables OpenTelemetry trace context extraction from context.
 	// When false (default), TraceFromOTel is skipped to avoid the ~50-100ns context.Value lookup.
-	OTelBridge           bool
-	Security             SecurityConfig
+	OTelBridge bool
+	Security   SecurityConfig
 	// Strict enables stronger runtime validation for event shape and attrs.
 	Strict bool
 	// ValidateEncoded controls post-encode spec contract validation in strict mode.
@@ -202,8 +205,7 @@ type Config struct {
 	IDGen IDGenerator
 
 	// ── Clock ─────────────────────────────────────────────────────────────────
-	Clock Clock
-
+	Clock                  Clock
 	codeSetCompression     bool
 	codeSetAsync           bool
 	codeSetBackpressure    bool
@@ -212,6 +214,7 @@ type Config struct {
 	codeSetRedactByDefault bool
 	codeSetAllowPII        bool
 	codeSetDropOversized   bool
+	codeSetInsecure        bool
 }
 
 // WithService returns a copy of cfg with Service set.
@@ -364,9 +367,17 @@ func (c Config) WithAPIKey(apiKey string) Config {
 	return c
 }
 
+// WithBasicAuth sets the Collector Basic-auth credentials.
+func (c Config) WithBasicAuth(username, password string) Config {
+	c.DSNUsername = username
+	c.DSNPassword = password
+	return c
+}
+
 // WithInsecure allows plain HTTP connections (for local dev only).
 func (c Config) WithInsecure(insecure bool) Config {
 	c.Insecure = insecure
+	c.codeSetInsecure = true
 	return c
 }
 
@@ -559,6 +570,36 @@ func (c Config) Validate() error {
 			Problem: fmt.Sprintf("must be >= 0 (got %d)", c.Security.MaxAttrCount),
 		}
 	}
+	if endpointURL, err := url.Parse(strings.TrimSpace(c.CollectorURL)); err == nil &&
+		endpointURL.User != nil {
+		return &ConfigValidationError{
+			Field:   "CollectorURL",
+			Problem: "collector credentials must be supplied through DSN or Basic-auth fields, not embedded in the endpoint URL",
+		}
+	}
+	if (c.DSNUsername == "") != (c.DSNPassword == "") {
+		return &ConfigValidationError{
+			Field:   "DSNUsername/DSNPassword",
+			Problem: "basic auth username and password must be provided together",
+		}
+	}
+	if c.DSNUsername != "" {
+		if strings.ContainsAny(c.DSNUsername, ":\t\r\n ") {
+			return &ConfigValidationError{
+				Field:   "DSNUsername",
+				Problem: "basic auth username must not contain ':' or whitespace",
+			}
+		}
+		if endpointURL, err := url.Parse(strings.TrimSpace(c.CollectorURL)); err == nil &&
+			strings.EqualFold(endpointURL.Scheme, "http") &&
+			(!c.Insecure || !isLocalCollectorHost(endpointURL.Hostname())) {
+			return &ConfigValidationError{
+				Field:   "CollectorURL",
+				Problem: "credentialed collector endpoints require TLS (set Insecure only for local development)",
+			}
+		}
+	}
+
 	if !c.Strict {
 		return nil
 	}
@@ -587,6 +628,54 @@ func (c Config) Validate() error {
 				Problem: fmt.Sprintf("must be > 0 in strict mode (got %d)", c.Async.MaxBatchBytes),
 			}
 		}
+	}
+	return nil
+}
+
+// safeCollectorEndpoint strips URL userinfo before an endpoint is retained or
+// passed to net/http. DSN credentials are carried separately in Config.
+func safeCollectorEndpoint(raw string) string {
+	endpoint := strings.TrimSpace(raw)
+	parsed, err := url.Parse(endpoint)
+	if err != nil {
+		return endpoint
+	}
+	parsed.User = nil
+	return parsed.String()
+}
+
+func basicAuthorization(username, password string) string {
+	token := base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
+	return "Basic " + token
+}
+
+func isLocalCollectorHost(host string) bool {
+	switch strings.ToLower(strings.TrimSpace(host)) {
+	case "localhost", "127.0.0.1", "::1":
+		return true
+	default:
+		return false
+	}
+}
+
+func validateCollectorCredentials(endpoint, username, password string, insecure bool) error {
+	if endpointURL, err := url.Parse(strings.TrimSpace(endpoint)); err == nil &&
+		endpointURL.User != nil {
+		return fmt.Errorf("loza: collector credentials must not be embedded in the endpoint URL")
+	}
+	if (username == "") != (password == "") {
+		return fmt.Errorf("loza: basic auth username and password must be provided together")
+	}
+	if username == "" {
+		return nil
+	}
+	if strings.ContainsAny(username, ":\t\r\n ") {
+		return fmt.Errorf("loza: basic auth username must not contain ':' or whitespace")
+	}
+	if endpointURL, err := url.Parse(strings.TrimSpace(endpoint)); err == nil &&
+		strings.EqualFold(endpointURL.Scheme, "http") &&
+		(!insecure || !isLocalCollectorHost(endpointURL.Hostname())) {
+		return fmt.Errorf("loza: credentialed collector endpoints require TLS (set Insecure only for local development)")
 	}
 	return nil
 }
@@ -760,16 +849,21 @@ func envOr(key, def string) string {
 func LoadFromEnv(base Config) Config {
 	cfg := base
 
-	// Load DSN first (sets CollectorURL, Environment, Service, Insecure).
-	// Individual env vars below can override DSN-derived values.
+	// Load DSN first (sets CollectorURL, Environment, Service, Insecure, and
+	// credential fields when userinfo is present). Individual env vars below
+	// can override DSN-derived values.
 	if rawDSN := os.Getenv("LOZA_DSN"); rawDSN != "" {
-		if d, err := dsn.Parse(rawDSN); err == nil {
+		if d, username, password, err := parseSDKDSN(rawDSN); err == nil {
 			cfg.CollectorURL = d.BaseURL
 			cfg.Environment = d.Env
 			if d.Service != "" {
 				cfg.Service = d.Service
 			}
 			cfg.Insecure = !d.TLS
+			if username != "" && password != "" {
+				cfg.DSNUsername = username
+				cfg.DSNPassword = password
+			}
 		}
 		// If DSN parsing fails, fall through to individual env vars.
 	}
@@ -845,6 +939,45 @@ func LoadFromEnv(base Config) Config {
 	return cfg
 }
 
+// parseSDKDSN keeps the SDK compatible with released spec modules that parse
+// only credential-free endpoint strings while preserving the shared parser's
+// endpoint semantics and the credentialed DSN contract.
+func parseSDKDSN(raw string) (*dsn.LozaDSN, string, string, error) {
+	parsed, err := dsn.Parse(raw)
+	if err == nil {
+		username, password := credentialedDSNUserinfo(raw)
+		return parsed, username, password, nil
+	}
+
+	parsedURL, urlErr := url.Parse(raw)
+	if urlErr != nil || parsedURL.User == nil {
+		return nil, "", "", err
+	}
+	username, password := parsedURL.User.Username(), ""
+	var hasPassword bool
+	password, hasPassword = parsedURL.User.Password()
+	if username == "" || !hasPassword || password == "" {
+		return nil, "", "", err
+	}
+	parsedURL.User = nil
+	endpoint, endpointErr := dsn.Parse(parsedURL.String())
+	if endpointErr != nil {
+		return nil, "", "", err
+	}
+	return endpoint, username, password, nil
+}
+
+func credentialedDSNUserinfo(raw string) (string, string) {
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.User == nil {
+		return "", ""
+	}
+	password, ok := parsed.User.Password()
+	if !ok {
+		return "", ""
+	}
+	return parsed.User.Username(), password
+}
 
 // validateSDKConfig validates the SDK configuration per Requirement 32.5 and 32.6.
 // Returns an error if required fields are missing or values are invalid.
@@ -928,8 +1061,9 @@ func NewClient(cfg Config) (*Logger, error) {
 	// Step 3: Apply code-level config (highest precedence)
 	merged = mergeCodeConfig(merged, cfg)
 
+	merged.CollectorURL = safeCollectorEndpoint(merged.CollectorURL)
 	if strings.TrimSpace(merged.CollectorURL) == "" && strings.TrimSpace(merged.CollectorEndpoint) != "" {
-		merged.CollectorURL = strings.TrimSpace(merged.CollectorEndpoint)
+		merged.CollectorURL = safeCollectorEndpoint(merged.CollectorEndpoint)
 	}
 
 	// Step 4: Validate the final config
@@ -938,12 +1072,14 @@ func NewClient(cfg Config) (*Logger, error) {
 	}
 
 	// If no explicit sink was configured, route events to the collector endpoint
-	// using HTTPBatchSink (NDJSON batching with periodic flush).
 	if shouldInstallDefaultCollectorSink(merged) {
-		// Build headers from config (auth + service identity)
+		// Build headers from config (auth + service identity). Bearer API-key
+		// authentication takes precedence over DSN Basic credentials.
 		headers := make(map[string]string)
 		if merged.APIKey != "" {
 			headers["Authorization"] = "Bearer " + merged.APIKey
+		} else if merged.DSNUsername != "" && merged.DSNPassword != "" {
+			headers["Authorization"] = basicAuthorization(merged.DSNUsername, merged.DSNPassword)
 		}
 		if merged.Service != "" {
 			headers["X-Loza-Service"] = merged.Service
@@ -958,6 +1094,7 @@ func NewClient(cfg Config) (*Logger, error) {
 			BatchSize:     merged.BatchSize,
 			FlushInterval: merged.Async.FlushInterval,
 			Gzip:          merged.EnableCompression,
+			Insecure:      merged.Insecure,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("loza: initialize httpbatch sink: %w", err)
@@ -991,6 +1128,18 @@ func mergeCodeConfig(base, code Config) Config {
 	if code.CollectorEndpoint != "" {
 		base.CollectorEndpoint = code.CollectorEndpoint
 		base.CollectorURL = code.CollectorEndpoint
+	}
+	if code.APIKey != "" {
+		base.APIKey = code.APIKey
+	}
+	if code.DSNUsername != "" {
+		base.DSNUsername = code.DSNUsername
+	}
+	if code.DSNPassword != "" {
+		base.DSNPassword = code.DSNPassword
+	}
+	if code.codeSetInsecure || code.Insecure {
+		base.Insecure = code.Insecure
 	}
 	if code.Service != "" {
 		base.Service = code.Service

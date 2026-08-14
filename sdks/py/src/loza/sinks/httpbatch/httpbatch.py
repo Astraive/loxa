@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import gzip as gzip_mod
 import time
 import urllib.request
@@ -19,6 +20,7 @@ from ...core.http_client import (
     _parse_collector_response_body,
     _parse_retry_after,
     _retry_delay,
+    _validate_basic_auth_endpoint,
     _validate_collector_endpoint,
 )
 from ...version import SDK_VERSION
@@ -35,6 +37,8 @@ class HTTPBatchSink:
 
     endpoint: str
     api_key: str = ""
+    username: str = ""
+    password: str = ""
     auth_header: str = "Authorization"
     sdk_name: str = "loza-py"
     sdk_version: str = SDK_VERSION
@@ -47,9 +51,19 @@ class HTTPBatchSink:
     ndjson: bool = False
     stats_handler: Any = None
     _last_response: dict | None = field(default=None, init=False, repr=False)
-
     def __post_init__(self) -> None:
         _validate_collector_endpoint(self.endpoint)
+        _validate_basic_auth_endpoint(self.endpoint, self.username, self.password)
+
+    def _auth_headers(self) -> dict[str, str]:
+        if self.api_key:
+            if self.auth_header.lower() == "authorization":
+                return {self.auth_header: f"Bearer {self.api_key}"}
+            return {self.auth_header: self.api_key}
+        if self.username or self.password:
+            token = base64.b64encode(f"{self.username}:{self.password}".encode("utf-8")).decode("ascii")
+            return {"Authorization": f"Basic {token}"}
+        return {}
 
     def write(self, encoded: str) -> None:
         self.write_batch([encoded])
@@ -69,11 +83,7 @@ class HTTPBatchSink:
             payload = gzip_mod.compress(payload)
             headers["content-encoding"] = "gzip"
 
-        if self.api_key:
-            if self.auth_header.lower() == "authorization":
-                headers[self.auth_header] = f"Bearer {self.api_key}"
-            else:
-                headers[self.auth_header] = self.api_key
+        headers.update(self._auth_headers())
 
         req = urllib.request.Request(self.endpoint, data=payload, headers=headers, method="POST")
         last_error: Exception | None = None

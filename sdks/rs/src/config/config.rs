@@ -41,6 +41,9 @@ pub struct Config {
     pub async_enabled: bool,
     pub collector_endpoint: String,
     pub api_key: String,
+    pub basic_username: Option<String>,
+    pub basic_password: Option<String>,
+    pub insecure: bool,
     pub duplicate_policy: String,
     pub max_event_bytes: usize,
     pub sampler: SamplerConfig,
@@ -63,11 +66,19 @@ impl std::fmt::Debug for Config {
             .field("alias", &self.alias)
             .field("version", &self.version)
             .field("environment", &self.environment)
-            .field("region", &self.region)
             .field("level", &self.level)
             .field("strict", &self.strict)
-            .field("async_enabled", &self.async_enabled)
             .field("collector_endpoint", &self.collector_endpoint)
+            .field(
+                "api_key",
+                &(!self.api_key.is_empty()).then_some("<redacted>"),
+            )
+            .field("basic_username", &self.basic_username)
+            .field(
+                "basic_password",
+                &self.basic_password.as_ref().map(|_| "<redacted>"),
+            )
+            .field("insecure", &self.insecure)
             .field("duplicate_policy", &self.duplicate_policy)
             .field("max_event_bytes", &self.max_event_bytes)
             .field("sinks", &self.sinks)
@@ -83,7 +94,6 @@ impl std::fmt::Debug for Config {
             .finish()
     }
 }
-
 #[derive(Clone, Debug, Default, Deserialize)]
 pub(crate) struct FileConfig {
     pub(crate) service: Option<String>,
@@ -95,6 +105,9 @@ pub(crate) struct FileConfig {
     pub(crate) async_enabled: Option<bool>,
     pub(crate) collector_endpoint: Option<String>,
     pub(crate) api_key: Option<String>,
+    pub(crate) basic_username: Option<String>,
+    pub(crate) basic_password: Option<String>,
+    pub(crate) insecure: Option<bool>,
     pub(crate) duplicate_policy: Option<String>,
     pub(crate) max_event_bytes: Option<usize>,
 }
@@ -122,7 +135,7 @@ impl MemorySinkStore {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum SinkConfig {
     Stdout,
     Stderr,
@@ -132,12 +145,54 @@ pub enum SinkConfig {
     HttpBatch {
         endpoint: String,
         api_key: Option<String>,
+        basic_username: Option<String>,
+        basic_password: Option<String>,
+        insecure: bool,
         timeout_ms: u64,
         max_batch_bytes: usize,
         max_retries: u32,
         enable_compression: bool,
         ndjson: bool,
     },
+}
+
+impl std::fmt::Debug for SinkConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Stdout => f.write_str("Stdout"),
+            Self::Stderr => f.write_str("Stderr"),
+            Self::File(path) => f.debug_tuple("File").field(path).finish(),
+            Self::Memory(store) => f.debug_tuple("Memory").field(store).finish(),
+            Self::Noop => f.write_str("Noop"),
+            Self::HttpBatch {
+                endpoint,
+                api_key,
+                basic_username,
+                basic_password,
+                insecure,
+                timeout_ms,
+                max_batch_bytes,
+                max_retries,
+                enable_compression,
+                ndjson,
+            } => f
+                .debug_struct("HttpBatch")
+                .field("endpoint", endpoint)
+                .field("api_key", &api_key.as_ref().map(|_| "<redacted>"))
+                .field("basic_username", basic_username)
+                .field(
+                    "basic_password",
+                    &basic_password.as_ref().map(|_| "<redacted>"),
+                )
+                .field("insecure", insecure)
+                .field("timeout_ms", timeout_ms)
+                .field("max_batch_bytes", max_batch_bytes)
+                .field("max_retries", max_retries)
+                .field("enable_compression", enable_compression)
+                .field("ndjson", ndjson)
+                .finish(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -273,13 +328,49 @@ impl Config {
         self
     }
 
-    pub fn with_collector_endpoint(mut self, endpoint: impl Into<String>) -> Self {
-        self.collector_endpoint = endpoint.into();
-        self
+    pub fn with_collector_endpoint(self, endpoint: impl Into<String>) -> Self {
+        let endpoint = endpoint.into();
+        if endpoint.starts_with("loza://") {
+            self.with_dsn(endpoint)
+        } else {
+            let mut config = self;
+            config.collector_endpoint = endpoint;
+            config
+        }
     }
 
     pub fn with_api_key(mut self, api_key: impl Into<String>) -> Self {
         self.api_key = api_key.into();
+        self
+    }
+    pub fn with_basic_auth(
+        mut self,
+        username: impl Into<String>,
+        password: impl Into<String>,
+    ) -> Self {
+        self.basic_username = Some(username.into());
+        self.basic_password = Some(password.into());
+        self
+    }
+
+    pub fn with_dsn(mut self, raw: impl AsRef<str>) -> Self {
+        match super::dsn::parse(raw.as_ref()) {
+            Ok(dsn) => {
+                self.collector_endpoint = dsn.base_url;
+                self.environment = dsn.env;
+                if !dsn.service.is_empty() {
+                    self.service = dsn.service;
+                }
+                if dsn.username.is_some() && dsn.password.is_some() {
+                    self.basic_username = dsn.username;
+                    self.basic_password = dsn.password;
+                }
+                self.insecure = !dsn.tls;
+            }
+            Err(_) => {
+                self.collector_endpoint = raw.as_ref().to_string();
+            }
+        }
         self
     }
 
@@ -419,6 +510,37 @@ impl Config {
                 ),
             ));
         }
+        if self.basic_username.is_some() != self.basic_password.is_some() {
+            return Err(crate::errors::LozaError::Validation(
+                crate::errors::ValidationError::new(
+                    None,
+                    "invalid_basic_auth",
+                    "basic username and password must be configured together".to_string(),
+                ),
+            ));
+        }
+        if self.basic_username.is_some()
+            && self.collector_endpoint.starts_with("http://")
+            && (!self.insecure || !is_local_endpoint(&self.collector_endpoint))
+        {
+            return Err(crate::errors::LozaError::Validation(
+                crate::errors::ValidationError::new(
+                    Some("collector_endpoint"),
+                    "insecure_basic_auth",
+                    "credentialed HTTP requires an explicit local/insecure configuration"
+                        .to_string(),
+                ),
+            ));
+        }
+        if self.collector_endpoint.starts_with("loza://") {
+            return Err(crate::errors::LozaError::Validation(
+                crate::errors::ValidationError::new(
+                    Some("collector_endpoint"),
+                    "invalid_endpoint",
+                    "loza:// DSNs must be resolved before creating a client".to_string(),
+                ),
+            ));
+        }
         Ok(())
     }
 }
@@ -451,6 +573,15 @@ impl FileConfig {
         }
         if let Some(value) = self.api_key {
             cfg.api_key = value;
+        }
+        if let Some(value) = self.basic_username {
+            cfg.basic_username = Some(value);
+        }
+        if let Some(value) = self.basic_password {
+            cfg.basic_password = Some(value);
+        }
+        if let Some(value) = self.insecure {
+            cfg.insecure = value;
         }
         if let Some(value) = self.duplicate_policy {
             cfg.duplicate_policy = value;
@@ -508,6 +639,9 @@ pub fn new_client(code_config: Config) -> Result<crate::Logger, crate::errors::L
                             .filter(|s| !s.is_empty())
                     })
             },
+            insecure: merged.insecure,
+            basic_username: merged.basic_username.clone(),
+            basic_password: merged.basic_password.clone(),
             timeout_ms: 2_000,
             max_batch_bytes: 256 * 1024,
             max_retries: 3,
@@ -523,9 +657,7 @@ pub fn new_client(code_config: Config) -> Result<crate::Logger, crate::errors::L
 
 #[allow(dead_code)]
 fn merge_code_config(mut base: Config, code: Config) -> Config {
-    // Compare against base defaults to determine what was explicitly set
     let defaults = Config::base();
-
     if code.service != defaults.service {
         base.service = code.service;
     }
@@ -556,13 +688,19 @@ fn merge_code_config(mut base: Config, code: Config) -> Config {
     if code.api_key != defaults.api_key {
         base.api_key = code.api_key;
     }
+    if code.basic_username.is_some() {
+        base.basic_username = code.basic_username;
+        base.basic_password = code.basic_password;
+    }
+    if code.insecure != defaults.insecure {
+        base.insecure = code.insecure;
+    }
     if code.duplicate_policy != defaults.duplicate_policy {
         base.duplicate_policy = code.duplicate_policy;
     }
     if code.max_event_bytes != defaults.max_event_bytes {
         base.max_event_bytes = code.max_event_bytes;
     }
-    // For sinks, if code config has non-default sinks, use them
     if !(code.sinks.is_empty()
         || code.sinks.len() == 1 && matches!(&code.sinks[0], SinkConfig::Stdout))
     {
@@ -611,6 +749,15 @@ fn overlay_file_config(mut base: FileConfig, override_cfg: FileConfig) -> FileCo
     if override_cfg.api_key.is_some() {
         base.api_key = override_cfg.api_key;
     }
+    if override_cfg.basic_username.is_some() {
+        base.basic_username = override_cfg.basic_username;
+    }
+    if override_cfg.basic_password.is_some() {
+        base.basic_password = override_cfg.basic_password;
+    }
+    if override_cfg.insecure.is_some() {
+        base.insecure = override_cfg.insecure;
+    }
     if override_cfg.duplicate_policy.is_some() {
         base.duplicate_policy = override_cfg.duplicate_policy;
     }
@@ -620,6 +767,32 @@ fn overlay_file_config(mut base: FileConfig, override_cfg: FileConfig) -> FileCo
     base
 }
 
+fn is_local_endpoint(endpoint: &str) -> bool {
+    let authority = endpoint
+        .strip_prefix("http://")
+        .or_else(|| endpoint.strip_prefix("https://"))
+        .unwrap_or(endpoint)
+        .split('/')
+        .next()
+        .unwrap_or_default()
+        .rsplit_once('@')
+        .map(|(_, host)| host)
+        .unwrap_or_else(|| {
+            endpoint
+                .strip_prefix("http://")
+                .or_else(|| endpoint.strip_prefix("https://"))
+                .unwrap_or(endpoint)
+                .split('/')
+                .next()
+                .unwrap_or_default()
+        });
+    let host = if let Some(ipv6) = authority.strip_prefix('[') {
+        ipv6.split(']').next().unwrap_or_default()
+    } else {
+        authority.split(':').next().unwrap_or_default()
+    };
+    matches!(host, "localhost" | "127.0.0.1" | "::1")
+}
 fn load_file_config(path: impl AsRef<Path>) -> Result<FileConfig, std::io::Error> {
     let raw = fs::read_to_string(path)?;
     let parsed = serde_yaml::from_str::<FileConfig>(&raw).unwrap_or_default();

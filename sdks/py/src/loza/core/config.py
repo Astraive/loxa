@@ -100,6 +100,8 @@ class Config:
     sinks: list[Any] = field(default_factory=list)
     collector_endpoint: str = ""
     api_key: str = ""
+    username: str = field(default="", repr=False)
+    password: str = field(default="", repr=False)
     duplicate_policy: str = "canonical_wins"
     schema: Any = None
     sampler: Any = None
@@ -173,6 +175,9 @@ class Config:
     def with_collector_endpoint(self, endpoint: str) -> "Config":
         return replace(self, collector_endpoint=endpoint)
 
+    def with_basic_auth(self, username: str, password: str) -> "Config":
+        return replace(self, username=username, password=password)
+
     def with_api_key(self, api_key: str) -> "Config":
         return replace(self, api_key=api_key.strip())
 
@@ -215,6 +220,8 @@ class Config:
         return _apply_env_vars(cls())
 
     def validate(self) -> None:
+        if self.collector_endpoint.strip().startswith("loza://"):
+            _apply_dsn(self, self.collector_endpoint.strip(), include_credentials=not bool(self.api_key))
         if self.level not in {"debug", "info", "notice", "warn", "error", "fatal"}:
             raise ValueError(f"unsupported level: {self.level}")
         if self.async_config.queue_size <= 0:
@@ -225,6 +232,14 @@ class Config:
             raise ValueError("max_event_bytes must be positive")
         if self.strict and not self.service:
             raise ValueError("strict mode requires service")
+        if bool(self.username) != bool(self.password):
+            raise ValueError("collector basic auth requires both username and password")
+        if self.username and self.collector_endpoint.lower().startswith("http://"):
+            from urllib.parse import urlparse
+
+            host = (urlparse(self.collector_endpoint).hostname or "").lower()
+            if host not in {"localhost", "127.0.0.1", "::1"}:
+                raise ValueError("collector basic auth requires HTTPS except for local endpoints")
 
 
 def load_layered_config() -> Config:
@@ -275,9 +290,41 @@ def _collector_ingest_endpoint(endpoint: str) -> str:
         return endpoint
     return f"{endpoint}/events"
 
+def _apply_dsn(cfg: Config, raw: str, *, include_credentials: bool = True) -> None:
+    from .dsn import parse
+
+    dsn = parse(raw)
+    cfg.collector_endpoint = dsn.base_url
+    if dsn.env != "default":
+        cfg.environment = dsn.env
+    if dsn.service:
+        cfg.service = dsn.service
+    if include_credentials and dsn.username and not cfg.api_key and not cfg.username:
+        cfg.username = dsn.username
+        cfg.password = dsn.password
+
+
+def _resolve_endpoint_source(cfg: Config, raw: str, *, include_credentials: bool) -> None:
+    raw = raw.strip()
+    if raw.startswith("loza://"):
+        _apply_dsn(cfg, raw, include_credentials=include_credentials)
+    else:
+        cfg.collector_endpoint = raw
+
 
 def _apply_env_vars(cfg: Config) -> Config:
     """Apply environment variables to config, overriding file values."""
+    dsn_raw = os.getenv("LOZA_DSN", "").strip()
+    if dsn_raw:
+        _resolve_endpoint_source(cfg, dsn_raw, include_credentials=True)
+
+    collector_url = os.getenv("LOZA_COLLECTOR_URL", "").strip()
+    collector_endpoint = os.getenv("LOZA_COLLECTOR_ENDPOINT", "").strip()
+    if collector_url:
+        _resolve_endpoint_source(cfg, collector_url, include_credentials=False)
+    elif collector_endpoint:
+        _resolve_endpoint_source(cfg, collector_endpoint, include_credentials=False)
+
     env_map = {
         "LOZA_SERVICE": "service",
         "LOZA_SERVICE_NAME": "service",
@@ -285,8 +332,6 @@ def _apply_env_vars(cfg: Config) -> Config:
         "LOZA_ENVIRONMENT": "environment",
         "LOZA_REGION": "region",
         "LOZA_LOG_LEVEL": "level",
-        "LOZA_COLLECTOR_URL": "collector_endpoint",
-        "LOZA_COLLECTOR_ENDPOINT": "collector_endpoint",
         "LOZA_API_KEY": "api_key",
         "LOZA_DUPLICATE_POLICY": "duplicate_policy",
     }
@@ -342,7 +387,12 @@ def _merge_file_config(base: Config, file_cfg: Config) -> Config:
     if file_cfg.strict:
         base.strict = file_cfg.strict
     if file_cfg.collector_endpoint and not base.collector_endpoint:
-        base.collector_endpoint = file_cfg.collector_endpoint
+        _resolve_endpoint_source(base, file_cfg.collector_endpoint, include_credentials=True)
+    if file_cfg.api_key and not base.api_key:
+        base.api_key = file_cfg.api_key
+    if file_cfg.username and not base.username and not base.api_key:
+        base.username = file_cfg.username
+        base.password = file_cfg.password
     if file_cfg.duplicate_policy and file_cfg.duplicate_policy != CanonicalWins:
         base.duplicate_policy = file_cfg.duplicate_policy
     if file_cfg.checkpoint_emit_immediately:
@@ -365,7 +415,12 @@ def _merge_code_config(base: Config, code: Config) -> Config:
     if code.strict:
         base.strict = code.strict
     if code.collector_endpoint:
-        base.collector_endpoint = code.collector_endpoint
+        _resolve_endpoint_source(base, code.collector_endpoint, include_credentials=not bool(code.api_key))
+    if code.api_key:
+        base.api_key = code.api_key.strip()
+    if code.username and not code.api_key:
+        base.username = code.username
+        base.password = code.password
     if code.duplicate_policy and code.duplicate_policy != CanonicalWins:
         base.duplicate_policy = code.duplicate_policy
     if code.sinks:
@@ -430,6 +485,9 @@ def _config_from_mapping(data: dict[str, Any]) -> Config:
         level=str(data.get("level", "info")),
         strict=bool(data.get("strict", False)),
         collector_endpoint=str(data.get("collector_endpoint", "")),
+        api_key=str(data.get("api_key", "")),
+        username=str(data.get("username", "")),
+        password=str(data.get("password", "")),
         duplicate_policy=str(data.get("duplicate_policy", CanonicalWins)),
         checkpoint_emit_immediately=bool(data.get("checkpoint_emit_immediately", False)),
         async_config=AsyncConfig(

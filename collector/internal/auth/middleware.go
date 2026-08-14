@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 )
 
 // parsedCIDRNet holds a pre-parsed CIDR to avoid repeated net.ParseCIDR calls.
@@ -22,25 +23,25 @@ var cidrCache sync.Map // map[string]*parsedCIDRNet
 
 // KeyRecord holds the stored metadata for an API key.
 type KeyRecord struct {
-	ID           string
-	OrgID        string
-	ProjectID    string
-	KeyID        string
-	SecretHash   []byte
-	Kind         KeyKind
-	Roles        []Role
-	AllowedEnvs     []string
-	AllowedServices []string
-	AllowedOrigins  []string
-	AllowedIPs      []string
-	MaxPayloadBytes     int
+	ID                   string
+	OrgID                string
+	ProjectID            string
+	KeyID                string
+	SecretHash           []byte
+	Kind                 KeyKind
+	Roles                []Role
+	AllowedEnvs          []string
+	AllowedServices      []string
+	AllowedOrigins       []string
+	AllowedIPs           []string
+	MaxPayloadBytes      int
 	MaxRequestsPerMinute int
-	MaxEventsPerMinute  int
-	SamplingRate        float64
-	AllowPII            bool
-	AllowAttachments    bool
-	RevokedAt       *time.Time
-	ExpiresAt       *time.Time
+	MaxEventsPerMinute   int
+	SamplingRate         float64
+	AllowPII             bool
+	AllowAttachments     bool
+	RevokedAt            *time.Time
+	ExpiresAt            *time.Time
 }
 
 // KeyStore is the interface for key storage backends.
@@ -79,8 +80,8 @@ func WithRateLimiter(rl *KeyRateLimiter) MiddlewareOption {
 // — that's done per-route via RequirePermission.
 //
 // Validation flow:
-//  1. Parse Authorization header
-//  2. ParseKey → prefix, key_id, secret
+//  1. Parse Authorization header (Basic, Bearer, or X-API-Key)
+//  2. Map Basic username to key_id, or ParseKey for API-key credentials
 //  3. Cache lookup by key_id
 //  4. If cache miss: KeyStore.FindByKeyID()
 //  5. Check revoked / expired
@@ -106,9 +107,9 @@ func Middleware(store KeyStore, cache *MemoryKeyCache, serverSecret []byte, opts
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ac, errCode, errReason := authenticate(r, store, cache, serverSecret, rateLimiter, mc.allowLocalDevKeys, mc.trustedProxies)
+			ac, errCode, _ := authenticate(r, store, cache, serverSecret, rateLimiter, mc.allowLocalDevKeys, mc.trustedProxies)
 			if ac == nil {
-				slog.Warn("auth_failure", "code", errCode, "reason", errReason, "path", r.URL.Path, "remote", r.RemoteAddr)
+				slog.Warn("auth_failure", "code", errCode, "path", r.URL.Path, "remote", r.RemoteAddr)
 				w.Header().Set("Content-Type", "application/json")
 				w.Header().Set("X-Auth-Failure-Code", "unauthorized")
 				w.Header().Set("X-Auth-Failure-Reason", "authentication required")
@@ -150,35 +151,53 @@ func MakeRouteProtector() func(next http.Handler, perm string) http.Handler {
 }
 
 func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, serverSecret []byte, rateLimiter *KeyRateLimiter, allowLocalDevKeys bool, trustedProxies []*net.IPNet) (*AuthContext, string, string) {
-	// 1. Parse Authorization header
-	raw := extractBearerToken(r)
-	if raw == "" {
-		return nil, "missing_token", "missing Authorization header"
-	}
-
-	// 2. Parse key
-	parsed, err := ParseKey(raw)
-	if err != nil {
-		return nil, "invalid_key_format", err.Error()
-	}
-
-	// Handle local dev keys
-	if parsed.Kind == KeyKindLocal {
-		if !allowLocalDevKeys {
-			slog.Warn("local dev key rejected (allow_local_dev_keys=false)", "key", parsed.Raw[:min(len(parsed.Raw), 20)]+"...")
-			return nil, "local_dev_disabled", "local dev keys are not allowed in production mode"
+	// 1. Parse Authorization header. Basic credentials use the username as
+	// the configured key ID and the password as the HMAC input. Keep the
+	// existing Bearer/X-API-Key extraction path unchanged.
+	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+	var keyID, secret string
+	var keyKind KeyKind
+	isBasic := strings.HasPrefix(strings.ToLower(authHeader), "basic ")
+	if isBasic {
+		username, password, ok := r.BasicAuth()
+		if !ok || !validBasicUsername(username) || password == "" {
+			return nil, "invalid_basic_auth", "invalid basic credentials"
 		}
-		return &AuthContext{
-			KeyKind:     KeyKindLocal,
-			Permissions: ExpandRoles([]Role{RoleIngestServer}),
-			Roles:       []Role{RoleIngestServer},
-		}, "", ""
+		keyID = username
+		secret = password
+	} else {
+		raw := extractBearerToken(r)
+		if raw == "" {
+			return nil, "missing_token", "missing Authorization header"
+		}
+
+		// 2. Parse key
+		parsed, err := ParseKey(raw)
+		if err != nil {
+			return nil, "invalid_key_format", err.Error()
+		}
+
+		// Handle local dev keys
+		if parsed.Kind == KeyKindLocal {
+			if !allowLocalDevKeys {
+				slog.Warn("local dev key rejected (allow_local_dev_keys=false)")
+				return nil, "local_dev_disabled", "local dev keys are not allowed in production mode"
+			}
+			return &AuthContext{
+				KeyKind:     KeyKindLocal,
+				Permissions: ExpandRoles([]Role{RoleIngestServer}),
+				Roles:       []Role{RoleIngestServer},
+			}, "", ""
+		}
+		keyID = parsed.KeyID
+		secret = parsed.Secret
+		keyKind = parsed.Kind
 	}
 
 	// 3. Cache lookup
 	var record *KeyRecord
 	if cache != nil {
-		if cached, ok := cache.Get(parsed.KeyID); ok {
+		if cached, ok := cache.Get(keyID); ok {
 			record = cached
 		}
 	}
@@ -186,16 +205,22 @@ func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, server
 	// 4. Store lookup on cache miss
 	if record == nil {
 		var err error
-		record, err = store.FindByKeyID(r.Context(), parsed.KeyID)
+		record, err = store.FindByKeyID(r.Context(), keyID)
 		if err != nil || record == nil {
 			if cache != nil {
-				cache.SetNegative(parsed.KeyID)
+				cache.SetNegative(keyID)
 			}
 			return nil, "key_not_found", "invalid api key"
 		}
 		if cache != nil {
-			cache.Set(parsed.KeyID, record, 0) // default TTL
+			cache.Set(keyID, record, 0) // default TTL
 		}
+	}
+
+	// Basic authentication only accepts configured non-local keys. Existing
+	// API-key authentication retains its parsed key-kind check below.
+	if isBasic && record.Kind == KeyKindLocal {
+		return nil, "key_kind_mismatch", "api key kind mismatch"
 	}
 
 	// 5. Check revoked / expired
@@ -206,13 +231,13 @@ func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, server
 		return nil, "key_expired", "api key has expired"
 	}
 
-	// 6. Verify prefix matches
-	if string(record.Kind) != string(parsed.Kind) {
+	// 6. Verify prefix matches for API-key credentials.
+	if !isBasic && string(record.Kind) != string(keyKind) {
 		return nil, "key_kind_mismatch", "api key kind mismatch"
 	}
 
 	// 7. Verify secret hash
-	incomingHash := HashSecret(parsed.Secret, serverSecret)
+	incomingHash := HashSecret(secret, serverSecret)
 	if !CompareSecret(incomingHash, record.SecretHash) {
 		return nil, "invalid_secret", "invalid api key"
 	}
@@ -220,22 +245,22 @@ func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, server
 	// 8. Build AuthContext
 	permissions := ExpandRoles(record.Roles)
 	ac := &AuthContext{
-		OrgID:               record.OrgID,
-		ProjectID:           record.ProjectID,
-		APIKeyID:            record.KeyID,
-		KeyKind:             record.Kind,
-		Roles:               record.Roles,
-		Permissions:         permissions,
-		AllowedEnvs:         record.AllowedEnvs,
-		AllowedServices:     record.AllowedServices,
-		AllowedOrigins:      record.AllowedOrigins,
-		AllowedIPs:          record.AllowedIPs,
-		MaxPayloadBytes:     record.MaxPayloadBytes,
+		OrgID:                record.OrgID,
+		ProjectID:            record.ProjectID,
+		APIKeyID:             record.KeyID,
+		KeyKind:              record.Kind,
+		Roles:                record.Roles,
+		Permissions:          permissions,
+		AllowedEnvs:          record.AllowedEnvs,
+		AllowedServices:      record.AllowedServices,
+		AllowedOrigins:       record.AllowedOrigins,
+		AllowedIPs:           record.AllowedIPs,
+		MaxPayloadBytes:      record.MaxPayloadBytes,
 		MaxRequestsPerMinute: record.MaxRequestsPerMinute,
-		MaxEventsPerMinute:  record.MaxEventsPerMinute,
-		SamplingRate:        record.SamplingRate,
-		AllowPII:            record.AllowPII,
-		AllowAttachments:    record.AllowAttachments,
+		MaxEventsPerMinute:   record.MaxEventsPerMinute,
+		SamplingRate:         record.SamplingRate,
+		AllowPII:             record.AllowPII,
+		AllowAttachments:     record.AllowAttachments,
 	}
 
 	// Public key strict defaults
@@ -290,6 +315,18 @@ func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, server
 	}
 
 	return ac, "", ""
+}
+
+func validBasicUsername(username string) bool {
+	if username == "" || strings.TrimSpace(username) != username {
+		return false
+	}
+	for _, r := range username {
+		if r == ':' || unicode.IsSpace(r) {
+			return false
+		}
+	}
+	return true
 }
 
 func extractBearerToken(r *http.Request) string {

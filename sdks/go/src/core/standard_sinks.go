@@ -18,6 +18,23 @@ import (
 	speccontract "github.com/astraive/loza/spec/generated/go/contract"
 )
 
+func cloneHeaders(headers map[string]string) map[string]string {
+	cloned := make(map[string]string, len(headers))
+	for key, value := range headers {
+		cloned[key] = value
+	}
+	return cloned
+}
+
+func hasNonEmptyHeader(headers map[string]string, name string) bool {
+	for key, value := range headers {
+		if strings.EqualFold(key, name) && value != "" {
+			return true
+		}
+	}
+	return false
+}
+
 // ── stdout / stderr sinks ─────────────────────────────────────────────────────
 
 type writerSink struct {
@@ -261,6 +278,9 @@ func NoopSink() Sink { return noopSink{} }
 type CollectorSinkConfig struct {
 	Endpoint          string
 	Headers           map[string]string
+	BasicUsername     string
+	BasicPassword     string
+	Insecure          bool
 	Client            *http.Client
 	Transport         *HTTPTransport
 	Metrics           *MetricsCollector
@@ -281,6 +301,25 @@ type collectorSink struct {
 func CollectorSink(cfg CollectorSinkConfig) (Sink, error) {
 	if strings.TrimSpace(cfg.Endpoint) == "" {
 		return nil, fmt.Errorf("loza: collector endpoint is required")
+	}
+	if err := validateCollectorCredentials(
+		cfg.Endpoint,
+		cfg.BasicUsername,
+		cfg.BasicPassword,
+		cfg.Insecure,
+	); err != nil {
+		return nil, err
+	}
+	cfg.Endpoint = safeCollectorEndpoint(cfg.Endpoint)
+	if cfg.BasicUsername != "" {
+		if cfg.Headers == nil {
+			cfg.Headers = make(map[string]string)
+		} else {
+			cfg.Headers = cloneHeaders(cfg.Headers)
+		}
+		if !hasNonEmptyHeader(cfg.Headers, "Authorization") {
+			cfg.Headers["Authorization"] = basicAuthorization(cfg.BasicUsername, cfg.BasicPassword)
+		}
 	}
 	if cfg.Transport == nil {
 		cfg.Transport = NewHTTPTransport(HTTPTransportConfig{
@@ -488,6 +527,9 @@ func gzipBody(body []byte) ([]byte, error) {
 type HTTPBatchSinkConfig struct {
 	Endpoint      string
 	Headers       map[string]string
+	BasicUsername string
+	BasicPassword string
+	Insecure      bool
 	BatchSize     int
 	FlushInterval time.Duration
 	Gzip          bool
@@ -503,11 +545,28 @@ type httpBatchSink struct {
 	closeOnce sync.Once
 }
 
-// HTTPBatchSink creates a sink that batches events as NDJSON and flushes
-// to the endpoint when BatchSize is reached or FlushInterval elapses.
 func HTTPBatchSink(cfg HTTPBatchSinkConfig) (Sink, error) {
 	if strings.TrimSpace(cfg.Endpoint) == "" {
 		return nil, fmt.Errorf("loza: httpbatch endpoint is required")
+	}
+	if err := validateCollectorCredentials(
+		cfg.Endpoint,
+		cfg.BasicUsername,
+		cfg.BasicPassword,
+		cfg.Insecure,
+	); err != nil {
+		return nil, err
+	}
+	cfg.Endpoint = safeCollectorEndpoint(cfg.Endpoint)
+	if cfg.BasicUsername != "" {
+		if cfg.Headers == nil {
+			cfg.Headers = make(map[string]string)
+		} else {
+			cfg.Headers = cloneHeaders(cfg.Headers)
+		}
+		if !hasNonEmptyHeader(cfg.Headers, "Authorization") {
+			cfg.Headers["Authorization"] = basicAuthorization(cfg.BasicUsername, cfg.BasicPassword)
+		}
 	}
 	if cfg.BatchSize <= 0 {
 		cfg.BatchSize = 100

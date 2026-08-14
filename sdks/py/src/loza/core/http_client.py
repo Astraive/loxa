@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import socket
 import time
@@ -131,8 +132,11 @@ class CollectorClient:
         sdk_name: str = "loza-py",
         sdk_version: str = SDK_VERSION,
         service: str = "",
+        username: str = "",
+        password: str = "",
     ) -> None:
         _validate_collector_endpoint(endpoint)
+        _validate_basic_auth_endpoint(endpoint, username, password)
         self.endpoint = endpoint
         self.api_key = api_key
         self.auth_header = auth_header
@@ -141,6 +145,18 @@ class CollectorClient:
         self.sdk_name = sdk_name
         self.sdk_version = sdk_version
         self.service = service
+        self.username = username
+        self.password = password
+
+    def _auth_headers(self) -> dict[str, str]:
+        if self.api_key:
+            if self.auth_header.lower() == "authorization":
+                return {self.auth_header: f"Bearer {self.api_key}"}
+            return {self.auth_header: self.api_key}
+        if self.username or self.password:
+            token = base64.b64encode(f"{self.username}:{self.password}".encode("utf-8")).decode("ascii")
+            return {"Authorization": f"Basic {token}"}
+        return {}
 
     def envelope(self, encoded_events: Iterable[str]) -> bytes:
         return _build_ingest_body(encoded_events, self.sdk_name, self.sdk_version, self.service)
@@ -148,11 +164,7 @@ class CollectorClient:
     def send_batch(self, encoded_events: Iterable[str]) -> CollectorResponse:
         body = self.envelope(encoded_events)
         headers = {"content-type": "application/json"}
-        if self.api_key:
-            if self.auth_header.lower() == "authorization":
-                headers[self.auth_header] = f"Bearer {self.api_key}"
-            else:
-                headers[self.auth_header] = self.api_key
+        headers.update(self._auth_headers())
         request = Request(self.endpoint, data=body, headers=headers, method="POST")
         last_error: Exception | None = None
         for attempt in range(self.retries + 1):
@@ -193,7 +205,7 @@ class CollectorClient:
     def health(self) -> bool:
         """Check if the collector is healthy."""
         for path in ("/health", "/healthz"):
-            req = Request(f"{self._base_url()}{path}", method="GET")
+            req = Request(f"{self._base_url()}{path}", headers=self._auth_headers(), method="GET")
             try:
                 with urlopen(req, timeout=self.timeout) as resp:
                     data = json.loads(resp.read())
@@ -206,7 +218,7 @@ class CollectorClient:
     def ready(self) -> bool:
         """Check if the collector is ready to accept requests."""
         for path in ("/ready", "/readyz"):
-            req = Request(f"{self._base_url()}{path}", method="GET")
+            req = Request(f"{self._base_url()}{path}", headers=self._auth_headers(), method="GET")
             try:
                 with urlopen(req, timeout=self.timeout) as resp:
                     data = json.loads(resp.read())
@@ -218,18 +230,13 @@ class CollectorClient:
 
     def version(self) -> dict:
         """Fetch version info from the collector."""
-        req = Request(f"{self._base_url()}/version", method="GET")
+        req = Request(f"{self._base_url()}/version", headers=self._auth_headers(), method="GET")
         with urlopen(req, timeout=self.timeout) as resp:
             return json.loads(resp.read())
 
     def status(self) -> dict:
         """Fetch operational status from the collector."""
-        req = Request(f"{self._base_url()}/status", method="GET")
-        if self.api_key:
-            if self.auth_header.lower() == "authorization":
-                req.add_header(self.auth_header, f"Bearer {self.api_key}")
-            else:
-                req.add_header(self.auth_header, self.api_key)
+        req = Request(f"{self._base_url()}/status", headers=self._auth_headers(), method="GET")
         with urlopen(req, timeout=self.timeout) as resp:
             return json.loads(resp.read())
 
@@ -258,7 +265,7 @@ class CollectorClient:
         if params:
             url += "?" + urlencode(params)
 
-        request = Request(url, headers={"accept": "application/x-ndjson"})
+        request = Request(url, headers={"accept": "application/x-ndjson", **self._auth_headers()})
         with urlopen(request, timeout=timeout) as response:
             for raw in response:
                 line = raw.decode("utf-8").strip()
@@ -270,9 +277,15 @@ class CollectorClient:
 
 
 def _validate_collector_endpoint(endpoint: str) -> None:
-    parsed = urlparse(endpoint)
+    try:
+        parsed = urlparse(endpoint)
+        port = parsed.port
+    except ValueError as exc:
+        raise ValueError("collector endpoint is malformed") from exc
     if parsed.scheme not in {"http", "https"}:
         raise ValueError("collector endpoint must use http or https")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("collector endpoint must not contain credentials")
     if not parsed.hostname:
         raise ValueError("collector endpoint must include a host")
     if _private_endpoint_allowed():
@@ -289,6 +302,16 @@ def _validate_collector_endpoint(endpoint: str) -> None:
         addr = ip_address(raw)
         if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_multicast or addr.is_reserved:
             raise ValueError("collector endpoint resolves to a non-public address")
+
+
+def _validate_basic_auth_endpoint(endpoint: str, username: str, password: str) -> None:
+    if bool(username) != bool(password):
+        raise ValueError("collector basic auth requires both username and password")
+    if not username:
+        return
+    parsed = urlparse(endpoint)
+    if parsed.scheme == "http" and (parsed.hostname or "").lower() not in {"localhost", "127.0.0.1", "::1"}:
+        raise ValueError("collector basic auth requires HTTPS except for local endpoints")
 
 
 def _private_endpoint_allowed() -> bool:
@@ -324,11 +347,7 @@ def _collector_request(
         url += "?" + urlencode(params)
     data = json.dumps(body).encode("utf-8") if body is not None else None
     headers = {"content-type": "application/json"} if body else {}
-    if client.api_key:
-        if client.auth_header.lower() == "authorization":
-            headers[client.auth_header] = f"Bearer {client.api_key}"
-        else:
-            headers[client.auth_header] = client.api_key
+    headers.update(client._auth_headers())
     req = Request(url, data=data, headers=headers, method=method)
     with urlopen(req, timeout=client.timeout) as resp:
         raw = resp.read()

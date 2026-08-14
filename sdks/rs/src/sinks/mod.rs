@@ -30,6 +30,9 @@ pub fn otlp_sink(endpoint: impl Into<String>) -> SinkConfig {
     SinkConfig::HttpBatch {
         endpoint: endpoint.into(),
         api_key: None,
+        basic_username: None,
+        basic_password: None,
+        insecure: false,
         timeout_ms: 2_000,
         max_batch_bytes: 256 * 1024,
         max_retries: 3,
