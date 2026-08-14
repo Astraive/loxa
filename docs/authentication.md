@@ -200,7 +200,10 @@ Basic credentials are sent over TLS by default. Never put the password in query 
 
 ## Collector Configuration
 
-The Collector validates configured key records using RBAC and ABAC. `server_secret` is an independent HMAC key; it is not the at-rest storage key. `secret_env` names hold only the token secret, so a configured key is presented as `lx_{kind}_live_{key_id}_${SECRET_ENV}`.
+The Collector validates configured key records using RBAC and ABAC.
+`server_secret` is an independent HMAC key; it is not the at-rest storage key.
+`secret_env` holds only the token secret, so a configured key is presented as
+`lx_{kind}_live_{key_id}_${SECRET_ENV}`.
 
 ```yaml
 auth:
@@ -208,28 +211,45 @@ auth:
   server_secret: "${COLLECTOR_AUTH_SERVER_SECRET}"
   cache_ttl: 5m
   negative_cache_ttl: 30s
+  default_collector: payments # legacy root routes only
+  collectors:
+    - slug: payments
   keys:
-    - name: ingest
-      key_id: kingest
-      secret_env: COLLECTOR_INGEST_KEY_SECRET
+    - name: payments-operator
+      key_id: kpaymentsoperator
+      secret_env: PAYMENTS_OPERATOR_KEY_SECRET
       kind: sec
-      roles: [collector_ingest_server]
-    - name: administrator
-      key_id: kadmin
-      secret_env: COLLECTOR_ADMIN_KEY_SECRET
+      collector: payments
+      permissions: [events:read, events:write, events:delete]
+      allowed_envs: [prod, staging]
+    - name: payments-admin
+      key_id: kpaymentsadmin
+      secret_env: PAYMENTS_ADMIN_KEY_SECRET
       kind: sec
-      roles: [project_admin]
-    - name: browser
-      key_id: collector_browser
-      secret_env: COLLECTOR_BROWSER_KEY_SECRET
+      collector: payments
+      permissions: [project:admin]
+      allowed_envs: [prod]
+    - name: payments-browser
+      key_id: kpaymentsbrowser
+      secret_env: PAYMENTS_BROWSER_KEY_SECRET
       kind: pub
-      roles: [collector_ingest_public]
+      collector: payments
+      permissions: [events:write]
+      allowed_envs: [prod]
       allowed_origins: [https://app.example.com]
 storage:
   encryption_key_env: LOZA_STORAGE_ENCRYPTION_KEY
 ```
 
-All configured key IDs must be unique. `kind` is `sec` or `pub`; public keys require a non-empty origin allowlist. Auth startup requires a non-empty resolved server secret, every configured key secret, and the storage encryption key. An explicit `auth.enabled: false` remains an operator override, not a tracked default.
+All configured key IDs must be unique. `kind` is `sec` or `pub`; public keys
+require a non-empty origin allowlist. A scoped API key MUST supply `collector`,
+`permissions`, and non-empty `allowed_envs`; the collector must be listed in
+`auth.collectors`. Its permissions are evaluated only against the canonical
+`/collectors/{collector}/...` resource and default to deny. Unscoped keys are
+supported solely for legacy root routes during migration. Auth startup requires
+a non-empty resolved server secret, every configured key secret, and the
+storage encryption key. An explicit `auth.enabled: false` remains an operator
+override, not a tracked default.
 
 ## Multi-Collector Access
 
@@ -245,18 +265,18 @@ The resolved ingest URL is
 `https://collector.example.com/collectors/payments/events`; userinfo is never
 included in that URL.
 
-Collector grants bind an authenticated credential to one or more named
-collectors, explicit environments, and permissions. The Collector defaults to
-deny when no grant matches the route collector, `X-Loza-Env`, and required
-permission. `project_admin` manages the named collector; `events:read`,
+API keys and Collector grants both bind an authenticated credential to a named
+collector, explicit environments, and permissions. The Collector defaults to
+deny when no binding matches the route collector, `X-Loza-Env`, and required
+permission. `project:admin` manages the named collector; `events:read`,
 `events:write`, and `events:delete` remain distinct.
 
 ```yaml
 auth:
   default_collector: payments # temporary legacy /events compatibility only
   collectors:
-    - name: payments
-    - name: analytics
+    - slug: payments
+    - slug: analytics
   grants:
     - name: payments-ingest
       collector: payments

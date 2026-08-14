@@ -31,6 +31,8 @@ type collectorAuthKey struct {
 	secret               string
 	kind                 auth.KeyKind
 	roles                []auth.Role
+	collector            string
+	permissions          []auth.Permission
 	allowedEnvs          []string
 	allowedServices      []string
 	allowedOrigins       []string

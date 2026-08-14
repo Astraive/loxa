@@ -139,14 +139,17 @@ type AuthGrantConfig struct {
 	MaxEventsPerMinute   int      `yaml:"max_events_per_minute"`
 }
 
-// AuthKeyConfig is the legacy API-key configuration retained during migration.
-// New collector-bound credentials should use AuthGrantConfig.
+// AuthKeyConfig defines an API-key credential. Collector and Permissions bind
+// the key to one collector resource for canonical data-plane routes. Both must
+// be supplied together; unscoped keys are retained only for legacy root routes.
 type AuthKeyConfig struct {
 	Name                 string   `yaml:"name"`
 	KeyID                string   `yaml:"key_id"`
 	SecretEnv            string   `yaml:"secret_env"`
 	Kind                 string   `yaml:"kind"`
 	Roles                []string `yaml:"roles"`
+	Collector            string   `yaml:"collector"`
+	Permissions          []string `yaml:"permissions"`
 	AllowedEnvs          []string `yaml:"allowed_envs"`
 	AllowedServices      []string `yaml:"allowed_services"`
 	AllowedOrigins       []string `yaml:"allowed_origins"`

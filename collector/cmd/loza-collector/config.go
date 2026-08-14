@@ -566,17 +566,8 @@ func resolveAuthConfig(fc fileConfig) (string, []collectorAuthKey, error) {
 		default:
 			return "", nil, fmt.Errorf("auth.keys[%d].kind must be pub or sec", i)
 		}
-		if kind == auth.KeyKindPublic {
-			hasOrigin := false
-			for _, origin := range key.AllowedOrigins {
-				if strings.TrimSpace(origin) != "" {
-					hasOrigin = true
-					break
-				}
-			}
-			if !hasOrigin {
-				return "", nil, fmt.Errorf("auth.keys[%d].allowed_origins must not be empty for public keys", i)
-			}
+		if kind == auth.KeyKindPublic && !hasNonEmptyString(key.AllowedOrigins) {
+			return "", nil, fmt.Errorf("auth.keys[%d].allowed_origins must not be empty for public keys", i)
 		}
 
 		roles := make([]auth.Role, len(key.Roles))
@@ -587,13 +578,36 @@ func resolveAuthConfig(fc fileConfig) (string, []collectorAuthKey, error) {
 			}
 			roles[j] = role
 		}
+
+		collector := strings.TrimSpace(key.Collector)
+		if (collector == "") != (len(key.Permissions) == 0) {
+			return "", nil, fmt.Errorf("auth.keys[%d].collector and auth.keys[%d].permissions must be configured together", i, i)
+		}
+		var permissions []auth.Permission
+		allowedEnvs := append([]string(nil), key.AllowedEnvs...)
+		if collector != "" {
+			if !collectorSlugPattern.MatchString(collector) {
+				return "", nil, fmt.Errorf("auth.keys[%d].collector must be a valid collector slug", i)
+			}
+			permissions, err = resolveCollectorKeyPermissions(key.Permissions, i)
+			if err != nil {
+				return "", nil, err
+			}
+			allowedEnvs, err = resolveCollectorKeyEnvironments(key.AllowedEnvs, i)
+			if err != nil {
+				return "", nil, err
+			}
+		}
+
 		keys = append(keys, collectorAuthKey{
 			name:                 strings.TrimSpace(key.Name),
 			keyID:                keyID,
 			secret:               secret,
 			kind:                 kind,
 			roles:                roles,
-			allowedEnvs:          append([]string(nil), key.AllowedEnvs...),
+			collector:            collector,
+			permissions:          permissions,
+			allowedEnvs:          allowedEnvs,
 			allowedServices:      append([]string(nil), key.AllowedServices...),
 			allowedOrigins:       append([]string(nil), key.AllowedOrigins...),
 			allowedIPs:           append([]string(nil), key.AllowedIPs...),
@@ -723,8 +737,16 @@ func validConfigBasicUsername(username string) bool {
 }
 
 func resolveCollectorGrantPermissions(raw []string, grantIndex int) ([]auth.Permission, error) {
+	return resolveCollectorPermissions(raw, fmt.Sprintf("auth.grants[%d].permissions", grantIndex))
+}
+
+func resolveCollectorKeyPermissions(raw []string, keyIndex int) ([]auth.Permission, error) {
+	return resolveCollectorPermissions(raw, fmt.Sprintf("auth.keys[%d].permissions", keyIndex))
+}
+
+func resolveCollectorPermissions(raw []string, field string) ([]auth.Permission, error) {
 	if len(raw) == 0 {
-		return nil, fmt.Errorf("auth.grants[%d].permissions must not be empty", grantIndex)
+		return nil, fmt.Errorf("%s must not be empty", field)
 	}
 	permissions := make([]auth.Permission, 0, len(raw))
 	seen := make(map[auth.Permission]struct{}, len(raw))
@@ -733,10 +755,10 @@ func resolveCollectorGrantPermissions(raw []string, grantIndex int) ([]auth.Perm
 		switch permission {
 		case auth.PermEventsRead, auth.PermEventsWrite, auth.PermEventsDelete, auth.PermProjectAdmin:
 		default:
-			return nil, fmt.Errorf("auth.grants[%d].permissions[%d] is not a collector grant permission", grantIndex, permissionIndex)
+			return nil, fmt.Errorf("%s[%d] is not a collector grant permission", field, permissionIndex)
 		}
 		if _, exists := seen[permission]; exists {
-			return nil, fmt.Errorf("auth.grants[%d].permissions must not contain duplicates", grantIndex)
+			return nil, fmt.Errorf("%s must not contain duplicates", field)
 		}
 		seen[permission] = struct{}{}
 		permissions = append(permissions, permission)
@@ -745,18 +767,26 @@ func resolveCollectorGrantPermissions(raw []string, grantIndex int) ([]auth.Perm
 }
 
 func resolveCollectorGrantEnvironments(raw []string, grantIndex int) ([]string, error) {
+	return resolveCollectorEnvironments(raw, fmt.Sprintf("auth.grants[%d].allowed_envs", grantIndex))
+}
+
+func resolveCollectorKeyEnvironments(raw []string, keyIndex int) ([]string, error) {
+	return resolveCollectorEnvironments(raw, fmt.Sprintf("auth.keys[%d].allowed_envs", keyIndex))
+}
+
+func resolveCollectorEnvironments(raw []string, field string) ([]string, error) {
 	if len(raw) == 0 {
-		return nil, fmt.Errorf("auth.grants[%d].allowed_envs must not be empty", grantIndex)
+		return nil, fmt.Errorf("%s must not be empty", field)
 	}
 	environments := make([]string, 0, len(raw))
 	seen := make(map[string]struct{}, len(raw))
 	for environmentIndex, value := range raw {
 		environment := strings.TrimSpace(value)
 		if environment == "" {
-			return nil, fmt.Errorf("auth.grants[%d].allowed_envs[%d] must not be empty", grantIndex, environmentIndex)
+			return nil, fmt.Errorf("%s[%d] must not be empty", field, environmentIndex)
 		}
 		if _, exists := seen[environment]; exists {
-			return nil, fmt.Errorf("auth.grants[%d].allowed_envs must not contain duplicates", grantIndex)
+			return nil, fmt.Errorf("%s must not contain duplicates", field)
 		}
 		seen[environment] = struct{}{}
 		environments = append(environments, environment)
@@ -837,9 +867,21 @@ func validateFileConfig(fc fileConfig) error {
 	if err != nil {
 		return err
 	}
-	_, authGrants, err := resolveCollectorAuthGrants(fc)
+	authCollectors, authGrants, err := resolveCollectorAuthGrants(fc)
 	if err != nil {
 		return err
+	}
+	configuredCollectors := make(map[string]struct{}, len(authCollectors))
+	for _, collector := range authCollectors {
+		configuredCollectors[collector] = struct{}{}
+	}
+	for keyIndex, key := range authKeys {
+		if key.collector == "" {
+			continue
+		}
+		if _, exists := configuredCollectors[key.collector]; !exists {
+			return fmt.Errorf("auth.keys[%d].collector must name a configured collector", keyIndex)
+		}
 	}
 	configuredCredentialIDs := make(map[string]struct{}, len(authKeys)+len(authGrants))
 	for _, key := range authKeys {

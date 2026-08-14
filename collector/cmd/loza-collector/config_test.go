@@ -164,6 +164,45 @@ storage:
 	}
 }
 
+func TestLoadCollectorConfigFromArgsResolvesScopedConfiguredKey(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "collector.yaml")
+	raw := `
+auth:
+  enabled: true
+  server_secret: ${COLLECTOR_AUTH_SERVER_SECRET}
+  cache_ttl: 1m
+  negative_cache_ttl: 10s
+  collectors:
+    - slug: checkout
+  keys:
+    - name: checkout-writer
+      key_id: kcheckoutwriter
+      secret_env: COLLECTOR_INGEST_KEY_SECRET
+      kind: sec
+      collector: checkout
+      permissions: [events:write]
+      allowed_envs: [prod]
+storage:
+  encryption_key_env: LOZA_STORAGE_ENCRYPTION_KEY
+`
+	if err := os.WriteFile(path, []byte(raw), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	cfg, err := loadCollectorConfigFromArgs([]string{"-c", path})
+	if err != nil {
+		t.Fatalf("load scoped key configuration: %v", err)
+	}
+	if len(cfg.authKeys) != 1 || cfg.authKeys[0].collector != "checkout" {
+		t.Fatalf("scoped key was not carried to runtime: %+v", cfg.authKeys)
+	}
+	if got := cfg.authKeys[0].permissions; len(got) != 1 || got[0] != auth.PermEventsWrite {
+		t.Fatalf("scoped key permissions = %v, want events:write", got)
+	}
+	if len(cfg.authCollectors) != 1 || cfg.authCollectors[0] != "checkout" {
+		t.Fatalf("configured collector was not carried to runtime: %v", cfg.authCollectors)
+	}
+}
+
 func TestResolveCollectorAuthGrantsBuildsPrivateAndPublicCredentials(t *testing.T) {
 	publicID := "lx_pub_0123456789abcdefghijklmnopqrstuv"
 	t.Setenv("COLLECTOR_PRIVATE_GRANT_PASSWORD", "private-grant-password")
@@ -202,6 +241,41 @@ func TestResolveCollectorAuthGrantsBuildsPrivateAndPublicCredentials(t *testing.
 	}
 	if grants[1].kind != auth.KeyKindPublic || grants[1].secret != "" || grants[1].keyID != publicID {
 		t.Fatalf("public grant was not constructed as a passwordless capability: %+v", grants[1])
+	}
+}
+
+func TestResolveAuthConfigBuildsCollectorScopedKey(t *testing.T) {
+	cfg := validFileConfig()
+	cfg.Auth.Collectors = []collectorconfig.AuthCollectorConfig{{Slug: "orders"}}
+	cfg.Auth.Keys = []collectorconfig.AuthKeyConfig{{
+		Name:        "orders-operator",
+		KeyID:       "korders",
+		SecretEnv:   "COLLECTOR_INGEST_KEY_SECRET",
+		Kind:        "sec",
+		Collector:   "orders",
+		Permissions: []string{"events:read", "events:write", "events:delete"},
+		AllowedEnvs: []string{"production"},
+	}}
+
+	_, keys, err := resolveAuthConfig(cfg)
+	if err != nil {
+		t.Fatalf("resolve scoped key: %v", err)
+	}
+	if len(keys) != 1 || keys[0].collector != "orders" {
+		t.Fatalf("scoped key collector was not resolved: %+v", keys)
+	}
+	if got := keys[0].permissions; len(got) != 3 || got[0] != auth.PermEventsRead || got[1] != auth.PermEventsWrite || got[2] != auth.PermEventsDelete {
+		t.Fatalf("scoped key permissions = %v, want read/write/delete", got)
+	}
+
+	cfg.Auth.Keys[0].Permissions = nil
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "auth.keys[0].permissions") {
+		t.Fatalf("expected scoped key permissions rejection, got %v", err)
+	}
+	cfg.Auth.Keys[0].Permissions = []string{"events:write"}
+	cfg.Auth.Keys[0].Collector = "unknown"
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "configured collector") {
+		t.Fatalf("expected unknown scoped key collector rejection, got %v", err)
 	}
 }
 

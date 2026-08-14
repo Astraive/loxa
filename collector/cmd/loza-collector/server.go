@@ -590,12 +590,25 @@ func (s *memoryKeyStore) RevokeKey(keyID string) error {
 func newMemoryKeyStoreFromConfig(cfg collectorConfig, serverSecret []byte) *memoryKeyStore {
 	store := &memoryKeyStore{keys: make(map[string]*auth.KeyRecord, len(cfg.authKeys)+len(cfg.authGrants)+1)}
 	for _, key := range cfg.authKeys {
+		var collectorGrants []auth.CollectorGrant
+		if key.collector != "" {
+			permissions := make(map[auth.Permission]bool, len(key.permissions))
+			for _, permission := range key.permissions {
+				permissions[permission] = true
+			}
+			collectorGrants = []auth.CollectorGrant{{
+				Collector:    key.collector,
+				Environments: append([]string(nil), key.allowedEnvs...),
+				Permissions:  permissions,
+			}}
+		}
 		store.keys[key.keyID] = &auth.KeyRecord{
 			ID:                   key.name,
 			KeyID:                key.keyID,
 			SecretHash:           auth.HashSecret(key.secret, serverSecret),
 			Kind:                 key.kind,
 			Roles:                append([]auth.Role(nil), key.roles...),
+			CollectorGrants:      collectorGrants,
 			AllowedEnvs:          append([]string(nil), key.allowedEnvs...),
 			AllowedServices:      append([]string(nil), key.allowedServices...),
 			AllowedOrigins:       append([]string(nil), key.allowedOrigins...),
