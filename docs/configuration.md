@@ -79,6 +79,8 @@ auth:
       key_id: kcheckoutwriter
       secret_env: CHECKOUT_WRITER_KEY_SECRET
       kind: sec
+      mode: private
+      roles: [collector_ingest_server]
       collector: checkout
       permissions: [events:write]
       allowed_envs: [prod]
@@ -86,6 +88,8 @@ auth:
       key_id: kcheckoutreader
       secret_env: CHECKOUT_READER_KEY_SECRET
       kind: sec
+      mode: private
+      roles: [project_readonly]
       collector: checkout
       permissions: [events:read]
       allowed_envs: [prod]
@@ -93,12 +97,32 @@ auth:
 
 `secret_env` is the secret segment of
 `lx_{kind}_live_{key_id}_{secret}`, not the full token. Key IDs are unique;
-`kind` must be `sec` or `pub`; public keys require `allowed_origins`; and
-scoped keys require a configured `collector`, non-empty `permissions`, and
+`kind` must be `sec` or `pub`; `mode` is `private` or `public`; public
+credentials require `allowed_origins` and may use only the `client` role.
+Scoped keys require a configured `collector`, non-empty `permissions`, and
 non-empty `allowed_envs`. Scoped permissions are exact:
-`events:read`, `events:write`, `events:delete`, and `project:admin` are
-authorized independently on `/collectors/{collector}/...`. Unscoped keys
-remain limited to explicitly configured legacy root routes.
+`events:read`, `events:write`, `events:delete`, `logs:read`, `logs:write`,
+`logs:edit`, `logs:delete`, and `project:admin` are authorized independently
+on `/collectors/{collector}/...`. Unscoped keys remain limited to explicitly
+configured legacy root routes.
+
+Opaque Bearer tokens use the same RBAC and scope model:
+
+```yaml
+auth:
+  tokens:
+    - name: browser-log-writer
+      token_env: BROWSER_LOG_TOKEN
+      mode: public
+      roles: [client]
+      collector: checkout
+      permissions: [logs:write]
+      allowed_envs: [prod]
+      allowed_origins: [https://app.example.com]
+```
+
+`token_env` must contain an opaque value, not an `lx_` API key. The raw token
+is only accepted in `Authorization: Bearer`; it is not used as a stored ID.
 
 ```bash
 curl -X POST http://localhost:9308/collectors/checkout/events \

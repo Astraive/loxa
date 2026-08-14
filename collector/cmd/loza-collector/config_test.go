@@ -347,6 +347,37 @@ func TestValidateFileConfigRejectsInvalidConfiguredAuth(t *testing.T) {
 	}
 }
 
+func TestResolveAuthTokensBuildsRBACCredentials(t *testing.T) {
+	t.Setenv("COLLECTOR_ADMIN_TOKEN", "lxt_private_admin_token")
+	cfg := validFileConfig()
+	cfg.Auth.Tokens = []collectorconfig.AuthTokenConfig{{
+		Name:        "admin-token",
+		TokenEnv:    "COLLECTOR_ADMIN_TOKEN",
+		Mode:        "private",
+		Roles:       []string{"client"},
+		Collector:   "logs",
+		Permissions: []string{"logs:write"},
+		AllowedEnvs: []string{"prod"},
+	}}
+
+	tokens, err := resolveAuthTokens(cfg)
+	if err != nil {
+		t.Fatalf("resolve token: %v", err)
+	}
+	if len(tokens) != 1 || tokens[0].mode != auth.ModePrivate || len(tokens[0].roles) != 1 || tokens[0].roles[0] != auth.RoleClient {
+		t.Fatalf("token RBAC configuration was not resolved: %+v", tokens)
+	}
+	if len(tokens[0].permissions) != 1 || tokens[0].permissions[0] != auth.PermLogsWrite {
+		t.Fatalf("token log scope was not resolved: %+v", tokens[0])
+	}
+
+	cfg.Auth.Tokens[0].Roles = []string{"admin"}
+	cfg.Auth.Tokens[0].Mode = "public"
+	if _, err := resolveAuthTokens(cfg); err == nil || !strings.Contains(err.Error(), "public credentials") {
+		t.Fatalf("expected privileged public token rejection, got %v", err)
+	}
+}
+
 func TestValidateFileConfigRejectsInvalidValues(t *testing.T) {
 	cfg := validFileConfig()
 	cfg.DuckDB.Table = "events;drop"

@@ -99,9 +99,14 @@ func (ac *AuthContext) HasAnyPermission(perms ...Permission) bool {
 
 // AuthorizesCollector verifies the complete server-resolved resource scope.
 // A principal without a matching collector grant is denied even when it holds
-// the underlying global permission.
+// the underlying global permission. Role-bound credentials must satisfy both
+// their role and their resource scope; roleless legacy grants retain their
+// explicitly configured compatibility policy.
 func (ac *AuthContext) AuthorizesCollector(collector, environment string, permission Permission) bool {
 	if ac == nil {
+		return false
+	}
+	if len(ac.Roles) > 0 && !ac.HasPermission(permission) {
 		return false
 	}
 	for _, grant := range ac.CollectorGrants {

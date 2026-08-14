@@ -33,3 +33,19 @@ func TestAuthContextAuthorizesCollectorOnlyWithinGrantScope(t *testing.T) {
 		t.Fatal("ungranted permission must be denied")
 	}
 }
+
+func TestAuthContextScopesCannotExceedCredentialRole(t *testing.T) {
+	context := &AuthContext{
+		Roles:       []Role{RoleClient},
+		Permissions: ExpandRoles([]Role{RoleClient}),
+		CollectorGrants: []CollectorGrant{{
+			Collector:    "logs",
+			Environments: []string{"prod"},
+			Permissions:  map[Permission]bool{PermLogsDelete: true},
+		}},
+	}
+
+	if context.AuthorizesCollector("logs", "prod", PermLogsDelete) {
+		t.Fatal("client role must not escalate through a configured log scope")
+	}
+}

@@ -2,7 +2,7 @@
 
 ## Overview
 
-LOZA supports scoped API keys with the `Authorization: Bearer` header and credentialed DSNs with HTTP Basic authentication. Bearer keys follow the `lx_` format and carry built-in RBAC roles and ABAC restrictions; DSN userinfo supplies the Collector key ID and its secret.
+LOZA supports scoped API keys and opaque bearer tokens with the `Authorization: Bearer` header, plus credentialed DSNs with HTTP Basic authentication. API keys and tokens resolve an RBAC role server-side; credentialed DSNs supply the Collector key ID and its secret.
 
 Bearer example:
 
@@ -80,6 +80,24 @@ For local development. Full ingest permissions but blocked in production environ
 ```
 lx_local_dev_mydevtoken
 ```
+
+## RBAC roles and credential modes
+
+| Role | Log permissions |
+| --- | --- |
+| `user` | `logs:read` |
+| `client` | `logs:read`, `logs:write` |
+| `admin` | `logs:read`, `logs:write`, `logs:edit`, `logs:delete` |
+| `superadmin` | all `admin` log permissions plus `project:admin` |
+
+Credentials use `mode: private` or `mode: public`. Private credentials can
+use any recognized role. Public credentials require an origin allowlist and
+are limited to the least-privileged `client` role; never assign `admin` or
+`superadmin` to a browser-exposed credential.
+
+An opaque token is configured by environment variable and sent verbatim as a
+Bearer value. LOZA derives its lookup ID and its stored HMAC from the token,
+so the raw value is neither persisted as an identifier nor emitted in logs.
 
 ## SDK Configuration
 

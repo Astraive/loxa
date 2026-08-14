@@ -15,6 +15,7 @@ const (
 	KeyKindPublic KeyKind = "pub"   // lx_pub_live_kxxx_yyyy
 	KeyKindSecret KeyKind = "sec"   // lx_sec_live_kxxx_yyyy
 	KeyKindLocal  KeyKind = "local" // lx_local_dev_yyyy (dev only)
+	KeyKindToken  KeyKind = "token" // opaque Bearer token, stored by HMAC-derived ID
 )
 
 const (
@@ -136,6 +137,13 @@ func HashSecret(secret string, serverSecret []byte) []byte {
 	mac := hmac.New(sha256.New, serverSecret)
 	mac.Write([]byte(secret))
 	return mac.Sum(nil)
+}
+
+// TokenLookupID derives the opaque store identifier for a bearer token. The
+// token itself is never used as a map key or logged; the server secret makes
+// the identifier unguessable and prevents offline enumeration.
+func TokenLookupID(token string, serverSecret []byte) string {
+	return "tok_" + fmt.Sprintf("%x", HashSecret(token, serverSecret))
 }
 
 // CompareSecret performs constant-time comparison of two secret hashes.

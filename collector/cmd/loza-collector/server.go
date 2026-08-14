@@ -532,8 +532,8 @@ func initializeAuthState(state *collectorState) error {
 	if strings.TrimSpace(state.cfg.authServerSecret) == "" {
 		return errors.New("auth.enabled requires a resolved auth.server_secret")
 	}
-	if len(state.cfg.authKeys) == 0 && strings.TrimSpace(state.cfg.apiKey) == "" {
-		return errors.New("auth.enabled requires at least one configured key or auth.value")
+	if len(state.cfg.authKeys) == 0 && len(state.cfg.authTokens) == 0 && strings.TrimSpace(state.cfg.apiKey) == "" {
+		return errors.New("auth.enabled requires at least one configured key, token, or auth.value")
 	}
 	if state.cfg.authCacheTTL <= 0 || state.cfg.authNegativeCacheTTL <= 0 {
 		return errors.New("auth cache TTLs must be positive")
@@ -588,7 +588,7 @@ func (s *memoryKeyStore) RevokeKey(keyID string) error {
 	return nil
 }
 func newMemoryKeyStoreFromConfig(cfg collectorConfig, serverSecret []byte) *memoryKeyStore {
-	store := &memoryKeyStore{keys: make(map[string]*auth.KeyRecord, len(cfg.authKeys)+len(cfg.authGrants)+1)}
+	store := &memoryKeyStore{keys: make(map[string]*auth.KeyRecord, len(cfg.authKeys)+len(cfg.authGrants)+len(cfg.authTokens)+1)}
 	for _, key := range cfg.authKeys {
 		var collectorGrants []auth.CollectorGrant
 		if key.collector != "" {
@@ -607,6 +607,7 @@ func newMemoryKeyStoreFromConfig(cfg collectorConfig, serverSecret []byte) *memo
 			KeyID:                key.keyID,
 			SecretHash:           auth.HashSecret(key.secret, serverSecret),
 			Kind:                 key.kind,
+			Mode:                 key.mode,
 			Roles:                append([]auth.Role(nil), key.roles...),
 			CollectorGrants:      collectorGrants,
 			AllowedEnvs:          append([]string(nil), key.allowedEnvs...),
@@ -646,6 +647,40 @@ func newMemoryKeyStoreFromConfig(cfg collectorConfig, serverSecret []byte) *memo
 		}
 		if store.keys[grant.keyID].ID == "" {
 			store.keys[grant.keyID].ID = grant.keyID
+		}
+	}
+	for _, token := range cfg.authTokens {
+		tokenID := auth.TokenLookupID(token.token, serverSecret)
+		permissions := make(map[auth.Permission]bool, len(token.permissions))
+		for _, permission := range token.permissions {
+			permissions[permission] = true
+		}
+		var collectorGrants []auth.CollectorGrant
+		if token.collector != "" {
+			collectorGrants = []auth.CollectorGrant{{
+				Collector:    token.collector,
+				Environments: append([]string(nil), token.allowedEnvs...),
+				Permissions:  permissions,
+			}}
+		}
+		store.keys[tokenID] = &auth.KeyRecord{
+			ID:                   token.name,
+			KeyID:                tokenID,
+			SecretHash:           auth.HashSecret(token.token, serverSecret),
+			Kind:                 auth.KeyKindToken,
+			Mode:                 token.mode,
+			Roles:                append([]auth.Role(nil), token.roles...),
+			CollectorGrants:      collectorGrants,
+			AllowedEnvs:          append([]string(nil), token.allowedEnvs...),
+			AllowedServices:      append([]string(nil), token.allowedServices...),
+			AllowedOrigins:       append([]string(nil), token.allowedOrigins...),
+			AllowedIPs:           append([]string(nil), token.allowedIPs...),
+			MaxPayloadBytes:      token.maxPayloadBytes,
+			MaxRequestsPerMinute: token.maxRequestsPerMinute,
+			MaxEventsPerMinute:   token.maxEventsPerMinute,
+		}
+		if store.keys[tokenID].ID == "" {
+			store.keys[tokenID].ID = tokenID
 		}
 	}
 

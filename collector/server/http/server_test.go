@@ -16,38 +16,52 @@ func (h *routeTestHandlers) handle(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *routeTestHandlers) HandleIngest(w http.ResponseWriter, r *http.Request)           { h.handle(w, r) }
-func (h *routeTestHandlers) HandleOTLPLogs(w http.ResponseWriter, r *http.Request)         { h.handle(w, r) }
-func (h *routeTestHandlers) HandleHealth(w http.ResponseWriter, r *http.Request)           { h.handle(w, r) }
-func (h *routeTestHandlers) HandleReady(w http.ResponseWriter, r *http.Request)            { h.handle(w, r) }
-func (h *routeTestHandlers) HandleVersion(w http.ResponseWriter, r *http.Request)          { h.handle(w, r) }
-func (h *routeTestHandlers) HandleStatus(w http.ResponseWriter, r *http.Request)           { h.handle(w, r) }
-func (h *routeTestHandlers) HandleValidate(w http.ResponseWriter, r *http.Request)         { h.handle(w, r) }
-func (h *routeTestHandlers) HandleSinks(w http.ResponseWriter, r *http.Request)            { h.handle(w, r) }
-func (h *routeTestHandlers) HandleSink(w http.ResponseWriter, r *http.Request)             { h.handle(w, r) }
-func (h *routeTestHandlers) HandleSinkTest(w http.ResponseWriter, r *http.Request)         { h.handle(w, r) }
-func (h *routeTestHandlers) HandleSchemaList(w http.ResponseWriter, r *http.Request)       { h.handle(w, r) }
-func (h *routeTestHandlers) HandleSchemaDiff(w http.ResponseWriter, r *http.Request)       { h.handle(w, r) }
-func (h *routeTestHandlers) HandleSchemaCheck(w http.ResponseWriter, r *http.Request)      { h.handle(w, r) }
-func (h *routeTestHandlers) HandleSchemaPublish(w http.ResponseWriter, r *http.Request)    { h.handle(w, r) }
-func (h *routeTestHandlers) HandleBlueprintPublish(w http.ResponseWriter, r *http.Request) { h.handle(w, r) }
-func (h *routeTestHandlers) HandleBlueprintList(w http.ResponseWriter, r *http.Request)    { h.handle(w, r) }
-func (h *routeTestHandlers) HandleQuery(w http.ResponseWriter, r *http.Request)            { h.handle(w, r) }
-func (h *routeTestHandlers) HandleLQLQuery(w http.ResponseWriter, r *http.Request)         { h.handle(w, r) }
-func (h *routeTestHandlers) HandlePIIAudit(w http.ResponseWriter, r *http.Request)         { h.handle(w, r) }
-func (h *routeTestHandlers) HandlePolicyValidate(w http.ResponseWriter, r *http.Request)   { h.handle(w, r) }
-func (h *routeTestHandlers) HandleRetentionApply(w http.ResponseWriter, r *http.Request)   { h.handle(w, r) }
-func (h *routeTestHandlers) HandleKeyCreate(w http.ResponseWriter, r *http.Request)        { h.handle(w, r) }
-func (h *routeTestHandlers) HandleKeyRevoke(w http.ResponseWriter, r *http.Request)        { h.handle(w, r) }
-func (h *routeTestHandlers) HandleKeyRotate(w http.ResponseWriter, r *http.Request)        { h.handle(w, r) }
-func (h *routeTestHandlers) HandleDeleteEvents(w http.ResponseWriter, r *http.Request)     { h.handle(w, r) }
-func (h *routeTestHandlers) HandleDLQList(w http.ResponseWriter, r *http.Request)          { h.handle(w, r) }
-func (h *routeTestHandlers) HandleDLQReplayAll(w http.ResponseWriter, r *http.Request)     { h.handle(w, r) }
-func (h *routeTestHandlers) HandleDLQShow(w http.ResponseWriter, r *http.Request)          { h.handle(w, r) }
-func (h *routeTestHandlers) HandleDLQReplay(w http.ResponseWriter, r *http.Request)        { h.handle(w, r) }
-func (h *routeTestHandlers) HandleDLQDelete(w http.ResponseWriter, r *http.Request)        { h.handle(w, r) }
-func (h *routeTestHandlers) HandleTail(w http.ResponseWriter, r *http.Request)             { h.handle(w, r) }
-func (h *routeTestHandlers) HandleReplay(w http.ResponseWriter, r *http.Request)           { h.handle(w, r) }
+func (h *routeTestHandlers) HandleIngest(w http.ResponseWriter, r *http.Request)      { h.handle(w, r) }
+func (h *routeTestHandlers) HandleOTLPLogs(w http.ResponseWriter, r *http.Request)    { h.handle(w, r) }
+func (h *routeTestHandlers) HandleHealth(w http.ResponseWriter, r *http.Request)      { h.handle(w, r) }
+func (h *routeTestHandlers) HandleReady(w http.ResponseWriter, r *http.Request)       { h.handle(w, r) }
+func (h *routeTestHandlers) HandleVersion(w http.ResponseWriter, r *http.Request)     { h.handle(w, r) }
+func (h *routeTestHandlers) HandleStatus(w http.ResponseWriter, r *http.Request)      { h.handle(w, r) }
+func (h *routeTestHandlers) HandleValidate(w http.ResponseWriter, r *http.Request)    { h.handle(w, r) }
+func (h *routeTestHandlers) HandleSinks(w http.ResponseWriter, r *http.Request)       { h.handle(w, r) }
+func (h *routeTestHandlers) HandleSink(w http.ResponseWriter, r *http.Request)        { h.handle(w, r) }
+func (h *routeTestHandlers) HandleSinkTest(w http.ResponseWriter, r *http.Request)    { h.handle(w, r) }
+func (h *routeTestHandlers) HandleSchemaList(w http.ResponseWriter, r *http.Request)  { h.handle(w, r) }
+func (h *routeTestHandlers) HandleSchemaDiff(w http.ResponseWriter, r *http.Request)  { h.handle(w, r) }
+func (h *routeTestHandlers) HandleSchemaCheck(w http.ResponseWriter, r *http.Request) { h.handle(w, r) }
+func (h *routeTestHandlers) HandleSchemaPublish(w http.ResponseWriter, r *http.Request) {
+	h.handle(w, r)
+}
+func (h *routeTestHandlers) HandleBlueprintPublish(w http.ResponseWriter, r *http.Request) {
+	h.handle(w, r)
+}
+func (h *routeTestHandlers) HandleBlueprintList(w http.ResponseWriter, r *http.Request) {
+	h.handle(w, r)
+}
+func (h *routeTestHandlers) HandleQuery(w http.ResponseWriter, r *http.Request)    { h.handle(w, r) }
+func (h *routeTestHandlers) HandleLQLQuery(w http.ResponseWriter, r *http.Request) { h.handle(w, r) }
+func (h *routeTestHandlers) HandlePIIAudit(w http.ResponseWriter, r *http.Request) { h.handle(w, r) }
+func (h *routeTestHandlers) HandlePolicyValidate(w http.ResponseWriter, r *http.Request) {
+	h.handle(w, r)
+}
+func (h *routeTestHandlers) HandleRetentionApply(w http.ResponseWriter, r *http.Request) {
+	h.handle(w, r)
+}
+func (h *routeTestHandlers) HandleKeyCreate(w http.ResponseWriter, r *http.Request) { h.handle(w, r) }
+func (h *routeTestHandlers) HandleKeyRevoke(w http.ResponseWriter, r *http.Request) { h.handle(w, r) }
+func (h *routeTestHandlers) HandleKeyRotate(w http.ResponseWriter, r *http.Request) { h.handle(w, r) }
+func (h *routeTestHandlers) HandleDeleteEvents(w http.ResponseWriter, r *http.Request) {
+	h.handle(w, r)
+}
+func (h *routeTestHandlers) HandleDLQList(w http.ResponseWriter, r *http.Request) { h.handle(w, r) }
+func (h *routeTestHandlers) HandleDLQReplayAll(w http.ResponseWriter, r *http.Request) {
+	h.handle(w, r)
+}
+func (h *routeTestHandlers) HandleDLQShow(w http.ResponseWriter, r *http.Request)   { h.handle(w, r) }
+func (h *routeTestHandlers) HandleDLQReplay(w http.ResponseWriter, r *http.Request) { h.handle(w, r) }
+func (h *routeTestHandlers) HandleDLQDelete(w http.ResponseWriter, r *http.Request) { h.handle(w, r) }
+func (h *routeTestHandlers) HandleTail(w http.ResponseWriter, r *http.Request)      { h.handle(w, r) }
+func (h *routeTestHandlers) HandleReplay(w http.ResponseWriter, r *http.Request)    { h.handle(w, r) }
 
 func TestBuildMuxCollectorScopedAuthorization(t *testing.T) {
 	handlers := &routeTestHandlers{}
@@ -111,5 +125,23 @@ func TestBuildMuxCollectorScopedAuthorization(t *testing.T) {
 	mux.ServeHTTP(health, httptest.NewRequest(http.MethodGet, "/health", nil))
 	if health.Code != http.StatusOK {
 		t.Fatalf("public health status = %d, want %d", health.Code, http.StatusOK)
+	}
+}
+
+func TestBuildMuxUsesLogWriteScopeForCanonicalOTLPLogs(t *testing.T) {
+	handlers := &routeTestHandlers{}
+	var requiredPermission string
+	collectorProtect := func(next http.Handler, permission string, _ CollectorResolver, _ CollectorRouteMode) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			requiredPermission = permission
+			next.ServeHTTP(w, r)
+		})
+	}
+	mux := BuildMux("", "/health", "/ready", "/metrics", false, nil, nil, handlers, nil, collectorProtect, "")
+
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/collectors/logs/otlp/logs", nil))
+	if requiredPermission != "logs:write" {
+		t.Fatalf("canonical OTLP log permission = %q, want logs:write", requiredPermission)
 	}
 }

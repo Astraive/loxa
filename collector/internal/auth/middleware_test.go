@@ -420,3 +420,36 @@ func TestRequirePermission_NoAuthContext(t *testing.T) {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusForbidden)
 	}
 }
+
+func TestMiddleware_PrivateTokenCarriesRBACPermissions(t *testing.T) {
+	serverSecret := []byte("test-server-secret")
+	token := "lxt_opaque_private_token_for_admin"
+	tokenID := TokenLookupID(token, serverSecret)
+	store := &testKeyStore{keys: map[string]*KeyRecord{
+		tokenID: {
+			ID:         tokenID,
+			KeyID:      tokenID,
+			SecretHash: HashSecret(token, serverSecret),
+			Kind:       KeyKindToken,
+			Mode:       ModePrivate,
+			Roles:      []Role{RoleAdmin},
+		},
+	}}
+	cache := NewMemoryKeyCache(time.Minute, time.Second)
+	defer cache.Close()
+
+	handler := Middleware(store, cache, serverSecret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !GetAuthContext(r.Context()).HasPermission(PermLogsDelete) {
+			t.Fatal("admin token must carry logs:delete")
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	request := httptest.NewRequest(http.MethodDelete, "/logs/1", nil)
+	request.Header.Set("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNoContent)
+	}
+}

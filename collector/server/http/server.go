@@ -149,7 +149,7 @@ func BuildMux(ingestPath, healthPath, readyPath, metricsPath string, metricsEnab
 	dataRoute("POST", "/events/batch", http.HandlerFunc(handlers.HandleIngest), "events:write", "events:write")
 	dataRoute("POST", "/events/ndjson", http.HandlerFunc(handlers.HandleIngest), "events:write", "events:write")
 	dataRoute("POST", "/validate", http.HandlerFunc(handlers.HandleValidate), "schema:read", "events:read")
-	registerDataRoute("POST", "/otlp/logs", http.HandlerFunc(scopedOperationUnsupported), http.HandlerFunc(handlers.HandleOTLPLogs), "logs:write", "events:write")
+	registerDataRoute("POST", "/otlp/logs", http.HandlerFunc(scopedOperationUnsupported), http.HandlerFunc(handlers.HandleOTLPLogs), "logs:write", "logs:write")
 
 	// ── Public (no auth) ─────────────────────────────────────────────────
 	if healthPath != "" && healthPath != "/health" && healthPath != "/healthz" {

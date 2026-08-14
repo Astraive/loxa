@@ -30,6 +30,7 @@ type collectorAuthKey struct {
 	keyID                string
 	secret               string
 	kind                 auth.KeyKind
+	mode                 auth.AccessMode
 	roles                []auth.Role
 	collector            string
 	permissions          []auth.Permission
@@ -60,6 +61,22 @@ type collectorAuthGrant struct {
 	maxEventsPerMinute   int
 }
 
+type collectorAuthToken struct {
+	name                 string
+	token                string
+	mode                 auth.AccessMode
+	roles                []auth.Role
+	collector            string
+	permissions          []auth.Permission
+	allowedEnvs          []string
+	allowedServices      []string
+	allowedOrigins       []string
+	allowedIPs           []string
+	maxPayloadBytes      int
+	maxRequestsPerMinute int
+	maxEventsPerMinute   int
+}
+
 type collectorConfig struct {
 	configFile              string
 	configArgs              []string
@@ -75,6 +92,7 @@ type collectorConfig struct {
 	authCacheTTL            time.Duration
 	authNegativeCacheTTL    time.Duration
 	authKeys                []collectorAuthKey
+	authTokens              []collectorAuthToken
 	authDefaultCollector    string
 	authCollectors          []string
 	authGrants              []collectorAuthGrant

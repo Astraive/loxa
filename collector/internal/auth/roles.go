@@ -9,6 +9,8 @@ const (
 	PermEventsDelete   Permission = "events:delete"
 	PermLogsWrite      Permission = "logs:write"
 	PermLogsRead       Permission = "logs:read"
+	PermLogsEdit       Permission = "logs:edit"
+	PermLogsDelete     Permission = "logs:delete"
 	PermTracesWrite    Permission = "traces:write"
 	PermTracesRead     Permission = "traces:read"
 	PermMetricsWrite   Permission = "metrics:write"
@@ -21,6 +23,15 @@ const (
 	PermProjectAdmin   Permission = "project:admin"
 )
 
+// AccessMode describes whether a credential can be exposed to an untrusted
+// client. Public credentials are intentionally restricted to RoleClient.
+type AccessMode string
+
+const (
+	ModePublic  AccessMode = "public"
+	ModePrivate AccessMode = "private"
+)
+
 // Role represents a named bundle of permissions.
 type Role string
 
@@ -31,11 +42,35 @@ const (
 	RoleProjectReadonly  Role = "project_readonly"
 	RoleProjectOperator  Role = "project_operator"
 	RoleProjectAdmin     Role = "project_admin"
+	RoleUser             Role = "user"
+	RoleClient           Role = "client"
+	RoleAdmin            Role = "admin"
+	RoleSuperAdmin       Role = "superadmin"
 )
 
 // rolePermissions maps each role to its allowed permissions.
 // Default-deny: unknown roles get no permissions.
 var rolePermissions = map[Role][]Permission{
+	RoleUser: {
+		PermLogsRead,
+	},
+	RoleClient: {
+		PermLogsRead,
+		PermLogsWrite,
+	},
+	RoleAdmin: {
+		PermLogsRead,
+		PermLogsWrite,
+		PermLogsEdit,
+		PermLogsDelete,
+	},
+	RoleSuperAdmin: {
+		PermLogsRead,
+		PermLogsWrite,
+		PermLogsEdit,
+		PermLogsDelete,
+		PermProjectAdmin,
+	},
 	RoleIngestPublic: {
 		PermEventsWrite,
 		PermHeartbeatWrite,
@@ -112,4 +147,25 @@ func ExpandRoles(roles []Role) map[Permission]bool {
 		}
 	}
 	return result
+}
+
+// IsKnownRole reports whether role resolves to an explicit, default-deny
+// permission bundle.
+func IsKnownRole(role Role) bool {
+	_, ok := rolePermissions[role]
+	return ok
+}
+
+// RoleAllowedInMode keeps bearer credentials safe for browser use: public
+// credentials may grant only the least-privileged client role. Private
+// credentials may use every known role.
+func RoleAllowedInMode(role Role, mode AccessMode) bool {
+	switch mode {
+	case ModePublic:
+		return role == RoleClient
+	case ModePrivate:
+		return IsKnownRole(role)
+	default:
+		return false
+	}
 }

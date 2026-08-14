@@ -21,7 +21,7 @@ type parsedCIDRNet struct {
 // cidrCache caches parsed CIDRs so they are only parsed once per unique string.
 var cidrCache sync.Map // map[string]*parsedCIDRNet
 
-// KeyRecord holds the stored metadata for an API key.
+// KeyRecord holds the stored metadata for an API key or opaque bearer token.
 type KeyRecord struct {
 	ID              string
 	OrgID           string
@@ -29,6 +29,7 @@ type KeyRecord struct {
 	KeyID           string
 	SecretHash      []byte
 	Kind            KeyKind
+	Mode            AccessMode
 	Roles           []Role
 	CollectorGrants []CollectorGrant
 
@@ -174,27 +175,31 @@ func authenticate(r *http.Request, store KeyStore, cache *MemoryKeyCache, server
 			return nil, "missing_token", "missing Authorization header"
 		}
 
-		// 2. Parse key
+		// 2. Parse structured API keys. An unstructured Bearer credential is
+		// an opaque token: derive its server-secret-bound lookup ID instead
+		// of persisting or logging the raw token.
 		parsed, err := ParseKey(raw)
 		if err != nil {
-			return nil, "invalid_key_format", err.Error()
-		}
-
-		// Handle local dev keys
-		if parsed.Kind == KeyKindLocal {
-			if !allowLocalDevKeys {
-				slog.Warn("local dev key rejected (allow_local_dev_keys=false)")
-				return nil, "local_dev_disabled", "local dev keys are not allowed in production mode"
+			keyID = TokenLookupID(raw, serverSecret)
+			secret = raw
+			keyKind = KeyKindToken
+		} else {
+			// Handle local dev keys
+			if parsed.Kind == KeyKindLocal {
+				if !allowLocalDevKeys {
+					slog.Warn("local dev key rejected (allow_local_dev_keys=false)")
+					return nil, "local_dev_disabled", "local dev keys are not allowed in production mode"
+				}
+				return &AuthContext{
+					KeyKind:     KeyKindLocal,
+					Permissions: ExpandRoles([]Role{RoleIngestServer}),
+					Roles:       []Role{RoleIngestServer},
+				}, "", ""
 			}
-			return &AuthContext{
-				KeyKind:     KeyKindLocal,
-				Permissions: ExpandRoles([]Role{RoleIngestServer}),
-				Roles:       []Role{RoleIngestServer},
-			}, "", ""
+			keyID = parsed.KeyID
+			secret = parsed.Secret
+			keyKind = parsed.Kind
 		}
-		keyID = parsed.KeyID
-		secret = parsed.Secret
-		keyKind = parsed.Kind
 	}
 
 	// 3. Cache lookup

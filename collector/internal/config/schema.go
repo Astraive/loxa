@@ -111,6 +111,7 @@ type AuthConfig struct {
 	Collectors        []AuthCollectorConfig `yaml:"collectors"`
 	Grants            []AuthGrantConfig     `yaml:"grants"`
 	Keys              []AuthKeyConfig       `yaml:"keys"`
+	Tokens            []AuthTokenConfig     `yaml:"tokens"`
 }
 
 // AuthCollectorConfig declares a collector that may be targeted by a grant.
@@ -147,6 +148,25 @@ type AuthKeyConfig struct {
 	KeyID                string   `yaml:"key_id"`
 	SecretEnv            string   `yaml:"secret_env"`
 	Kind                 string   `yaml:"kind"`
+	Mode                 string   `yaml:"mode"`
+	Roles                []string `yaml:"roles"`
+	Collector            string   `yaml:"collector"`
+	Permissions          []string `yaml:"permissions"`
+	AllowedEnvs          []string `yaml:"allowed_envs"`
+	AllowedServices      []string `yaml:"allowed_services"`
+	AllowedOrigins       []string `yaml:"allowed_origins"`
+	AllowedIPs           []string `yaml:"allowed_ips"`
+	MaxPayloadBytes      int      `yaml:"max_payload_bytes"`
+	MaxRequestsPerMinute int      `yaml:"max_requests_per_minute"`
+	MaxEventsPerMinute   int      `yaml:"max_events_per_minute"`
+}
+
+// AuthTokenConfig defines an opaque Bearer token. Token values are sourced
+// only from an environment variable and are stored by an HMAC-derived ID.
+type AuthTokenConfig struct {
+	Name                 string   `yaml:"name"`
+	TokenEnv             string   `yaml:"token_env"`
+	Mode                 string   `yaml:"mode"`
 	Roles                []string `yaml:"roles"`
 	Collector            string   `yaml:"collector"`
 	Permissions          []string `yaml:"permissions"`
