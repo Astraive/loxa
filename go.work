@@ -1,6 +1,18 @@
 go 1.25.0
 
 use (
+	./cli
+	./collector
+	./cortex
+	./examples/quickstart/go
+	./gen/go
 	./sdks/go
+	./sdks/go/bench
+	./sdks/go/examples/httpbatch-to-collector
+	./sdks/go/src/integrations
+	./sdks/go/src/middleware
+	./sdks/go/tests/e2e
+	./sdks/go/tests/integration
 	./spec
+	./tools/stress
 )
