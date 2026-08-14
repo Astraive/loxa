@@ -24,6 +24,7 @@ REQUIRED_FIELDS = ("name", "kind", "version", "description", "license", "reposit
 KNOWN_KINDS = {"spec", "docker", "cli", "sdk", "package", "release"}
 KNOWN_LANGUAGES = {"go", "javascript", "python", "rust"}
 PUBLISH_OWNER = "astraive"
+NPM_PACKAGE = "@astraive/loza"
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
@@ -61,8 +62,8 @@ def validate_native_metadata(component: str, manifest: dict[str, Any], manifest_
         package_json = root / "package.json"
         if package_json.exists():
             package_data = json.loads(package_json.read_text(encoding="utf-8"))
-            if package_data.get("name") != "loza":
-                errors.append(f"{component}: sdks/js/package.json name must be 'loza', not {package_data.get('name')!r}")
+            if package_data.get("name") != NPM_PACKAGE:
+                errors.append(f"{component}: sdks/js/package.json name must be {NPM_PACKAGE!r}, not {package_data.get('name')!r}")
             if package_data.get("version") != version:
                 errors.append(f"{component}: sdks/js/package.json version must match manifest version {version}")
 
@@ -154,8 +155,8 @@ def validate_publish_metadata(component: str, manifest: dict[str, Any], manifest
             npm = publish.get("npm")
             if not isinstance(npm, dict):
                 errors.append(f"{component}: JavaScript SDK requires publish.npm")
-            elif npm.get("package") != "loza":
-                errors.append(f"{component}: npm package must be 'loza', not {npm.get('package')!r}")
+            elif npm.get("package") != NPM_PACKAGE:
+                errors.append(f"{component}: npm package must be {NPM_PACKAGE!r}, not {npm.get('package')!r}")
             elif npm.get("owner") != PUBLISH_OWNER:
                 errors.append(f"{component}: publish.npm.owner must be '{PUBLISH_OWNER}'")
         if language == "python":
