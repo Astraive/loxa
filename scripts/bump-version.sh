@@ -44,8 +44,6 @@ FILES=(
   "sdks/js/package.json"
   "sdks/js/package-lock.json"
 
-  # LQL — Cargo.toml version = "X.Y.Z"
-  "lql/Cargo.toml"
 
   # Cortex match — Cargo.toml version = "X.Y.Z"
   "cortex/crates/cortex-match/Cargo.toml"
@@ -67,7 +65,6 @@ FILES=(
   "spec/docs/sdk-parity-manifest.json"
   "sdks/js/loza-js.yaml"
   "spec/loza-spec.yaml"
-  "lql/lql.yaml"
 
   # Goreleaser
   "collector/deploy/goreleaser.yml"

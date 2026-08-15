@@ -88,7 +88,6 @@ go get github.com/astraive/loza/sdks/go
 │   └── js/      # Lightweight JavaScript/TypeScript SDK using HTTPBatchSink
 ├── cli/         # Local operator CLI
 │   └── install/ # CLI-only install scripts
-├── lql/         # LOZA Query Language compiler / tooling
 ├── spec/        # Shared wire and schema contract
 ├── docs/        # Architecture, configuration, deployment, and security docs
 └── deploy/      # Docker, Kubernetes, and Helm deployment assets
@@ -220,7 +219,6 @@ The stable operator surface is:
 | [`sdks/rs/`](sdks/rs/)     | Lightweight Rust SDK                                                      |               Rust | [`sdks/rs/README.md`](sdks/rs/README.md)       |
 | [`sdks/js/`](sdks/js/)     | JavaScript / TypeScript SDK                                               |         TypeScript | [`sdks/js/README.md`](sdks/js/README.md)       |
 | [`cli/`](cli/)             | Local operator CLI                                                        |                 Go | [`cli/README.md`](cli/README.md)               |
-| [`lql/`](lql/)             | LOZA Query Language tooling                                               |        Rust / WASM | [`lql/README.md`](lql/README.md)               |
 | [`spec/`](spec/)           | Shared wire, schema, and conformance contract                             | Markdown / schemas | [`spec/docs/MVP_CUT.md`](spec/docs/MVP_CUT.md) |
 
 ## Quick Start

@@ -11,7 +11,6 @@ loza     -> loza.yaml
 spec      -> spec/loza-spec.yaml
 collector -> collector/loza.yaml
 cortex    -> cortex/loza-cortex.yaml
-lql       -> lql/lql.yaml
 cli       -> cli/loza-cli.yaml
 sdk-go    -> sdks/go/loza-go.yaml
 sdk-js    -> sdks/js/loza-js.yaml

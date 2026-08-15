@@ -25,7 +25,6 @@ DEFAULT_PREFIXES = {
     "collector": "collector/v",
     "cortex": "cortex/v",
     "cli": "cli/v",
-    "lql": "lql/v",
     "sdk-go": "sdks/go/v",
     "sdk-js": "sdks/js/v",
     "sdk-py": "sdks/py/v",

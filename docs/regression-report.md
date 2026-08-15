@@ -47,11 +47,6 @@
 - `cortex/internal/storage/collector_event_store.go` -- added warning logs for discarded events
 - `cortex/internal/storage/postgres.go` -- added new columns to signature table (feature_weights, version, parent_signature_id, decay_factor, last_matched_at, behavioral_hash)
 
-### LQL (Rust)
-- `lql/src/compiler/clickhouse.rs` -- alias-aware compilation, refactored aggregation functions
-- `lql/src/compiler/duckdb.rs` -- alias-aware compilation, duration fix, refactored aggregation functions
-- `lql/src/lexer.rs` -- `||` and `&&` as operators (not keywords), `!~` as NotLike token, `sum` separated from `summarize`
-- `lql/src/parser.rs` -- NotLike support, test fix
 
 ### SDKs
 - `sdks/go/src/core/config.go` -- HTTPBatchSink endpoint `/ingest` -> `/events`
