@@ -1,0 +1,217 @@
+name: LOZA v0.3.0 Release
+
+on:
+  push:
+    tags:
+      - v0.3.0
+
+permissions:
+  contents: write
+
+jobs:
+  cli:
+    name: CLI ${{ matrix.asset }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            asset: loza_0.3.0_linux_amd64.tar.gz
+          - runner: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            asset: loza_0.3.0_linux_arm64.tar.gz
+          - runner: macos-13
+            goos: darwin
+            goarch: amd64
+            asset: loza_0.3.0_darwin_amd64.tar.gz
+          - runner: macos-14
+            goos: darwin
+            goarch: arm64
+            asset: loza_0.3.0_darwin_arm64.tar.gz
+          - runner: windows-latest
+            goos: windows
+            goarch: amd64
+            asset: loza_0.3.0_windows_amd64.zip
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cli/go.mod
+          cache: true
+
+      - name: Install Linux arm64 cross compiler
+        if: runner.os == 'Linux' && matrix.goarch == 'arm64'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+      - name: Build CLI
+        shell: bash
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          VERSION: 0.3.0
+        run: |
+          mkdir -p release-assets/dist
+          BINARY=loza
+          if [[ "${GOOS}" == "windows" ]]; then
+            BINARY=loza.exe
+          fi
+          if [[ "${RUNNER_OS}" == "Linux" && "${GOARCH}" == "arm64" ]]; then
+            export CC=aarch64-linux-gnu-gcc
+            export CXX=aarch64-linux-gnu-g++
+          fi
+          if [[ -n "${CC:-}" ]]; then
+            CGO_ENABLED=1 GOOS="${GOOS}" GOARCH="${GOARCH}" CC="${CC}" CXX="${CXX}" \
+              go build -trimpath -ldflags="-s -w -X github.com/astraive/loza/cli/internal/version.Version=${VERSION}" \
+              -o "release-assets/dist/${BINARY}" ./cli/cmd/loza
+          else
+            CGO_ENABLED=1 GOOS="${GOOS}" GOARCH="${GOARCH}" \
+              go build -trimpath -ldflags="-s -w -X github.com/astraive/loza/cli/internal/version.Version=${VERSION}" \
+              -o "release-assets/dist/${BINARY}" ./cli/cmd/loza
+          fi
+
+      - name: Package CLI
+        shell: bash
+        run: |
+          if [[ "${{ matrix.goos }}" == "windows" ]]; then
+            7z a "release-assets/${{ matrix.asset }}" release-assets/dist/loza.exe
+          else
+            tar -C release-assets/dist -czf "release-assets/${{ matrix.asset }}" loza
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: release-assets/${{ matrix.asset }}
+          if-no-files-found: error
+
+  sdk-and-spec:
+    name: SDKs and specifications
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: sdks/go/go.mod
+          cache: true
+
+      - name: Install SDK packaging tools
+        run: python -m pip install build twine pytest pyyaml
+
+      - name: Validate specification
+        run: python spec/conformance/verify.py
+
+      - name: Build JavaScript SDK
+        working-directory: sdks/js
+        run: |
+          npm ci
+          npm run build
+          npm test
+          npm pack --pack-destination "$GITHUB_WORKSPACE/release-assets"
+
+      - name: Build Python SDK
+        run: |
+          python -m pip install -e sdks/py
+          pytest -q sdks/py
+          python -m build sdks/py
+          python -m twine check sdks/py/dist/*
+          cp sdks/py/dist/* release-assets/
+
+      - name: Build Rust SDK and LQL
+        run: |
+          cargo test --manifest-path sdks/rs/Cargo.toml --all-features
+          cargo package --manifest-path sdks/rs/Cargo.toml
+          cp sdks/rs/target/package/loza-0.3.0.crate release-assets/
+          cargo test --manifest-path lql/Cargo.toml
+          cargo package --manifest-path lql/Cargo.toml
+          cp lql/target/package/loza-lql-0.3.0.crate release-assets/
+
+      - name: Validate Go SDK and package source
+        run: |
+          go test ./...
+          tar -czf release-assets/loza-go-0.3.0.tar.gz sdks/go
+
+      - name: Package specification and repository metadata
+        run: |
+          tar -czf release-assets/loza-spec-0.3.0.tar.gz spec proto
+          tar -czf release-assets/loza-manifests-0.3.0.tar.gz \
+            loza.yaml release.yaml spec/loza-spec.yaml collector/loza.yaml \
+            cortex/loza-cortex.yaml lql/lql.yaml cli/loza-cli.yaml \
+            sdks/go/loza-go.yaml sdks/js/loza-js.yaml \
+            sdks/py/loza-py.yaml sdks/rs/loza-rs.yaml
+          git archive --format=tar.gz --prefix=loza-0.3.0/ \
+            -o release-assets/loza-source-0.3.0.tar.gz HEAD
+          cp CHANGELOG.md RELEASE.md release-assets/
+          cat > release-assets/RELEASE_NOTES.md <<'EOF'
+          # LOZA v0.3.0
+
+          A unified LOZA release containing the operator CLI, all supported SDKs, the LQL crate, wire specifications, protobuf/OpenAPI contracts, generated conformance artifacts, deployment manifests, and complete source.
+
+          ## Included
+
+          - CLI binaries for Linux amd64/arm64, macOS amd64/arm64, and Windows amd64.
+          - JavaScript package `@astraive/loza@0.3.0`.
+          - Python package `loza==0.3.0`.
+          - Rust crates `loza` and `loza-lql` at `0.3.0`.
+          - Go SDK source archive for `github.com/astraive/loza/sdks/go`.
+          - Versioned specification, protobuf, OpenAPI, schema, and manifest archives.
+          - Full source archive and release documentation.
+
+          ## Install
+
+          ```bash
+          npm install @astraive/loza@0.3.0
+          python -m pip install loza==0.3.0
+          cargo add loza@0.3.0
+          go get github.com/astraive/loza/sdks/go
+          ```
+
+          All artifacts are published under the single immutable tag and release `v0.3.0`.
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdk-and-spec
+          path: release-assets/*
+          if-no-files-found: error
+
+  release:
+    name: Publish single v0.3.0 release
+    needs: [cli, sdk-and-spec]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: "*"
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create checksums and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "${GITHUB_REF_NAME}" = "v0.3.0"
+          sha256sum release-assets/* > release-assets/checksums.txt
+          gh release create "${GITHUB_REF_NAME}" release-assets/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "LOZA v0.3.0" \
+            --notes-file release-assets/RELEASE_NOTES.md
