@@ -18,7 +18,6 @@ The release system is manifest-driven. Each component has a YAML manifest (e.g.,
 | `sdk-js` | `sdks/js/package.json` | npm |
 | `sdk-py` | `sdks/py/pyproject.toml` | PyPI |
 | `sdk-rs` | `sdks/rs/Cargo.toml` | crates.io |
-| `lql` | `lql/lql.yaml` | crates.io |
 | `spec` | `spec/loza-spec.yaml` | GitHub Releases |
 | `loza` | `loza.yaml` | GitHub Release (umbrella) |
 
@@ -65,7 +64,7 @@ The release controller calls these reusable workflows:
 | `publish-cli.yml` | `workflow_call` | Runs GoReleaser for the CLI binary |
 | `publish-js.yml` | `workflow_call` | Publishes JS SDK to npm with provenance |
 | `publish-py.yml` | `workflow_call` | Publishes Python SDK to PyPI |
-| `publish-rs.yml` | `workflow_call` | Publishes Rust SDK and LQL crates |
+| `publish-rs.yml` | `workflow_call` | Publishes Rust SDK to crates.io |
 | `publish-github-release.yml` | `workflow_call` | Creates umbrella GitHub Release |
 | `verify-go-modules.yml` | `workflow_call` | Verifies Go module tags resolve correctly |
 
@@ -94,7 +93,6 @@ Each component gets a Git tag after successful publishing:
 | sdk-js | `sdk-js/v0.2.6` |
 | sdk-py | `sdk-py/v0.2.6` |
 | sdk-rs | `sdk-rs/v0.2.6` |
-| lql | `lql/v0.2.6` |
 | spec | `spec/v0.2.6` |
 | loza (umbrella) | `v0.2.6` |
 
@@ -113,7 +111,7 @@ The version in the component's manifest file doesn't match the version you passe
 
 ### "unknown component"
 
-Check the component name against the `release.yaml` registry file. Valid names: `collector`, `cortex`, `cli`, `sdk-js`, `sdk-py`, `sdk-rs`, `lql`, `spec`, `loza`.
+Check the component name against the `release.yaml` registry file. Valid names: `collector`, `cortex`, `cli`, `sdk-js`, `sdk-py`, `sdk-rs`, `spec`, `loza`.
 
 ### Dry run succeeded but real publish failed
 

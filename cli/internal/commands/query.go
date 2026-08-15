@@ -34,7 +34,7 @@ func compileLQL(query string, target string) (string, error) {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			return "", fmt.Errorf("lql error: %s", strings.TrimSpace(string(exitErr.Stderr)))
 		}
-		return "", fmt.Errorf("lql binary not found — install with: cargo install --path lql")
+		return "", fmt.Errorf("lql binary not found — install with: cargo install loza-lql")
 	}
 	return strings.TrimSpace(string(out)), nil
 }

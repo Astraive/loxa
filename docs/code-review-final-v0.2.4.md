@@ -312,7 +312,7 @@ Update to current version.
 
 3. **Consistent version in Helm charts**: Both `collector/deploy/helm/loza/Chart.yaml` and `cortex/deploy/helm/cortex/Chart.yaml` correctly use `version: 0.2.4` and `appVersion: "0.2.4"`. Values.yaml image tags are also correct.
 
-4. **Consistent version in Cargo.toml/pyproject.toml/package.json**: `sdks/rs/Cargo.toml`, `sdks/py/pyproject.toml`, `sdks/js/package.json`, `lql/Cargo.toml`, and `cortex/crates/cortex-match/Cargo.toml` all show `version = "0.2.4"`.
+4. **Consistent version in Cargo.toml/pyproject.toml/package.json**: `sdks/rs/Cargo.toml`, `sdks/py/pyproject.toml`, `sdks/js/package.json`, and `cortex/crates/cortex-match/Cargo.toml` all show `version = "0.2.4"`.
 
 5. **K8s deployment manifests correct**: Both `collector/deploy/k8s/collector-deployment.yaml` and `cortex/configs/cortex-deployment.yaml` use `image: ghcr.io/astraive/*:0.2.4` and correct container ports (9308, 9312/9313).
 

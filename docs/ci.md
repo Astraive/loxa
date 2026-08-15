@@ -47,13 +47,6 @@ These workflows run automatically on pushes and pull requests.
 - **conformance** — Spec conformance runner + contract tests
 - **required-checks** — Enforces all jobs passed
 
-### lql-ci.yml
-
-**Triggers:** push/PR when `lql/` changes.
-
-**Jobs:**
-- **build** — Build, test, clippy, format check
-- **wasm** — Build WASM target with wasm-pack
 
 ### spec-ci.yml
 
@@ -84,7 +77,6 @@ Note: `spec-ci.yml` covers the same ground with more depth. This workflow may be
 - **cortex** — Runs cortex tests if cortex changed
 - **cli** — Runs CLI tests if CLI changed
 - **spec-and-sdks** — Runs spec validation and SDK conformance if spec or SDKs changed
-- **lql** — Runs LQL tests if LQL changed
 
 This workflow runs focused tests only for components that actually changed.
 
@@ -151,7 +143,7 @@ This workflow runs focused tests only for components that actually changed.
 - **publish-cli** — Publishes CLI via GoReleaser
 - **publish-js** — Publishes JS SDK to npm
 - **publish-py** — Publishes Python SDK to PyPI
-- **publish-rs** — Publishes Rust SDK and LQL crates
+- **publish-rs** — Publishes Rust SDK to crates.io
 - **publish-github-release** — Creates umbrella GitHub Release
 - **verify-go-modules** — Verifies Go module tags
 
@@ -173,7 +165,7 @@ Reusable workflow. Publishes `sdk-py` to PyPI using trusted publishing, creates 
 
 ### publish-rs.yml
 
-Reusable workflow. Publishes `sdk-rs` to crates.io and `lql` crate (if enabled), creates tags.
+Reusable workflow. Publishes `sdk-rs` to crates.io and creates the component tag.
 
 ### publish-github-release.yml
 
@@ -197,7 +189,7 @@ release-publish.yml
 ├── publish-cli.yml ─────────────── (cli)
 ├── publish-js.yml ──────────────── (sdk-js)
 ├── publish-py.yml ──────────────── (sdk-py)
-├── publish-rs.yml ──────────────── (sdk-rs, lql)
+├── publish-rs.yml ──────────────── (sdk-rs)
 ├── publish-github-release.yml ──── (loza umbrella)
 └── verify-go-modules.yml ───────── (spec, sdk-go)
 
@@ -207,7 +199,6 @@ release-detect.yml
 ├── cortex tests (if cortex changed)
 ├── cli tests (if cli changed)
 ├── spec-and-sdks tests (if spec/SDKs changed)
-└── lql tests (if lql changed)
 ```
 
 ## Removed Workflows

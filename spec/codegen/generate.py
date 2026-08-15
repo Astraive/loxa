@@ -8,7 +8,6 @@ from emitters.conformance import render_conformance_manifest
 from emitters.contract_json import render_contract_json
 from emitters.cortex_contract import render_cortex_contract_json
 from emitters.go import render_go_contract
-from emitters.lql_schema import render_lql_schema
 from emitters.python import render_python_contract
 from emitters.rust import render_rust_contract
 from model import build_contract, build_cortex_contract
@@ -34,7 +33,6 @@ def main() -> int:
         spec_root / "generated" / "go" / "contract" / "contract.go": render_go_contract(loza_contract),
         spec_root / "generated" / "python" / "loza_contract.py": python_contract,
         spec_root / "generated" / "rust" / "contract.rs": render_rust_contract(loza_contract),
-        spec_root / "generated" / "lql" / "schema.rs": render_lql_schema(loza_contract),
     }
     sdk_contract = spec_root.parent / "sdks" / "py" / "src" / "loza_contract.py"
     if sdk_contract.parent.is_dir():
