@@ -4,6 +4,7 @@ Requires a collector at ``LOZA_TEST_COLLECTOR_URL`` (default
 ``http://127.0.0.1:9308``), its ingest token in ``LOZA_API_KEY``, and an
 admin token in ``LOZA_TEST_COLLECTOR_ADMIN_KEY``.
 """
+
 import json
 import os
 import socket
@@ -49,20 +50,18 @@ def test_e2e_collector_pipeline():
     print("\n=== E2E Test: HTTPBatchSink -> loza-collector ===\n")
 
     # 1. Create logger with collector sink
-    config = (
-        loza.Production("e2e-test-service")
-        .with_collector_endpoint(COLLECTOR_URL)
-        .with_api_key(INGEST_API_KEY)
-    )
+    config = loza.Production("e2e-test-service").with_collector_endpoint(COLLECTOR_URL).with_api_key(INGEST_API_KEY)
     logger = loza.New(config)
 
     # 2. Emit 3 events
     for i in range(3):
-        ctx = logger.start_event(loza.Params(
-            event=f"e2e.test.event_{i}",
-            message=f"E2E test event {i}",
-            level="info",
-        ))
+        ctx = logger.start_event(
+            loza.Params(
+                event=f"e2e.test.event_{i}",
+                message=f"E2E test event {i}",
+                level="info",
+            )
+        )
         logger.enrich(ctx, loza.String("test_run", "e2e"))
         logger.enrich(ctx, loza.Int("sequence", i))
         logger.finish(ctx, "success")
@@ -99,7 +98,9 @@ def test_e2e_collector_pipeline():
     try:
         query_req = urllib.request.Request(
             f"{COLLECTOR_URL}/query",
-            data=json.dumps({"sql": "SELECT event, service, outcome FROM events WHERE service = 'e2e-test-service' LIMIT 10"}).encode(),
+            data=json.dumps(
+                {"sql": "SELECT event, service, outcome FROM events WHERE service = 'e2e-test-service' LIMIT 10"}
+            ).encode(),
             headers={"Authorization": f"Bearer {ADMIN_API_KEY}", "content-type": "application/json"},
             method="POST",
         )
@@ -114,6 +115,7 @@ def test_e2e_collector_pipeline():
 
     # 5. CollectorClient health/ready/version/status
     from loza.core.http_client import CollectorClient
+
     cc = CollectorClient(f"{COLLECTOR_URL}/events", api_key=ADMIN_API_KEY)
 
     assert cc.health() is True, "collector health check failed"

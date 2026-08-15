@@ -1,6 +1,6 @@
 module github.com/astraive/loza/sdks/go/src/middleware
 
-go 1.25.0
+go 1.25.13
 
 require (
 	github.com/astraive/loza/sdks/go v0.0.0
@@ -13,7 +13,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
-	github.com/astraive/loza/spec v0.0.0 // indirect
+	github.com/astraive/loza/spec v0.2.6 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.15.0 // indirect

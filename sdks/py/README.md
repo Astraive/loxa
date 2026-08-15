@@ -1,6 +1,6 @@
 # LOZA Python SDK
 
-**Status**: STABLE (v0.2.6) - Production-ready, full feature conformance
+**Status**: STABLE (v0.3.0) - Production-ready, full feature conformance
 
 Full API conformance with specification is complete. See [SDK_CONFORMANCE_CONTRACT.md](../../spec/docs/SDK_CONFORMANCE_CONTRACT.md) for detailed guarantees.
 

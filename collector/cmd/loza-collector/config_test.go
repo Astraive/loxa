@@ -16,9 +16,9 @@ import (
 func TestMain(m *testing.M) {
 	for key, value := range map[string]string{
 		"COLLECTOR_AUTH_SERVER_SECRET": "test-auth-server-secret",
-		"COLLECTOR_INGEST_KEY_SECRET": "test-ingest-key-secret",
-		"COLLECTOR_ADMIN_KEY_SECRET":  "test-admin-key-secret",
-		"LOZA_STORAGE_ENCRYPTION_KEY": "test-storage-encryption-key",
+		"COLLECTOR_INGEST_KEY_SECRET":  "test-ingest-key-secret",
+		"COLLECTOR_ADMIN_KEY_SECRET":   "test-admin-key-secret",
+		"LOZA_STORAGE_ENCRYPTION_KEY":  "test-storage-encryption-key",
 	} {
 		if err := os.Setenv(key, value); err != nil {
 			panic(err)
@@ -159,6 +159,159 @@ storage:
 	if cfg.authKeys[0].secret != "test-ingest-key-secret" || cfg.authKeys[1].kind != auth.KeyKindSecret {
 		t.Fatalf("configured key secrets or kind were not resolved")
 	}
+	if cfg.authDefaultCollector != "default" {
+		t.Fatalf("legacy root routes must retain the implicit default collector, got %q", cfg.authDefaultCollector)
+	}
+}
+
+func TestLoadCollectorConfigFromArgsResolvesScopedConfiguredKey(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "collector.yaml")
+	raw := `
+auth:
+  enabled: true
+  server_secret: ${COLLECTOR_AUTH_SERVER_SECRET}
+  cache_ttl: 1m
+  negative_cache_ttl: 10s
+  collectors:
+    - slug: checkout
+  keys:
+    - name: checkout-writer
+      key_id: kcheckoutwriter
+      secret_env: COLLECTOR_INGEST_KEY_SECRET
+      kind: sec
+      collector: checkout
+      permissions: [events:write]
+      allowed_envs: [prod]
+storage:
+  encryption_key_env: LOZA_STORAGE_ENCRYPTION_KEY
+`
+	if err := os.WriteFile(path, []byte(raw), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	cfg, err := loadCollectorConfigFromArgs([]string{"-c", path})
+	if err != nil {
+		t.Fatalf("load scoped key configuration: %v", err)
+	}
+	if len(cfg.authKeys) != 1 || cfg.authKeys[0].collector != "checkout" {
+		t.Fatalf("scoped key was not carried to runtime: %+v", cfg.authKeys)
+	}
+	if got := cfg.authKeys[0].permissions; len(got) != 1 || got[0] != auth.PermEventsWrite {
+		t.Fatalf("scoped key permissions = %v, want events:write", got)
+	}
+	if len(cfg.authCollectors) != 1 || cfg.authCollectors[0] != "checkout" {
+		t.Fatalf("configured collector was not carried to runtime: %v", cfg.authCollectors)
+	}
+}
+
+func TestResolveCollectorAuthGrantsBuildsPrivateAndPublicCredentials(t *testing.T) {
+	publicID := "lx_pub_0123456789abcdefghijklmnopqrstuv"
+	t.Setenv("COLLECTOR_PRIVATE_GRANT_PASSWORD", "private-grant-password")
+	t.Setenv("COLLECTOR_PUBLIC_ACCESS_ID", publicID)
+	cfg := validFileConfig()
+	cfg.Auth.Collectors = []collectorconfig.AuthCollectorConfig{{Slug: "browser-events"}}
+	cfg.Auth.DefaultCollector = "browser-events"
+	cfg.Auth.Grants = []collectorconfig.AuthGrantConfig{
+		{
+			Name:        "service",
+			Collector:   "browser-events",
+			Username:    "service-writer",
+			PasswordEnv: "COLLECTOR_PRIVATE_GRANT_PASSWORD",
+			Permissions: []string{"events:write"},
+			AllowedEnvs: []string{"prod"},
+		},
+		{
+			Name:           "browser",
+			Collector:      "browser-events",
+			PublicIDEnv:    "COLLECTOR_PUBLIC_ACCESS_ID",
+			Permissions:    []string{"events:write"},
+			AllowedEnvs:    []string{"prod"},
+			AllowedOrigins: []string{"https://console.example.test"},
+		},
+	}
+
+	collectors, grants, err := resolveCollectorAuthGrants(cfg)
+	if err != nil {
+		t.Fatalf("resolve grants: %v", err)
+	}
+	if len(collectors) != 1 || collectors[0] != "browser-events" || len(grants) != 2 {
+		t.Fatalf("unexpected resolved grants: collectors=%v grants=%+v", collectors, grants)
+	}
+	if grants[0].kind != auth.KeyKindSecret || grants[0].secret != "private-grant-password" || grants[0].keyID != "service-writer" {
+		t.Fatalf("private grant was not resolved: %+v", grants[0])
+	}
+	if grants[1].kind != auth.KeyKindPublic || grants[1].secret != "" || grants[1].keyID != publicID {
+		t.Fatalf("public grant was not constructed as a passwordless capability: %+v", grants[1])
+	}
+}
+
+func TestResolveAuthConfigBuildsCollectorScopedKey(t *testing.T) {
+	cfg := validFileConfig()
+	cfg.Auth.Collectors = []collectorconfig.AuthCollectorConfig{{Slug: "orders"}}
+	cfg.Auth.Keys = []collectorconfig.AuthKeyConfig{{
+		Name:        "orders-operator",
+		KeyID:       "korders",
+		SecretEnv:   "COLLECTOR_INGEST_KEY_SECRET",
+		Kind:        "sec",
+		Collector:   "orders",
+		Permissions: []string{"events:read", "events:write", "events:delete"},
+		AllowedEnvs: []string{"production"},
+	}}
+
+	_, keys, err := resolveAuthConfig(cfg)
+	if err != nil {
+		t.Fatalf("resolve scoped key: %v", err)
+	}
+	if len(keys) != 1 || keys[0].collector != "orders" {
+		t.Fatalf("scoped key collector was not resolved: %+v", keys)
+	}
+	if got := keys[0].permissions; len(got) != 3 || got[0] != auth.PermEventsRead || got[1] != auth.PermEventsWrite || got[2] != auth.PermEventsDelete {
+		t.Fatalf("scoped key permissions = %v, want read/write/delete", got)
+	}
+
+	cfg.Auth.Keys[0].Permissions = nil
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "auth.keys[0].permissions") {
+		t.Fatalf("expected scoped key permissions rejection, got %v", err)
+	}
+	cfg.Auth.Keys[0].Permissions = []string{"events:write"}
+	cfg.Auth.Keys[0].Collector = "unknown"
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "configured collector") {
+		t.Fatalf("expected unknown scoped key collector rejection, got %v", err)
+	}
+}
+
+func TestValidateFileConfigRejectsInvalidCollectorGrantConfiguration(t *testing.T) {
+	publicID := "lx_pub_0123456789abcdefghijklmnopqrstuv"
+	t.Setenv("COLLECTOR_PUBLIC_ACCESS_ID", publicID)
+	cfg := validFileConfig()
+	cfg.Auth.Collectors = []collectorconfig.AuthCollectorConfig{{Slug: "web"}, {Slug: "web"}}
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "duplicates") {
+		t.Fatalf("expected duplicate collector rejection, got %v", err)
+	}
+
+	cfg = validFileConfig()
+	cfg.Auth.Collectors = []collectorconfig.AuthCollectorConfig{{Slug: "Not_valid"}}
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "valid collector slug") {
+		t.Fatalf("expected invalid collector slug rejection, got %v", err)
+	}
+
+	cfg = validFileConfig()
+	cfg.Auth.Collectors = []collectorconfig.AuthCollectorConfig{{Slug: "web"}}
+	cfg.Auth.Grants = []collectorconfig.AuthGrantConfig{{
+		Collector:      "unknown",
+		PublicIDEnv:    "COLLECTOR_PUBLIC_ACCESS_ID",
+		Permissions:    []string{"events:write"},
+		AllowedEnvs:    []string{"prod"},
+		AllowedOrigins: []string{"https://console.example.test"},
+	}}
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "configured collector") {
+		t.Fatalf("expected unknown collector rejection, got %v", err)
+	}
+
+	cfg.Auth.Grants[0].Collector = "web"
+	t.Setenv("COLLECTOR_PUBLIC_ACCESS_ID", "lx_pub_invalid")
+	if err := validateFileConfig(cfg); err == nil || strings.Contains(err.Error(), "lx_pub_invalid") {
+		t.Fatalf("expected redacted malformed public ID rejection, got %v", err)
+	}
 }
 
 func TestValidateFileConfigRejectsInvalidConfiguredAuth(t *testing.T) {
@@ -170,6 +323,7 @@ func TestValidateFileConfigRejectsInvalidConfiguredAuth(t *testing.T) {
 	cfg.Storage.EncryptionKey = "test-storage-encryption-key"
 	cfg.Auth.Keys = []collectorconfig.AuthKeyConfig{
 		{KeyID: "duplicate", SecretEnv: "COLLECTOR_INGEST_KEY_SECRET", Kind: "sec", Roles: []string{"collector_ingest_server"}},
+
 		{KeyID: "duplicate", SecretEnv: "COLLECTOR_ADMIN_KEY_SECRET", Kind: "sec", Roles: []string{"not-a-role"}},
 	}
 	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "must be unique") {
@@ -190,6 +344,37 @@ func TestValidateFileConfigRejectsInvalidConfiguredAuth(t *testing.T) {
 	cfg.Auth.Keys[0].Roles = []string{"collector_ingest_public"}
 	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "must not contain underscores") {
 		t.Fatalf("expected token-safe key ID validation error, got %v", err)
+	}
+}
+
+func TestResolveAuthTokensBuildsRBACCredentials(t *testing.T) {
+	t.Setenv("COLLECTOR_ADMIN_TOKEN", "lxt_private_admin_token")
+	cfg := validFileConfig()
+	cfg.Auth.Tokens = []collectorconfig.AuthTokenConfig{{
+		Name:        "admin-token",
+		TokenEnv:    "COLLECTOR_ADMIN_TOKEN",
+		Mode:        "private",
+		Roles:       []string{"client"},
+		Collector:   "logs",
+		Permissions: []string{"logs:write"},
+		AllowedEnvs: []string{"prod"},
+	}}
+
+	tokens, err := resolveAuthTokens(cfg)
+	if err != nil {
+		t.Fatalf("resolve token: %v", err)
+	}
+	if len(tokens) != 1 || tokens[0].mode != auth.ModePrivate || len(tokens[0].roles) != 1 || tokens[0].roles[0] != auth.RoleClient {
+		t.Fatalf("token RBAC configuration was not resolved: %+v", tokens)
+	}
+	if len(tokens[0].permissions) != 1 || tokens[0].permissions[0] != auth.PermLogsWrite {
+		t.Fatalf("token log scope was not resolved: %+v", tokens[0])
+	}
+
+	cfg.Auth.Tokens[0].Roles = []string{"admin"}
+	cfg.Auth.Tokens[0].Mode = "public"
+	if _, err := resolveAuthTokens(cfg); err == nil || !strings.Contains(err.Error(), "public credentials") {
+		t.Fatalf("expected privileged public token rejection, got %v", err)
 	}
 }
 

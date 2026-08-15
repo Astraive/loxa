@@ -10,9 +10,7 @@ import pytest
 from loza.core.dsn import LozaDSN, parse
 
 
-_TEST_CASES_PATH = (
-    Path(__file__).resolve().parents[3] / "spec" / "dsn" / "test-cases.json"
-)
+_TEST_CASES_PATH = Path(__file__).resolve().parents[3] / "spec" / "dsn" / "test-cases.json"
 
 
 def _load_cases():
@@ -38,6 +36,9 @@ def test_valid_dsn(case):
     assert dsn.host == expected["host"]
     assert dsn.port == expected["port"]
     assert dsn.project == expected["project"]
+    if "collectorName" in expected:
+        assert dsn.collector_name == expected["collectorName"]
+        assert dsn.project == dsn.collector_name
     assert dsn.env == expected.get("env", "default")
     assert dsn.service == expected.get("service", "")
     assert dsn.tls == expected["tls"]
@@ -63,3 +64,24 @@ def test_valid_dsn(case):
 def test_invalid_dsn(case):
     with pytest.raises(ValueError):
         parse(case["input"])
+
+
+def test_dsn_repr_redacts_credentials() -> None:
+    dsn = parse("loza://key-id:s%40cret%3Avalue@example.com/project")
+    rendered = repr(dsn)
+    assert "s@cret:value" not in rendered
+    assert "credentials='<redacted>'" in rendered
+
+
+def test_public_dsn_routes_and_redacts_bearer_capability() -> None:
+    capability = "lx_pub_6DJvd3D0izOaQx3n5BhKqN"
+    dsn = parse(f"loza://{capability}:@example.com/public-collector")
+
+    assert dsn.username == capability
+    assert dsn.password == ""
+    assert dsn.collector_name == "public-collector"
+    assert dsn.events_url == "https://example.com:443/collectors/public-collector/events"
+    assert dsn.batch_url == "https://example.com:443/collectors/public-collector/events/batch"
+    assert dsn.otlp_url == "https://example.com:443/collectors/public-collector/otlp/logs"
+    assert dsn.tail_ws_url == "wss://example.com:443/collectors/public-collector/tail"
+    assert capability not in repr(dsn)

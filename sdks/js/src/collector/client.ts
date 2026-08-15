@@ -4,13 +4,16 @@ import { gzip as zlibGzip } from 'node:zlib';
 import { promisify } from 'node:util';
 import { buildIngestEnvelope, parseCollectorResponse } from '../generated/spec-contract.ts';
 import type { CollectorResponse } from '../generated/spec-contract.ts';
+import { isPublicDSNUsername } from '../config/dsn.ts';
 import { SDK_VERSION } from '../config/version.ts';
-
 const gzipAsync = promisify(zlibGzip);
 
 export interface CollectorClientOptions {
   url: string;
+  collectorName?: string;
   apiKey?: string;
+  username?: string;
+  password?: string;
   authHeader?: string;
   timeout?: number;
   enableCompression?: boolean;
@@ -26,14 +29,35 @@ export interface VersionInfo {
 /** Standalone client for loza-collector HTTP API. */
 export class CollectorClient {
   private url: string;
+  private collectorName: string;
   private apiKey: string;
+  private username: string;
+  private password: string;
   private authHeader: string;
   private timeout: number;
   private enableCompression: boolean;
 
   constructor(opts: CollectorClientOptions) {
     this.url = opts.url.replace(/\/$/, '');
+    const endpoint = new URL(this.url);
+    if (endpoint.username || endpoint.password) {
+      throw new Error('invalid CollectorClient URL: credentials must not be embedded in the URL');
+    }
     this.apiKey = opts.apiKey || '';
+    this.username = opts.username || '';
+    this.password = opts.password || '';
+    this.collectorName = opts.collectorName || '';
+    if (!this.username && this.password) {
+      throw new Error('invalid CollectorClient options: Basic password requires a username');
+    }
+    if (this.username && !this.password && !isPublicDSNUsername(this.username)) {
+      throw new Error('invalid CollectorClient options: Basic credentials require a password unless username is an lx_pub_ capability');
+    }
+    if (!this.apiKey && this.username &&
+      endpoint.protocol === 'http:' &&
+      !['localhost', '127.0.0.1', '::1'].includes(endpoint.hostname)) {
+      throw new Error('invalid CollectorClient options: Basic credentials require HTTPS (HTTP is allowed only for localhost)');
+    }
     this.authHeader = opts.authHeader || 'x-loza-api-key';
     this.timeout = opts.timeout || 5000;
     this.enableCompression = opts.enableCompression ?? true;
@@ -85,7 +109,7 @@ export class CollectorClient {
         : this.apiKey;
     }
 
-    const res = await this.request('POST', '/events', body, headers);
+    const res = await this.request('POST', this.collectorPath('/events'), body, headers);
     return parseCollectorResponse(res.body);
   }
 
@@ -93,7 +117,7 @@ export class CollectorClient {
 
   /** Validate an event against the collector schema. */
   async validate(event: Record<string, any>): Promise<any> {
-    const res = await this.request('POST', '/validate', Buffer.from(JSON.stringify(event), 'utf-8'));
+    const res = await this.request('POST', this.collectorPath('/validate'), Buffer.from(JSON.stringify(event), 'utf-8'));
     return JSON.parse(res.body);
   }
 
@@ -104,20 +128,22 @@ export class CollectorClient {
 
   /** Query events from the collector. */
   async query(query: Record<string, any>): Promise<any> {
-    const res = await this.request('POST', '/query', Buffer.from(JSON.stringify(query), 'utf-8'));
+    const res = await this.request('POST', this.collectorPath('/query'), Buffer.from(JSON.stringify(query), 'utf-8'));
     return JSON.parse(res.body);
   }
 
   /** Tail events from the collector (streaming stub). */
-  async tail(query?: Record<string, any>): Promise<any> {
-    const params = query ? '?' + new URLSearchParams(query as any).toString() : '';
-    const res = await this.request('GET', `/tail${params}`);
+  async tail(query?: Record<string, unknown>): Promise<unknown> {
+    const params = query
+      ? `?${new URLSearchParams(Object.entries(query).map(([key, value]) => [key, String(value)])).toString()}`
+      : '';
+    const res = await this.request('GET', `${this.collectorPath('/tail')}${params}`);
     return JSON.parse(res.body);
   }
 
   /** Delete events from the collector. */
   async delete(query: Record<string, any>): Promise<any> {
-    const res = await this.request('DELETE', '/events', Buffer.from(JSON.stringify(query), 'utf-8'));
+    const res = await this.request('DELETE', this.collectorPath('/events'), Buffer.from(JSON.stringify(query), 'utf-8'));
     return JSON.parse(res.body);
   }
 
@@ -200,6 +226,12 @@ export class CollectorClient {
     return JSON.parse(res.body);
   }
 
+  private collectorPath(path: string): string {
+    return this.collectorName
+      ? `/collectors/${encodeURIComponent(this.collectorName)}${path}`
+      : path;
+  }
+
   private get(path: string): Promise<{ statusCode: number; body: string }> {
     return this.request('GET', path);
   }
@@ -211,7 +243,11 @@ export class CollectorClient {
       const mod = isHttps ? https : http;
 
       const headers: Record<string, string> = { ...extraHeaders };
-      if (this.apiKey && !headers[this.authHeader]) headers[this.authHeader] = this.apiKey;
+      if (this.apiKey && !headers[this.authHeader]) headers[this.authHeader] =
+        this.authHeader.toLowerCase() === 'authorization' ? `Bearer ${this.apiKey}` : this.apiKey;
+      if (!this.apiKey && this.username && (this.password || isPublicDSNUsername(this.username)) && !headers.Authorization) {
+        headers.Authorization = `Basic ${Buffer.from(`${this.username}:${this.password}`, 'utf8').toString('base64')}`;
+      }
       if (body) headers['Content-Length'] = body.length.toString();
 
       const req = mod.request({

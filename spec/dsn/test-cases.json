@@ -17,10 +17,10 @@
         "tls": false,
         "transport": "http",
         "baseURL": "http://localhost:9308",
-        "eventsURL": "http://localhost:9308/events",
-        "batchURL": "http://localhost:9308/events/batch",
-        "otlpURL": "http://localhost:9308/otlp/logs",
-        "tailWSURL": "ws://localhost:9308/tail"
+        "eventsURL": "http://localhost:9308/collectors/demo/events",
+        "batchURL": "http://localhost:9308/collectors/demo/events/batch",
+        "otlpURL": "http://localhost:9308/collectors/demo/otlp/logs",
+        "tailWSURL": "ws://localhost:9308/collectors/demo/tail"
       }
     },
     {
@@ -37,10 +37,10 @@
         "tls": false,
         "transport": "http",
         "baseURL": "http://localhost:9308",
-        "eventsURL": "http://localhost:9308/events",
-        "batchURL": "http://localhost:9308/events/batch",
-        "otlpURL": "http://localhost:9308/otlp/logs",
-        "tailWSURL": "ws://localhost:9308/tail"
+        "eventsURL": "http://localhost:9308/collectors/demo/events",
+        "batchURL": "http://localhost:9308/collectors/demo/events/batch",
+        "otlpURL": "http://localhost:9308/collectors/demo/otlp/logs",
+        "tailWSURL": "ws://localhost:9308/collectors/demo/tail"
       }
     },
     {
@@ -57,10 +57,10 @@
         "tls": true,
         "transport": "http",
         "baseURL": "https://collector.example.com:443",
-        "eventsURL": "https://collector.example.com:443/events",
-        "batchURL": "https://collector.example.com:443/events/batch",
-        "otlpURL": "https://collector.example.com:443/otlp/logs",
-        "tailWSURL": "wss://collector.example.com:443/tail"
+        "eventsURL": "https://collector.example.com:443/collectors/demo/events",
+        "batchURL": "https://collector.example.com:443/collectors/demo/events/batch",
+        "otlpURL": "https://collector.example.com:443/collectors/demo/otlp/logs",
+        "tailWSURL": "wss://collector.example.com:443/collectors/demo/tail"
       }
     },
     {
@@ -93,7 +93,7 @@
         "tls": true,
         "transport": "otlp",
         "baseURL": "https://collector.example.com:443",
-        "otlpURL": "https://collector.example.com:443/otlp/logs"
+        "otlpURL": "https://collector.example.com:443/collectors/demo/otlp/logs"
       }
     },
     {
@@ -209,6 +209,67 @@
       }
     },
     {
+      "name": "credentialed DSN with percent-encoded password",
+      "input": "loza://key-id:s%40cret%3Avalue%2Fpart@collector.example.com/demo",
+      "valid": true,
+      "expected": {
+        "scheme": "loza",
+        "username": "key-id",
+        "password": "s@cret:value/part",
+        "host": "collector.example.com",
+        "port": 443,
+        "project": "demo",
+        "collectorName": "demo",
+        "env": "default",
+        "service": "",
+        "tls": true,
+        "transport": "http",
+        "baseURL": "https://collector.example.com:443"
+      }
+    },
+    {
+      "name": "credentialed DSN with percent-encoded username",
+      "input": "loza://key%2Did:secret@collector.example.com/demo?env=prod",
+      "valid": true,
+      "expected": {
+        "scheme": "loza",
+        "username": "key-id",
+        "password": "secret",
+        "host": "collector.example.com",
+        "port": 443,
+        "project": "demo",
+        "env": "prod",
+        "service": "",
+        "tls": true,
+        "transport": "http",
+        "baseURL": "https://collector.example.com:443",
+        "collectorName": "demo"
+      }
+    },
+    {
+      "name": "public credential DSN",
+      "input": "loza://lx_pub_6DJvd3D0izOaQx3n5BhKqN:@collector.example.com/public-collector?env=prod",
+      "valid": true,
+      "expected": {
+        "scheme": "loza",
+        "username": "lx_pub_6DJvd3D0izOaQx3n5BhKqN",
+        "password": "",
+        "host": "collector.example.com",
+        "port": 443,
+        "project": "public-collector",
+        "collectorName": "public-collector",
+        "env": "prod",
+        "service": "",
+        "tls": true,
+        "transport": "http",
+        "baseURL": "https://collector.example.com:443",
+        "eventsURL": "https://collector.example.com:443/collectors/public-collector/events",
+        "batchURL": "https://collector.example.com:443/collectors/public-collector/events/batch",
+        "otlpURL": "https://collector.example.com:443/collectors/public-collector/otlp/logs",
+        "tailWSURL": "wss://collector.example.com:443/collectors/public-collector/tail"
+      }
+    },
+    {
       "name": "reject empty string",
       "input": "",
       "valid": false,
@@ -251,14 +312,44 @@
       "expected": null
     },
     {
-      "name": "reject userinfo (API key in URL)",
+      "name": "reject empty username",
+      "input": "loza://:secret@collector.example.com/demo",
+      "valid": false,
+      "expected": null
+    },
+    {
+      "name": "reject empty password",
+      "input": "loza://key:@collector.example.com/demo",
+      "valid": false,
+      "expected": null
+    },
+    {
+      "name": "reject userinfo without password",
       "input": "loza://key@collector.example.com/demo",
       "valid": false,
       "expected": null
     },
     {
-      "name": "reject userinfo with password",
-      "input": "loza://user:pass@collector.example.com/demo",
+      "name": "reject username containing encoded colon",
+      "input": "loza://key%3Aid:secret@collector.example.com/demo",
+      "valid": false,
+      "expected": null
+    },
+    {
+      "name": "reject username containing encoded whitespace",
+      "input": "loza://key%20id:secret@collector.example.com/demo",
+      "valid": false,
+      "expected": null
+    },
+    {
+      "name": "reject unencoded reserved password character",
+      "input": "loza://key:secret:part@collector.example.com/demo",
+      "valid": false,
+      "expected": null
+    },
+    {
+      "name": "reject malformed percent escape in credentials",
+      "input": "loza://key:secret%ZZ@collector.example.com/demo",
       "valid": false,
       "expected": null
     },

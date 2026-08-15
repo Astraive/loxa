@@ -48,6 +48,11 @@ pub fn with_collector_endpoint(endpoint: impl Into<String>) -> ConfigOption {
     Box::new(move |cfg| cfg.with_collector_endpoint(endpoint))
 }
 
+pub fn with_collector_name(collector_name: impl Into<String>) -> ConfigOption {
+    let collector_name = collector_name.into();
+    Box::new(move |cfg| cfg.with_collector_name(collector_name))
+}
+
 pub fn with_duplicate_policy(policy: impl Into<String>) -> ConfigOption {
     let policy = policy.into();
     Box::new(move |cfg| cfg.with_duplicate_policy(policy))

@@ -103,7 +103,7 @@ pub mod actix_impl {
                         Ok(res)
                     }
                     Err(err) => {
-                        let _ = logger.finish_error(&mut ctx, &err.to_string());
+                        let _ = logger.finish_error(&mut ctx, err.to_string());
                         let _ = logger.emit(&ctx);
                         Err(err)
                     }

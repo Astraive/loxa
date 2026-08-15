@@ -42,10 +42,10 @@ jobs:
       # --- Lint ---
 
       - name: Lint (ruff check)
-        run: ruff check src/ tests/
+        run: ruff check src/loza/ tests/
 
       - name: Format check (ruff format)
-        run: ruff format --check src/ tests/
+        run: ruff format --check src/loza/ tests/
 
       # --- Type check (enable when mypy is configured in pyproject.toml) ---
       # Uncomment the steps below once [tool.mypy] is added to pyproject.toml

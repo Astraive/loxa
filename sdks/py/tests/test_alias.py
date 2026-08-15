@@ -1,4 +1,5 @@
 """Tests for create_loza and alias functions."""
+
 import json
 
 import loza

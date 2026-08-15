@@ -23,29 +23,29 @@ func newTestStore(serverSecret []byte) *testKeyStore {
 	return &testKeyStore{
 		keys: map[string]*KeyRecord{
 			"ksec1": {
-				ID:           "id_sec1",
-				OrgID:        "org_1",
-				ProjectID:    "proj_1",
-				KeyID:        "ksec1",
-				SecretHash:   secHash,
-				Kind:         KeyKindSecret,
-				Roles:        []Role{RoleIngestServer},
-				AllowedEnvs:  []string{"prod", "staging"},
-				AllowedServices: []string{"checkout-api"},
-				MaxPayloadBytes: 262144,
+				ID:                   "id_sec1",
+				OrgID:                "org_1",
+				ProjectID:            "proj_1",
+				KeyID:                "ksec1",
+				SecretHash:           secHash,
+				Kind:                 KeyKindSecret,
+				Roles:                []Role{RoleIngestServer},
+				AllowedEnvs:          []string{"prod", "staging"},
+				AllowedServices:      []string{"checkout-api"},
+				MaxPayloadBytes:      262144,
 				MaxRequestsPerMinute: 1000,
 			},
 			"kpub1": {
-				ID:           "id_pub1",
-				OrgID:        "org_1",
-				ProjectID:    "proj_1",
-				KeyID:        "kpub1",
-				SecretHash:   pubHash,
-				Kind:         KeyKindPublic,
-				Roles:        []Role{RoleIngestPublic},
-				AllowedEnvs:  []string{"prod"},
-				AllowedOrigins: []string{"https://app.example.com"},
-				MaxPayloadBytes: 65536,
+				ID:                   "id_pub1",
+				OrgID:                "org_1",
+				ProjectID:            "proj_1",
+				KeyID:                "kpub1",
+				SecretHash:           pubHash,
+				Kind:                 KeyKindPublic,
+				Roles:                []Role{RoleIngestPublic},
+				AllowedEnvs:          []string{"prod"},
+				AllowedOrigins:       []string{"https://app.example.com"},
+				MaxPayloadBytes:      65536,
 				MaxRequestsPerMinute: 100,
 			},
 			"krevoked": {
@@ -101,6 +101,83 @@ func TestMiddleware_ValidSecretKey(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+}
+
+func TestMiddleware_ValidBasicAuth(t *testing.T) {
+	serverSecret := []byte("test-server-secret")
+	store := newTestStore(serverSecret)
+	cache := NewMemoryKeyCache(10*time.Second, 5*time.Second)
+	defer cache.Close()
+
+	mw := Middleware(store, cache, serverSecret)
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ac := GetAuthContext(r.Context())
+		if ac == nil {
+			t.Fatal("expected auth context")
+		}
+		if ac.APIKeyID != "ksec1" {
+			t.Errorf("APIKeyID = %q, want %q", ac.APIKeyID, "ksec1")
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest("POST", "/events", nil)
+	req.SetBasicAuth("ksec1", "testsecret")
+	req.Header.Set("X-Loza-Env", "prod")
+	req.Header.Set("X-Loza-Service", "checkout-api")
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+}
+
+func TestMiddleware_BasicAuthWrongPassword(t *testing.T) {
+	serverSecret := []byte("test-server-secret")
+	store := newTestStore(serverSecret)
+	cache := NewMemoryKeyCache(10*time.Second, 5*time.Second)
+	defer cache.Close()
+
+	mw := Middleware(store, cache, serverSecret)
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("handler should not be called")
+	}))
+
+	req := httptest.NewRequest("POST", "/events", nil)
+	req.SetBasicAuth("ksec1", "wrong-password")
+	req.Header.Set("X-Loza-Env", "prod")
+	req.Header.Set("X-Loza-Service", "checkout-api")
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestMiddleware_BasicAuthUnknownUsername(t *testing.T) {
+	serverSecret := []byte("test-server-secret")
+	store := newTestStore(serverSecret)
+	cache := NewMemoryKeyCache(10*time.Second, 5*time.Second)
+	defer cache.Close()
+
+	mw := Middleware(store, cache, serverSecret)
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("handler should not be called")
+	}))
+
+	req := httptest.NewRequest("POST", "/events", nil)
+	req.SetBasicAuth("unknown-user", "testsecret")
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
 }
 
@@ -341,5 +418,38 @@ func TestRequirePermission_NoAuthContext(t *testing.T) {
 
 	if rec.Code != http.StatusForbidden {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusForbidden)
+	}
+}
+
+func TestMiddleware_PrivateTokenCarriesRBACPermissions(t *testing.T) {
+	serverSecret := []byte("test-server-secret")
+	token := "lxt_opaque_private_token_for_admin"
+	tokenID := TokenLookupID(token, serverSecret)
+	store := &testKeyStore{keys: map[string]*KeyRecord{
+		tokenID: {
+			ID:         tokenID,
+			KeyID:      tokenID,
+			SecretHash: HashSecret(token, serverSecret),
+			Kind:       KeyKindToken,
+			Mode:       ModePrivate,
+			Roles:      []Role{RoleAdmin},
+		},
+	}}
+	cache := NewMemoryKeyCache(time.Minute, time.Second)
+	defer cache.Close()
+
+	handler := Middleware(store, cache, serverSecret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !GetAuthContext(r.Context()).HasPermission(PermLogsDelete) {
+			t.Fatal("admin token must carry logs:delete")
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	request := httptest.NewRequest(http.MethodDelete, "/logs/1", nil)
+	request.Header.Set("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNoContent)
 	}
 }

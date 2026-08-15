@@ -8,6 +8,11 @@ RESULTS_DIR="$SCRIPT_DIR/results"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$RESULTS_DIR"
 
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+    PYTHON_BIN="python"
+fi
+
 echo "=== LOZA Conformance Suite ==="
 echo "Timestamp: $TIMESTAMP"
 echo "Results: $RESULTS_DIR"
@@ -20,18 +25,18 @@ SKIPPED=0
 # --- Cross-SDK Conformance via spec runner ---
 echo "--- Cross-SDK Conformance ---"
 RUNNER="$REPO_ROOT/spec/conformance/runner.py"
-if command -v python3 &>/dev/null && [ -f "$RUNNER" ]; then
+if command -v "$PYTHON_BIN" >/dev/null 2>&1 && [ -f "$RUNNER" ]; then
     SDK_CONFORMANCE_OUT="$RESULTS_DIR/sdk-conformance-${TIMESTAMP}.json"
-    if python3 "$RUNNER" --sdk all --verbose --output "$SDK_CONFORMANCE_OUT" 2>/dev/null; then
+    if "$PYTHON_BIN" "$RUNNER" --sdk all --verbose --json > "$SDK_CONFORMANCE_OUT" 2>/dev/null; then
         echo "  PASS: sdk-conformance"
-        ((PASSED++))
+        PASSED=$((PASSED + 1))
     else
         echo "  FAIL: sdk-conformance"
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     fi
 else
     echo "  SKIP: sdk-conformance (runner not found or python3 missing)"
-    ((SKIPPED++))
+    SKIPPED=$((SKIPPED + 1))
 fi
 
 # --- Collector Sink Conformance ---
@@ -40,7 +45,7 @@ if command -v go &>/dev/null; then
     COLL_CONFORMANCE_OUT="$RESULTS_DIR/collector-conformance-${TIMESTAMP}.json"
     cd "$REPO_ROOT/collector"
     if go test ./internal/sinks/conformance/... -json -count=1 2>/dev/null | \
-        python3 -c "
+        "$PYTHON_BIN" -c "
 import sys, json
 results = []
 passed = 0
@@ -64,34 +69,34 @@ json.dump({
 }, sys.stdout, indent=2)
 " > "$COLL_CONFORMANCE_OUT" 2>/dev/null; then
         echo "  PASS: collector-conformance"
-        ((PASSED++))
+        PASSED=$((PASSED + 1))
     else
         echo "  FAIL: collector-conformance"
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     fi
     cd "$REPO_ROOT"
 else
     echo "  SKIP: collector-conformance (go not found)"
-    ((SKIPPED++))
+    SKIPPED=$((SKIPPED + 1))
 fi
 
 # --- Python SDK Verifier (105 subchecks) ---
 echo "--- Python SDK Verifier ---"
 VERIFY="$REPO_ROOT/spec/conformance/verify.py"
-if command -v python3 &>/dev/null && [ -f "$VERIFY" ]; then
+if command -v "$PYTHON_BIN" >/dev/null 2>&1 && [ -f "$VERIFY" ]; then
     PY_VERIFY_OUT="$RESULTS_DIR/py-verify-${TIMESTAMP}.json"
     cd "$REPO_ROOT"
-    if python3 "$VERIFY" --json > "$PY_VERIFY_OUT" 2>/dev/null; then
+    if "$PYTHON_BIN" "$VERIFY" --json > "$PY_VERIFY_OUT" 2>/dev/null; then
         echo "  PASS: py-verify"
-        ((PASSED++))
+        PASSED=$((PASSED + 1))
     else
         echo "  FAIL: py-verify"
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     fi
     cd "$REPO_ROOT"
 else
     echo "  SKIP: py-verify (verify.py not found or python3 missing)"
-    ((SKIPPED++))
+    SKIPPED=$((SKIPPED + 1))
 fi
 
 # --- Summary ---

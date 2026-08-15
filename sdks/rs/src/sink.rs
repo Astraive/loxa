@@ -2,6 +2,7 @@ use crate::config::SinkConfig;
 use crate::core::client::CollectorHttpClient;
 use crate::generated::spec_contract::parse_collector_response_value;
 use crate::internal::retry::RetryPolicy;
+use base64::Engine as _;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use serde_json::Value;
@@ -102,12 +103,24 @@ pub fn write_sink_with_ack(
         }
         SinkConfig::Noop => Ok(()),
         SinkConfig::HttpBatch {
-            endpoint, ndjson, ..
+            endpoint,
+            ndjson,
+            api_key,
+            basic_username,
+            basic_password,
+            insecure,
+            ..
         } => {
+            let auth = (
+                api_key.as_deref(),
+                basic_username.as_deref(),
+                basic_password.as_deref(),
+                *insecure,
+            );
             if *ndjson {
-                post_http_ndjson_with_ack(endpoint, &[encoded.to_string()], ack)
+                post_http_ndjson_with_ack(endpoint, &[encoded.to_string()], ack, auth)
             } else {
-                post_http_batch_with_ack(endpoint, &[encoded.to_string()], ack)
+                post_http_batch_with_ack(endpoint, &[encoded.to_string()], ack, auth)
             }
         }
     }
@@ -127,12 +140,24 @@ pub fn write_batch_sink_with_ack(
 ) -> io::Result<()> {
     match sink {
         SinkConfig::HttpBatch {
-            endpoint, ndjson, ..
+            endpoint,
+            ndjson,
+            api_key,
+            basic_username,
+            basic_password,
+            insecure,
+            ..
         } => {
+            let auth = (
+                api_key.as_deref(),
+                basic_username.as_deref(),
+                basic_password.as_deref(),
+                *insecure,
+            );
             if *ndjson {
-                post_http_ndjson_with_ack(endpoint, encoded_events, ack)
+                post_http_ndjson_with_ack(endpoint, encoded_events, ack, auth)
             } else {
-                post_http_batch_with_ack(endpoint, encoded_events, ack)
+                post_http_batch_with_ack(endpoint, encoded_events, ack, auth)
             }
         }
         _ => {
@@ -161,15 +186,16 @@ pub fn close_sink(sink: &SinkConfig) -> io::Result<()> {
 
 #[allow(dead_code)]
 fn post_http_batch(endpoint: &str, encoded_events: &[String]) -> io::Result<()> {
-    post_http_batch_with_ack(endpoint, encoded_events, None)
+    post_http_batch_with_ack(endpoint, encoded_events, None, (None, None, None, false))
 }
 
 fn post_http_batch_with_ack(
     endpoint: &str,
     encoded_events: &[String],
     ack: Option<&CollectorAckHandler>,
+    auth: (Option<&str>, Option<&str>, Option<&str>, bool),
 ) -> io::Result<()> {
-    let client = collector_http_client(endpoint);
+    let client = collector_http_client(endpoint, auth);
     let payload = client.envelope(encoded_events);
     client
         .validate_envelope(&payload)
@@ -193,6 +219,12 @@ fn post_http_batch_with_ack(
             api_key.clone()
         };
         request = request.set(&client.auth_header, &auth_value);
+    } else if let (Some(username), Some(password)) =
+        (&client.basic_username, &client.basic_password)
+    {
+        let token =
+            base64::engine::general_purpose::STANDARD.encode(format!("{username}:{password}"));
+        request = request.set(&client.auth_header, &format!("Basic {token}"));
     }
     let retry_policy = RetryPolicy {
         max_attempts: 3,
@@ -271,15 +303,16 @@ fn notify_ack(ack: Option<&CollectorAckHandler>, raw: &str) {
 
 #[allow(dead_code)]
 fn post_http_ndjson(endpoint: &str, encoded_events: &[String]) -> io::Result<()> {
-    post_http_ndjson_with_ack(endpoint, encoded_events, None)
+    post_http_ndjson_with_ack(endpoint, encoded_events, None, (None, None, None, false))
 }
 
 fn post_http_ndjson_with_ack(
     endpoint: &str,
     encoded_events: &[String],
     ack: Option<&CollectorAckHandler>,
+    auth: (Option<&str>, Option<&str>, Option<&str>, bool),
 ) -> io::Result<()> {
-    let client = collector_http_client(endpoint);
+    let client = collector_http_client(endpoint, auth);
     let body = encoded_events.join("\n");
     let body_bytes = body.into_bytes();
 
@@ -299,6 +332,12 @@ fn post_http_ndjson_with_ack(
             api_key.clone()
         };
         request = request.set(&client.auth_header, &auth_value);
+    } else if let (Some(username), Some(password)) =
+        (&client.basic_username, &client.basic_password)
+    {
+        let token =
+            base64::engine::general_purpose::STANDARD.encode(format!("{username}:{password}"));
+        request = request.set(&client.auth_header, &format!("Basic {token}"));
     }
     let retry_policy = RetryPolicy {
         max_attempts: 3,
@@ -448,13 +487,22 @@ fn retryable_error_message(value: &Value) -> Option<String> {
         })
 }
 
-fn collector_http_client(endpoint: &str) -> CollectorHttpClient {
-    let mut client = CollectorHttpClient::new(endpoint.to_string());
-    if let Ok(api_key) = env::var("LOZA_COLLECTOR_API_KEY") {
+fn collector_http_client(
+    endpoint: &str,
+    auth: (Option<&str>, Option<&str>, Option<&str>, bool),
+) -> CollectorHttpClient {
+    let (api_key, basic_username, basic_password, insecure) = auth;
+    let mut client = CollectorHttpClient::new(endpoint.to_string()).with_insecure(insecure);
+    if let Some(api_key) = api_key.filter(|value| !value.is_empty()) {
+        client = client.with_api_key(api_key.to_string());
+    } else if let Ok(api_key) = env::var("LOZA_COLLECTOR_API_KEY") {
         let api_key = api_key.trim();
         if !api_key.is_empty() {
             client = client.with_api_key(api_key.to_string());
         }
+    }
+    if let (Some(username), Some(password)) = (basic_username, basic_password) {
+        client = client.with_basic_auth(username.to_string(), password.to_string());
     }
     if let Ok(header) = env::var("LOZA_COLLECTOR_API_KEY_HEADER") {
         let header = header.trim();

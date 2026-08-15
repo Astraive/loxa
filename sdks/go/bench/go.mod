@@ -1,6 +1,6 @@
 module github.com/astraive/loza/sdks/go/bench
 
-go 1.25.0
+go 1.25.13
 
 require (
 	github.com/astraive/loza/sdks/go v0.0.0
@@ -8,7 +8,7 @@ require (
 )
 
 require (
-	github.com/astraive/loza/spec v0.0.0 // indirect
+	github.com/astraive/loza/spec v0.2.6 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect

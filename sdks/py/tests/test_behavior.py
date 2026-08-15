@@ -11,10 +11,7 @@ import loza
 def test_schema_redaction_and_flattening() -> None:
     sink = loza.MemorySink()
     cfg = (
-        loza.Test("checkout")
-        .with_sink(sink)
-        .with_schema(loza.FlatSchema())
-        .with_redactor(loza.RedactKeys("password"))
+        loza.Test("checkout").with_sink(sink).with_schema(loza.FlatSchema()).with_redactor(loza.RedactKeys("password"))
     )
     logger = loza.New(cfg)
     ctx = logger.start_event(loza.Params(event="checkout.run"))

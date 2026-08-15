@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	publichttp "github.com/astraive/loza/collector/server/http"
 )
 
 // escapeLIKE escapes LIKE metacharacters to prevent wildcard injection.
@@ -29,6 +31,13 @@ type DeletionResponse struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
+func ownershipDeletePredicate(scope *publichttp.AuthorizedCollector) (string, []any) {
+	if scope == nil {
+		return "", nil
+	}
+	return ` AND collector = ? AND environment = ?`, []any{scope.Name, scope.Environment}
+}
+
 // handleDeleteEvents deletes events based on query parameters.
 // Supports: /events/by-tenant/{tenant_id}, /events/by-user/{user_id}, /events/{event_id}.
 func (s *collectorState) handleDeleteEvents(w http.ResponseWriter, r *http.Request) {
@@ -49,6 +58,16 @@ func (s *collectorState) handleDeleteEvents(w http.ResponseWriter, r *http.Reque
 			"error": "method_not_allowed",
 		})
 		return
+	}
+
+	var scope *publichttp.AuthorizedCollector
+	if isCanonicalCollectorRoute(r) {
+		authorizedScope, ok := canonicalCollectorScope(r)
+		if !ok {
+			writeJSON(w, http.StatusForbidden, map[string]any{"error": "collector_scope_missing"})
+			return
+		}
+		scope = &authorizedScope
 	}
 
 	// Verify that queryDB is available
@@ -87,7 +106,7 @@ func (s *collectorState) handleDeleteEvents(w http.ResponseWriter, r *http.Reque
 			})
 			return
 		}
-		deletedCount, err = s.deleteEventsByTenant(r.Context(), tenantID)
+		deletedCount, err = s.deleteEventsByTenant(r.Context(), tenantID, scope)
 		deletionType = "by_tenant"
 
 	case strings.Contains(r.URL.Path, "/by-user/"):
@@ -99,14 +118,14 @@ func (s *collectorState) handleDeleteEvents(w http.ResponseWriter, r *http.Reque
 			})
 			return
 		}
-		deletedCount, err = s.deleteEventsByUser(r.Context(), userID)
+		deletedCount, err = s.deleteEventsByUser(r.Context(), userID, scope)
 		deletionType = "by_user"
 
 	default:
 		// DELETE /events/{event_id}
 		if len(pathParts) > 1 && pathParts[len(pathParts)-1] != "" {
 			eventID := pathParts[len(pathParts)-1]
-			deletedCount, err = s.deleteEvent(r.Context(), eventID)
+			deletedCount, err = s.deleteEvent(r.Context(), eventID, scope)
 			deletionType = "by_event_id"
 		} else {
 			writeJSON(w, http.StatusBadRequest, map[string]any{
@@ -147,15 +166,17 @@ func (s *collectorState) handleDeleteEvents(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-// deleteEventsByTenant deletes all events for a specific tenant
-func (s *collectorState) deleteEventsByTenant(ctx context.Context, tenantID string) (int64, error) {
+// deleteEventsByTenant deletes all events for a specific tenant.
+func (s *collectorState) deleteEventsByTenant(ctx context.Context, tenantID string, scope *publichttp.AuthorizedCollector) (int64, error) {
 	tableIdent, err := quoteSQLIdent(s.cfg.duckDBTable)
 	if err != nil {
 		return 0, err
 	}
-	query := fmt.Sprintf(`DELETE FROM %s WHERE tenant_id = ?`, tableIdent)
+	predicate, ownershipArgs := ownershipDeletePredicate(scope)
+	query := fmt.Sprintf(`DELETE FROM %s WHERE tenant_id = ?%s`, tableIdent, predicate)
+	args := append([]any{tenantID}, ownershipArgs...)
 
-	result, err := s.queryDB.ExecContext(ctx, query, tenantID)
+	result, err := s.queryDB.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -168,8 +189,8 @@ func (s *collectorState) deleteEventsByTenant(ctx context.Context, tenantID stri
 	return rowsAffected, nil
 }
 
-// deleteEventsByUser deletes all events for a specific user
-func (s *collectorState) deleteEventsByUser(ctx context.Context, userID string) (int64, error) {
+// deleteEventsByUser deletes all events for a specific user.
+func (s *collectorState) deleteEventsByUser(ctx context.Context, userID string, scope *publichttp.AuthorizedCollector) (int64, error) {
 	tableIdent, err := quoteSQLIdent(s.cfg.duckDBTable)
 	if err != nil {
 		return 0, err
@@ -181,9 +202,11 @@ func (s *collectorState) deleteEventsByUser(ctx context.Context, userID string) 
 			return 0, err
 		}
 	}
-	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = ? OR %s LIKE ? ESCAPE '\'`, tableIdent, rawIdent)
+	predicate, ownershipArgs := ownershipDeletePredicate(scope)
+	query := fmt.Sprintf(`DELETE FROM %s WHERE (user_id = ? OR %s LIKE ? ESCAPE '\')%s`, tableIdent, rawIdent, predicate)
+	args := append([]any{userID, fmt.Sprintf("%%\"user_id\":\"%s\"%%", escapeLIKE(userID))}, ownershipArgs...)
 
-	result, err := s.queryDB.ExecContext(ctx, query, userID, fmt.Sprintf("%%\"user_id\":\"%s\"%%", escapeLIKE(userID)))
+	result, err := s.queryDB.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -196,15 +219,17 @@ func (s *collectorState) deleteEventsByUser(ctx context.Context, userID string) 
 	return rowsAffected, nil
 }
 
-// deleteEvent deletes a specific event by ID
-func (s *collectorState) deleteEvent(ctx context.Context, eventID string) (int64, error) {
+// deleteEvent deletes a specific event by ID.
+func (s *collectorState) deleteEvent(ctx context.Context, eventID string, scope *publichttp.AuthorizedCollector) (int64, error) {
 	tableIdent, err := quoteSQLIdent(s.cfg.duckDBTable)
 	if err != nil {
 		return 0, err
 	}
-	query := fmt.Sprintf(`DELETE FROM %s WHERE event_id = ?`, tableIdent)
+	predicate, ownershipArgs := ownershipDeletePredicate(scope)
+	query := fmt.Sprintf(`DELETE FROM %s WHERE event_id = ?%s`, tableIdent, predicate)
+	args := append([]any{eventID}, ownershipArgs...)
 
-	result, err := s.queryDB.ExecContext(ctx, query, eventID)
+	result, err := s.queryDB.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}

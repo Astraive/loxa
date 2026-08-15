@@ -91,11 +91,14 @@ describe('mergeFileConfig', () => {
     assert.equal(result.collectorUrl, 'http://collector:9308');
   });
 
-  it('parses loza:// DSN in collector_url', () => {
+  it('parses a credentialed DSN as a scoped, credential-free config', () => {
     const base = defaultConfig();
-    const raw = { collector_url: 'loza://localhost:9308/my-project' };
+    const raw = { collector_url: 'loza://private-user:private-secret@localhost:9308/my-project' };
     const result = mergeFileConfig(base, raw);
     assert.equal(result.collectorUrl, 'http://localhost:9308');
+    assert.equal(result.collectorName, 'my-project');
+    assert.equal(result.username, 'private-user');
+    assert.equal(result.password, 'private-secret');
   });
 
   it('extracts env from DSN when environment is default', () => {
@@ -103,6 +106,18 @@ describe('mergeFileConfig', () => {
     const raw = { collector_url: 'loza://localhost:9308/prod?env=staging' };
     const result = mergeFileConfig(base, raw);
     assert.equal(result.environment, 'staging');
+  });
+
+  it('accepts a public DSN capability with an intentionally empty password', () => {
+    const base = defaultConfig();
+    const capability = 'lx_pub_6DJvd3D0izOaQx3n5BhKqN';
+    const result = mergeFileConfig(base, {
+      collector_url: `loza://${capability}:@localhost:9308/public-collector`,
+    });
+    assert.equal(result.collectorName, 'public-collector');
+    assert.equal(result.username, capability);
+    assert.equal(result.password, '');
+    assert.equal(result.collectorUrl.includes(capability), false);
   });
 
   it('applies batch_size to batchSize', () => {

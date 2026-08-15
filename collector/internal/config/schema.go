@@ -13,30 +13,30 @@ import (
 )
 
 type Config struct {
-	Version       string                  `yaml:"version"`
-	Collector     CollectorConfig         `yaml:"collector"`
-	Auth          AuthConfig              `yaml:"auth"`
-	RateLimit     RateLimitConfig         `yaml:"rate_limit"`
-	Routes        RoutesConfig            `yaml:"routes"`
-	Storage       StorageConfig           `yaml:"storage"`
-	DuckDB        DuckDBConfig            `yaml:"duckdb"`
-	Retention     RetentionConfig         `yaml:"retention"`
-	Kafka         KafkaConfig             `yaml:"kafka"`
-	Worker        WorkerConfig            `yaml:"worker"`
-	Logging       LoggingConfig           `yaml:"logging"`
-	Metrics       MetricsConfig           `yaml:"metrics"`
-	Reliability   ReliabilityConfig       `yaml:"reliability"`
-	Limits        LimitsConfig            `yaml:"limits"`
-	Identity      IdentityConfig          `yaml:"identity"`
-	Privacy       PrivacyConfig           `yaml:"privacy"`
-	Components    ComponentRegistryConfig `yaml:"components"`
-	Retry         RetryConfig             `yaml:"retry"`
-	DeadLetter    DeadLetterConfig        `yaml:"dead_letter"`
-	Fanout        FanoutConfig            `yaml:"fanout"`
-	Dedupe        DedupeConfig            `yaml:"dedupe"`
-	Schema        SchemaGovernanceConfig  `yaml:"schema_governance"`
-	CortexBridge  CortexBridgeConfig      `yaml:"cortex_bridge"`
-	EventBus      EventBusConfig          `yaml:"eventbus"`
+	Version      string                  `yaml:"version"`
+	Collector    CollectorConfig         `yaml:"collector"`
+	Auth         AuthConfig              `yaml:"auth"`
+	RateLimit    RateLimitConfig         `yaml:"rate_limit"`
+	Routes       RoutesConfig            `yaml:"routes"`
+	Storage      StorageConfig           `yaml:"storage"`
+	DuckDB       DuckDBConfig            `yaml:"duckdb"`
+	Retention    RetentionConfig         `yaml:"retention"`
+	Kafka        KafkaConfig             `yaml:"kafka"`
+	Worker       WorkerConfig            `yaml:"worker"`
+	Logging      LoggingConfig           `yaml:"logging"`
+	Metrics      MetricsConfig           `yaml:"metrics"`
+	Reliability  ReliabilityConfig       `yaml:"reliability"`
+	Limits       LimitsConfig            `yaml:"limits"`
+	Identity     IdentityConfig          `yaml:"identity"`
+	Privacy      PrivacyConfig           `yaml:"privacy"`
+	Components   ComponentRegistryConfig `yaml:"components"`
+	Retry        RetryConfig             `yaml:"retry"`
+	DeadLetter   DeadLetterConfig        `yaml:"dead_letter"`
+	Fanout       FanoutConfig            `yaml:"fanout"`
+	Dedupe       DedupeConfig            `yaml:"dedupe"`
+	Schema       SchemaGovernanceConfig  `yaml:"schema_governance"`
+	CortexBridge CortexBridgeConfig      `yaml:"cortex_bridge"`
+	EventBus     EventBusConfig          `yaml:"eventbus"`
 }
 
 type CollectorConfig struct {
@@ -99,23 +99,77 @@ type GraphQLConfig struct {
 }
 
 type AuthConfig struct {
-	Enabled           bool            `yaml:"enabled"`
-	Header            string          `yaml:"header"`
-	ValueEnv          string          `yaml:"value_env"`
-	Value             string          `yaml:"value"`
-	AllowLocalDevKeys bool            `yaml:"allow_local_dev_keys"`
-	ServerSecret      string          `yaml:"server_secret"`
-	CacheTTL          time.Duration   `yaml:"cache_ttl"`
-	NegativeCacheTTL  time.Duration   `yaml:"negative_cache_ttl"`
-	Keys              []AuthKeyConfig `yaml:"keys"`
+	Enabled           bool                  `yaml:"enabled"`
+	Header            string                `yaml:"header"`
+	ValueEnv          string                `yaml:"value_env"`
+	Value             string                `yaml:"value"`
+	AllowLocalDevKeys bool                  `yaml:"allow_local_dev_keys"`
+	ServerSecret      string                `yaml:"server_secret"`
+	CacheTTL          time.Duration         `yaml:"cache_ttl"`
+	NegativeCacheTTL  time.Duration         `yaml:"negative_cache_ttl"`
+	DefaultCollector  string                `yaml:"default_collector"`
+	Collectors        []AuthCollectorConfig `yaml:"collectors"`
+	Grants            []AuthGrantConfig     `yaml:"grants"`
+	Keys              []AuthKeyConfig       `yaml:"keys"`
+	Tokens            []AuthTokenConfig     `yaml:"tokens"`
 }
 
+// AuthCollectorConfig declares a collector that may be targeted by a grant.
+// Slugs are validated by the command configuration loader.
+type AuthCollectorConfig struct {
+	Slug string `yaml:"slug"`
+}
+
+// AuthGrantConfig binds one credential to one named collector. A private grant
+// uses username and password_env; a public grant resolves an opaque public ID
+// from public_id_env with no password. Public access IDs are bearer capabilities
+// and must not be logged or included in validation errors.
+type AuthGrantConfig struct {
+	Name                 string   `yaml:"name"`
+	Collector            string   `yaml:"collector"`
+	Username             string   `yaml:"username"`
+	PasswordEnv          string   `yaml:"password_env"`
+	PublicIDEnv          string   `yaml:"public_id_env"`
+	Permissions          []string `yaml:"permissions"`
+	AllowedEnvs          []string `yaml:"allowed_envs"`
+	AllowedServices      []string `yaml:"allowed_services"`
+	AllowedOrigins       []string `yaml:"allowed_origins"`
+	AllowedIPs           []string `yaml:"allowed_ips"`
+	MaxPayloadBytes      int      `yaml:"max_payload_bytes"`
+	MaxRequestsPerMinute int      `yaml:"max_requests_per_minute"`
+	MaxEventsPerMinute   int      `yaml:"max_events_per_minute"`
+}
+
+// AuthKeyConfig defines an API-key credential. Collector and Permissions bind
+// the key to one collector resource for canonical data-plane routes. Both must
+// be supplied together; unscoped keys are retained only for legacy root routes.
 type AuthKeyConfig struct {
 	Name                 string   `yaml:"name"`
 	KeyID                string   `yaml:"key_id"`
 	SecretEnv            string   `yaml:"secret_env"`
 	Kind                 string   `yaml:"kind"`
+	Mode                 string   `yaml:"mode"`
 	Roles                []string `yaml:"roles"`
+	Collector            string   `yaml:"collector"`
+	Permissions          []string `yaml:"permissions"`
+	AllowedEnvs          []string `yaml:"allowed_envs"`
+	AllowedServices      []string `yaml:"allowed_services"`
+	AllowedOrigins       []string `yaml:"allowed_origins"`
+	AllowedIPs           []string `yaml:"allowed_ips"`
+	MaxPayloadBytes      int      `yaml:"max_payload_bytes"`
+	MaxRequestsPerMinute int      `yaml:"max_requests_per_minute"`
+	MaxEventsPerMinute   int      `yaml:"max_events_per_minute"`
+}
+
+// AuthTokenConfig defines an opaque Bearer token. Token values are sourced
+// only from an environment variable and are stored by an HMAC-derived ID.
+type AuthTokenConfig struct {
+	Name                 string   `yaml:"name"`
+	TokenEnv             string   `yaml:"token_env"`
+	Mode                 string   `yaml:"mode"`
+	Roles                []string `yaml:"roles"`
+	Collector            string   `yaml:"collector"`
+	Permissions          []string `yaml:"permissions"`
 	AllowedEnvs          []string `yaml:"allowed_envs"`
 	AllowedServices      []string `yaml:"allowed_services"`
 	AllowedOrigins       []string `yaml:"allowed_origins"`
@@ -145,30 +199,30 @@ type StorageConfig struct {
 }
 
 type DuckDBConfig struct {
-	Path                 string            `yaml:"path"`
-	Driver               string            `yaml:"driver"`
-	Table                string            `yaml:"table"`
-	RawColumn            string            `yaml:"raw_column"`
-	StoreRaw             bool              `yaml:"store_raw"`
-	CheckpointOnShutdown bool              `yaml:"checkpoint_on_shutdown"`
-	CheckpointInterval   time.Duration     `yaml:"checkpoint_interval"`
-	MaxOpenConns         int               `yaml:"max_open_conns"`
-	MaxIdleConns         int               `yaml:"max_idle_conns"`
-	BatchSize            int               `yaml:"batch_size"`
-	FlushInterval        time.Duration     `yaml:"flush_interval"`
-	WriterLoop           bool              `yaml:"writer_loop"`
-	WriterQueueSize      int               `yaml:"writer_queue_size"`
+	Path                 string        `yaml:"path"`
+	Driver               string        `yaml:"driver"`
+	Table                string        `yaml:"table"`
+	RawColumn            string        `yaml:"raw_column"`
+	StoreRaw             bool          `yaml:"store_raw"`
+	CheckpointOnShutdown bool          `yaml:"checkpoint_on_shutdown"`
+	CheckpointInterval   time.Duration `yaml:"checkpoint_interval"`
+	MaxOpenConns         int           `yaml:"max_open_conns"`
+	MaxIdleConns         int           `yaml:"max_idle_conns"`
+	BatchSize            int           `yaml:"batch_size"`
+	FlushInterval        time.Duration `yaml:"flush_interval"`
+	WriterLoop           bool          `yaml:"writer_loop"`
+	WriterQueueSize      int           `yaml:"writer_queue_size"`
 	// UseAppender enables DuckDB Appender API for higher throughput when available.
-	UseAppender          bool              `yaml:"use_appender"`
+	UseAppender bool `yaml:"use_appender"`
 	// WriteTimeout bounds background writes when no caller deadline is present.
-	WriteTimeout         time.Duration     `yaml:"write_timeout"`
+	WriteTimeout time.Duration `yaml:"write_timeout"`
 	// RetryAttempts controls retries for transient DB errors.
-	RetryAttempts        int               `yaml:"retry_attempts"`
+	RetryAttempts int `yaml:"retry_attempts"`
 	// RetryBackoff is the backoff between retry attempts.
-	RetryBackoff         time.Duration     `yaml:"retry_backoff"`
-	Export               DuckDBExport      `yaml:"export"`
-	Schema               map[string]string `yaml:"schema"`
-	ColumnTypes          map[string]string `yaml:"column_types"`
+	RetryBackoff time.Duration     `yaml:"retry_backoff"`
+	Export       DuckDBExport      `yaml:"export"`
+	Schema       map[string]string `yaml:"schema"`
+	ColumnTypes  map[string]string `yaml:"column_types"`
 }
 
 type DuckDBExport struct {
@@ -424,14 +478,14 @@ type CortexBridgeConfig struct {
 }
 
 type EventBusConfig struct {
-	Type          string           `yaml:"type"`
-	Topic         string           `yaml:"topic"`
-	DLQTopic      string           `yaml:"dlq_topic"`
-	ConsumerGroup string           `yaml:"consumer_group"`
-	Memory        EBMemoryConfig   `yaml:"memory"`
-	Redis         EBRedisConfig    `yaml:"redis"`
-	NATS          EBNATSConfig     `yaml:"nats"`
-	Kafka         EBKafkaConfig    `yaml:"kafka"`
+	Type          string         `yaml:"type"`
+	Topic         string         `yaml:"topic"`
+	DLQTopic      string         `yaml:"dlq_topic"`
+	ConsumerGroup string         `yaml:"consumer_group"`
+	Memory        EBMemoryConfig `yaml:"memory"`
+	Redis         EBRedisConfig  `yaml:"redis"`
+	NATS          EBNATSConfig   `yaml:"nats"`
+	Kafka         EBKafkaConfig  `yaml:"kafka"`
 }
 
 type EBMemoryConfig struct {

@@ -54,11 +54,14 @@ def test_invalid_event_name_handled() -> None:
 
 def test_sink_write_failure_doesnt_crash() -> None:
     """Verify sink failures don't crash the SDK."""
+
     class FailingSink:
         def write(self, payload: str) -> None:
             raise IOError("Sink is broken")
+
         def flush(self) -> None:
             pass
+
         def close(self) -> None:
             pass
 
@@ -72,17 +75,14 @@ def test_sink_write_failure_doesnt_crash() -> None:
         # Event may still emit to caller even if sink fails
     except Exception as e:
         # Should be a known error, not a panic
-        assert isinstance(e, (IOError, OSError, RuntimeError)), \
-            f"Unexpected error type: {type(e).__name__}"
+        assert isinstance(e, (IOError, OSError, RuntimeError)), f"Unexpected error type: {type(e).__name__}"
 
 
 def test_invalid_duplicate_policy_rejected() -> None:
     """Verify invalid duplicate policies are rejected."""
     try:
         # Try to create logger with None policy
-        logger = loza.New(
-            loza.Test("test").with_duplicate_policy(None)
-        )
+        logger = loza.New(loza.Test("test").with_duplicate_policy(None))
         # If it doesn't raise, continue
         ctx = logger.start_event(loza.Params(event="test"))
         logger.finish(ctx, "success")
@@ -95,9 +95,7 @@ def test_invalid_sampler_rejected() -> None:
     """Verify invalid samplers are rejected."""
     try:
         # Try to create logger with None sampler
-        logger = loza.New(
-            loza.Test("test").with_sampler(None)
-        )
+        logger = loza.New(loza.Test("test").with_sampler(None))
         ctx = logger.start_event(loza.Params(event="test"))
         logger.finish(ctx, "success")
     except (TypeError, ValueError, AttributeError):
@@ -108,9 +106,7 @@ def test_invalid_sampler_rejected() -> None:
 def test_invalid_schema_rejected() -> None:
     """Verify invalid schemas are rejected."""
     try:
-        logger = loza.New(
-            loza.Test("test").with_schema(None)
-        )
+        logger = loza.New(loza.Test("test").with_schema(None))
         ctx = logger.start_event(loza.Params(event="test"))
         logger.finish(ctx, "success")
     except (TypeError, ValueError, AttributeError):
@@ -121,9 +117,7 @@ def test_invalid_schema_rejected() -> None:
 def test_invalid_redactor_rejected() -> None:
     """Verify invalid redactors are rejected."""
     try:
-        logger = loza.New(
-            loza.Test("test").with_redactor(None)
-        )
+        logger = loza.New(loza.Test("test").with_redactor(None))
         ctx = logger.start_event(loza.Params(event="test"))
         logger.finish(ctx, "success")
     except (TypeError, ValueError, AttributeError):
@@ -143,8 +137,9 @@ def test_finish_twice_handled() -> None:
         logger.finish(ctx, "error")
     except Exception as e:
         # Should be a known error type (EventAlreadyFinishedError is OK)
-        assert "already finished" in str(e) or isinstance(e, (ValueError, RuntimeError)), \
+        assert "already finished" in str(e) or isinstance(e, (ValueError, RuntimeError)), (
             f"Unexpected error: {type(e).__name__}"
+        )
 
 
 def test_emit_before_finish_handled() -> None:
@@ -188,7 +183,7 @@ def test_special_characters_in_attributes() -> None:
     special_values = [
         "\x00null byte",
         "\uffff unicode",
-        "\\\"quotes\\\"",
+        '\\"quotes\\"',
         "\\nnewlines\\n",
         "{}[]()\"quotes'",
     ]

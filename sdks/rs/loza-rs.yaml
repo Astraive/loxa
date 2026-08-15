@@ -1,7 +1,7 @@
 name: loza-rs
 kind: sdk
 language: rust
-version: 0.2.6
+version: 0.3.0
 description: Rust SDK for LOZA
 license: MIT
 repository: https://github.com/Astraive/loza

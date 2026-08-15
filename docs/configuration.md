@@ -62,7 +62,9 @@ collector:
 
 ### `auth`
 
-API-key authentication uses `Authorization: Bearer` and is enabled in every tracked Collector configuration. `server_secret` is used only for HMAC key-record hashing and must not be reused as the storage encryption key.
+API-key authentication uses `Authorization: Bearer` and is enabled in every
+tracked Collector configuration. `server_secret` is used only for HMAC
+key-record hashing and must not be reused as the storage encryption key.
 
 ```yaml
 auth:
@@ -70,24 +72,62 @@ auth:
   server_secret: "${COLLECTOR_AUTH_SERVER_SECRET}"
   cache_ttl: 5m
   negative_cache_ttl: 30s
+  collectors:
+    - slug: checkout
   keys:
-    - name: ingest
-      key_id: kingest
-      secret_env: COLLECTOR_INGEST_KEY_SECRET
+    - name: checkout-writer
+      key_id: kcheckoutwriter
+      secret_env: CHECKOUT_WRITER_KEY_SECRET
       kind: sec
+      mode: private
       roles: [collector_ingest_server]
-    - name: administrator
-      key_id: kadmin
-      secret_env: COLLECTOR_ADMIN_KEY_SECRET
+      collector: checkout
+      permissions: [events:write]
+      allowed_envs: [prod]
+    - name: checkout-reader
+      key_id: kcheckoutreader
+      secret_env: CHECKOUT_READER_KEY_SECRET
       kind: sec
-      roles: [project_admin]
+      mode: private
+      roles: [project_readonly]
+      collector: checkout
+      permissions: [events:read]
+      allowed_envs: [prod]
 ```
 
-`secret_env` is the secret segment of `lx_{kind}_live_{key_id}_{secret}`, not the full token. Key IDs are unique; `kind` must be `sec` or `pub`; every role must be a supported Collector role; and public keys require `allowed_origins`.
+`secret_env` is the secret segment of
+`lx_{kind}_live_{key_id}_{secret}`, not the full token. Key IDs are unique;
+`kind` must be `sec` or `pub`; `mode` is `private` or `public`; public
+credentials require `allowed_origins` and may use only the `client` role.
+Scoped keys require a configured `collector`, non-empty `permissions`, and
+non-empty `allowed_envs`. Scoped permissions are exact:
+`events:read`, `events:write`, `events:delete`, `logs:read`, `logs:write`,
+`logs:edit`, `logs:delete`, and `project:admin` are authorized independently
+on `/collectors/{collector}/...`. Unscoped keys remain limited to explicitly
+configured legacy root routes.
+
+Opaque Bearer tokens use the same RBAC and scope model:
+
+```yaml
+auth:
+  tokens:
+    - name: browser-log-writer
+      token_env: BROWSER_LOG_TOKEN
+      mode: public
+      roles: [client]
+      collector: checkout
+      permissions: [logs:write]
+      allowed_envs: [prod]
+      allowed_origins: [https://app.example.com]
+```
+
+`token_env` must contain an opaque value, not an `lx_` API key. The raw token
+is only accepted in `Authorization: Bearer`; it is not used as a stored ID.
 
 ```bash
-curl -X POST http://localhost:9308/events \
-  -H "Authorization: Bearer lx_sec_live_kingest_${COLLECTOR_INGEST_KEY_SECRET}" \
+curl -X POST http://localhost:9308/collectors/checkout/events \
+  -H "Authorization: Bearer lx_sec_live_kcheckoutwriter_${CHECKOUT_WRITER_KEY_SECRET}" \
+  -H "X-Loza-Env: prod" \
   -H 'Content-Type: application/json' -d '[{"event":"example"}]'
 curl http://localhost:9308/health
 ```

@@ -16,6 +16,7 @@ import (
 	processing "github.com/astraive/loza/collector/internal/processing"
 	serverruntime "github.com/astraive/loza/collector/internal/server"
 	"github.com/astraive/loza/collector/internal/validation"
+	publichttp "github.com/astraive/loza/collector/server/http"
 	speccontract "github.com/astraive/loza/spec/generated/go/contract"
 )
 
@@ -36,6 +37,54 @@ func ingestRejectResponse(requestID, code, message string, retryable bool) inges
 	}
 }
 
+const (
+	collectorOwnershipColumn   = "collector"
+	environmentOwnershipColumn = "environment"
+)
+
+func isCanonicalCollectorRoute(r *http.Request) bool {
+	return r.PathValue("collector") != ""
+}
+
+func canonicalCollectorScope(r *http.Request) (publichttp.AuthorizedCollector, bool) {
+	if !isCanonicalCollectorRoute(r) {
+		return publichttp.AuthorizedCollector{}, false
+	}
+	scope, ok := publichttp.AuthorizedCollectorFromContext(r.Context())
+	if !ok || strings.TrimSpace(scope.Name) == "" {
+		return publichttp.AuthorizedCollector{}, false
+	}
+	return scope, true
+}
+
+func rejectUnsupportedScopedOperation(w http.ResponseWriter, r *http.Request) bool {
+	if !isCanonicalCollectorRoute(r) {
+		return false
+	}
+	writeJSON(w, http.StatusBadRequest, map[string]any{"error": "scoped_operation_unsupported"})
+	return true
+}
+
+func stampAuthorizedOwnership(raw []byte, scope publichttp.AuthorizedCollector) ([]byte, *governanceError) {
+	var payload map[string]any
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return raw, &governanceError{Code: "invalid_json", Message: err.Error()}
+	}
+	if value, exists := payload[collectorOwnershipColumn]; exists && value != scope.Name {
+		return raw, &governanceError{Code: "ownership_conflict", Message: "event collector conflicts with authorized collector"}
+	}
+	if value, exists := payload[environmentOwnershipColumn]; exists && value != scope.Environment {
+		return raw, &governanceError{Code: "ownership_conflict", Message: "event environment conflicts with authorized environment"}
+	}
+	payload[collectorOwnershipColumn] = scope.Name
+	payload[environmentOwnershipColumn] = scope.Environment
+	stamped, err := json.Marshal(payload)
+	if err != nil {
+		return raw, &governanceError{Code: "event_rewrite_failed", Message: err.Error(), Retryable: true}
+	}
+	return stamped, nil
+}
+
 func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 	s.metrics.requestsTotal.Add(1)
 	requestID := newIngestRequestID()
@@ -51,6 +100,13 @@ func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 
 	// Auth is handled by middleware (auth.Middleware + auth.RequirePermission).
 	// When auth is disabled, middleware is not applied and requests pass through.
+
+	scope, scoped := canonicalCollectorScope(r)
+	if isCanonicalCollectorRoute(r) && !scoped {
+		s.metrics.eventsRejected.Add(1)
+		writeJSON(w, http.StatusForbidden, ingestRejectResponse(requestID, "collector_scope_missing", "authorized collector scope is required", false))
+		return
+	}
 
 	if !isSupportedIngestContentType(r.Header.Get("Content-Type")) {
 		s.metrics.eventsRejected.Add(1)
@@ -137,6 +193,16 @@ func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 			continue
 		} else {
 			raw = prepared
+		}
+
+		if scoped {
+			stamped, gerr := stampAuthorizedOwnership(raw, scope)
+			if gerr != nil {
+				s.metrics.eventsInvalid.Add(1)
+				resp.AddInvalid(i, eventID, gerr.Code, gerr.Message)
+				continue
+			}
+			raw = stamped
 		}
 
 		if s.cfg.reliabilityMode == "spool" || s.cfg.reliabilityMode == "hybrid" {
@@ -342,6 +408,9 @@ func (s *collectorState) handleMetrics(w http.ResponseWriter, r *http.Request) {
 
 func (s *collectorState) handleTail(w http.ResponseWriter, r *http.Request) {
 	// Auth is handled by middleware.
+	if rejectUnsupportedScopedOperation(w, r) {
+		return
+	}
 	filters, err := serverruntime.ParseTailFilters(r)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})

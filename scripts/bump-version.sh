@@ -42,6 +42,7 @@ FILES=(
 
   # JS SDK — package.json "version": "X.Y.Z"
   "sdks/js/package.json"
+  "sdks/js/package-lock.json"
 
   # LQL — Cargo.toml version = "X.Y.Z"
   "lql/Cargo.toml"
@@ -53,6 +54,9 @@ FILES=(
   "cortex/deploy/helm/cortex/Chart.yaml"
   "collector/deploy/helm/loza/Chart.yaml"
 
+
+  # Umbrella release metadata
+  "loza.yaml"
   # Project metadata YAML
   "collector/loza.yaml"
   "cortex/loza-cortex.yaml"
@@ -60,6 +64,7 @@ FILES=(
   "sdks/go/loza-go.yaml"
   "sdks/py/loza-py.yaml"
   "sdks/rs/loza-rs.yaml"
+  "spec/docs/sdk-parity-manifest.json"
   "sdks/js/loza-js.yaml"
   "spec/loza-spec.yaml"
   "lql/lql.yaml"
@@ -75,6 +80,10 @@ FILES=(
   "cortex/configs/cortex-deployment.yaml"
   "cortex/configs/k8s.yaml"
   "collector/deploy/k8s/collector-deployment.yaml"
+
+  # Chart default image tags
+  "collector/deploy/helm/loza/values.yaml"
+  "cortex/deploy/helm/cortex/values.yaml"
 )
 
 # ---------------------------------------------------------------------------

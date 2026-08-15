@@ -1,4 +1,5 @@
 """Integration tests for Python SDK with collector."""
+
 import json
 import time
 import loza
@@ -23,11 +24,7 @@ def test_event_integrity_through_pipeline() -> None:
     logger = loza.New(loza.Test("test_service"))
 
     # Create event with specific values
-    ctx = logger.start_event(loza.Params(
-        event="integrity_test",
-        message="Test message",
-        level="info"
-    ))
+    ctx = logger.start_event(loza.Params(event="integrity_test", message="Test message", level="info"))
     logger.enrich(ctx, loza.String("user_id", "user123"))
     logger.finish(ctx, "success")
     payload = logger.emit(ctx)
@@ -64,10 +61,7 @@ def test_error_event_collection() -> None:
     """Verify error events are properly collected."""
     logger = loza.New(loza.Test("error_test"))
 
-    ctx = logger.start_event(loza.Params(
-        event="error_event",
-        message="Something went wrong"
-    ))
+    ctx = logger.start_event(loza.Params(event="error_event", message="Something went wrong"))
     logger.enrich(ctx, loza.String("error_code", "E001"))
     logger.finish(ctx, "error")
     payload = logger.emit(ctx)
@@ -127,9 +121,7 @@ def test_canonical_fields_immutable() -> None:
 def test_sampling_in_pipeline() -> None:
     """Verify sampling decision is consistent through pipeline."""
     # Create logger with deterministic sampling
-    logger = loza.New(
-        loza.Test("sample_test").with_sampler(loza.SampleAll())
-    )
+    logger = loza.New(loza.Test("sample_test").with_sampler(loza.SampleAll()))
 
     for i in range(3):
         ctx = logger.start_event(loza.Params(event=f"sampled_{i}"))

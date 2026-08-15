@@ -31,3 +31,45 @@ describe('loza:// DSN parser', () => {
     }
   }
 });
+
+it('routes private credentials to a collector-scoped endpoint without retaining userinfo', () => {
+  const dsn = parse('loza://key%40id:secret%3Avalue@example.com/project');
+  assert.equal(dsn.collectorName, 'project');
+  assert.equal(dsn.project, 'project');
+  assert.equal(dsn.username, 'key@id');
+  assert.equal(dsn.password, 'secret:value');
+  assert.equal(dsn.baseURL, 'https://example.com:443');
+  assert.equal(dsn.eventsURL, 'https://example.com:443/collectors/project/events');
+  assert.equal(dsn.baseURL.includes('secret'), false);
+});
+
+it('rejects empty, malformed, and unescaped credential components', () => {
+  for (const raw of [
+    'loza://:secret@example.com/project',
+    'loza://key:@example.com/project',
+    'loza://key:secret%2@example.com/project',
+    'loza://key:secret/part@example.com/project',
+  ]) {
+    assert.throws(() => parse(raw), /invalid Loza DSN/);
+  }
+});
+
+it('redacts credentials from string and JSON representations', () => {
+  const dsn = parse('loza://key-id:s%40cret%3Avalue@example.com/project');
+  assert.equal(dsn.toString().includes('s@cret:value'), false);
+  assert.equal(JSON.stringify(dsn).includes('s@cret:value'), false);
+  assert.equal(JSON.stringify(dsn).includes('key-id'), false);
+});
+
+it('routes and redacts public bearer credentials', () => {
+  const capability = 'lx_pub_6DJvd3D0izOaQx3n5BhKqN';
+  const dsn = parse(`loza://${capability}:@example.com/public-collector`);
+  assert.equal(dsn.username, capability);
+  assert.equal(dsn.password, '');
+  assert.equal(dsn.eventsURL, 'https://example.com:443/collectors/public-collector/events');
+  assert.equal(dsn.batchURL, 'https://example.com:443/collectors/public-collector/events/batch');
+  assert.equal(dsn.otlpURL, 'https://example.com:443/collectors/public-collector/otlp/logs');
+  assert.equal(dsn.tailWSURL, 'wss://example.com:443/collectors/public-collector/tail');
+  assert.equal(dsn.toString().includes(capability), false);
+  assert.equal(JSON.stringify(dsn).includes(capability), false);
+});

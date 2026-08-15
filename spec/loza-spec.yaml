@@ -1,6 +1,6 @@
 name: loza-spec
 kind: spec
-version: 0.2.6
+version: 0.3.0
 description: Shared LOZA wire, schema, event, and conformance contract
 license: MIT
 repository: https://github.com/Astraive/loza

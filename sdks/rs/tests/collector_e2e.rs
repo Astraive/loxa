@@ -28,7 +28,10 @@ fn send_raw_envelope(envelope: &Value) -> (u16, String) {
     let client = HTTPClient::with_timeout_ms(5_000);
     let body = serde_json::to_vec(envelope).unwrap();
     let req = HTTPRequest::new("POST", format!("{}/events", collector_url()))
-        .with_header("Authorization", format!("Bearer {}", env::var("LOZA_API_KEY").unwrap_or_default()))
+        .with_header(
+            "Authorization",
+            format!("Bearer {}", env::var("LOZA_API_KEY").unwrap_or_default()),
+        )
         .with_header("Content-Type", "application/json")
         .with_body(body);
     let resp = client.send(&req).unwrap();

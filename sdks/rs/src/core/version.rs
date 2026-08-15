@@ -1,8 +1,7 @@
-/// Load SDK version from loza-rs.yaml metadata file.
-///
-/// Falls back to a hardcoded default if the file cannot be found or parsed.
-
-const FALLBACK_VERSION: &str = "0.2.6";
+//! Load SDK version from loza-rs.yaml metadata file.
+//!
+//! Falls back to a hardcoded default if the file cannot be found or parsed.
+const FALLBACK_VERSION: &str = "0.3.0";
 
 /// Read version from loza-rs.yaml, searching standard locations.
 /// Returns FALLBACK_VERSION if file not found or parsing fails.
@@ -36,5 +35,5 @@ pub fn sdk_version() -> &'static str {
     // Use a once_cell-like pattern for thread-safe lazy initialization
     use std::sync::OnceLock;
     static VERSION: OnceLock<String> = OnceLock::new();
-    VERSION.get_or_init(|| load_version())
+    VERSION.get_or_init(load_version)
 }

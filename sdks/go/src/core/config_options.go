@@ -2,8 +2,6 @@ package core
 
 import (
 	"time"
-
-	"github.com/astraive/loza/spec/dsn"
 )
 
 // ConfigOption mutates and returns a Config.
@@ -158,6 +156,14 @@ func WithCollectorURL(url string) ConfigOption {
 	}
 }
 
+// WithCollectorName applies the canonical collector slug used for scoped routes.
+func WithCollectorName(name string) ConfigOption {
+	return func(cfg Config) Config {
+		cfg.CollectorName = name
+		return cfg
+	}
+}
+
 // WithTenantID applies the tenant ID.
 func WithTenantID(tenantID string) ConfigOption {
 	return func(cfg Config) Config {
@@ -262,6 +268,25 @@ func WithAPIKey(apiKey string) ConfigOption {
 	}
 }
 
+// WithBasicAuth sets Collector Basic-auth credentials. API-key authentication
+// still takes precedence when both are configured.
+func WithBasicAuth(username, password string) ConfigOption {
+	return func(cfg Config) Config {
+		cfg.DSNUsername = username
+		cfg.DSNPassword = password
+		return cfg
+	}
+}
+
+// WithInsecure allows plain HTTP connections for explicitly local development.
+func WithInsecure(insecure bool) ConfigOption {
+	return func(cfg Config) Config {
+		cfg.Insecure = insecure
+		cfg.codeSetInsecure = true
+		return cfg
+	}
+}
+
 // WithOtelBridge enables or disables OpenTelemetry bridge integration.
 func WithOtelBridge(enabled bool) ConfigOption {
 	return func(cfg Config) Config {
@@ -291,8 +316,9 @@ func WithLogger(l *Logger) ConfigOption {
 }
 
 // WithDSN parses a loza:// connection URI and applies the resolved values
-// to the config. It sets CollectorURL, Environment, Service (if present in
-// the DSN), and Insecure (derived from TLS setting).
+// to the config. It retains the credential-free collector base URL and records
+// the required collector slug so the default transport targets canonical
+// /collectors/{collector}/events routes.
 //
 // Individual config options or env vars applied after WithDSN will override
 // the DSN-derived values.
@@ -300,22 +326,28 @@ func WithLogger(l *Logger) ConfigOption {
 // Example:
 //
 //	config.NewClient(config.Production(),
-//	    config.WithDSN("loza://localhost:9308/demo?env=dev&tls=false"),
+//	    config.WithDSN("loza://key-id:key-secret@collector.example/demo?env=prod"),
 //	)
 func WithDSN(raw string) ConfigOption {
 	return func(cfg Config) Config {
-		d, err := dsn.Parse(raw)
+		d, username, password, err := parseSDKDSN(raw)
 		if err != nil {
 			// Store the parse error; it will surface during NewClient validation.
 			cfg.CollectorURL = "" // signal invalid state
 			return cfg
 		}
 		cfg.CollectorURL = d.BaseURL
+		cfg.CollectorName = d.CollectorName
 		cfg.Environment = d.Env
 		if d.Service != "" {
 			cfg.Service = d.Service
 		}
+		if username != "" {
+			cfg.DSNUsername = username
+			cfg.DSNPassword = password
+		}
 		cfg.Insecure = !d.TLS
+		cfg.codeSetInsecure = true
 		return cfg
 	}
 }

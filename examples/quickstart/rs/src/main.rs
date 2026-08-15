@@ -5,12 +5,17 @@ fn main() {
 
     loza::info("server started");
 
-    let ctx = loza::start_event(loza::Params::new("user.signup").with_kind("http"));
-    loza::enrich(&ctx, "user.email", "demo@example.com");
-    loza::enrich(&ctx, "user.plan", "pro");
-    loza::finish(&ctx, "success");
-    match loza::emit(&ctx) {
-        Ok(result) => println!("Event emitted: {result}"),
+    let mut ctx = loza::start_event(None, loza::Params::new("user.signup").with_kind("http"));
+    loza::enrich(
+        &mut ctx,
+        [
+            loza::String("user.email", "demo@example.com"),
+            loza::String("user.plan", "pro"),
+        ],
+    );
+    loza::finish(&mut ctx);
+    match loza::emit(&mut ctx) {
+        Ok(()) => println!("Event emitted"),
         Err(e) => eprintln!("emit error: {e}"),
     }
 

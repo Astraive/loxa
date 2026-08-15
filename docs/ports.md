@@ -41,7 +41,7 @@
 
 ## Configuration
 
-Loza uses a layered config system. All non-secret values can be set via YAML files, environment variables, or code. Secrets must come from environment variables.
+Loza uses a layered config system. Non-secret values can be set via YAML files, environment variables, or code. Prefer secret environment variables or a secret manager for credentials. A credentialed `LOZA_DSN` may carry percent-encoded Basic-auth userinfo, but it must not be committed or logged.
 
 ### 1. Defaults (committed)
 
@@ -94,7 +94,7 @@ docker run -v /host/config.yaml:/etc/loza/config.yaml \
 
 ### 3. Environment variables
 
-All config values can be overridden via env vars. Secrets must use env vars.
+All config values can be overridden via env vars. Keep API keys and DSN credentials in environment variables or a secret manager.
 
 ```bash
 # Non-secret overrides
@@ -102,15 +102,19 @@ COLLECTOR_SERVER_PORT=9308
 CORTEX_SERVER_PORT=9312
 LOZA_ENVIRONMENT=production
 
-# Secrets (env vars only)
+# Secrets
 LOZA_API_KEY=lx_sec_live_xxx
+# Optional Basic-auth form; percent-encode reserved password characters
+LOZA_DSN='loza://kingest:s%40cret%3Avalue@collector.example.com/my-app?env=prod'
 LOZA_STORAGE_ENCRYPTION_KEY=xxx
 CORTEX_POSTGRES_PASSWORD=xxx
 ```
 
 ### 4. Code (SDKs)
 
-Highest precedence — overrides everything.
+Credential precedence is: explicit code API key or Basic credentials, then credentials in an explicitly supplied code DSN, then environment credentials (`LOZA_API_KEY` or userinfo in `LOZA_DSN`). `LOZA_API_KEY` remains the highest-priority token credential. `LOZA_COLLECTOR_URL` overrides only the endpoint and does not replace DSN-derived environment, service, or credentials. A DSN without userinfo does not clear separately configured credentials.
+
+Explicit code configuration otherwise remains the highest-precedence source for the fields it sets:
 
 ```go
 loza.Configure(loza.Production("checkout").
@@ -144,5 +148,7 @@ The `loza://` DSN defaults to port 9308 for localhost:
 loza://localhost/my-app          → http://localhost:9308
 loza://localhost:9999/my-app     → http://localhost:9999
 ```
+
+Credentialed DSNs use `loza://username:password@host/project`. The username is the Collector `key_id`; the password is its secret. SDKs send Basic auth over TLS by default and reject plaintext HTTP with credentials unless explicitly local (`tls=false`/insecure). Resolved endpoint URLs and logs never contain the password.
 
 Set via env var: `LOZA_DSN=loza://localhost/my-app`

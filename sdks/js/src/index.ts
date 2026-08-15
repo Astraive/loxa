@@ -118,13 +118,13 @@ export type { Level } from './core/level.ts';
 // --- Config + Builder ---
 export {
   defaultConfig, dev, development, production, test, withOptions, ConfigBuilder,
-  fromEnv, disabled,
+  fromEnv, disabled, validateConfig,
   dev as Dev, development as Development, production as Production, test as Test,
   WithService, WithAlias, WithVersion, WithEnvironment, WithSink, WithSampler,
   WithRedactor, WithSchema, WithEventSchema, WithAsync,
   WithCollectorEndpoint, WithDuplicatePolicy, WithStatsHandler,
   WithDeploymentID, WithIncludeHost, WithPanicRecovery,
-  WithApiKey,
+  WithApiKey, WithBasicAuth,
   WithRelease, WithNamespace, WithOtelBridge, WithRetry, WithTimeout, WithQueueSize, WithLogger,
 } from './config/config.ts';
 export type { Config, AsyncConfig, SecurityConfig, ConfigOptions } from './config/config.ts';

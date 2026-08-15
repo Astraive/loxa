@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	publichttp "github.com/astraive/loza/collector/server/http"
 	"github.com/rs/zerolog/log"
 )
 
@@ -94,6 +95,9 @@ func (s *collectorState) handleSinkTest(w http.ResponseWriter, r *http.Request) 
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
 		return
 	}
+	if rejectUnsupportedScopedOperation(w, r) {
+		return
+	}
 	name := r.PathValue("name")
 	sink, ok := s.findSinkByName(name)
 	if !ok {
@@ -157,6 +161,10 @@ type queryRequest struct {
 func (s *collectorState) handleQuery(w http.ResponseWriter, r *http.Request) {
 	if !s.isAuthorized(r) {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
+		return
+	}
+	if isCanonicalCollectorRoute(r) {
+		s.handleScopedQuery(w, r)
 		return
 	}
 	requestID := fmt.Sprintf("q_%d", time.Now().UTC().UnixNano())
@@ -267,9 +275,94 @@ func (s *collectorState) handleQuery(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"columns": columns, "rows": result, "row_count": len(result)})
 }
 
+// handleScopedQuery exposes a fixed, parameterized event-listing query. Raw
+// client SQL cannot prove collector ownership and is deliberately unavailable
+// on canonical collector routes.
+func (s *collectorState) handleScopedQuery(w http.ResponseWriter, r *http.Request) {
+	scope, ok := publichttp.AuthorizedCollectorFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusForbidden, map[string]any{"error": "collector_scope_required"})
+		return
+	}
+	var req queryRequest
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_query_request", "message": err.Error()})
+		return
+	}
+	if strings.TrimSpace(req.Query) != "" || strings.TrimSpace(req.SQL) != "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "scoped_raw_sql_unsupported"})
+		return
+	}
+	if req.Limit <= 0 || req.Limit > 1000 {
+		req.Limit = 1000
+	}
+	table, err := quoteSQLIdent(s.cfg.duckDBTable)
+	if err != nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_unavailable"})
+		return
+	}
+	db := s.queryDB
+	var closeDB func()
+	if db == nil {
+		db, err = sql.Open(s.cfg.duckDBDriver, s.cfg.duckDBPath)
+		if err != nil {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_unavailable"})
+			return
+		}
+		closeDB = func() { _ = db.Close() }
+	}
+	if closeDB != nil {
+		defer closeDB()
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = ? AND %s = ? LIMIT ?", table, collectorOwnershipColumn, environmentOwnershipColumn)
+	rows, err := db.QueryContext(ctx, query, scope.Name, scope.Environment, req.Limit)
+	if err != nil {
+		log.Error().Err(err).Msg("scoped query failed")
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "query_failed"})
+		return
+	}
+	defer rows.Close()
+	columns, err := rows.Columns()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "query_failed"})
+		return
+	}
+	result := make([]map[string]any, 0)
+	for rows.Next() {
+		values := make([]any, len(columns))
+		ptrs := make([]any, len(columns))
+		for i := range values {
+			ptrs[i] = &values[i]
+		}
+		if err := rows.Scan(ptrs...); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "query_failed"})
+			return
+		}
+		row := make(map[string]any, len(columns))
+		for i, column := range columns {
+			if value, isBytes := values[i].([]byte); isBytes {
+				row[column] = string(value)
+			} else {
+				row[column] = values[i]
+			}
+		}
+		result = append(result, row)
+	}
+	if err := rows.Err(); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "query_failed"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"columns": columns, "rows": result, "row_count": len(result)})
+}
+
 func (s *collectorState) handleReplay(w http.ResponseWriter, r *http.Request) {
 	if !s.isAuthorized(r) {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
+		return
+	}
+	if rejectUnsupportedScopedOperation(w, r) {
 		return
 	}
 	var req struct {
@@ -302,6 +395,9 @@ func (s *collectorState) handleDLQList(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
 		return
 	}
+	if rejectUnsupportedScopedOperation(w, r) {
+		return
+	}
 	events, err := s.readDLQRecords()
 	if err != nil {
 		writeJSON(w, http.StatusOK, map[string]any{"events": []any{}, "error": err.Error()})
@@ -313,6 +409,9 @@ func (s *collectorState) handleDLQList(w http.ResponseWriter, r *http.Request) {
 func (s *collectorState) handleDLQShow(w http.ResponseWriter, r *http.Request) {
 	if !s.isAuthorized(r) {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
+		return
+	}
+	if rejectUnsupportedScopedOperation(w, r) {
 		return
 	}
 	id := r.PathValue("id")
@@ -333,6 +432,9 @@ func (s *collectorState) handleDLQShow(w http.ResponseWriter, r *http.Request) {
 func (s *collectorState) handleDLQReplay(w http.ResponseWriter, r *http.Request) {
 	if !s.isAuthorized(r) {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
+		return
+	}
+	if rejectUnsupportedScopedOperation(w, r) {
 		return
 	}
 	id := r.PathValue("id")
@@ -364,6 +466,9 @@ func (s *collectorState) handleDLQReplayAll(w http.ResponseWriter, r *http.Reque
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
 		return
 	}
+	if rejectUnsupportedScopedOperation(w, r) {
+		return
+	}
 	events, err := s.readDLQRecords()
 	if err != nil {
 		writeJSON(w, http.StatusOK, map[string]any{"accepted": 0, "replayed": 0, "error": err.Error()})
@@ -390,6 +495,9 @@ func (s *collectorState) handleDLQReplayAll(w http.ResponseWriter, r *http.Reque
 func (s *collectorState) handleDLQDelete(w http.ResponseWriter, r *http.Request) {
 	if !s.isAuthorized(r) {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "auth_failed"})
+		return
+	}
+	if rejectUnsupportedScopedOperation(w, r) {
 		return
 	}
 	id := r.PathValue("id")

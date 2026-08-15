@@ -15,7 +15,38 @@ const (
 	KeyKindPublic KeyKind = "pub"   // lx_pub_live_kxxx_yyyy
 	KeyKindSecret KeyKind = "sec"   // lx_sec_live_kxxx_yyyy
 	KeyKindLocal  KeyKind = "local" // lx_local_dev_yyyy (dev only)
+	KeyKindToken  KeyKind = "token" // opaque Bearer token, stored by HMAC-derived ID
 )
+
+const (
+	publicAccessIDPrefix   = "lx_pub_"
+	minPublicAccessIDToken = 32
+	maxPublicAccessIDToken = 128
+)
+
+// IsPublicAccessID reports whether id is a valid opaque public Basic
+// credential. The random component is intentionally constrained to URL-safe
+// characters and a minimum entropy-bearing length; callers must never include
+// an invalid value in an error because the entire ID is a bearer capability.
+func IsPublicAccessID(id string) bool {
+	if !strings.HasPrefix(id, publicAccessIDPrefix) {
+		return false
+	}
+	token := id[len(publicAccessIDPrefix):]
+	if len(token) < minPublicAccessIDToken || len(token) > maxPublicAccessIDToken {
+		return false
+	}
+	for i := range len(token) {
+		c := token[i]
+		if !((c >= 'a' && c <= 'z') ||
+			(c >= 'A' && c <= 'Z') ||
+			(c >= '0' && c <= '9') ||
+			c == '-' || c == '_') {
+			return false
+		}
+	}
+	return true
+}
 
 // ParsedKey holds the components of a parsed LOZA API key.
 type ParsedKey struct {
@@ -106,6 +137,13 @@ func HashSecret(secret string, serverSecret []byte) []byte {
 	mac := hmac.New(sha256.New, serverSecret)
 	mac.Write([]byte(secret))
 	return mac.Sum(nil)
+}
+
+// TokenLookupID derives the opaque store identifier for a bearer token. The
+// token itself is never used as a map key or logged; the server secret makes
+// the identifier unguessable and prevents offline enumeration.
+func TokenLookupID(token string, serverSecret []byte) string {
+	return "tok_" + fmt.Sprintf("%x", HashSecret(token, serverSecret))
 }
 
 // CompareSecret performs constant-time comparison of two secret hashes.

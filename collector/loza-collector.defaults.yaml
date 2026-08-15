@@ -42,12 +42,14 @@ auth:
       key_id: kingest
       secret_env: COLLECTOR_INGEST_KEY_SECRET
       kind: sec
+      mode: private
       roles:
         - collector_ingest_server
     - name: collector-admin
       key_id: kadmin
       secret_env: COLLECTOR_ADMIN_KEY_SECRET
       kind: sec
+      mode: private
       roles:
         - project_admin
 

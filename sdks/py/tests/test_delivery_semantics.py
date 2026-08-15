@@ -46,21 +46,17 @@ def test_multiple_events_have_unique_ids() -> None:
         event_ids.append(event["event_id"])
 
     # All event_ids should be unique
-    assert len(event_ids) == len(set(event_ids)), \
-        "Each event must have unique ID"
+    assert len(event_ids) == len(set(event_ids)), "Each event must have unique ID"
 
     # Sink should have all events
-    assert len(sink.events) == 5, \
-        f"Expected 5 events in sink, got {len(sink.events)}"
+    assert len(sink.events) == 5, f"Expected 5 events in sink, got {len(sink.events)}"
 
 
 def test_sampling_respected_in_sink() -> None:
     """Verify sampler filters events from sink."""
     sink = loza.MemorySink()
     logger = loza.New(
-        loza.Test("test")
-        .with_sink(sink)
-        .with_sampler(loza.SampleNone())  # 0% sample rate
+        loza.Test("test").with_sink(sink).with_sampler(loza.SampleNone())  # 0% sample rate
     )
 
     ctx = logger.start_event(loza.Params(event="sampled_out"))
@@ -70,8 +66,7 @@ def test_sampling_respected_in_sink() -> None:
     # Sampled-out event should return empty string
     assert payload == "", "Sampled-out events should not be emitted"
     # Sink should not receive sampled-out events
-    assert len(sink.events) == 0, \
-        "Sampled-out events should not reach sink"
+    assert len(sink.events) == 0, "Sampled-out events should not reach sink"
 
 
 def test_error_events_recorded_in_sink() -> None:
@@ -87,8 +82,7 @@ def test_error_events_recorded_in_sink() -> None:
 
     # Parse emitted payload
     emitted = json.loads(payload)
-    assert emitted.get("outcome") == "error", \
-        "Error event should have outcome=error"
+    assert emitted.get("outcome") == "error", "Error event should have outcome=error"
 
     # Verify sink has the error event
     assert len(sink.events) == 1, "Error event should be in sink"
@@ -138,8 +132,7 @@ def test_events_ordered_in_sink() -> None:
 
     # Sink events are stored as JSON strings, parse them
     sink_event_ids = [json.loads(e)["event_id"] for e in sink.events]
-    assert sink_event_ids == event_ids, \
-        "Sink events should match emission order"
+    assert sink_event_ids == event_ids, "Sink events should match emission order"
 
 
 def test_idempotent_emit_returns_same_payload() -> None:
@@ -155,8 +148,7 @@ def test_idempotent_emit_returns_same_payload() -> None:
     payload3 = logger.emit(ctx)
 
     # All should return the same payload
-    assert payload1 == payload2 == payload3, \
-        "Repeated emit() calls should return same payload"
+    assert payload1 == payload2 == payload3, "Repeated emit() calls should return same payload"
 
     # Parse and verify
     event1 = json.loads(payload1)
@@ -169,12 +161,9 @@ def test_delivery_preserves_event_integrity() -> None:
     sink = loza.MemorySink()
     logger = loza.New(loza.Test("checkout").with_sink(sink))
 
-    ctx = logger.start_event(loza.Params(
-        event="purchase.completed",
-        request_id="req_123",
-        trace_id="trace_456",
-        user_id="user_789"
-    ))
+    ctx = logger.start_event(
+        loza.Params(event="purchase.completed", request_id="req_123", trace_id="trace_456", user_id="user_789")
+    )
     logger.enrich(ctx, loza.String("order_id", "ord_001"))
     logger.enrich(ctx, loza.Int("amount_cents", 9999))
     logger.finish(ctx, "success")
@@ -207,8 +196,7 @@ def test_large_event_still_delivered() -> None:
 
     assert payload, "Large event should be emitted"
     event = json.loads(payload)
-    assert len(event.get("attrs", {})) >= 100, \
-        "Large event should preserve all attributes"
+    assert len(event.get("attrs", {})) >= 100, "Large event should preserve all attributes"
 
 
 def test_concurrent_loggers_dont_interfere() -> None:

@@ -1,6 +1,8 @@
 package httpserver
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 	"os"
 	"strings"
@@ -51,31 +53,103 @@ type PublicHandlerSet interface {
 // The perm string is the required permission name (e.g., "events:write").
 type RouteProtector func(next http.Handler, perm string) http.Handler
 
-// BuildMux constructs the HTTP route table. When protect is non-nil, protected
-// routes are wrapped with per-route permission checks. Public routes (health,
-// ready, version, status) are never wrapped.
-func BuildMux(ingestPath, healthPath, readyPath, metricsPath string, metricsEnabled bool, metricsHandler http.Handler, tailWebSocketHandler http.Handler, handlers PublicHandlerSet, protect RouteProtector) *http.ServeMux {
-	mux := http.NewServeMux()
+// CollectorResolver resolves the target collector for a data-plane request.
+// It returns false when the request has no authorized collector mapping.
+type CollectorResolver func(*http.Request) (string, bool)
 
-	// Helper: register a route, optionally protected
-	route := func(method, pattern string, h http.HandlerFunc, perm string) {
-		if protect != nil && perm != "" {
-			mux.Handle(method+" "+pattern, protect(h, perm))
-		} else {
-			mux.HandleFunc(method+" "+pattern, h)
+// CollectorRouteMode identifies whether a data route uses canonical resource
+// authorization or its explicitly configured legacy default mapping.
+type CollectorRouteMode uint8
+
+const (
+	CanonicalCollectorRoute CollectorRouteMode = iota
+	LegacyCollectorRoute
+)
+
+// CollectorRouteProtector authorizes a route after resolving its collector.
+// Implementations must attach the resolved collector and environment only after
+// authorization succeeds. Canonical routes require collector grants; legacy
+// routes retain the configured default collector's compatibility policy.
+type CollectorRouteProtector func(next http.Handler, perm string, resolve CollectorResolver, mode CollectorRouteMode) http.Handler
+
+// AuthorizedCollector is the server-authorized resource scope for a request.
+// It is never populated from event or query payload fields.
+type AuthorizedCollector struct {
+	Name        string
+	Environment string
+}
+
+type authorizedCollectorContextKey struct{}
+
+// WithAuthorizedCollector attaches an already-authorized collector scope.
+func WithAuthorizedCollector(ctx context.Context, collector, environment string) context.Context {
+	return context.WithValue(ctx, authorizedCollectorContextKey{}, AuthorizedCollector{
+		Name:        collector,
+		Environment: environment,
+	})
+}
+
+// AuthorizedCollectorFromContext returns the collector scope authorized for the
+// current request. It is absent before route authorization succeeds.
+func AuthorizedCollectorFromContext(ctx context.Context) (AuthorizedCollector, bool) {
+	scope, ok := ctx.Value(authorizedCollectorContextKey{}).(AuthorizedCollector)
+	return scope, ok
+}
+
+// BuildMux constructs the HTTP route table. Collector data routes are
+// registered under /collectors/{collector}/... and passed through
+// collectorProtect. Legacy routes are registered only when defaultCollector is
+// explicitly configured, and are bound to that collector by the resolver.
+// Public routes (health, ready, version) are never wrapped.
+func BuildMux(ingestPath, healthPath, readyPath, metricsPath string, metricsEnabled bool, metricsHandler http.Handler, tailWebSocketHandler http.Handler, handlers PublicHandlerSet, protect RouteProtector, collectorProtect CollectorRouteProtector, defaultCollector string) *http.ServeMux {
+	mux := http.NewServeMux()
+	defaultCollector = strings.TrimSpace(defaultCollector)
+	scopedOperationUnsupported := func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "scoped_operation_unsupported"})
+	}
+
+	// registerDataRoute registers the canonical collector-scoped endpoint and,
+	// only during an explicit migration, its legacy default-collector equivalent.
+	registerDataRoute := func(method, pattern string, canonical, legacy http.Handler, routePerm, collectorPerm string) {
+		wrap := func(h http.Handler, resolve CollectorResolver, mode CollectorRouteMode) http.Handler {
+			next := h
+			if collectorProtect != nil {
+				next = collectorProtect(next, collectorPerm, resolve, mode)
+			}
+			// The historical permission vocabulary remains only on explicitly
+			// configured legacy routes. Canonical routes use collector grants.
+			if mode == LegacyCollectorRoute && protect != nil && routePerm != "" {
+				next = protect(next, routePerm)
+			}
+			return next
 		}
+
+		mux.Handle(method+" /collectors/{collector}"+pattern, wrap(canonical, func(r *http.Request) (string, bool) {
+			collector := strings.TrimSpace(r.PathValue("collector"))
+			return collector, collector != ""
+		}, CanonicalCollectorRoute))
+		if defaultCollector != "" {
+			mux.Handle(method+" "+pattern, wrap(legacy, func(*http.Request) (string, bool) {
+				return defaultCollector, true
+			}, LegacyCollectorRoute))
+		}
+	}
+	dataRoute := func(method, pattern string, h http.Handler, routePerm, collectorPerm string) {
+		registerDataRoute(method, pattern, h, h, routePerm, collectorPerm)
 	}
 
 	// ── Ingest (events:write) ────────────────────────────────────────────
 	if ingestPath != "" && ingestPath != "/events" && ingestPath != "/ingest" {
-		route("POST", ingestPath, handlers.HandleIngest, "events:write")
+		dataRoute("POST", ingestPath, http.HandlerFunc(handlers.HandleIngest), "events:write", "events:write")
 	}
-	route("POST", "/events", handlers.HandleIngest, "events:write")
-	route("POST", "/ingest", handlers.HandleIngest, "events:write")
-	route("POST", "/events/batch", handlers.HandleIngest, "events:write")
-	route("POST", "/events/ndjson", handlers.HandleIngest, "events:write")
-	route("POST", "/validate", handlers.HandleValidate, "schema:read")
-	route("POST", "/otlp/logs", handlers.HandleOTLPLogs, "logs:write")
+	dataRoute("POST", "/events", http.HandlerFunc(handlers.HandleIngest), "events:write", "events:write")
+	dataRoute("POST", "/ingest", http.HandlerFunc(handlers.HandleIngest), "events:write", "events:write")
+	dataRoute("POST", "/events/batch", http.HandlerFunc(handlers.HandleIngest), "events:write", "events:write")
+	dataRoute("POST", "/events/ndjson", http.HandlerFunc(handlers.HandleIngest), "events:write", "events:write")
+	dataRoute("POST", "/validate", http.HandlerFunc(handlers.HandleValidate), "schema:read", "events:read")
+	registerDataRoute("POST", "/otlp/logs", http.HandlerFunc(scopedOperationUnsupported), http.HandlerFunc(handlers.HandleOTLPLogs), "logs:write", "logs:write")
 
 	// ── Public (no auth) ─────────────────────────────────────────────────
 	if healthPath != "" && healthPath != "/health" && healthPath != "/healthz" {
@@ -89,56 +163,74 @@ func BuildMux(ingestPath, healthPath, readyPath, metricsPath string, metricsEnab
 	mux.HandleFunc("GET /ready", handlers.HandleReady)
 	mux.HandleFunc("GET /readyz", handlers.HandleReady)
 	mux.HandleFunc("GET /version", handlers.HandleVersion)
-	route("GET", "/status", handlers.HandleStatus, "status:read")
+	dataRoute("GET", "/status", http.HandlerFunc(handlers.HandleStatus), "status:read", "events:read")
 
 	// ── Read endpoints ───────────────────────────────────────────────────
-	route("GET", "/sinks", handlers.HandleSinks, "events:read")
-	route("GET", "/sinks/{name}", handlers.HandleSink, "events:read")
-	route("POST", "/sinks/{name}/test", handlers.HandleSinkTest, "events:write")
-	route("GET", "/schema", handlers.HandleSchemaList, "schema:read")
-	route("POST", "/schema/check", handlers.HandleSchemaCheck, "schema:read")
-	route("POST", "/schema/diff", handlers.HandleSchemaDiff, "schema:read")
-	route("POST", "/query", handlers.HandleQuery, "events:read")
-	route("POST", "/lql/query", handlers.HandleLQLQuery, "events:read")
-	route("GET", "/schema/blueprint", handlers.HandleBlueprintList, "schema:read")
+	dataRoute("GET", "/sinks", http.HandlerFunc(handlers.HandleSinks), "events:read", "events:read")
+	dataRoute("GET", "/sinks/{name}", http.HandlerFunc(handlers.HandleSink), "events:read", "events:read")
+	dataRoute("POST", "/sinks/{name}/test", http.HandlerFunc(handlers.HandleSinkTest), "events:write", "events:write")
+	dataRoute("GET", "/schema", http.HandlerFunc(handlers.HandleSchemaList), "schema:read", "events:read")
+	dataRoute("POST", "/schema/check", http.HandlerFunc(handlers.HandleSchemaCheck), "schema:read", "events:read")
+	dataRoute("POST", "/schema/diff", http.HandlerFunc(handlers.HandleSchemaDiff), "schema:read", "events:read")
+	dataRoute("POST", "/query", http.HandlerFunc(handlers.HandleQuery), "events:read", "events:read")
+	registerDataRoute(
+		"POST",
+		"/lql/query",
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "scoped_raw_sql_unsupported"})
+		}),
+		http.HandlerFunc(handlers.HandleLQLQuery),
+		"events:read",
+		"events:read",
+	)
+	dataRoute("GET", "/schema/blueprint", http.HandlerFunc(handlers.HandleBlueprintList), "schema:read", "events:read")
 
 	// ── Tail (events:read) ───────────────────────────────────────────────
-	route("GET", "/tail", handlers.HandleTail, "events:read")
+	dataRoute("GET", "/tail", http.HandlerFunc(handlers.HandleTail), "events:read", "events:read")
 
 	// ── Write endpoints ──────────────────────────────────────────────────
-	route("POST", "/schema/publish", handlers.HandleSchemaPublish, "schema:write")
-	route("POST", "/schema/blueprint", handlers.HandleBlueprintPublish, "schema:write")
+	dataRoute("POST", "/schema/publish", http.HandlerFunc(handlers.HandleSchemaPublish), "schema:write", "project:admin")
+	dataRoute("POST", "/schema/blueprint", http.HandlerFunc(handlers.HandleBlueprintPublish), "schema:write", "project:admin")
 
 	// ── Replay ───────────────────────────────────────────────────────────
-	route("POST", "/replay", handlers.HandleReplay, "events:write")
+	dataRoute("POST", "/replay", http.HandlerFunc(handlers.HandleReplay), "events:write", "events:write")
 
 	// ── Admin endpoints ──────────────────────────────────────────────────
-	route("POST", "/audit/pii", handlers.HandlePIIAudit, "pii_audit:read")
-	route("POST", "/policy/validate", handlers.HandlePolicyValidate, "schema:read")
-	route("POST", "/retention/apply", handlers.HandleRetentionApply, "project:admin")
-	route("POST", "/keys", handlers.HandleKeyCreate, "project:admin")
-	route("POST", "/keys/{id}/revoke", handlers.HandleKeyRevoke, "project:admin")
-	route("DELETE", "/keys/{id}", handlers.HandleKeyRevoke, "project:admin")
-	route("POST", "/keys/{id}/rotate", handlers.HandleKeyRotate, "project:admin")
-	route("DELETE", "/events", handlers.HandleDeleteEvents, "events:delete")
-	route("DELETE", "/events/by-tenant/{tenant_id}", handlers.HandleDeleteEvents, "events:delete")
-	route("DELETE", "/events/by-user/{user_id}", handlers.HandleDeleteEvents, "events:delete")
-	route("DELETE", "/events/{event_id}", handlers.HandleDeleteEvents, "events:delete")
+	registerDataRoute("POST", "/audit/pii", http.HandlerFunc(scopedOperationUnsupported), http.HandlerFunc(handlers.HandlePIIAudit), "pii_audit:read", "project:admin")
+	dataRoute("POST", "/policy/validate", http.HandlerFunc(handlers.HandlePolicyValidate), "schema:read", "project:admin")
+	registerDataRoute("POST", "/retention/apply", http.HandlerFunc(scopedOperationUnsupported), http.HandlerFunc(handlers.HandleRetentionApply), "project:admin", "project:admin")
+	dataRoute("POST", "/keys", http.HandlerFunc(handlers.HandleKeyCreate), "project:admin", "project:admin")
+	dataRoute("POST", "/keys/{id}/revoke", http.HandlerFunc(handlers.HandleKeyRevoke), "project:admin", "project:admin")
+	dataRoute("DELETE", "/keys/{id}", http.HandlerFunc(handlers.HandleKeyRevoke), "project:admin", "project:admin")
+	dataRoute("POST", "/keys/{id}/rotate", http.HandlerFunc(handlers.HandleKeyRotate), "project:admin", "project:admin")
+	dataRoute("DELETE", "/events", http.HandlerFunc(handlers.HandleDeleteEvents), "events:delete", "events:delete")
+	dataRoute("DELETE", "/events/by-tenant/{tenant_id}", http.HandlerFunc(handlers.HandleDeleteEvents), "events:delete", "events:delete")
+	dataRoute("DELETE", "/events/by-user/{user_id}", http.HandlerFunc(handlers.HandleDeleteEvents), "events:delete", "events:delete")
+	dataRoute("DELETE", "/events/{event_id}", http.HandlerFunc(handlers.HandleDeleteEvents), "events:delete", "events:delete")
 
 	// ── DLQ ──────────────────────────────────────────────────────────────
-	route("GET", "/dlq", handlers.HandleDLQList, "events:read")
-	route("POST", "/dlq/replay", handlers.HandleDLQReplayAll, "events:write")
-	route("GET", "/dlq/{id}", handlers.HandleDLQShow, "events:read")
-	route("POST", "/dlq/{id}/replay", handlers.HandleDLQReplay, "events:write")
-	route("DELETE", "/dlq/{id}", handlers.HandleDLQDelete, "events:delete")
+	dataRoute("GET", "/dlq", http.HandlerFunc(handlers.HandleDLQList), "events:read", "events:read")
+	dataRoute("POST", "/dlq/replay", http.HandlerFunc(handlers.HandleDLQReplayAll), "events:write", "events:write")
+	dataRoute("GET", "/dlq/{id}", http.HandlerFunc(handlers.HandleDLQShow), "events:read", "events:read")
+	dataRoute("POST", "/dlq/{id}/replay", http.HandlerFunc(handlers.HandleDLQReplay), "events:write", "events:write")
+	dataRoute("DELETE", "/dlq/{id}", http.HandlerFunc(handlers.HandleDLQDelete), "events:delete", "events:delete")
 
 	// ── WebSocket tail ───────────────────────────────────────────────────
 	if tailWebSocketHandler != nil {
-		if protect != nil {
-			mux.Handle("GET /ws/tail", protect(tailWebSocketHandler, "events:read"))
-		} else {
-			mux.Handle("GET /ws/tail", tailWebSocketHandler)
-		}
+		registerDataRoute(
+			"GET",
+			"/ws/tail",
+			http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadRequest)
+				_ = json.NewEncoder(w).Encode(map[string]string{"error": "scoped_operation_unsupported"})
+			}),
+			tailWebSocketHandler,
+			"events:read",
+			"events:read",
+		)
 	}
 
 	// ── Metrics (protected by default) ───────────────────────────────────

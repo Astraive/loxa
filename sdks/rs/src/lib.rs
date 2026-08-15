@@ -1297,6 +1297,9 @@ pub fn OtlpSink(endpoint: impl Into<String>) -> SinkConfig {
     SinkConfig::HttpBatch {
         endpoint: endpoint.into(),
         api_key: None,
+        basic_username: None,
+        basic_password: None,
+        insecure: false,
         timeout_ms: 2_000,
         max_batch_bytes: 256 * 1024,
         max_retries: 3,
@@ -1645,6 +1648,9 @@ pub fn CollectorSinkWithEndpoint(endpoint: impl Into<String>) -> SinkConfig {
     SinkConfig::HttpBatch {
         endpoint: endpoint.into(),
         api_key: None,
+        basic_username: None,
+        basic_password: None,
+        insecure: false,
         timeout_ms: 2_000,
         max_batch_bytes: 256 * 1024,
         max_retries: 3,
@@ -1665,6 +1671,9 @@ pub fn KafkaSink(endpoint: impl Into<String>, _topic: impl Into<String>) -> Sink
     SinkConfig::HttpBatch {
         endpoint: endpoint.into(),
         api_key: None,
+        basic_username: None,
+        basic_password: None,
+        insecure: false,
         timeout_ms: 2_000,
         max_batch_bytes: 256 * 1024,
         max_retries: 3,
@@ -1821,6 +1830,10 @@ pub fn WithEventSchema(schema: SchemaConfig) -> core::options::ConfigOption {
 
 pub fn WithCollectorEndpoint(endpoint: impl Into<String>) -> core::options::ConfigOption {
     core::options::with_collector_endpoint(endpoint)
+}
+
+pub fn WithCollectorName(collector_name: impl Into<String>) -> core::options::ConfigOption {
+    core::options::with_collector_name(collector_name)
 }
 
 pub fn WithDuplicatePolicy(policy: impl Into<String>) -> core::options::ConfigOption {

@@ -1,7 +1,7 @@
 name: loza-go
 kind: sdk
 language: go
-version: 0.2.6
+version: 0.3.0
 description: Go SDK for LOZA
 license: MIT
 repository: https://github.com/Astraive/loza

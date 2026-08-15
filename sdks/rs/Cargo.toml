@@ -1,6 +1,6 @@
 [package]
 name = "loza"
-version = "0.2.6"
+version = "0.3.0"
 edition = "2021"
 description = "Rust LOZA wide-event SDK"
 license = "MIT"
@@ -17,6 +17,7 @@ flate2 = "1"
 ureq = { version = "2", features = ["gzip", "json"] }
 regex = "1"
 sha2 = "0.10"
+base64 = "0.22"
 hostname = "0.4"
 futures-util = { version = "0.3", optional = true }
 actix-web = { version = "4", optional = true }

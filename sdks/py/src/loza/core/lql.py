@@ -61,7 +61,9 @@ def query_lql(endpoint: str, lql: str, *, api_key: str = "", timeout: float = 30
     )
 
 
-def query_sql(endpoint: str, sql: str, *, engine: str = "duckdb", api_key: str = "", timeout: float = 30.0) -> QueryResult:
+def query_sql(
+    endpoint: str, sql: str, *, engine: str = "duckdb", api_key: str = "", timeout: float = 30.0
+) -> QueryResult:
     """Execute a raw SQL query against the collector.
 
     Args:

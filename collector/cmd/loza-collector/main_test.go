@@ -71,6 +71,8 @@ func testCollectorConfig() collectorConfig {
 	cfg.retryMaxAttempts = 1
 	cfg.retryInitialBackoff = time.Millisecond
 	cfg.retryMaxBackoff = time.Millisecond
+	cfg.authDefaultCollector = "default"
+	cfg.authCollectors = []string{"default"}
 	return cfg
 }
 
@@ -179,11 +181,11 @@ func TestConfiguredAdminKeyCanReadStatus(t *testing.T) {
 	cfg.authNegativeCacheTTL = time.Second
 	cfg.authKeys = []collectorAuthKey{
 		{
-			name:    "admin",
-			keyID:   "kadmin",
-			secret:  "adminsecret",
-			kind:    auth.KeyKindSecret,
-			roles:   []auth.Role{auth.RoleProjectAdmin},
+			name:   "admin",
+			keyID:  "kadmin",
+			secret: "adminsecret",
+			kind:   auth.KeyKindSecret,
+			roles:  []auth.Role{auth.RoleProjectAdmin},
 		},
 	}
 	state := &collectorState{
@@ -207,6 +209,64 @@ func TestConfiguredAdminKeyCanReadStatus(t *testing.T) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected authenticated project admin to read status, got %d", resp.StatusCode)
+	}
+}
+
+func TestConfiguredScopedKeyRestrictsCanonicalRoutes(t *testing.T) {
+	cfg := testCollectorConfig()
+	cfg.authEnabled = true
+	cfg.authServerSecret = "test-auth-server-secret"
+	cfg.authCacheTTL = time.Minute
+	cfg.authNegativeCacheTTL = time.Second
+	cfg.authCollectors = []string{"orders", "billing"}
+	cfg.authKeys = []collectorAuthKey{{
+		name:        "orders-writer",
+		keyID:       "korders",
+		secret:      "orderssecret",
+		kind:        auth.KeyKindSecret,
+		collector:   "orders",
+		permissions: []auth.Permission{auth.PermEventsWrite},
+		allowedEnvs: []string{"production"},
+	}}
+	state := &collectorState{
+		cfg:         cfg,
+		ingestSink:  &fakeSink{},
+		rateLimiter: rate.NewLimiter(rate.Limit(1000), 1000),
+	}
+	state.ready.Store(true)
+	srv := httptest.NewServer(buildMux(state))
+	defer srv.Close()
+
+	request := func(method, path string) *http.Request {
+		req, err := http.NewRequest(method, srv.URL+path, strings.NewReader(`{"event":"scoped"}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Authorization", "Bearer lx_sec_live_korders_orderssecret")
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Loza-Env", "production")
+		return req
+	}
+	for _, tc := range []struct {
+		name   string
+		method string
+		path   string
+		want   int
+	}{
+		{name: "authorized write", method: http.MethodPost, path: "/collectors/orders/events", want: http.StatusAccepted},
+		{name: "cross collector denied", method: http.MethodPost, path: "/collectors/billing/events", want: http.StatusForbidden},
+		{name: "ungranted read denied", method: http.MethodGet, path: "/collectors/orders/status", want: http.StatusForbidden},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			resp, err := http.DefaultClient.Do(request(tc.method, tc.path))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != tc.want {
+				t.Fatalf("status = %d, want %d", resp.StatusCode, tc.want)
+			}
+		})
 	}
 }
 

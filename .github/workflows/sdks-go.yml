@@ -48,7 +48,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           pip install pytest
-          pip install -e sdks/py
+          pip install -e ../py
 
       # --- Build + Vet ---
 

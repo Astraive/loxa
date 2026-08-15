@@ -59,17 +59,17 @@ type MatcherWeights struct {
 }
 
 type MatcherWeightsTopo struct {
-	Symptom   float64 `yaml:"symptom"`
-	Temporal  float64 `yaml:"temporal"`
+	Symptom    float64 `yaml:"symptom"`
+	Temporal   float64 `yaml:"temporal"`
 	Resolution float64 `yaml:"resolution"`
 }
 
 type TemporalConfig struct {
-	DefaultSimilarity  float64 `yaml:"default_similarity"`
-	SameSpeedScore     float64 `yaml:"same_speed_score"`
-	ZeroDurationScore  float64 `yaml:"zero_duration_score"`
-	FastThresholdMs    int64   `yaml:"fast_threshold_ms"`
-	SlowThresholdMs    int64   `yaml:"slow_threshold_ms"`
+	DefaultSimilarity float64 `yaml:"default_similarity"`
+	SameSpeedScore    float64 `yaml:"same_speed_score"`
+	ZeroDurationScore float64 `yaml:"zero_duration_score"`
+	FastThresholdMs   int64   `yaml:"fast_threshold_ms"`
+	SlowThresholdMs   int64   `yaml:"slow_threshold_ms"`
 }
 
 // ServerConfig contains HTTP server settings
@@ -93,18 +93,18 @@ type GRPCConfig struct {
 
 // StorageConfig contains database settings
 type StorageConfig struct {
-	Backend              string               `yaml:"backend"`
-	DuckDB               DuckDBConfig         `yaml:"duckdb"`
-	PostgreSQL           PostgresConfig       `yaml:"postgresql"`
-	CollectorDBPath      string               `yaml:"collector_db_path"`
-	MinSimilarityThreshold float64            `yaml:"min_similarity_threshold"`
-	Similarity           StorageSimilarityConfig `yaml:"similarity"`
+	Backend                string                  `yaml:"backend"`
+	DuckDB                 DuckDBConfig            `yaml:"duckdb"`
+	PostgreSQL             PostgresConfig          `yaml:"postgresql"`
+	CollectorDBPath        string                  `yaml:"collector_db_path"`
+	MinSimilarityThreshold float64                 `yaml:"min_similarity_threshold"`
+	Similarity             StorageSimilarityConfig `yaml:"similarity"`
 }
 
 type StorageSimilarityConfig struct {
-	ShapePartial  float64            `yaml:"shape_partial"`
-	ShapeMismatch float64            `yaml:"shape_mismatch"`
-	Weights       SimilarityWeights  `yaml:"weights"`
+	ShapePartial  float64           `yaml:"shape_partial"`
+	ShapeMismatch float64           `yaml:"shape_mismatch"`
+	Weights       SimilarityWeights `yaml:"weights"`
 }
 
 type SimilarityWeights struct {
@@ -171,28 +171,28 @@ type IngestionConfig struct {
 
 // ReconstructorConfig contains reconstruction settings
 type ReconstructorConfig struct {
-	Fast         ReconstructionMode      `yaml:"fast"`
-	Deep         ReconstructionMode      `yaml:"deep"`
-	Confidence   ConfidenceConfig        `yaml:"confidence"`
-	Graph        ReconstructorGraphConfig `yaml:"graph"`
-	Explain      ExplainConfig           `yaml:"explain"`
-	SignalScore  SignalScoreConfig       `yaml:"signal_score"`
+	Fast        ReconstructionMode       `yaml:"fast"`
+	Deep        ReconstructionMode       `yaml:"deep"`
+	Confidence  ConfidenceConfig         `yaml:"confidence"`
+	Graph       ReconstructorGraphConfig `yaml:"graph"`
+	Explain     ExplainConfig            `yaml:"explain"`
+	SignalScore SignalScoreConfig        `yaml:"signal_score"`
 }
 
 type ReconstructionMode struct {
-	MaxDepth  int           `yaml:"max_depth"`
-	MaxEvents int           `yaml:"max_events"`
+	MaxDepth   int           `yaml:"max_depth"`
+	MaxEvents  int           `yaml:"max_events"`
 	TimeWindow time.Duration `yaml:"time_window"`
 }
 
 type ConfidenceConfig struct {
-	Base               float64 `yaml:"base"`
-	CausalChainBonus   float64 `yaml:"causal_chain_bonus"`
-	SymptomBonus       float64 `yaml:"symptom_bonus"`
-	SimilarityWeight   float64 `yaml:"similarity_weight"`
-	RemediationWeight  float64 `yaml:"remediation_weight"`
-	MaxConfidence      float64 `yaml:"max_confidence"`
-	MinConfidence      float64 `yaml:"min_confidence"`
+	Base              float64 `yaml:"base"`
+	CausalChainBonus  float64 `yaml:"causal_chain_bonus"`
+	SymptomBonus      float64 `yaml:"symptom_bonus"`
+	SimilarityWeight  float64 `yaml:"similarity_weight"`
+	RemediationWeight float64 `yaml:"remediation_weight"`
+	MaxConfidence     float64 `yaml:"max_confidence"`
+	MinConfidence     float64 `yaml:"min_confidence"`
 }
 
 type ReconstructorGraphConfig struct {
@@ -200,8 +200,8 @@ type ReconstructorGraphConfig struct {
 }
 
 type ExplainConfig struct {
-	MaxKeyFindings   int `yaml:"max_key_findings"`
-	MaxAlternatives  int `yaml:"max_alternatives"`
+	MaxKeyFindings  int `yaml:"max_key_findings"`
+	MaxAlternatives int `yaml:"max_alternatives"`
 }
 
 type SignalScoreConfig struct {
@@ -229,7 +229,7 @@ type MemoryConfig struct {
 
 // LearnerConfig contains continuous learning settings
 type LearnerConfig struct {
-	LearningRate   float64 `yaml:"learning_rate"`
+	LearningRate     float64 `yaml:"learning_rate"`
 	FeatureWeightMin float64 `yaml:"feature_weight_min"`
 	FeatureWeightMax float64 `yaml:"feature_weight_max"`
 }

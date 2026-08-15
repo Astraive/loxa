@@ -60,7 +60,18 @@ def test_invalid_golden_fixture_examples_stay_invalid() -> None:
     assert "event_id" not in missing_event_id
 
     invalid_enums = _load_payload(invalid_files["invalid_enum_values.json"])
-    assert invalid_enums["kind"] not in {"event", "http", "job", "queue", "cli", "cron", "log", "checkpoint", "agent", "ai"}
+    assert invalid_enums["kind"] not in {
+        "event",
+        "http",
+        "job",
+        "queue",
+        "cli",
+        "cron",
+        "log",
+        "checkpoint",
+        "agent",
+        "ai",
+    }
 
     missing_versions = _load_payload(invalid_files["missing_versions.json"])
     assert "schema_version" not in missing_versions or "event_version" not in missing_versions

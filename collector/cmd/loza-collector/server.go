@@ -31,6 +31,8 @@ import (
 )
 
 func runCollector(cfg collectorConfig) error {
+	cfg = withOwnershipProjections(cfg)
+
 	var (
 		db              *sql.DB
 		err             error
@@ -459,6 +461,30 @@ func buildMux(state *collectorState) *http.ServeMux {
 	tailWSHandler := serverruntime.NewTailWebSocketHandler(state.cfg.serverConfig.HTTP, state)
 
 	var protector publichttp.RouteProtector
+	var authMW func(http.Handler) http.Handler
+	collectorProtector := func(next http.Handler, permission string, resolve publichttp.CollectorResolver, mode publichttp.CollectorRouteMode) http.Handler {
+		guard := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			collector, ok := resolve(r)
+			if !ok {
+				http.NotFound(w, r)
+				return
+			}
+			environment := strings.TrimSpace(r.Header.Get("X-Loza-Env"))
+			if state.cfg.authEnabled && mode == publichttp.CanonicalCollectorRoute {
+				ac := auth.GetAuthContext(r.Context())
+				if ac == nil || !ac.AuthorizesCollector(collector, environment, auth.Permission(permission)) {
+					http.Error(w, "Forbidden", http.StatusForbidden)
+					return
+				}
+			}
+			ctx := publichttp.WithAuthorizedCollector(r.Context(), collector, environment)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+		if state.cfg.authEnabled && mode == publichttp.CanonicalCollectorRoute {
+			return authMW(guard)
+		}
+		return guard
+	}
 	if state.cfg.authEnabled {
 		if state.keyStore == nil || state.keyCache == nil || len(state.serverSecret) == 0 {
 			if err := initializeAuthState(state); err != nil {
@@ -474,7 +500,7 @@ func buildMux(state *collectorState) *http.ServeMux {
 			trustedCIDRs = append(trustedCIDRs, ipNet)
 		}
 
-		authMW := auth.Middleware(state.keyStore, state.keyCache, state.serverSecret,
+		authMW = auth.Middleware(state.keyStore, state.keyCache, state.serverSecret,
 			auth.WithAllowLocalDevKeys(state.cfg.authAllowLocalDevKeys),
 			auth.WithTrustedProxies(trustedCIDRs),
 			auth.WithRateLimiter(state.keyRateLimiter),
@@ -484,7 +510,19 @@ func buildMux(state *collectorState) *http.ServeMux {
 		}
 	}
 
-	return publichttp.BuildMux(state.cfg.ingestPath, state.cfg.healthPath, state.cfg.readyPath, state.cfg.metricsPath, state.cfg.metricsPrometheus, state.metricsHandler(), tailWSHandler, state, protector)
+	return publichttp.BuildMux(
+		state.cfg.ingestPath,
+		state.cfg.healthPath,
+		state.cfg.readyPath,
+		state.cfg.metricsPath,
+		state.cfg.metricsPrometheus,
+		state.metricsHandler(),
+		tailWSHandler,
+		state,
+		protector,
+		collectorProtector,
+		state.cfg.authDefaultCollector,
+	)
 }
 
 func initializeAuthState(state *collectorState) error {
@@ -494,8 +532,8 @@ func initializeAuthState(state *collectorState) error {
 	if strings.TrimSpace(state.cfg.authServerSecret) == "" {
 		return errors.New("auth.enabled requires a resolved auth.server_secret")
 	}
-	if len(state.cfg.authKeys) == 0 && strings.TrimSpace(state.cfg.apiKey) == "" {
-		return errors.New("auth.enabled requires at least one configured key or auth.value")
+	if len(state.cfg.authKeys) == 0 && len(state.cfg.authTokens) == 0 && strings.TrimSpace(state.cfg.apiKey) == "" {
+		return errors.New("auth.enabled requires at least one configured key, token, or auth.value")
 	}
 	if state.cfg.authCacheTTL <= 0 || state.cfg.authNegativeCacheTTL <= 0 {
 		return errors.New("auth cache TTLs must be positive")
@@ -550,14 +588,28 @@ func (s *memoryKeyStore) RevokeKey(keyID string) error {
 	return nil
 }
 func newMemoryKeyStoreFromConfig(cfg collectorConfig, serverSecret []byte) *memoryKeyStore {
-	store := &memoryKeyStore{keys: make(map[string]*auth.KeyRecord, len(cfg.authKeys)+1)}
+	store := &memoryKeyStore{keys: make(map[string]*auth.KeyRecord, len(cfg.authKeys)+len(cfg.authGrants)+len(cfg.authTokens)+1)}
 	for _, key := range cfg.authKeys {
+		var collectorGrants []auth.CollectorGrant
+		if key.collector != "" {
+			permissions := make(map[auth.Permission]bool, len(key.permissions))
+			for _, permission := range key.permissions {
+				permissions[permission] = true
+			}
+			collectorGrants = []auth.CollectorGrant{{
+				Collector:    key.collector,
+				Environments: append([]string(nil), key.allowedEnvs...),
+				Permissions:  permissions,
+			}}
+		}
 		store.keys[key.keyID] = &auth.KeyRecord{
 			ID:                   key.name,
 			KeyID:                key.keyID,
 			SecretHash:           auth.HashSecret(key.secret, serverSecret),
 			Kind:                 key.kind,
+			Mode:                 key.mode,
 			Roles:                append([]auth.Role(nil), key.roles...),
+			CollectorGrants:      collectorGrants,
 			AllowedEnvs:          append([]string(nil), key.allowedEnvs...),
 			AllowedServices:      append([]string(nil), key.allowedServices...),
 			AllowedOrigins:       append([]string(nil), key.allowedOrigins...),
@@ -568,6 +620,67 @@ func newMemoryKeyStoreFromConfig(cfg collectorConfig, serverSecret []byte) *memo
 		}
 		if store.keys[key.keyID].ID == "" {
 			store.keys[key.keyID].ID = key.keyID
+		}
+	}
+	for _, grant := range cfg.authGrants {
+		permissions := make(map[auth.Permission]bool, len(grant.permissions))
+		for _, permission := range grant.permissions {
+			permissions[permission] = true
+		}
+		store.keys[grant.keyID] = &auth.KeyRecord{
+			ID:         grant.name,
+			KeyID:      grant.keyID,
+			SecretHash: auth.HashSecret(grant.secret, serverSecret),
+			Kind:       grant.kind,
+			CollectorGrants: []auth.CollectorGrant{{
+				Collector:    grant.collector,
+				Environments: append([]string(nil), grant.allowedEnvs...),
+				Permissions:  permissions,
+			}},
+			AllowedEnvs:          append([]string(nil), grant.allowedEnvs...),
+			AllowedServices:      append([]string(nil), grant.allowedServices...),
+			AllowedOrigins:       append([]string(nil), grant.allowedOrigins...),
+			AllowedIPs:           append([]string(nil), grant.allowedIPs...),
+			MaxPayloadBytes:      grant.maxPayloadBytes,
+			MaxRequestsPerMinute: grant.maxRequestsPerMinute,
+			MaxEventsPerMinute:   grant.maxEventsPerMinute,
+		}
+		if store.keys[grant.keyID].ID == "" {
+			store.keys[grant.keyID].ID = grant.keyID
+		}
+	}
+	for _, token := range cfg.authTokens {
+		tokenID := auth.TokenLookupID(token.token, serverSecret)
+		permissions := make(map[auth.Permission]bool, len(token.permissions))
+		for _, permission := range token.permissions {
+			permissions[permission] = true
+		}
+		var collectorGrants []auth.CollectorGrant
+		if token.collector != "" {
+			collectorGrants = []auth.CollectorGrant{{
+				Collector:    token.collector,
+				Environments: append([]string(nil), token.allowedEnvs...),
+				Permissions:  permissions,
+			}}
+		}
+		store.keys[tokenID] = &auth.KeyRecord{
+			ID:                   token.name,
+			KeyID:                tokenID,
+			SecretHash:           auth.HashSecret(token.token, serverSecret),
+			Kind:                 auth.KeyKindToken,
+			Mode:                 token.mode,
+			Roles:                append([]auth.Role(nil), token.roles...),
+			CollectorGrants:      collectorGrants,
+			AllowedEnvs:          append([]string(nil), token.allowedEnvs...),
+			AllowedServices:      append([]string(nil), token.allowedServices...),
+			AllowedOrigins:       append([]string(nil), token.allowedOrigins...),
+			AllowedIPs:           append([]string(nil), token.allowedIPs...),
+			MaxPayloadBytes:      token.maxPayloadBytes,
+			MaxRequestsPerMinute: token.maxRequestsPerMinute,
+			MaxEventsPerMinute:   token.maxEventsPerMinute,
+		}
+		if store.keys[tokenID].ID == "" {
+			store.keys[tokenID].ID = tokenID
 		}
 	}
 
@@ -594,7 +707,28 @@ func newMemoryKeyStoreFromConfig(cfg collectorConfig, serverSecret []byte) *memo
 	return store
 }
 
+func withOwnershipProjections(cfg collectorConfig) collectorConfig {
+	schema := make(map[string]string, len(cfg.duckDBSchema)+2)
+	for column, path := range cfg.duckDBSchema {
+		schema[column] = path
+	}
+	schema[collectorOwnershipColumn] = collectorOwnershipColumn
+	schema[environmentOwnershipColumn] = environmentOwnershipColumn
+	cfg.duckDBSchema = schema
+
+	columnTypes := make(map[string]string, len(cfg.duckDBColumnTypes)+2)
+	for path, typ := range cfg.duckDBColumnTypes {
+		columnTypes[path] = typ
+	}
+	columnTypes[collectorOwnershipColumn] = "TEXT"
+	columnTypes[environmentOwnershipColumn] = "TEXT"
+	cfg.duckDBColumnTypes = columnTypes
+
+	return cfg
+}
+
 func ensureSchema(db *sql.DB, cfg collectorConfig) error {
+	cfg = withOwnershipProjections(cfg)
 	columns := make([]string, 0, len(cfg.duckDBSchema)+1)
 	for col, path := range cfg.duckDBSchema {
 		colIdent, err := quoteSQLIdent(col)
