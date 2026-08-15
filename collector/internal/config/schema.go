@@ -20,6 +20,7 @@ type Config struct {
 	Routes       RoutesConfig            `yaml:"routes"`
 	Storage      StorageConfig           `yaml:"storage"`
 	DuckDB       DuckDBConfig            `yaml:"duckdb"`
+	LQL          LQLConfig               `yaml:"lql"`
 	Retention    RetentionConfig         `yaml:"retention"`
 	Kafka        KafkaConfig             `yaml:"kafka"`
 	Worker       WorkerConfig            `yaml:"worker"`
@@ -225,6 +226,16 @@ type DuckDBConfig struct {
 	ColumnTypes  map[string]string `yaml:"column_types"`
 }
 
+type LQLConfig struct {
+	Enabled                 bool          `yaml:"enabled"`
+	Binary                  string        `yaml:"binary"`
+	ExpectedProtocolVersion int           `yaml:"expected_protocol_version"`
+	ExpectedCompilerVersion string        `yaml:"expected_compiler_version"`
+	ExpectedLanguageVersion string        `yaml:"expected_language_version"`
+	StartupTimeout          time.Duration `yaml:"startup_timeout"`
+	CompileTimeout          time.Duration `yaml:"compile_timeout"`
+	MaxConcurrentRequests   int           `yaml:"max_concurrent_requests"`
+}
 type DuckDBExport struct {
 	Enabled  bool          `yaml:"enabled"`
 	Format   string        `yaml:"format"`

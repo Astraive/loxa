@@ -127,6 +127,16 @@ type (
 	CollectorClient = core.CollectorClient
 	// CollectorClientConfig configures the collector client.
 	CollectorClientConfig = core.CollectorClientConfig
+	// QueryResult contains rows returned by collector queries.
+	QueryResult = core.QueryResult
+	// QueryValue is a typed LQL parameter.
+	QueryValue = core.QueryValue
+	// LQLQueryOptions controls server-side LQL compilation.
+	LQLQueryOptions = core.LQLQueryOptions
+	// LQLDiagnostic is a structured compiler diagnostic.
+	LQLDiagnostic = core.LQLDiagnostic
+	// LQLCompilationError reports structured LQL compilation failures.
+	LQLCompilationError = core.LQLCompilationError
 
 	// ── Test types ───────────────────────────────────────────────────────────────
 

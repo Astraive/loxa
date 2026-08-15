@@ -315,6 +315,7 @@ from .sinks import (
     KafkaSink,
 )
 from .core.http_client import CollectorClient
+from .core.lql import LQLCompilationError, QueryResult, QueryValue, query_lql, query_sql
 from .cortex import CortexClient, GraphView, IncidentContext, Remediation, RemediationFeedback
 from .core.timing import (
     ProcessHandle,
@@ -1759,6 +1760,11 @@ __all__ = [
     "reset_for_test",
     # Collector
     "CollectorClient",
+    "QueryResult",
+    "QueryValue",
+    "LQLCompilationError",
+    "query_lql",
+    "query_sql",
     # Cortex
     "CortexClient",
     "IncidentContext",

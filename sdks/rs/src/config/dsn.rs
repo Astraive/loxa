@@ -17,6 +17,8 @@ pub struct LozaDSN {
     pub batch_url: String,
     pub otlp_url: String,
     pub tail_ws_url: String,
+    pub lql_url: String,
+    pub lql_query_url: String,
     pub username: Option<String>,
     pub password: Option<String>,
 }
@@ -38,6 +40,8 @@ impl fmt::Debug for LozaDSN {
             .field("batch_url", &self.batch_url)
             .field("otlp_url", &self.otlp_url)
             .field("tail_ws_url", &self.tail_ws_url)
+            .field("lql_url", &self.lql_url)
+            .field("lql_query_url", &self.lql_query_url)
             .field("credentials", &self.username.as_ref().map(|_| "<redacted>"))
             .finish()
     }
@@ -296,6 +300,8 @@ pub fn parse(raw: &str) -> Result<LozaDSN, DsnError> {
         batch_url: format!("{collector_base_url}/events/batch"),
         otlp_url: format!("{collector_base_url}/otlp/logs"),
         tail_ws_url: format!("{collector_tail_base_url}/tail"),
+        lql_url: format!("{collector_base_url}/lql/query"),
+        lql_query_url: format!("{collector_base_url}/lql/query"),
         username,
         password,
     })

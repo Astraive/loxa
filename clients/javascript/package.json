@@ -1,0 +1,11 @@
+{
+  "name": "@astraive/lql-client",
+  "version": "0.4.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": { ".": "./dist/index.js" },
+  "scripts": { "build": "tsc", "test": "bun test tests" },
+  "engines": { "node": ">=18" },
+  "files": ["dist/"]
+}

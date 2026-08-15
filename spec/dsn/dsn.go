@@ -47,8 +47,10 @@ type LozaDSN struct {
 	BatchURL      string // base + /collectors/{collector}/events/batch
 	OTLPURL       string // base + /collectors/{collector}/otlp/logs
 	TailWSURL     string // ws(s)://host:port/collectors/{collector}/tail
-}
+	LQLURL        string // base + /collectors/{collector}/lql/query
+	LQLQueryURL   string // compatibility alias for LQLURL
 
+}
 // String returns a credential-free representation suitable for logs.
 func (d LozaDSN) String() string {
 	return d.BaseURL
@@ -219,6 +221,8 @@ func Parse(raw string) (*LozaDSN, error) {
 		BatchURL:      collectorBaseURL + "/events/batch",
 		OTLPURL:       collectorBaseURL + "/otlp/logs",
 		TailWSURL:     collectorTailBaseURL + "/tail",
+		LQLURL:        collectorBaseURL + "/lql/query",
+		LQLQueryURL:   collectorBaseURL + "/lql/query",
 	}, nil
 }
 

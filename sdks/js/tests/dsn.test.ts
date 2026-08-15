@@ -43,6 +43,12 @@ it('routes private credentials to a collector-scoped endpoint without retaining 
   assert.equal(dsn.baseURL.includes('secret'), false);
 });
 
+it('exposes the canonical scoped LQL query URL', () => {
+  const dsn = parse('loza://example.com/project');
+  assert.equal(dsn.lqlURL, 'https://example.com:443/collectors/project/lql/query');
+  assert.equal(dsn.lqlQueryURL, dsn.lqlURL);
+});
+
 it('rejects empty, malformed, and unescaped credential components', () => {
   for (const raw of [
     'loza://:secret@example.com/project',

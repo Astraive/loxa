@@ -181,6 +181,67 @@ func Query(baseURL, engine, sqlQuery string) ([]byte, error) {
 	}
 	return readResponseBody(resp.Body)
 }
+func encodeLQLParameters(parameters map[string]any) map[string]any {
+	encoded := make(map[string]any, len(parameters))
+	for name, value := range parameters {
+		if object, ok := value.(map[string]any); ok {
+			if _, hasValue := object["value"]; hasValue {
+				encoded[name] = object
+				continue
+			}
+		}
+		kind := "dynamic"
+		switch value.(type) {
+		case string:
+			kind = "string"
+		case bool:
+			kind = "bool"
+		case int, int8, int16, int32, int64:
+			kind = "int"
+		case float32, float64:
+			kind = "float"
+		}
+		encoded[name] = map[string]any{"type": kind, "value": value}
+	}
+	return encoded
+}
+
+// QueryLQL sends LQL source to the server-owned LQL query endpoint.
+func QueryLQL(baseURL, source string, parameters map[string]any, limit int) ([]byte, error) {
+	if limit <= 0 {
+		limit = 1000
+	} else if limit > 1000 {
+		limit = 1000
+	}
+	payload := map[string]any{
+		"query":      source,
+		"parameters": encodeLQLParameters(parameters),
+		"limit":      limit,
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("marshal lql query: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(baseURL, "/")+"/lql/query", bytes.NewReader(raw))
+	if err != nil {
+		return nil, fmt.Errorf("lql query request failed: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	applyAPIKeyAuth(req)
+	resp, err := clientWithTimeout(defaultTimeout).Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("lql query request failed: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		body, _ := readResponseBody(resp.Body)
+		return nil, fmt.Errorf("lql query returned %d: %s", resp.StatusCode, string(body))
+	}
+	return readResponseBody(resp.Body)
+}
+
 
 // TailStream opens an HTTP stream to the collector for tailing events.
 func TailStream(ctx context.Context, baseURL string) (io.ReadCloser, error) {

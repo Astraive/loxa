@@ -28,6 +28,8 @@ export interface LozaDSN {
   batchURL: string;       // base + /collectors/{collector}/events/batch
   otlpURL: string;        // base + /collectors/{collector}/otlp/logs
   tailWSURL: string;      // ws(s)://host:port/collectors/{collector}/tail
+  lqlURL: string;         // base + /collectors/{collector}/lql/query
+  lqlQueryURL: string;    // compatibility alias for lqlURL
   toString(): string;
   toJSON(): Omit<LozaDSN, 'username' | 'password' | 'toString' | 'toJSON'>;
 }
@@ -214,6 +216,8 @@ export function parse(raw: string): LozaDSN {
     batchURL: `${collectorBaseURL}/events/batch`,
     otlpURL: `${collectorBaseURL}/otlp/logs`,
     tailWSURL: `${collectorTailBaseURL}/tail`,
+    lqlURL: `${collectorBaseURL}/lql/query`,
+    lqlQueryURL: `${collectorBaseURL}/lql/query`,
   };
 
   return {

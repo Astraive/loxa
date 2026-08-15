@@ -96,7 +96,7 @@ duckdb:
     timestamp: timestamp
     event_name: event
     level: level
-    status_code: http.status
+    status_code: status_code
     outcome: outcome
     service: service
     trace_id: trace_id
@@ -105,14 +105,24 @@ duckdb:
     duration_ms: duration_ms
     http_method: method
     http_path: path
-    http_status: http.status
+    http_status: http.status_code
     incident_id: incident_id
-    region: region
-    host: host
+    region: deployment.region
+    host: http.host
   column_types:
-    http.status: INTEGER
+    status_code: INTEGER
+    http.status_code: INTEGER
     duration_ms: DOUBLE
     timestamp: TIMESTAMP
+lql:
+  enabled: true
+  binary: /usr/local/bin/lql
+  expected_protocol_version: 1
+  expected_compiler_version: 0.1.0
+  expected_language_version: 0.1
+  startup_timeout: 5s
+  compile_timeout: 5s
+  max_concurrent_requests: 8
 
 retention:
   enabled: false

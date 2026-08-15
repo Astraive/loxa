@@ -80,25 +80,25 @@ def normalize_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
 
 
 def build_contract(spec_root: Path) -> dict[str, Any]:
-    # Canonical paths first (spec/), then legacy mirrors for compatibility
+    # Canonical paths first (spec/schemas/json), then legacy mirrors for compatibility.
     event_schema_path = first_existing(
-        spec_root / "spec" / "schemas" / "json" / "event.schema.json",
+        spec_root / "schemas" / "json" / "event.schema.json",
         spec_root / "schema" / "event.schema.json",
     )
     strict_schema_path = first_existing(
-        spec_root / "spec" / "schemas" / "json" / "event.strict.schema.json",
+        spec_root / "schemas" / "json" / "event.strict.schema.json",
         spec_root / "schema" / "event.strict.schema.json",
     )
     loose_schema_path = first_existing(
-        spec_root / "spec" / "schemas" / "json" / "event.loose.schema.json",
+        spec_root / "schemas" / "json" / "event.loose.schema.json",
         spec_root / "schema" / "event.loose.schema.json",
     )
     ingest_schema_path = first_existing(
-        spec_root / "spec" / "schemas" / "json" / "ingest-envelope.schema.json",
+        spec_root / "schemas" / "json" / "ingest.schema.json",
         spec_root / "schema" / "ingest.schema.json",
     )
     collector_response_path = first_existing(
-        spec_root / "spec" / "schemas" / "json" / "collector-response.schema.json",
+        spec_root / "schemas" / "json" / "collector-response.schema.json",
         spec_root / "schema" / "collector-response.schema.json",
     )
     manifest_path = first_existing(
@@ -136,7 +136,7 @@ def build_contract(spec_root: Path) -> dict[str, Any]:
             "event": "spec/schemas/json/event.schema.json",
             "event_strict": "spec/schemas/json/event.strict.schema.json",
             "event_loose": "spec/schemas/json/event.loose.schema.json",
-            "ingest_envelope": "spec/schemas/json/ingest-envelope.schema.json",
+            "ingest_envelope": "spec/schemas/json/ingest.schema.json",
             "collector_response": "spec/schemas/json/collector-response.schema.json",
         },
         "required_fields": required_fields,

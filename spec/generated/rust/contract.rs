@@ -8,7 +8,7 @@ pub const CONTRACT_JSON: &str = r#"{
     \"event\": \"spec/schemas/json/event.schema.json\",
     \"event_strict\": \"spec/schemas/json/event.strict.schema.json\",
     \"event_loose\": \"spec/schemas/json/event.loose.schema.json\",
-    \"ingest_envelope\": \"spec/schemas/json/ingest-envelope.schema.json\",
+    \"ingest_envelope\": \"spec/schemas/json/ingest.schema.json\",
     \"collector_response\": \"spec/schemas/json/collector-response.schema.json\"
   },
   \"required_fields\": [
@@ -383,11 +383,11 @@ pub const CONTRACT_JSON: &str = r#"{
     }
   },
   \"paths\": {
-    \"event_schema\": \"schema/event.schema.json\",
-    \"strict_schema\": \"schema/event.strict.schema.json\",
-    \"loose_schema\": \"schema/event.loose.schema.json\",
-    \"ingest_schema\": \"schema/ingest.schema.json\",
-    \"collector_response_schema\": \"schema/collector-response.schema.json\",
+    \"event_schema\": \"schemas/json/event.schema.json\",
+    \"strict_schema\": \"schemas/json/event.strict.schema.json\",
+    \"loose_schema\": \"schemas/json/event.loose.schema.json\",
+    \"ingest_schema\": \"schemas/json/ingest.schema.json\",
+    \"collector_response_schema\": \"schemas/json/collector-response.schema.json\",
     \"manifest\": \"conformance/manifest.json\"
   }
 }"#;

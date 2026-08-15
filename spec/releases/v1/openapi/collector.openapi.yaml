@@ -292,40 +292,101 @@ paths:
           description: auth error
   /lql/query:
     post:
-      summary: Execute LQL query
-      description: Execute a Loza Query Language (LQL) query against stored events.
+      summary: Execute a parameterized LQL query
+      description: |
+        Compile and execute source LQL against the authorized collector's
+        wide-event rows. The request never accepts SQL or a physical table.
       parameters:
         - name: X-LOZA-API-Key
           in: header
           required: true
           schema:
             type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 1000
+          description: Maximum rows returned.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [query]
+              additionalProperties: false
               properties:
                 query:
                   type: string
-                  description: LQL query string
+                  minLength: 1
+                  maxLength: 1048576
+                  description: LQL source query.
+                parameters:
+                  type: object
+                  additionalProperties:
+                    oneOf:
+                      - type: string
+                      - type: number
+                      - type: boolean
+                      - type: 'null'
+                  description: Named typed values bound by the compiler.
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 1000
+                  default: 1000
       responses:
         "200":
-          description: query results
+          description: Schema-aware query results.
           content:
             application/json:
               schema:
                 type: object
+                required: [columns, rows, duration_ms, row_count]
                 properties:
-                  rows:
+                  columns:
                     type: array
                     items:
                       type: object
+                      required: [name, field_type, nullable]
+                      properties:
+                        name: {type: string}
+                        field_type: {type: string}
+                        nullable: {type: boolean}
+                  rows:
+                    type: array
+                    items:
+                      type: array
+                  duration_ms: {type: number}
+                  row_count: {type: integer}
         "400":
-          description: invalid query
+          description: LQL compilation diagnostic.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, diagnostics]
+                properties:
+                  error: {const: lql_compile_failed}
+                  diagnostics:
+                    type: array
+                    items: {type: object}
         "401":
           description: auth error
+        "503":
+          description: Compiler unavailable, incompatible, or timed out.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error: {const: lql_compiler_unavailable}
+          x-loza-error: compiler_unavailable
   /tail:
     get:
       summary: Tail events (streaming)

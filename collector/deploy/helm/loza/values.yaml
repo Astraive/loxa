@@ -125,6 +125,15 @@ collector:
       store_raw: true
       checkpoint_on_shutdown: true
 
+    lql:
+      enabled: true
+      binary: /usr/local/bin/lql
+      expected_protocol_version: 1
+      expected_compiler_version: 0.1.0
+      expected_language_version: 0.1
+      startup_timeout: 5s
+      compile_timeout: 5s
+      max_concurrent_requests: 8
     logging:
       level: info
       format: json

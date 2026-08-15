@@ -98,10 +98,17 @@ type collectorConfig struct {
 	authGrants              []collectorAuthGrant
 	apiKeyHeader            string
 	apiKey                  string
-	rateLimitEnabled        bool
 	duckDBPath              string
 	duckDBDriver            string
 	duckDBTable             string
+	lqlEnabled              bool
+	lqlBinary               string
+	lqlExpectedProtocol     int
+	lqlExpectedCompiler     string
+	lqlExpectedLanguage     string
+	lqlStartupTimeout       time.Duration
+	lqlCompileTimeout       time.Duration
+	lqlMaxConcurrent        int
 	duckDBRawColumn         string
 	duckDBStoreRaw          bool
 	duckDBCheckpointOnStop  bool
@@ -128,6 +135,7 @@ type collectorConfig struct {
 	metricsPath             string
 	storagePrimary          string
 	storageEncryptionKey    string
+	rateLimitEnabled        bool
 	rateLimitRPS            float64
 	rateLimitBurst          int
 	loggingLevel            string
@@ -308,6 +316,7 @@ type collectorState struct {
 	processor         *processing.Processor
 	cortexBridge      *cortexBridgeClient
 	queryDB           *sql.DB
+	lqlCompiler       LQLCompiler
 	reliabilityCtx    context.Context
 	reliabilityCancel context.CancelFunc
 	retentionStop     chan struct{}

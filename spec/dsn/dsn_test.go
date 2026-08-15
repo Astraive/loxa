@@ -437,6 +437,19 @@ func TestParseEnvDefault(t *testing.T) {
 		t.Errorf("Env = %q, want %q", dsn.Env, "default")
 	}
 }
+func TestParseLQLQueryURLUsesScopedCollectorRoute(t *testing.T) {
+	dsn, err := Parse("loza://collector.example.com/demo?env=prod&service=cli")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "https://collector.example.com:443/collectors/demo/lql/query"
+	if dsn.LQLURL != want {
+		t.Fatalf("LQLURL = %q, want %q", dsn.LQLURL, want)
+	}
+	if dsn.LQLQueryURL != want {
+		t.Fatalf("LQLQueryURL = %q, want %q", dsn.LQLQueryURL, want)
+	}
+}
 
 func TestParseSchemeAlwaysLoza(t *testing.T) {
 	dsn, err := Parse("loza://localhost/demo?tls=false")

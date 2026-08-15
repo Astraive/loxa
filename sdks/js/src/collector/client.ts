@@ -26,6 +26,29 @@ export interface VersionInfo {
   event_version: string;
 }
 
+export interface LqlQueryValue {
+  type?: string;
+  value: unknown;
+}
+
+export interface LqlQueryResult {
+  columns: string[];
+  rows: Record<string, unknown>[];
+  duration_ms?: number;
+}
+
+export class LqlCompilationError extends Error {
+  readonly status: number;
+  readonly diagnostics: unknown[];
+
+  constructor(status: number, message: string, diagnostics: unknown[] = []) {
+    super(message);
+    this.name = 'LqlCompilationError';
+    this.status = status;
+    this.diagnostics = diagnostics;
+  }
+}
+
 /** Standalone client for loza-collector HTTP API. */
 export class CollectorClient {
   private url: string;
@@ -109,10 +132,42 @@ export class CollectorClient {
         : this.apiKey;
     }
 
+
     const res = await this.request('POST', this.collectorPath('/events'), body, headers);
     return parseCollectorResponse(res.body);
   }
 
+
+  /** Execute LQL source through the collector's server-side compiler. */
+  async queryLql(
+    query: string,
+    parameters: Record<string, LqlQueryValue> = {},
+    limit = 1000,
+  ): Promise<LqlQueryResult> {
+    const normalizedLimit = Math.min(Math.max(Math.trunc(limit) || 1000, 1), 1000);
+    const res = await this.request(
+      'POST',
+      this.collectorPath('/lql/query'),
+      Buffer.from(JSON.stringify({ query, parameters, limit: normalizedLimit }), 'utf-8'),
+    );
+    let payload: unknown;
+    try {
+      payload = JSON.parse(res.body) as unknown;
+    } catch {
+      throw new LqlCompilationError(res.statusCode, 'invalid LQL compiler response');
+    }
+    const body = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
+    if (res.statusCode >= 400) {
+      const message = typeof body.error === 'string' ? body.error : 'LQL compilation failed';
+      const diagnostics = Array.isArray(body.diagnostics) ? body.diagnostics : [];
+      throw new LqlCompilationError(res.statusCode, message, diagnostics);
+    }
+    return {
+      columns: Array.isArray(body.columns) ? body.columns.filter((column): column is string => typeof column === 'string') : [],
+      rows: Array.isArray(body.rows) ? body.rows.filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === 'object') : [],
+      duration_ms: typeof body.duration_ms === 'number' ? body.duration_ms : undefined,
+    };
+  }
   // --- Collector Admin API methods ---
 
   /** Validate an event against the collector schema. */

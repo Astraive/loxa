@@ -15,4 +15,5 @@ use (
 	./sdks/go/tests/integration
 	./spec
 	./tools/stress
+	./clients/go
 )

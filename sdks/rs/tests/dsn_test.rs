@@ -431,3 +431,13 @@ fn reject_port_above_65535() {
 fn reject_non_numeric_port() {
     assert_invalid("loza://collector.example.com:abc/demo");
 }
+
+#[test]
+fn scoped_lql_query_url_is_canonical() {
+    let dsn = loza::dsn::parse("loza://collector.example.com/demo").unwrap();
+    assert_eq!(
+        dsn.lql_url,
+        "https://collector.example.com:443/collectors/demo/lql/query"
+    );
+    assert_eq!(dsn.lql_query_url, dsn.lql_url);
+}

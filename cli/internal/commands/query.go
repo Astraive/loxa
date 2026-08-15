@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"os/exec"
+	"strconv"
 	"strings"
 
 	"github.com/astraive/loza/cli/internal/client"
@@ -13,59 +13,60 @@ import (
 	"github.com/astraive/loza/cli/internal/output"
 )
 
-// isLQL detects if a query is LQL syntax (starts with "from" keyword).
-func isLQL(query string) bool {
-	trimmed := strings.TrimSpace(strings.ToLower(query))
-	return strings.HasPrefix(trimmed, "from ")
-}
-
-// compileLQL shells out to the `lql` binary to compile LQL to SQL.
-func compileLQL(query string, target string) (string, error) {
-	binary := "lql"
-	cmdArgs := []string{"compile"}
-	if target == "clickhouse" {
-		cmdArgs = []string{"compile-ch"}
+func parseQueryParameter(raw string) (string, any, error) {
+	key, value, ok := strings.Cut(raw, "=")
+	if !ok || strings.TrimSpace(key) == "" {
+		return "", nil, fmt.Errorf("query parameter must be key=value")
 	}
-	cmdArgs = append(cmdArgs, query)
-
-	cmd := exec.Command(binary, cmdArgs...)
-	out, err := cmd.Output()
-	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return "", fmt.Errorf("lql error: %s", strings.TrimSpace(string(exitErr.Stderr)))
-		}
-		return "", fmt.Errorf("lql binary not found — install with: cargo install lql")
+	key = strings.TrimSpace(key)
+	value = strings.TrimSpace(value)
+	if value == "null" {
+		return key, nil, nil
 	}
-	return strings.TrimSpace(string(out)), nil
+	if value == "true" || value == "false" {
+		return key, value == "true", nil
+	}
+	if integer, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return key, integer, nil
+	}
+	if decimal, err := strconv.ParseFloat(value, 64); err == nil {
+		return key, decimal, nil
+	}
+	return key, value, nil
 }
 
 func QueryCommand(ctx context.Context, cfg config.Config, args []string) error {
 	fs := flag.NewFlagSet("query", flag.ContinueOnError)
-	engine := fs.String("engine", "duckdb", "query engine")
-	sqlQuery := fs.String("q", "", "SQL or LQL query")
+	engine := fs.String("engine", "duckdb", "query engine (used only with --raw-sql)")
+	lqlQuery := fs.String("q", "", "LQL query")
+	rawSQL := fs.Bool("raw-sql", false, "send -q as explicit raw SQL to /query")
 	format := fs.String("format", "", "output format: table, json, csv")
-	rowLimit := fs.Int("limit", 0, "limit rows (0 = unlimited)")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-	if *sqlQuery == "" {
-		return fmt.Errorf("-q flag is required")
-	}
-
-	// Auto-detect LQL and compile to SQL
-	if isLQL(*sqlQuery) {
-		compiled, err := compileLQL(*sqlQuery, *engine)
+	rowLimit := fs.Int("limit", 0, "limit rows (0 = collector default)")
+	parameters := map[string]any{}
+	fs.Func("param", "typed LQL parameter (key=value; repeatable)", func(raw string) error {
+		key, value, err := parseQueryParameter(raw)
 		if err != nil {
 			return err
 		}
-		*sqlQuery = compiled
+		parameters[key] = value
+		return nil
+	})
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *lqlQuery == "" {
+		return fmt.Errorf("-q flag is required")
 	}
 
-	if *rowLimit > 0 && !strings.Contains(strings.ToUpper(*sqlQuery), "LIMIT") {
-		*sqlQuery = fmt.Sprintf("%s LIMIT %d", *sqlQuery, *rowLimit)
+	var (
+		result []byte
+		err    error
+	)
+	if *rawSQL {
+		result, err = client.Query(cfg.CollectorURL, *engine, *lqlQuery)
+	} else {
+		result, err = client.QueryLQL(cfg.CollectorURL, *lqlQuery, parameters, *rowLimit)
 	}
-
-	result, err := client.Query(cfg.CollectorURL, *engine, *sqlQuery)
 	if err != nil {
 		return err
 	}
@@ -85,6 +86,7 @@ func QueryCommand(ctx context.Context, cfg config.Config, args []string) error {
 		return printTable(result)
 	}
 }
+
 
 func printCSV(result []byte) error {
 	var data map[string]any

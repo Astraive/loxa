@@ -204,8 +204,8 @@ export { encodeJSON, encodePrettyJSON } from './jsonenc/encoder.ts';
 export { uuidv7 } from './core/uuidv7.ts';
 
 // --- Collector Client ---
-export { CollectorClient } from './collector/client.ts';
-export type { CollectorClientOptions, VersionInfo } from './collector/client.ts';
+export { CollectorClient, LqlCompilationError } from './collector/client.ts';
+export type { CollectorClientOptions, VersionInfo, LqlQueryValue, LqlQueryResult } from './collector/client.ts';
 
 // --- Cortex Client ---
 export { CortexClient, normalizeIncidentContext, normalizeGraphView, normalizeRemediation, validateIncidentContext, validateGraphView, validateRemediation, validateFeedback } from './cortex/client.ts';

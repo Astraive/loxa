@@ -176,11 +176,7 @@ func BuildMux(ingestPath, healthPath, readyPath, metricsPath string, metricsEnab
 	registerDataRoute(
 		"POST",
 		"/lql/query",
-		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": "scoped_raw_sql_unsupported"})
-		}),
+		http.HandlerFunc(handlers.HandleLQLQuery),
 		http.HandlerFunc(handlers.HandleLQLQuery),
 		"events:read",
 		"events:read",

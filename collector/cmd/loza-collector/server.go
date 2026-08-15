@@ -191,6 +191,14 @@ func runCollector(cfg collectorConfig) error {
 	if err := initializeAuthState(state); err != nil {
 		return err
 	}
+	if cfg.lqlEnabled {
+		compiler, err := newLQLStdioCompiler(context.Background(), cfg)
+		if err != nil {
+			return fmt.Errorf("failed to initialize lql compiler: %w", err)
+		}
+		state.lqlCompiler = compiler
+		defer func() { _ = compiler.Close(context.Background()) }()
+	}
 	state.ready.Store(true)
 	state.sinkHealthy.Store(true)
 	state.spoolHealthy.Store(true)
@@ -395,6 +403,11 @@ func shutdownCollector(server *http.Server, auxServers []serverruntime.Server, s
 	if state.cortexBridge != nil {
 		if err := state.cortexBridge.Close(); err != nil {
 			logJSON("error", "collector_cortex_bridge_close_failed", map[string]any{"error": err.Error()})
+		}
+	}
+	if state.lqlCompiler != nil {
+		if err := state.lqlCompiler.Close(ctx); err != nil {
+			logJSON("error", "collector_lql_compiler_close_failed", map[string]any{"error": err.Error()})
 		}
 	}
 	if db != nil && cfg.duckDBCheckpointOnStop {

@@ -1303,6 +1303,23 @@ func validateFileConfig(fc fileConfig) error {
 	if strings.TrimSpace(fc.DuckDB.Path) == "" {
 		return errors.New("duckdb.path must not be empty")
 	}
+	if fc.LQL.Enabled {
+		if strings.TrimSpace(fc.LQL.Binary) == "" {
+			return errors.New("lql.binary must not be empty when lql.enabled")
+		}
+		if fc.LQL.ExpectedProtocolVersion != 1 {
+			return errors.New("lql.expected_protocol_version must be 1")
+		}
+		if strings.TrimSpace(fc.LQL.ExpectedCompilerVersion) == "" || strings.TrimSpace(fc.LQL.ExpectedLanguageVersion) == "" {
+			return errors.New("lql expected compiler and language versions must not be empty")
+		}
+		if fc.LQL.StartupTimeout <= 0 || fc.LQL.CompileTimeout <= 0 {
+			return errors.New("lql startup_timeout and compile_timeout must be > 0")
+		}
+		if fc.LQL.MaxConcurrentRequests <= 0 {
+			return errors.New("lql.max_concurrent_requests must be > 0")
+		}
+	}
 	if strings.TrimSpace(fc.DuckDB.Driver) == "" {
 		return errors.New("duckdb.driver must not be empty")
 	}
@@ -1516,6 +1533,14 @@ func runtimeConfigFromFile(fc fileConfig) collectorConfig {
 		duckDBPath:              fc.DuckDB.Path,
 		duckDBDriver:            fc.DuckDB.Driver,
 		duckDBTable:             fc.DuckDB.Table,
+		lqlEnabled:              fc.LQL.Enabled,
+		lqlBinary:               fc.LQL.Binary,
+		lqlExpectedProtocol:     fc.LQL.ExpectedProtocolVersion,
+		lqlExpectedCompiler:     fc.LQL.ExpectedCompilerVersion,
+		lqlExpectedLanguage:     fc.LQL.ExpectedLanguageVersion,
+		lqlStartupTimeout:       fc.LQL.StartupTimeout,
+		lqlCompileTimeout:       fc.LQL.CompileTimeout,
+		lqlMaxConcurrent:        fc.LQL.MaxConcurrentRequests,
 		duckDBRawColumn:         fc.DuckDB.RawColumn,
 		duckDBStoreRaw:          fc.DuckDB.StoreRaw,
 		duckDBCheckpointOnStop:  fc.DuckDB.CheckpointOnShutdown,

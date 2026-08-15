@@ -13,7 +13,12 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 
 
 MIRROR_PAIRS: tuple[tuple[str, str], ...] = (
-    # No active mirror pairs — releases/v1/schemas/ are frozen snapshots, not mirrors.
+    ("schemas/json/event.schema.json", "schema/event.schema.json"),
+    ("schemas/json/event.strict.schema.json", "schema/event.strict.schema.json"),
+    ("schemas/json/event.loose.schema.json", "schema/event.loose.schema.json"),
+    ("schemas/json/ingest.schema.json", "schema/ingest.schema.json"),
+    ("schemas/json/collector-response.schema.json", "schema/collector-response.schema.json"),
+    # releases/v1/schemas/ are frozen snapshots, not mirrors.
 )
 
 
