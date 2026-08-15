@@ -218,4 +218,9 @@ function isQueryValue(value: unknown): value is QueryValue { return isRecord(val
 function inferType(value: unknown): string { return value === null ? 'null' : typeof value === 'boolean' ? 'bool' : typeof value === 'number' ? (Number.isInteger(value) ? 'int' : 'float') : 'string'; }
 function isLocalhost(host: string): boolean { return host === 'localhost' || host === '127.0.0.1' || host === '::1'; }
 function readEnv(name: string): string { return typeof process !== 'undefined' ? process.env[name] || '' : ''; }
-function base64(value: string): string { return typeof btoa === 'function' ? btoa(value) : Buffer.from(value, 'utf8').toString('base64'); }
+function base64(value: string): string {
+  if (typeof btoa !== 'function') {
+    throw new QueryError('LQL basic authentication is unavailable in this runtime', ErrorCategory.InvalidConfiguration);
+  }
+  return btoa(value);
+}

@@ -31,5 +31,8 @@ test('query uses scoped route, typed parameters, and bearer precedence', async (
 });
 
 test('invalid configuration exposes stable category', () => {
-  assert.throws(() => new Client({ endpoint: 'http://remote.example', collector: '', username: 'u', password: 'p' }), error => (error as { category?: string }).category === ErrorCategory.InvalidConfiguration);
+  assert.throws(() => new Client({ endpoint: 'http://remote.example', collector: '', username: 'u', password: 'p' }), error => {
+    if (!(error instanceof Error) || !('category' in error)) return false;
+    return error.category === ErrorCategory.InvalidConfiguration;
+  });
 });
