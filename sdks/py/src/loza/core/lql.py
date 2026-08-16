@@ -8,10 +8,13 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+
 class QueryResult:
     """Result of a query against the collector."""
 
-    def __init__(self, columns: list[str], rows: list[dict[str, Any]], *, duration_ms: int = 0, row_count: int | None = None) -> None:
+    def __init__(
+        self, columns: list[str], rows: list[dict[str, Any]], *, duration_ms: int = 0, row_count: int | None = None
+    ) -> None:
         self.columns = columns
         self.rows = rows
         self.duration_ms = duration_ms
@@ -25,6 +28,7 @@ class QueryResult:
 
     def __repr__(self) -> str:
         return f"QueryResult(columns={len(self.columns)}, rows={len(self.rows)})"
+
 
 class QueryValue:
     """Typed value sent to the LQL compiler."""
@@ -65,6 +69,8 @@ def _decode_query_error(error: urllib.error.HTTPError) -> LQLCompilationError:
         return LQLCompilationError(f"lql query failed with HTTP {error.code}", status=error.code)
     message = str(data.get("error") or f"lql query failed with HTTP {error.code}")
     return LQLCompilationError(message, status=error.code, diagnostics=data.get("diagnostics", []))
+
+
 def query_lql(
     endpoint: str,
     lql: str,
@@ -83,7 +89,9 @@ def query_lql(
     normalized_limit = min(max(int(limit), 1), 1000)
     route = f"/collectors/{urllib.parse.quote(collector, safe='')}/lql/query" if collector else "/lql/query"
     url = endpoint.rstrip("/") + route
-    body = json.dumps({"query": lql, "parameters": _encode_parameters(parameters), "limit": normalized_limit}).encode("utf-8")
+    body = json.dumps({"query": lql, "parameters": _encode_parameters(parameters), "limit": normalized_limit}).encode(
+        "utf-8"
+    )
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
@@ -109,7 +117,13 @@ def query_lql(
     rows = data.get("rows", [])
     if not isinstance(columns, list) or not isinstance(rows, list):
         raise LQLCompilationError("lql response has an invalid result envelope")
-    return QueryResult(columns=columns, rows=rows, duration_ms=int(data.get("duration_ms", 0)), row_count=int(data.get("row_count", len(rows))))
+    return QueryResult(
+        columns=columns,
+        rows=rows,
+        duration_ms=int(data.get("duration_ms", 0)),
+        row_count=int(data.get("row_count", len(rows))),
+    )
+
 
 def query_sql(
     endpoint: str, sql: str, *, engine: str = "duckdb", api_key: str = "", timeout: float = 30.0
