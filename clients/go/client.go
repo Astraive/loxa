@@ -70,18 +70,22 @@ func (r *QueryResult) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
-	r.Columns = make([]QueryColumn, 0, len(raw.Columns))
-	for _, column := range raw.Columns {
-		var name string
-		if err := json.Unmarshal(column, &name); err == nil {
-			r.Columns = append(r.Columns, QueryColumn{Name: name})
-			continue
+	if raw.Columns == nil {
+		r.Columns = nil
+	} else {
+		r.Columns = make([]QueryColumn, 0, len(raw.Columns))
+		for _, column := range raw.Columns {
+			var name string
+			if err := json.Unmarshal(column, &name); err == nil {
+				r.Columns = append(r.Columns, QueryColumn{Name: name})
+				continue
+			}
+			var typed QueryColumn
+			if err := json.Unmarshal(column, &typed); err != nil {
+				return err
+			}
+			r.Columns = append(r.Columns, typed)
 		}
-		var typed QueryColumn
-		if err := json.Unmarshal(column, &typed); err != nil {
-			return err
-		}
-		r.Columns = append(r.Columns, typed)
 	}
 	r.Rows, r.DurationMS, r.RowCount = raw.Rows, raw.DurationMS, raw.RowCount
 	return nil

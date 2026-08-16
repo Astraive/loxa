@@ -35,7 +35,7 @@ func StreamInterceptorWithConfig(cfg Config) grpc.StreamServerInterceptor {
 		eventName = "grpc.stream"
 	}
 
-	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		evCtx := loza.StartEvent(ss.Context(), loza.Params{
 			Event:  eventName,
 			Method: "grpc",
@@ -56,7 +56,6 @@ func StreamInterceptorWithConfig(cfg Config) grpc.StreamServerInterceptor {
 			return err
 		}
 
-		var err error
 		defer func() {
 			if rec := recover(); rec != nil {
 				err = status.Error(codes.Internal, fmt.Sprintf("panic recovered: %v", rec))

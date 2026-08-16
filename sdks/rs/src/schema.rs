@@ -258,3 +258,7 @@ fn datadog_value(value: Value) -> Value {
     );
     Value::Object(obj)
 }
+
+#[cfg(test)]
+#[path = "schema_coverage_tests.rs"]
+mod schema_coverage_tests;

@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - "sdks/py/**"
+      - "clients/python/**"
       - "spec/**"
       - ".github/workflows/sdks-py.yml"
   pull_request:
     paths:
+      - "clients/python/**"
       - "sdks/py/**"
       - "spec/**"
       - ".github/workflows/sdks-py.yml"
@@ -37,7 +39,7 @@ jobs:
       - name: Install package and dev dependencies
         run: |
           pip install -e .
-          pip install pytest ruff build
+          pip install pytest ruff build coverage
 
       # --- Lint ---
 
@@ -61,6 +63,17 @@ jobs:
       - name: Unit tests
         run: pytest --ignore=tests/test_e2e_live.py -v
 
+      - name: Coverage
+        run: python run_coverage.py
+
+      - name: Upload SDK coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-sdk-coverage
+          path: sdks/py/htmlcov/
+          if-no-files-found: ignore
+
       - name: Spec conformance tests
         run: pytest tests/test_spec_conformance.py tests/test_collector_ack_fixture.py tests/test_emitted_shape_fixture.py tests/test_parity.py -v
 
@@ -80,3 +93,41 @@ jobs:
           ls -la dist/
           pip install dist/*.whl --force-reinstall --no-deps
           python -c "import loza; print(loza.__version__ if hasattr(loza, '__version__') else 'import ok')"
+
+  client:
+    name: Python LQL Client
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: clients/python
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install client and coverage dependencies
+        run: |
+          pip install -e .
+          pip install pytest coverage
+
+      - name: Tests
+        run: python -m pytest -q
+
+      - name: Coverage
+        run: |
+          python -m coverage erase
+          python -m coverage run --branch --source=lql_client -m pytest
+          python -m coverage html
+          python -m coverage json
+          python -m coverage report --fail-under=95 --show-missing
+
+      - name: Upload client coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-client-coverage
+          path: clients/python/htmlcov/
+          if-no-files-found: ignore
