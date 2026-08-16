@@ -269,6 +269,9 @@ def main() -> int:
     python_sdk_ok: bool | None = None
 
     for check in checks:
+        if check.sdk == "lql" and not check.cwd.is_dir():
+            results.append(_skip_result(check, "standalone LQL repository unavailable"))
+            continue
         if check.group == "collector_integration":
             if collector_ok is None:
                 collector_ok = _is_collector_reachable()
