@@ -82,9 +82,17 @@ logging:
 collector:
   mode: "pull"
   url: "http://localhost:9308"
+  dsn: ""
+  collector: "default"
+  environment: ""
+  service: "cortex"
   source_of_truth: true
   api_key: ""
-  api_key_header: "X-API-Key"
+  username: ""
+  password: ""
+  tls_ca_file: ""
+  timeout: 15s
+  max_response_bytes: 8388608
   poll_interval: 30s
   batch_size: 1000
   tail_transport: "http"

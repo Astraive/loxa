@@ -3,6 +3,7 @@ module github.com/astraive/loza/cortex
 go 1.25.0
 
 require (
+	github.com/astraive/lql/client/go v0.4.0
 	github.com/astraive/loza/gen/go v0.0.0-00010101000000-000000000000
 	github.com/astraive/loza/spec v0.0.0
 	github.com/go-chi/chi/v5 v5.0.12
@@ -16,6 +17,8 @@ require (
 	google.golang.org/grpc v1.81.1
 	gopkg.in/yaml.v3 v3.0.1
 )
+
+replace github.com/astraive/lql/client/go => ../clients/go
 
 replace github.com/astraive/loza/spec => ../spec
 

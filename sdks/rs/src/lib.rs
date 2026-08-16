@@ -29,7 +29,7 @@ use std::sync::{Arc, OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 pub use crate::core::client::{
     extract_http_headers, inject_http_headers, CollectorHttpClient, HTTPClient, HTTPRequest,
-    HTTPResponse,
+    HTTPResponse, QueryColumn, QueryLqlError, QueryResult, QueryValue,
 };
 pub use config::{
     AsyncConfig, BackpressurePolicy, Config, DeliveryFailureHandler, MemorySinkStore,

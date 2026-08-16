@@ -130,9 +130,12 @@ func (c *lqlStdioCompiler) Compile(ctx context.Context, req LQLCompileRequest) (
 		"query":      source,
 		"target":     req.Target,
 		"parameters": req.Parameters,
-		"schema":     map[string]any{"collector": req.Scope.Collector, "environment": req.Scope.Environment},
-		"policy":     map[string]any{"scope": req.Scope},
-		"scope":      req.Scope,
+		"schema":     nil,
+		"policy": map[string]any{
+			"allowed_sources":  []string{"events"},
+			"max_result_rows": req.Limit,
+		},
+		"scope": req.Scope,
 	})
 	if err != nil {
 		_ = c.killLocked()

@@ -8,8 +8,10 @@ import (
 
 // QueryResult holds the result of a query against the collector.
 type QueryResult struct {
-	Columns []string                 `json:"columns"`
-	Rows    []map[string]interface{} `json:"rows"`
+	Columns    []string                 `json:"columns"`
+	Rows       []map[string]interface{} `json:"rows"`
+	DurationMS int64                    `json:"duration_ms,omitempty"`
+	RowCount   int                      `json:"row_count"`
 }
 
 // QueryValue is a typed value supplied to an LQL query.
@@ -51,9 +53,9 @@ func (e *LQLCompilationError) Error() string {
 }
 
 type lqlQueryRequest struct {
-	Query      string                 `json:"query"`
+	Query      string                `json:"query"`
 	Parameters map[string]QueryValue `json:"parameters"`
-	Limit      int                    `json:"limit"`
+	Limit      int                   `json:"limit"`
 }
 
 // QueryLQL sends LQL source to /lql/query for server-side compilation.
@@ -80,7 +82,7 @@ func (c *CollectorClient) QueryLQL(ctx context.Context, lql string, options ...L
 	if err != nil {
 		return nil, fmt.Errorf("lql: marshal: %w", err)
 	}
-	raw, err := c.do(ctx, "POST", "/lql/query", body)
+	raw, err := c.do(ctx, "POST", c.collectorPath("/lql/query"), body)
 	if err != nil {
 		var response struct {
 			Error       string          `json:"error,omitempty"`

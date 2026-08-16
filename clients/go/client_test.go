@@ -68,6 +68,23 @@ func TestClientQueryUsesScopedRouteTypedParametersAndBearer(t *testing.T) {
 	}
 }
 
+func TestClientNewResolvesCanonicalDSNWithoutWorkspaceDependencies(t *testing.T) {
+	client, err := New(ConnectionConfig{
+		DSN:     "loza://key-id:secret@example.com/demo?env=prod&service=api",
+		APIKey:  "api-key",
+		Timeout: time.Second,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if client.endpoint != "https://example.com:443" || client.collector != "demo" {
+		t.Fatalf("resolved connection = %#v", client)
+	}
+	if client.env != "prod" || client.service != "api" {
+		t.Fatalf("resolved scope = %#v", client)
+	}
+}
+
 func TestClientQueryReturnsStableTimeoutCategory(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		time.Sleep(100 * time.Millisecond)

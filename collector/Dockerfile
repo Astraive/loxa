@@ -1,3 +1,5 @@
+FROM ghcr.io/astraive/lql:0.4.0 AS lql
+
 FROM golang:1.25-bookworm AS builder
 
 WORKDIR /build
@@ -31,6 +33,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 WORKDIR /app
 
 COPY --from=builder /out/loza-collector /usr/local/bin/loza-collector
+COPY --from=lql /usr/local/bin/lql /usr/local/bin/lql
 COPY collector/deploy/docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 COPY collector/loza-collector.defaults.yaml /app/config.yaml
 

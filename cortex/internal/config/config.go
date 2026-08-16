@@ -269,13 +269,22 @@ type LoggingConfig struct {
 	Format string `yaml:"format"` // "json" or "console"
 }
 
-// CollectorConfig contains loza-collector integration settings
+// CollectorConfig contains loza-collector integration settings.
 type CollectorConfig struct {
 	Mode                 string        `yaml:"mode"` // "fanout", "pull", "replay"
 	URL                  string        `yaml:"url"`
+	DSN                  string        `yaml:"dsn"`
+	Collector            string        `yaml:"collector"`
+	Environment          string        `yaml:"environment"`
+	Service              string        `yaml:"service"`
 	SourceOfTruth        bool          `yaml:"source_of_truth"`
 	APIKey               string        `yaml:"api_key"`
-	APIKeyHeader         string        `yaml:"api_key_header"`
+	APIKeyHeader         string        `yaml:"api_key_header,omitempty"` // legacy tail header override; LQL always uses Bearer
+	Username             string        `yaml:"username"`
+	Password             string        `yaml:"password"`
+	TLSCAFile            string        `yaml:"tls_ca_file"`
+	Timeout              time.Duration `yaml:"timeout"`
+	MaxResponseBytes     int64         `yaml:"max_response_bytes"`
 	PollInterval         time.Duration `yaml:"poll_interval"`
 	BatchSize            int           `yaml:"batch_size"`
 	TailTransport        string        `yaml:"tail_transport"` // "http" or "websocket"
@@ -284,9 +293,9 @@ type CollectorConfig struct {
 	TailBatchSize        int           `yaml:"tail_batch_size"`
 	TailFlushInterval    time.Duration `yaml:"tail_flush_interval"`
 	TailReconnectBackoff time.Duration `yaml:"tail_reconnect_backoff"`
-	QueryTable           string        `yaml:"query_table"`
-	RawColumn            string        `yaml:"raw_column"`
-	TimestampColumn      string        `yaml:"timestamp_column"`
+	QueryTable           string        `yaml:"query_table"`      // retained for config compatibility; LQL does not use it
+	RawColumn            string        `yaml:"raw_column"`       // retained for config compatibility; LQL result rows must include raw
+	TimestampColumn      string        `yaml:"timestamp_column"` // retained for config compatibility
 	CursorPath           string        `yaml:"cursor_path"`
 }
 
@@ -444,21 +453,29 @@ func applyEnvOverrides(cfg *Config) {
 	if v := os.Getenv("CORTEX_PII_REDACTION_MODE"); v != "" {
 		cfg.PIIRedaction.Mode = v
 	}
-
-	// Logging overrides
 	if v := os.Getenv("CORTEX_LOG_LEVEL"); v != "" {
-		cfg.Logging.Level = v
+		cfg.Logging.Level = strings.ToLower(strings.TrimSpace(v))
 	}
 	if v := os.Getenv("CORTEX_LOG_FORMAT"); v != "" {
-		cfg.Logging.Format = v
+		cfg.Logging.Format = strings.ToLower(strings.TrimSpace(v))
 	}
-
-	// Collector overrides
 	if v := os.Getenv("CORTEX_COLLECTOR_MODE"); v != "" {
 		cfg.Collector.Mode = v
 	}
 	if v := os.Getenv("CORTEX_COLLECTOR_URL"); v != "" {
 		cfg.Collector.URL = v
+	}
+	if v := os.Getenv("CORTEX_COLLECTOR_DSN"); v != "" {
+		cfg.Collector.DSN = v
+	}
+	if v := os.Getenv("CORTEX_COLLECTOR_NAME"); v != "" {
+		cfg.Collector.Collector = v
+	}
+	if v := os.Getenv("CORTEX_COLLECTOR_ENV"); v != "" {
+		cfg.Collector.Environment = v
+	}
+	if v := os.Getenv("CORTEX_COLLECTOR_SERVICE"); v != "" {
+		cfg.Collector.Service = v
 	}
 	if v := os.Getenv("CORTEX_COLLECTOR_SOURCE_OF_TRUTH"); v != "" {
 		cfg.Collector.SourceOfTruth = strings.EqualFold(v, "true")
@@ -468,6 +485,25 @@ func applyEnvOverrides(cfg *Config) {
 	}
 	if v := os.Getenv("CORTEX_COLLECTOR_API_KEY_HEADER"); v != "" {
 		cfg.Collector.APIKeyHeader = v
+	}
+	if v := os.Getenv("CORTEX_COLLECTOR_USERNAME"); v != "" {
+		cfg.Collector.Username = v
+	}
+	if v := os.Getenv("CORTEX_COLLECTOR_PASSWORD"); v != "" {
+		cfg.Collector.Password = v
+	}
+	if v := os.Getenv("CORTEX_COLLECTOR_TLS_CA_FILE"); v != "" {
+		cfg.Collector.TLSCAFile = v
+	}
+	if v := os.Getenv("CORTEX_COLLECTOR_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.Collector.Timeout = d
+		}
+	}
+	if v := os.Getenv("CORTEX_COLLECTOR_MAX_RESPONSE_BYTES"); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+			cfg.Collector.MaxResponseBytes = n
+		}
 	}
 	if v := os.Getenv("CORTEX_COLLECTOR_TAIL_TRANSPORT"); v != "" {
 		cfg.Collector.TailTransport = strings.ToLower(strings.TrimSpace(v))
@@ -882,8 +918,11 @@ func defaultConfig() *Config {
 		Collector: CollectorConfig{
 			Mode:                 "fanout",
 			URL:                  "http://localhost:9308",
-			SourceOfTruth:        false,
+			Collector:            "default",
+			Service:              "cortex",
 			APIKeyHeader:         "X-API-Key",
+			Timeout:              15 * time.Second,
+			MaxResponseBytes:     8 << 20,
 			PollInterval:         30 * time.Second,
 			BatchSize:            1000,
 			TailTransport:        "http",

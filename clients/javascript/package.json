@@ -7,5 +7,6 @@
   "exports": { ".": "./dist/index.js" },
   "scripts": { "build": "tsc", "test": "bun test tests" },
   "engines": { "node": ">=18" },
-  "files": ["dist/"]
+  "files": ["dist/"],
+  "devDependencies": { "typescript": "^5.6.3", "@types/node": "^22.10.0" }
 }

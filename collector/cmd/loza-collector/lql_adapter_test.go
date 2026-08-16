@@ -13,13 +13,22 @@ import (
 func TestLQLStdioCompilerHandshakeAndScope(t *testing.T) {
 	binary := os.Getenv("LOZA_LQL_BINARY")
 	if binary == "" {
-		binary = filepath.Join("..", "..", "..", "lql", "target", "debug", "lql.exe")
+		candidates := []string{
+			filepath.Join("..", "..", "..", "..", "lql", "target", "debug", "lql.exe"),
+			filepath.Join("..", "..", "..", "lql", "target", "debug", "lql.exe"),
+		}
+		for _, candidate := range candidates {
+			if _, err := os.Stat(candidate); err == nil {
+				binary = candidate
+				break
+			}
+		}
 	}
-	if _, err := os.Stat(binary); err != nil {
-		t.Skipf("LQL binary unavailable: %v", err)
+	if binary == "" {
+		t.Skip("LQL binary unavailable")
 	}
 	cfg := collectorConfig{
-		lqlBinary: binary, lqlExpectedProtocol: 1, lqlExpectedCompiler: "0.1.0",
+		lqlBinary: binary, lqlExpectedProtocol: 1, lqlExpectedCompiler: "0.4.0",
 		lqlExpectedLanguage: "0.1", lqlStartupTimeout: 5e9, lqlCompileTimeout: 5e9,
 		lqlMaxConcurrent: 2,
 	}

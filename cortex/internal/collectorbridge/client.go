@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,7 +14,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,12 +22,11 @@ import (
 	"github.com/astraive/loza/cortex/internal/eventconv"
 	"github.com/astraive/loza/cortex/internal/models"
 	transportcontracts "github.com/astraive/loza/spec/transport/contracts"
+	lqlclient "github.com/astraive/lql/client/go"
 	"github.com/gorilla/websocket"
 )
 
-var sqlIdentPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
-
-const maxCollectorQueryLimit = 10000
+const maxCollectorQueryLimit = 1000
 
 type Cursor struct {
 	Timestamp time.Time `json:"timestamp"`
@@ -34,26 +36,82 @@ type Cursor struct {
 type Client struct {
 	cfg        config.CollectorConfig
 	httpClient *http.Client
+	lqlClient  *lqlclient.Client
+	initErr    error
 }
 
 func NewClient(cfg config.CollectorConfig) *Client {
-	return &Client{
-		cfg: cfg,
-		httpClient: &http.Client{
-			Timeout: 15 * time.Second,
-		},
+	httpClient, err := collectorHTTPClient(cfg)
+	if err != nil {
+		return &Client{cfg: cfg, initErr: err}
+	}
+	live, err := lqlclient.New(lqlclient.ConnectionConfig{
+		DSN:              cfg.DSN,
+		Endpoint:         cfg.URL,
+		Collector:        cfg.Collector,
+		APIKey:           cfg.APIKey,
+		Username:         cfg.Username,
+		Password:         cfg.Password,
+		Env:              cfg.Environment,
+		Service:          cfg.Service,
+		HTTPClient:       httpClient,
+		Timeout:          cfg.Timeout,
+		MaxResponseBytes: cfg.MaxResponseBytes,
+	})
+	return &Client{cfg: cfg, httpClient: httpClient, lqlClient: live, initErr: err}
+}
+
+func collectorHTTPClient(cfg config.CollectorConfig) (*http.Client, error) {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if path := strings.TrimSpace(cfg.TLSCAFile); path != "" {
+		pem, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("collector TLS CA file: %w", err)
+		}
+		roots, err := x509.SystemCertPool()
+		if err != nil {
+			roots = x509.NewCertPool()
+		}
+		if !roots.AppendCertsFromPEM(pem) {
+			return nil, fmt.Errorf("collector TLS CA file contains no certificates")
+		}
+		transport.TLSClientConfig = &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12}
+	}
+	timeout := cfg.Timeout
+	if timeout <= 0 {
+		timeout = 15 * time.Second
+	}
+	return &http.Client{Transport: transport, Timeout: timeout}, nil
+}
+func setCollectorAuth(header http.Header, cfg config.CollectorConfig) {
+	if strings.TrimSpace(cfg.APIKey) != "" {
+		header.Set("Authorization", "Bearer "+cfg.APIKey)
+		return
+	}
+	if cfg.Username != "" {
+		header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(cfg.Username+":"+cfg.Password)))
+		return
+	}
+	if cfg.APIKeyHeader != "" {
+		header.Set(cfg.APIKeyHeader, cfg.APIKey)
 	}
 }
 
 func (c *Client) FetchEventsSince(ctx context.Context, cursor Cursor, limit int) ([]*models.Event, Cursor, error) {
-	if limit <= 0 {
-		limit = c.cfg.BatchSize
+	limit = clampQueryLimit(limit, c.cfg.BatchSize)
+	conditions := make([]string, 0, 1)
+	parameters := make(map[string]lqlclient.QueryValue, 2)
+	if !cursor.Timestamp.IsZero() {
+		conditions = append(conditions, "(timestamp > $cursor_ts or (timestamp = $cursor_ts and event_id > $cursor_id))")
+		parameters["cursor_ts"] = lqlclient.QueryValue{Type: "timestamp", Value: cursor.Timestamp.UTC().Format(time.RFC3339Nano)}
+		parameters["cursor_id"] = lqlclient.QueryValue{Type: "string", Value: cursor.EventID}
 	}
-	query, err := c.buildIncrementalQuery(cursor, limit)
-	if err != nil {
-		return nil, cursor, err
+	source := "from events"
+	if len(conditions) > 0 {
+		source += " | where " + strings.Join(conditions, " and ")
 	}
-	rows, err := c.queryRows(ctx, query, limit)
+	source += " | sort timestamp asc | limit " + strconv.Itoa(limit)
+	rows, err := c.queryLQLRows(ctx, source, parameters, limit)
 	if err != nil {
 		return nil, cursor, err
 	}
@@ -63,7 +121,7 @@ func (c *Client) FetchEventsSince(ctx context.Context, cursor Cursor, limit int)
 	for _, row := range rows {
 		event, err := c.rowToEvent(row)
 		if err != nil {
-			continue
+			return nil, cursor, err
 		}
 		events = append(events, event)
 		next = Cursor{Timestamp: event.Timestamp, EventID: event.ID}
@@ -83,13 +141,14 @@ func (c *Client) StreamTail(ctx context.Context, handle func(*models.Event) erro
 }
 
 func (c *Client) streamTailHTTP(ctx context.Context, handle func(*models.Event) error) error {
+	if c.initErr != nil {
+		return c.initErr
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.tailURL("/tail", false), nil)
 	if err != nil {
 		return err
 	}
-	if strings.TrimSpace(c.cfg.APIKey) != "" {
-		req.Header.Set(c.cfg.APIKeyHeader, c.cfg.APIKey)
-	}
+	setCollectorAuth(req.Header, c.cfg)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
@@ -121,13 +180,12 @@ func (c *Client) streamTailHTTP(ctx context.Context, handle func(*models.Event) 
 	}
 	return scanner.Err()
 }
-
 func (c *Client) streamTailWebSocket(ctx context.Context, handle func(*models.Event) error) error {
-	header := http.Header{}
-	if strings.TrimSpace(c.cfg.APIKey) != "" {
-		header.Set(c.cfg.APIKeyHeader, c.cfg.APIKey)
+	if c.initErr != nil {
+		return c.initErr
 	}
-
+	header := http.Header{}
+	setCollectorAuth(header, c.cfg)
 	conn, _, err := websocket.DefaultDialer.DialContext(ctx, c.tailURL("/ws/tail", true), header)
 	if err != nil {
 		return err
@@ -185,56 +243,67 @@ func (c *Client) streamTailWebSocket(ctx context.Context, handle func(*models.Ev
 	}
 }
 
+func (c *Client) FindByTraceIDPage(ctx context.Context, traceID string, limit, offset int) ([]*models.Event, error) {
+	return c.queryEventsPage(ctx, "from events | where trace_id = $value | sort timestamp asc", map[string]lqlclient.QueryValue{
+		"value": {Type: "string", Value: traceID},
+	}, limit, offset)
+}
+
 func (c *Client) FindByTraceID(ctx context.Context, traceID string, limit int) ([]*models.Event, error) {
-	query, err := c.buildJSONFieldQuery("trace_id", traceID, limit)
-	if err != nil {
-		return nil, err
-	}
-	return c.queryEvents(ctx, query, limit)
+	return c.queryEvents(ctx, "from events | where trace_id = $value | sort timestamp asc", map[string]lqlclient.QueryValue{
+		"value": {Type: "string", Value: traceID},
+	}, limit)
 }
 
 func (c *Client) GetByID(ctx context.Context, id string) (*models.Event, error) {
-	query, err := c.buildJSONFieldQuery("id", id, 1)
-	if err != nil {
-		return nil, err
-	}
-	events, err := c.queryEvents(ctx, query, 1)
+	events, err := c.queryEvents(ctx, "from events | where event_id = $value | limit 1", map[string]lqlclient.QueryValue{
+		"value": {Type: "string", Value: id},
+	}, 1)
 	if err != nil || len(events) == 0 {
 		return nil, err
 	}
 	return events[0], nil
 }
 
+func (c *Client) ListRecentPage(ctx context.Context, limit, offset int) ([]*models.Event, error) {
+	return c.queryEventsPage(ctx, "from events | sort timestamp desc", nil, limit, offset)
+}
+
 func (c *Client) ListRecent(ctx context.Context, limit int) ([]*models.Event, error) {
-	limit = clampQueryLimit(limit, 1000)
-	table, rawCol, tsCol, err := c.sqlParts()
-	if err != nil {
-		return nil, err
-	}
-	query := fmt.Sprintf("SELECT %s FROM %s ORDER BY %s DESC LIMIT %d", rawCol, table, tsCol, limit)
-	return c.queryEvents(ctx, query, limit)
+	return c.ListRecentPage(ctx, limit, 0)
+}
+
+func (c *Client) FindByIncidentIDPage(ctx context.Context, incidentID string, limit, offset int) ([]*models.Event, error) {
+	return c.queryEventsPage(ctx, "from events | where incident_id = $value | sort timestamp asc", map[string]lqlclient.QueryValue{
+		"value": {Type: "string", Value: incidentID},
+	}, limit, offset)
 }
 
 func (c *Client) FindByIncidentID(ctx context.Context, incidentID string, limit int) ([]*models.Event, error) {
-	query, err := c.buildJSONFieldQuery("incident_id", incidentID, limit)
-	if err != nil {
-		return nil, err
-	}
-	return c.queryEvents(ctx, query, limit)
+	return c.FindByIncidentIDPage(ctx, incidentID, limit, 0)
 }
 
 func (c *Client) FindByService(ctx context.Context, service, from, to string, limit int) ([]*models.Event, error) {
-	limit = clampQueryLimit(limit, 1000)
-	table, rawCol, tsCol, err := c.sqlParts()
-	if err != nil {
-		return nil, err
+	return c.FindByServicePage(ctx, service, from, to, limit, 0)
+}
+
+func (c *Client) FindByServicePage(ctx context.Context, service, from, to string, limit, offset int) ([]*models.Event, error) {
+	conditions := []string{"service = $service"}
+	parameters := map[string]lqlclient.QueryValue{"service": {Type: "string", Value: service}}
+	appendTimeConditions(&conditions, parameters, from, to)
+	source := "from events | where " + strings.Join(conditions, " and ") + " | sort timestamp asc"
+	return c.queryEventsPage(ctx, source, parameters, limit, offset)
+}
+
+func appendTimeConditions(conditions *[]string, parameters map[string]lqlclient.QueryValue, from, to string) {
+	if strings.TrimSpace(from) != "" {
+		*conditions = append(*conditions, "timestamp >= $from")
+		parameters["from"] = lqlclient.QueryValue{Type: "timestamp", Value: from}
 	}
-	conds := []string{fmt.Sprintf("json_extract_string(%s, '$.service') = %s", rawCol, quoteSQLString(service))}
-	fromT, _ := time.Parse(time.RFC3339, strings.TrimSpace(from))
-	toT, _ := time.Parse(time.RFC3339, strings.TrimSpace(to))
-	conds = appendTimeRangeConds(conds, tsCol, fromT, toT)
-	query := fmt.Sprintf("SELECT %s FROM %s WHERE %s ORDER BY %s ASC LIMIT %d", rawCol, table, strings.Join(conds, " AND "), tsCol, limit)
-	return c.queryEvents(ctx, query, limit)
+	if strings.TrimSpace(to) != "" {
+		*conditions = append(*conditions, "timestamp <= $to")
+		parameters["to"] = lqlclient.QueryValue{Type: "timestamp", Value: to}
+	}
 }
 
 func (c *Client) LoadCursor() (Cursor, error) {
@@ -271,8 +340,28 @@ func (c *Client) SaveCursor(cur Cursor) error {
 	return os.WriteFile(path, data, 0o600)
 }
 
-func (c *Client) queryEvents(ctx context.Context, query string, limit int) ([]*models.Event, error) {
-	rows, err := c.queryRows(ctx, query, limit)
+func (c *Client) queryLQLRows(ctx context.Context, source string, parameters map[string]lqlclient.QueryValue, limit int) ([]map[string]any, error) {
+	if c.lqlClient == nil {
+		if c.initErr != nil {
+			return nil, c.initErr
+		}
+		return nil, fmt.Errorf("collector LQL client is unavailable")
+	}
+	result, err := c.lqlClient.Query(ctx, source, parameters, limit)
+	if err != nil {
+		return nil, err
+	}
+	return result.Rows, nil
+}
+
+func (c *Client) queryEventsPage(ctx context.Context, source string, parameters map[string]lqlclient.QueryValue, limit, offset int) ([]*models.Event, error) {
+	if offset < 0 {
+		offset = 0
+	}
+	if offset > 0 {
+		source += " | offset " + strconv.Itoa(offset)
+	}
+	rows, err := c.queryLQLRows(ctx, source, parameters, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -280,11 +369,15 @@ func (c *Client) queryEvents(ctx context.Context, query string, limit int) ([]*m
 	for _, row := range rows {
 		event, err := c.rowToEvent(row)
 		if err != nil {
-			continue
+			return nil, err
 		}
 		events = append(events, event)
 	}
 	return events, nil
+
+}
+func (c *Client) queryEvents(ctx context.Context, source string, parameters map[string]lqlclient.QueryValue, limit int) ([]*models.Event, error) {
+	return c.queryEventsPage(ctx, source, parameters, limit, 0)
 }
 
 func (c *Client) rowToEvent(row map[string]any) (*models.Event, error) {
@@ -311,94 +404,32 @@ func (c *Client) rowToEvent(row map[string]any) (*models.Event, error) {
 	default:
 		return nil, fmt.Errorf("unsupported raw column type %T", rawValue)
 	}
-
-	return eventconv.FromRawMap(payload, "collector")
-}
-
-func (c *Client) buildIncrementalQuery(cursor Cursor, limit int) (string, error) {
-	limit = clampQueryLimit(limit, 1000)
-	table, rawCol, tsCol, err := c.sqlParts()
-	if err != nil {
-		return "", err
+	if _, ok := payload["schema_version"]; !ok {
+		payload["schema_version"] = "v1"
 	}
-	idExpr := fmt.Sprintf("coalesce(json_extract_string(%s, '$.id'), '')", rawCol)
-	query := fmt.Sprintf("SELECT %s FROM %s", rawCol, table)
-	if !cursor.Timestamp.IsZero() {
-		ts := cursor.Timestamp.UTC().Format(time.RFC3339Nano)
-		query += fmt.Sprintf(" WHERE (%s > TIMESTAMP %s OR (%s = TIMESTAMP %s AND %s > %s))",
-			tsCol, quoteSQLString(ts),
-			tsCol, quoteSQLString(ts),
-			idExpr, quoteSQLString(cursor.EventID))
+	if _, ok := payload["event_version"]; !ok {
+		payload["event_version"] = "v1"
 	}
-	query += fmt.Sprintf(" ORDER BY %s ASC, %s ASC LIMIT %d", tsCol, idExpr, limit)
-	return query, nil
-}
-
-func (c *Client) buildJSONFieldQuery(field, value string, limit int) (string, error) {
-	if !sqlIdentPattern.MatchString(strings.TrimSpace(field)) {
-		return "", fmt.Errorf("invalid JSON field %q", field)
+	if _, ok := payload["version"]; !ok {
+		payload["version"] = "1"
 	}
-	table, rawCol, tsCol, err := c.sqlParts()
-	if err != nil {
-		return "", err
+	if _, ok := payload["kind"]; !ok {
+		payload["kind"] = "event"
 	}
-	limit = clampQueryLimit(limit, 1000)
-	return fmt.Sprintf(
-		"SELECT %s FROM %s WHERE json_extract_string(%s, '$.%s') = %s ORDER BY %s ASC LIMIT %d",
-		rawCol, table, rawCol, field, quoteSQLString(value), tsCol, limit,
-	), nil
-}
-
-func (c *Client) sqlParts() (table, rawCol, tsCol string, err error) {
-	for _, ident := range []string{c.cfg.QueryTable, c.cfg.RawColumn, c.cfg.TimestampColumn} {
-		if !sqlIdentPattern.MatchString(strings.TrimSpace(ident)) {
-			return "", "", "", fmt.Errorf("invalid collector SQL identifier %q", ident)
+	if _, ok := payload["id"]; !ok {
+		if eventID, exists := payload["event_id"]; exists {
+			payload["id"] = eventID
 		}
 	}
-	return quoteSQLIdent(c.cfg.QueryTable), quoteSQLIdent(c.cfg.RawColumn), quoteSQLIdent(c.cfg.TimestampColumn), nil
-}
-
-func (c *Client) queryRows(ctx context.Context, query string, limit int) ([]map[string]any, error) {
-	limit = clampQueryLimit(limit, 1000)
-	payload := map[string]any{
-		"query": query,
-		"limit": limit,
-	}
-	body, err := json.Marshal(payload)
+	event, err := eventconv.FromRawMap(payload, "collector")
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(c.cfg.URL, "/")+"/query", bytes.NewReader(body))
-	if err != nil {
-		return nil, err
+	if event.ID == "" {
+		event.ID = event.EventID
 	}
-	req.Header.Set("Content-Type", "application/json")
-	if strings.TrimSpace(c.cfg.APIKey) != "" {
-		req.Header.Set(c.cfg.APIKeyHeader, c.cfg.APIKey)
-	}
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("collector query failed with status %d", resp.StatusCode)
-	}
-	var out struct {
-		Rows []map[string]any `json:"rows"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, err
-	}
-	return out.Rows, nil
-}
+	return event, nil
 
-func quoteSQLString(v string) string {
-	return "'" + strings.ReplaceAll(v, "'", "''") + "'"
-}
-
-func quoteSQLIdent(v string) string {
-	return `"` + strings.ReplaceAll(strings.TrimSpace(v), `"`, `""`) + `"`
 }
 
 func clampQueryLimit(limit, fallback int) int {
@@ -411,40 +442,28 @@ func clampQueryLimit(limit, fallback int) int {
 	return limit
 }
 
-// appendTimeRangeConds adds optional from/to timestamp conditions to the WHERE clause.
-func appendTimeRangeConds(conds []string, tsCol string, from, to time.Time) []string {
-	if !from.IsZero() {
-		conds = append(conds, fmt.Sprintf("%s >= TIMESTAMP %s", tsCol, quoteSQLString(from.UTC().Format(time.RFC3339))))
-	}
-	if !to.IsZero() {
-		conds = append(conds, fmt.Sprintf("%s <= TIMESTAMP %s", tsCol, quoteSQLString(to.UTC().Format(time.RFC3339))))
-	}
-	return conds
+func (c *Client) FindByEventName(ctx context.Context, eventName string, limit int) ([]*models.Event, error) {
+	return c.FindByEventNamePage(ctx, eventName, limit, 0)
 }
 
-func (c *Client) FindByEventName(ctx context.Context, eventName string, limit int) ([]*models.Event, error) {
-	query, err := c.buildJSONFieldQuery("event", eventName, limit)
-	if err != nil {
-		return nil, err
-	}
-	return c.queryEvents(ctx, query, limit)
+func (c *Client) FindByEventNamePage(ctx context.Context, eventName string, limit, offset int) ([]*models.Event, error) {
+	return c.queryEventsPage(ctx, "from events | where event = $value | sort timestamp asc", map[string]lqlclient.QueryValue{
+		"value": {Type: "string", Value: eventName},
+	}, limit, offset)
 }
 
 func (c *Client) FindByOutcome(ctx context.Context, outcome string, limit int) ([]*models.Event, error) {
-	query, err := c.buildJSONFieldQuery("outcome", outcome, limit)
-	if err != nil {
-		return nil, err
-	}
-	return c.queryEvents(ctx, query, limit)
+	return c.FindByOutcomePage(ctx, outcome, limit, 0)
+}
+
+func (c *Client) FindByOutcomePage(ctx context.Context, outcome string, limit, offset int) ([]*models.Event, error) {
+	return c.queryEventsPage(ctx, "from events | where outcome = $value | sort timestamp asc", map[string]lqlclient.QueryValue{
+		"value": {Type: "string", Value: outcome},
+	}, limit, offset)
 }
 
 func (c *Client) DistinctServices(ctx context.Context) ([]string, error) {
-	table, rawCol, _, err := c.sqlParts()
-	if err != nil {
-		return nil, err
-	}
-	query := fmt.Sprintf("SELECT DISTINCT json_extract_string(%s, '$.service') AS service FROM %s ORDER BY service", rawCol, table)
-	rows, err := c.queryRows(ctx, query, 10000)
+	rows, err := c.queryLQLRows(ctx, "from events | distinct service | sort service asc", nil, 10000)
 	if err != nil {
 		return nil, err
 	}
@@ -458,155 +477,161 @@ func (c *Client) DistinctServices(ctx context.Context) ([]string, error) {
 }
 
 func (c *Client) FindByLevel(ctx context.Context, level string, limit int) ([]*models.Event, error) {
-	query, err := c.buildJSONFieldQuery("level", level, limit)
-	if err != nil {
-		return nil, err
-	}
-	return c.queryEvents(ctx, query, limit)
+	return c.FindByLevelPage(ctx, level, limit, 0)
+}
+
+func (c *Client) FindByLevelPage(ctx context.Context, level string, limit, offset int) ([]*models.Event, error) {
+	return c.queryEventsPage(ctx, "from events | where level = $value | sort timestamp asc", map[string]lqlclient.QueryValue{
+		"value": {Type: "string", Value: level},
+	}, limit, offset)
 }
 
 func (c *Client) FindByEnvironment(ctx context.Context, env string, limit int) ([]*models.Event, error) {
-	query, err := c.buildJSONFieldQuery("environment", env, limit)
-	if err != nil {
-		return nil, err
-	}
-	return c.queryEvents(ctx, query, limit)
+	return c.FindByEnvironmentPage(ctx, env, limit, 0)
+}
+
+func (c *Client) FindByEnvironmentPage(ctx context.Context, env string, limit, offset int) ([]*models.Event, error) {
+	return c.queryEventsPage(ctx, "from events | where environment = $value | sort timestamp asc", map[string]lqlclient.QueryValue{
+		"value": {Type: "string", Value: env},
+	}, limit, offset)
 }
 
 func (c *Client) FindByRelease(ctx context.Context, release string, limit int) ([]*models.Event, error) {
-	query, err := c.buildJSONFieldQuery("release", release, limit)
-	if err != nil {
-		return nil, err
-	}
-	return c.queryEvents(ctx, query, limit)
+	return c.FindByReleasePage(ctx, release, limit, 0)
+}
+
+func (c *Client) FindByReleasePage(ctx context.Context, release string, limit, offset int) ([]*models.Event, error) {
+	return c.queryEventsPage(ctx, "from events | where release = $value | sort timestamp asc", map[string]lqlclient.QueryValue{
+		"value": {Type: "string", Value: release},
+	}, limit, offset)
 }
 
 func (c *Client) FindByDurationRange(ctx context.Context, minMs, maxMs float64, limit int) ([]*models.Event, error) {
-	limit = clampQueryLimit(limit, 1000)
-	table, rawCol, tsCol, err := c.sqlParts()
+	return c.FindByDurationRangePage(ctx, minMs, maxMs, limit, 0)
+}
+
+func (c *Client) FindByDurationRangePage(ctx context.Context, minMs, maxMs float64, limit, offset int) ([]*models.Event, error) {
+	return c.queryEventsPage(ctx, "from events | where duration_ms between $min and $max | sort timestamp asc", map[string]lqlclient.QueryValue{
+		"min": {Type: "float", Value: minMs},
+		"max": {Type: "float", Value: maxMs},
+	}, limit, offset)
+}
+
+func (c *Client) countByField(ctx context.Context, service, field string, from, to time.Time) (map[string]int64, error) {
+	conditions := []string{"service = $service"}
+	parameters := map[string]lqlclient.QueryValue{
+		"service": {Type: "string", Value: service},
+	}
+	if !from.IsZero() {
+		conditions = append(conditions, "timestamp >= $from")
+		parameters["from"] = lqlclient.QueryValue{Type: "timestamp", Value: from.UTC().Format(time.RFC3339Nano)}
+	}
+	if !to.IsZero() {
+		conditions = append(conditions, "timestamp <= $to")
+		parameters["to"] = lqlclient.QueryValue{Type: "timestamp", Value: to.UTC().Format(time.RFC3339Nano)}
+	}
+	source := "from events | where " + strings.Join(conditions, " and ") +
+		" | summarize count() as count by " + field
+	rows, err := c.queryLQLRows(ctx, source, parameters, 1000)
 	if err != nil {
 		return nil, err
 	}
-	query := fmt.Sprintf(
-		"SELECT %s FROM %s WHERE CAST(json_extract_string(%s, '$.duration_ms') AS DOUBLE) BETWEEN %f AND %f ORDER BY %s ASC LIMIT %d",
-		rawCol, table, rawCol, minMs, maxMs, tsCol, limit,
-	)
-	return c.queryEvents(ctx, query, limit)
+	result := make(map[string]int64, len(rows))
+	for _, row := range rows {
+		name, _ := row[field].(string)
+		switch count := row["count"].(type) {
+		case float64:
+			result[name] = int64(count)
+		case int64:
+			result[name] = count
+		case int:
+			result[name] = int64(count)
+		}
+	}
+	return result, nil
 }
 
 func (c *Client) CountByOutcome(ctx context.Context, service string, from, to time.Time) (map[string]int64, error) {
-	table, rawCol, tsCol, err := c.sqlParts()
-	if err != nil {
-		return nil, err
-	}
-	conds := appendTimeRangeConds(
-		[]string{fmt.Sprintf("json_extract_string(%s, '$.service') = %s", rawCol, quoteSQLString(service))},
-		tsCol, from, to,
-	)
-	query := fmt.Sprintf(
-		"SELECT coalesce(json_extract_string(%s, '$.outcome'), '') AS outcome, COUNT(*) AS cnt FROM %s WHERE %s GROUP BY outcome",
-		rawCol, table, strings.Join(conds, " AND "),
-	)
-	rows, err := c.queryRows(ctx, query, 10000)
-	if err != nil {
-		return nil, err
-	}
-	result := make(map[string]int64, len(rows))
-	for _, row := range rows {
-		outcome, _ := row["outcome"].(string)
-		cnt, _ := row["cnt"].(float64)
-		result[outcome] = int64(cnt)
-	}
-	return result, nil
+	return c.countByField(ctx, service, "outcome", from, to)
 }
 
 func (c *Client) CountByEventName(ctx context.Context, service string, from, to time.Time) (map[string]int64, error) {
-	table, rawCol, tsCol, err := c.sqlParts()
-	if err != nil {
-		return nil, err
+	return c.countByField(ctx, service, "event", from, to)
+}
+
+func (c *Client) durationConditions(eventName string, from, to time.Time) ([]string, map[string]lqlclient.QueryValue) {
+	conditions := []string{"event = $event"}
+	parameters := map[string]lqlclient.QueryValue{
+		"event": {Type: "string", Value: eventName},
 	}
-	conds := appendTimeRangeConds(
-		[]string{fmt.Sprintf("json_extract_string(%s, '$.service') = %s", rawCol, quoteSQLString(service))},
-		tsCol, from, to,
-	)
-	query := fmt.Sprintf(
-		"SELECT json_extract_string(%s, '$.event') AS evname, COUNT(*) AS cnt FROM %s WHERE %s GROUP BY evname",
-		rawCol, table, strings.Join(conds, " AND "),
-	)
-	rows, err := c.queryRows(ctx, query, 10000)
-	if err != nil {
-		return nil, err
+	if !from.IsZero() {
+		conditions = append(conditions, "timestamp >= $from")
+		parameters["from"] = lqlclient.QueryValue{Type: "timestamp", Value: from.UTC().Format(time.RFC3339Nano)}
 	}
-	result := make(map[string]int64, len(rows))
-	for _, row := range rows {
-		name, _ := row["evname"].(string)
-		cnt, _ := row["cnt"].(float64)
-		result[name] = int64(cnt)
+	if !to.IsZero() {
+		conditions = append(conditions, "timestamp <= $to")
+		parameters["to"] = lqlclient.QueryValue{Type: "timestamp", Value: to.UTC().Format(time.RFC3339Nano)}
 	}
-	return result, nil
+	return conditions, parameters
+}
+
+func numericValue(row map[string]any, field string) float64 {
+	switch value := row[field].(type) {
+	case float64:
+		return value
+	case float32:
+		return float64(value)
+	case int:
+		return float64(value)
+	case int64:
+		return float64(value)
+	case json.Number:
+		n, _ := value.Float64()
+		return n
+	default:
+		return 0
+	}
 }
 
 func (c *Client) AverageDuration(ctx context.Context, eventName string, from, to time.Time) (float64, error) {
-	table, rawCol, tsCol, err := c.sqlParts()
-	if err != nil {
-		return 0, err
-	}
-	conds := appendTimeRangeConds(
-		[]string{fmt.Sprintf("json_extract_string(%s, '$.event') = %s", rawCol, quoteSQLString(eventName))},
-		tsCol, from, to,
-	)
-	query := fmt.Sprintf(
-		"SELECT AVG(CAST(json_extract_string(%s, '$.duration_ms') AS DOUBLE)) AS avg_dur FROM %s WHERE %s",
-		rawCol, table, strings.Join(conds, " AND "),
-	)
-	rows, err := c.queryRows(ctx, query, 1)
+	conditions, parameters := c.durationConditions(eventName, from, to)
+	source := "from events | where " + strings.Join(conditions, " and ") +
+		" | summarize avg(duration_ms) as avg_dur"
+	rows, err := c.queryLQLRows(ctx, source, parameters, 1)
 	if err != nil {
 		return 0, err
 	}
 	if len(rows) == 0 {
 		return 0, nil
 	}
-	avg, _ := rows[0]["avg_dur"].(float64)
-	return avg, nil
+	return numericValue(rows[0], "avg_dur"), nil
 }
 
 func (c *Client) PercentileDuration(ctx context.Context, eventName string, percentile float64, from, to time.Time) (float64, error) {
-	table, rawCol, tsCol, err := c.sqlParts()
-	if err != nil {
-		return 0, err
-	}
-	conds := appendTimeRangeConds(
-		[]string{fmt.Sprintf("json_extract_string(%s, '$.event') = %s", rawCol, quoteSQLString(eventName))},
-		tsCol, from, to,
+	conditions, parameters := c.durationConditions(eventName, from, to)
+	source := fmt.Sprintf(
+		"from events | where %s | summarize percentile(duration_ms, %g) as p_dur",
+		strings.Join(conditions, " and "),
+		percentile,
 	)
-	query := fmt.Sprintf(
-		"SELECT quantile(CAST(json_extract_string(%s, '$.duration_ms') AS DOUBLE), %f) AS p_dur FROM %s WHERE %s",
-		rawCol, percentile/100.0, table, strings.Join(conds, " AND "),
-	)
-	rows, err := c.queryRows(ctx, query, 1)
+	rows, err := c.queryLQLRows(ctx, source, parameters, 1)
 	if err != nil {
 		return 0, err
 	}
 	if len(rows) == 0 {
 		return 0, nil
 	}
-	p, _ := rows[0]["p_dur"].(float64)
-	return p, nil
+	return numericValue(rows[0], "p_dur"), nil
 }
 
 func (c *Client) DistinctEventNames(ctx context.Context) ([]string, error) {
-	table, rawCol, _, err := c.sqlParts()
-	if err != nil {
-		return nil, err
-	}
-	query := fmt.Sprintf("SELECT DISTINCT json_extract_string(%s, '$.event') AS evname FROM %s ORDER BY evname", rawCol, table)
-	rows, err := c.queryRows(ctx, query, 10000)
+	rows, err := c.queryLQLRows(ctx, "from events | distinct event | sort event asc", nil, 1000)
 	if err != nil {
 		return nil, err
 	}
 	names := make([]string, 0, len(rows))
 	for _, row := range rows {
-		if name, ok := row["evname"].(string); ok && strings.TrimSpace(name) != "" {
+		if name, ok := row["event"].(string); ok && strings.TrimSpace(name) != "" {
 			names = append(names, name)
 		}
 	}
@@ -614,46 +639,47 @@ func (c *Client) DistinctEventNames(ctx context.Context) ([]string, error) {
 }
 
 func (c *Client) ListLifecycleSummaries(ctx context.Context, filter map[string]any, limit, offset int) ([]map[string]any, int, error) {
-	table, rawCol, tsCol, err := c.sqlParts()
-	if err != nil {
-		return nil, 0, err
+	conditions := make([]string, 0, 3)
+	parameters := make(map[string]lqlclient.QueryValue, 3)
+	if service, ok := filter["service"].(string); ok && strings.TrimSpace(service) != "" {
+		conditions = append(conditions, "service = $service")
+		parameters["service"] = lqlclient.QueryValue{Type: "string", Value: service}
 	}
-	conds := []string{"1=1"}
-	if svc, ok := filter["service"].(string); ok && strings.TrimSpace(svc) != "" {
-		conds = append(conds, fmt.Sprintf("json_extract_string(%s, '$.service') = %s", rawCol, quoteSQLString(svc)))
-	}
-	if evName, ok := filter["event_name"].(string); ok && strings.TrimSpace(evName) != "" {
-		conds = append(conds, fmt.Sprintf("json_extract_string(%s, '$.event') = %s", rawCol, quoteSQLString(evName)))
+	if eventName, ok := filter["event_name"].(string); ok && strings.TrimSpace(eventName) != "" {
+		conditions = append(conditions, "event = $event")
+		parameters["event"] = lqlclient.QueryValue{Type: "string", Value: eventName}
 	}
 	if outcome, ok := filter["outcome"].(string); ok && strings.TrimSpace(outcome) != "" {
-		conds = append(conds, fmt.Sprintf("json_extract_string(%s, '$.outcome') = %s", rawCol, quoteSQLString(outcome)))
+		conditions = append(conditions, "outcome = $outcome")
+		parameters["outcome"] = lqlclient.QueryValue{Type: "string", Value: outcome}
 	}
-
-	countQuery := fmt.Sprintf("SELECT COUNT(*) AS total FROM %s WHERE %s", table, strings.Join(conds, " AND "))
-	countRows, err := c.queryRows(ctx, countQuery, 1)
+	source := "from events"
+	if len(conditions) > 0 {
+		source += " | where " + strings.Join(conditions, " and ")
+	}
+	countRows, err := c.queryLQLRows(ctx, source+" | summarize count() as total", parameters, 1)
 	if err != nil {
 		return nil, 0, err
 	}
 	total := 0
 	if len(countRows) > 0 {
-		total = int(countRows[0]["total"].(float64))
+		total = int(numericValue(countRows[0], "total"))
 	}
 
 	limit = clampQueryLimit(limit, 100)
 	if offset < 0 {
 		offset = 0
 	}
-	dataQuery := fmt.Sprintf(
-		"SELECT %s FROM %s WHERE %s ORDER BY %s DESC LIMIT %d OFFSET %d",
-		rawCol, table, strings.Join(conds, " AND "), tsCol, limit, offset,
-	)
-	dataRows, err := c.queryRows(ctx, dataQuery, limit)
+	dataSource := source + " | sort timestamp desc | project event_id, event, service, outcome, duration_ms"
+	if offset > 0 {
+		dataSource += " | offset " + strconv.Itoa(offset)
+	}
+	dataRows, err := c.queryLQLRows(ctx, dataSource, parameters, limit)
 	if err != nil {
 		return nil, 0, err
 	}
 	return dataRows, total, nil
 }
-
 func (c *Client) tailURL(path string, websocketScheme bool) string {
 	base := strings.TrimRight(c.cfg.URL, "/")
 	if websocketScheme {
@@ -668,9 +694,9 @@ func (c *Client) tailURL(path string, websocketScheme bool) string {
 	cursor, err := c.LoadCursor()
 	if err == nil && !cursor.Timestamp.IsZero() {
 		q.Set("since", cursor.Timestamp.UTC().Format(time.RFC3339Nano))
-		if strings.TrimSpace(cursor.EventID) != "" {
-			q.Set("after_event_id", cursor.EventID)
-		}
+	}
+	if strings.TrimSpace(cursor.EventID) != "" {
+		q.Set("after_event_id", cursor.EventID)
 	}
 	u.RawQuery = q.Encode()
 	return u.String()

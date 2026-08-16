@@ -123,10 +123,23 @@ jobs:
           context: ${{ steps.manifest.outputs.context }}
           file: ${{ steps.manifest.outputs.dockerfile }}
           push: ${{ inputs.dry_run != true }}
+          load: true
           tags: ${{ steps.manifest.outputs.tags }}
           provenance: true
           sbom: true
 
+      - name: Smoke test bundled LQL handshake
+        if: inputs.component == 'collector'
+        shell: bash
+        env:
+          IMAGE: ${{ steps.manifest.outputs.primary_tag }}
+        run: |
+          set -euo pipefail
+          response="$(
+            printf '%s\n' '{"id":1,"method":"handshake","protocol_version":1,"language_version":"0.1","params":{}}' |
+              docker run --rm -i --entrypoint /usr/local/bin/lql "$IMAGE" serve --stdio
+          )"
+          LQL_HANDSHAKE="$response" python -c 'import json, os; result=json.loads(os.environ["LQL_HANDSHAKE"]); assert result["result"]["compiler_version"] == "0.4.0", result'
       - name: Scan image for vulnerabilities
         if: inputs.dry_run != true
         uses: aquasecurity/trivy-action@0.33.1

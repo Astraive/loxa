@@ -35,7 +35,7 @@ func (s *collectorBackedEventStore) Get(ctx context.Context, id string) (*models
 }
 
 func (s *collectorBackedEventStore) List(ctx context.Context, limit, offset int) ([]*models.Event, error) {
-	return s.client.ListRecent(ctx, limit)
+	return s.client.ListRecentPage(ctx, limit, offset)
 }
 
 func (s *collectorBackedEventStore) FindByTraceID(ctx context.Context, traceID string) ([]*models.Event, error) {
@@ -51,27 +51,27 @@ func (s *collectorBackedEventStore) FindByService(ctx context.Context, service s
 }
 
 func (s *collectorBackedEventStore) FindByEventName(ctx context.Context, eventName string, limit, offset int) ([]*models.Event, error) {
-	return s.client.FindByEventName(ctx, eventName, limit)
+	return s.client.FindByEventNamePage(ctx, eventName, limit, offset)
 }
 
 func (s *collectorBackedEventStore) FindByOutcome(ctx context.Context, outcome string, limit, offset int) ([]*models.Event, error) {
-	return s.client.FindByOutcome(ctx, outcome, limit)
+	return s.client.FindByOutcomePage(ctx, outcome, limit, offset)
 }
 
 func (s *collectorBackedEventStore) FindByLevel(ctx context.Context, level string, limit, offset int) ([]*models.Event, error) {
-	return s.client.FindByLevel(ctx, level, limit)
+	return s.client.FindByLevelPage(ctx, level, limit, offset)
 }
 
 func (s *collectorBackedEventStore) FindByDurationRange(ctx context.Context, minMs, maxMs float64, limit, offset int) ([]*models.Event, error) {
-	return s.client.FindByDurationRange(ctx, minMs, maxMs, limit)
+	return s.client.FindByDurationRangePage(ctx, minMs, maxMs, limit, offset)
 }
 
 func (s *collectorBackedEventStore) FindByEnvironment(ctx context.Context, env string, limit, offset int) ([]*models.Event, error) {
-	return s.client.FindByEnvironment(ctx, env, limit)
+	return s.client.FindByEnvironmentPage(ctx, env, limit, offset)
 }
 
 func (s *collectorBackedEventStore) FindByRelease(ctx context.Context, release string, limit, offset int) ([]*models.Event, error) {
-	return s.client.FindByRelease(ctx, release, limit)
+	return s.client.FindByReleasePage(ctx, release, limit, offset)
 }
 
 func (s *collectorBackedEventStore) CountByOutcome(ctx context.Context, service string, from, to time.Time) (map[string]int64, error) {
@@ -119,7 +119,9 @@ func (s *collectorBackedEventStore) ListLifecycleSummaries(ctx context.Context, 
 	summaries := make([]*models.LifecycleSummary, 0, len(rows))
 	for _, row := range rows {
 		summary := &models.LifecycleSummary{}
-		if id, ok := row["id"].(string); ok {
+		if id, ok := row["event_id"].(string); ok {
+			summary.EventID = id
+		} else if id, ok := row["id"].(string); ok {
 			summary.EventID = id
 		}
 		if ev, ok := row["event"].(string); ok {

@@ -102,6 +102,12 @@ SDK_GROUPS: dict[str, list[Check]] = {
         Check("rust", "cortex_emitted_shape", ("cargo", "test", "-q", "--test", "collector_cortex_conformance", "--test", "emitted_shape_fixture"), WORKSPACE_ROOT / "sdks" / "rs", "Cortex-consumable emitted event shape"),
         Check("rust", "parity", ("cargo", "test", "-q", "--test", "parity"), WORKSPACE_ROOT / "sdks" / "rs", "stable-v1 API parity vs superset manifest"),
     ],
+    "lql": [
+        Check("lql", "lql", ("cargo", "test", "-q"), WORKSPACE_ROOT.parent / "lql" / "clients" / "rust", "standalone Rust LQL client"),
+        Check("lql", "lql", ("go", "test", "./..."), WORKSPACE_ROOT / "clients" / "go", "standalone Go LQL client"),
+        Check("lql", "lql", (sys.executable, "-m", "pytest", "-q"), WORKSPACE_ROOT / "clients" / "python", "standalone Python LQL client"),
+        Check("lql", "lql", ("bun", "test", "tests"), WORKSPACE_ROOT / "clients" / "javascript", "standalone JavaScript LQL client"),
+    ],
 }
 
 
@@ -205,12 +211,12 @@ def _selected_checks(sdk: str, group: str) -> list[Check]:
 
 def _print_matrix() -> None:
     groups = _all_groups()
-    header = "group".ljust(24) + "".join(sdk.rjust(12) for sdk in ("go", "python", "rust", "javascript"))
+    header = "group".ljust(24) + "".join(sdk.rjust(12) for sdk in ("go", "python", "rust", "javascript", "lql"))
     print(header)
     print("-" * len(header))
     for group in groups:
         row = group.ljust(24)
-        for sdk in ("go", "python", "rust", "javascript"):
+        for sdk in ("go", "python", "rust", "javascript", "lql"):
             present = any(check.group == group for check in SDK_GROUPS[sdk])
             row += ("yes" if present else "-").rjust(10)
         print(row)
@@ -244,7 +250,7 @@ def _print_json(results: list[CheckResult]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run grouped LOZA SDK conformance checks.")
-    parser.add_argument("--sdk", choices=("all", "go", "python", "rust", "javascript"), default="all")
+    parser.add_argument("--sdk", choices=("all", "go", "python", "rust", "javascript", "lql"), default="all")
     parser.add_argument("--group", choices=("all", *_all_groups()), default="all")
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--matrix", action="store_true", help="Print grouped conformance matrix and exit.")

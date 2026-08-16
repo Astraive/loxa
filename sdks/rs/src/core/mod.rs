@@ -10,7 +10,7 @@ pub mod version;
 pub use crate::config::{Config, RedactorConfig, SamplerConfig, SchemaConfig, SinkConfig};
 pub use client::{
     extract_http_headers, inject_http_headers, CollectorHttpClient, CollectorResponse, HTTPClient,
-    HTTPRequest, HTTPResponse,
+    HTTPRequest, HTTPResponse, QueryColumn, QueryLqlError, QueryResult, QueryValue,
 };
 pub use error::{ErrorInfo, LozaError, ValidationError};
 pub use event::{

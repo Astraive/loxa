@@ -1,4 +1,5 @@
 use base64::Engine as _;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use std::collections::BTreeMap;
@@ -157,6 +158,8 @@ impl HTTPClient {
 #[derive(Clone)]
 pub struct CollectorHttpClient {
     pub endpoint: String,
+    pub collector_name: Option<String>,
+    pub environment: Option<String>,
     pub api_key: Option<String>,
     pub basic_username: Option<String>,
     pub basic_password: Option<String>,
@@ -167,7 +170,6 @@ pub struct CollectorHttpClient {
     pub sdk_version: String,
     pub service: Option<String>,
 }
-
 impl std::fmt::Debug for CollectorHttpClient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CollectorHttpClient")
@@ -192,6 +194,8 @@ impl CollectorHttpClient {
         let endpoint = normalize_collector_endpoint(endpoint.into());
         Self {
             endpoint,
+            collector_name: None,
+            environment: None,
             api_key: None,
             basic_username: None,
             basic_password: None,
@@ -206,6 +210,16 @@ impl CollectorHttpClient {
 
     pub fn with_api_key(mut self, api_key: impl Into<String>) -> Self {
         self.api_key = Some(api_key.into());
+        self
+    }
+
+    pub fn with_collector(mut self, collector: impl Into<String>) -> Self {
+        self.collector_name = Some(collector.into());
+        self
+    }
+
+    pub fn with_environment(mut self, environment: impl Into<String>) -> Self {
+        self.environment = Some(environment.into());
         self
     }
 
@@ -303,6 +317,12 @@ impl CollectorHttpClient {
                 format!("{}/{}", self.sdk_name, self.sdk_version),
             )
             .with_header("Content-Type", "application/json");
+        if let Some(environment) = &self.environment {
+            request = request.with_header("X-Loza-Env", environment);
+        }
+        if let Some(service) = &self.service {
+            request = request.with_header("X-Loza-Service", service);
+        }
 
         if let Some(body) = body {
             let bytes = serde_json::to_vec(&body).map_err(|e| e.to_string())?;
@@ -429,7 +449,160 @@ impl CollectorHttpClient {
     pub fn health(&self) -> Result<CollectorResponse, String> {
         self.request("GET", "/health", None)
     }
+    pub fn query_lql(
+        &self,
+        source: &str,
+        parameters: std::collections::HashMap<String, QueryValue>,
+        limit: usize,
+    ) -> Result<QueryResult, QueryLqlError> {
+        if source.trim().is_empty() {
+            return Err(QueryLqlError::new(
+                "invalid_configuration",
+                "LQL query source is required",
+                None,
+            ));
+        }
+        let route = self
+            .collector_name
+            .as_ref()
+            .map(|collector| format!("/collectors/{collector}/lql/query"))
+            .unwrap_or_else(|| "/lql/query".to_string());
+        let response = self
+            .request(
+                "POST",
+                &route,
+                Some(serde_json::json!({
+                    "query": source,
+                    "parameters": parameters,
+                    "limit": limit.clamp(1, 1000)
+                })),
+            )
+            .map_err(|error| {
+                QueryLqlError::new("transport", "LQL query transport failed", Some(error))
+            })?;
+        if response.status_code >= 300 {
+            let category = match response.status_code {
+                400 => "diagnostics",
+                401 => "authentication",
+                403 => "scope",
+                503 => "compiler_unavailable",
+                _ => "execution",
+            };
+            return Err(QueryLqlError::new(
+                category,
+                "LQL query failed",
+                Some(response.status_code.to_string()),
+            ));
+        }
+        let columns = response
+            .body
+            .get("columns")
+            .and_then(Value::as_array)
+            .ok_or_else(|| {
+                QueryLqlError::new(
+                    "malformed_response",
+                    "LQL response has invalid columns",
+                    None,
+                )
+            })?
+            .iter()
+            .map(|column| {
+                if let Some(name) = column.as_str() {
+                    Ok(QueryColumn {
+                        name: name.into(),
+                        value_type: String::new(),
+                    })
+                } else {
+                    serde_json::from_value(column.clone()).map_err(|_| {
+                        QueryLqlError::new(
+                            "malformed_response",
+                            "LQL response has invalid columns",
+                            None,
+                        )
+                    })
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let rows =
+            serde_json::from_value(response.body.get("rows").cloned().unwrap_or(Value::Null))
+                .map_err(|_| {
+                    QueryLqlError::new("malformed_response", "LQL response has invalid rows", None)
+                })?;
+        let row_count = response
+            .body
+            .get("row_count")
+            .and_then(Value::as_u64)
+            .unwrap_or(0) as usize;
+        let duration_ms = response
+            .body
+            .get("duration_ms")
+            .and_then(Value::as_i64)
+            .unwrap_or(0);
+        Ok(QueryResult {
+            columns,
+            rows,
+            duration_ms,
+            row_count,
+        })
+    }
 }
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct QueryValue {
+    #[serde(rename = "type")]
+    pub value_type: String,
+    pub value: Value,
+}
+
+impl QueryValue {
+    pub fn new(value_type: impl Into<String>, value: impl Serialize) -> Self {
+        Self {
+            value_type: value_type.into(),
+            value: serde_json::to_value(value).unwrap_or(Value::Null),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct QueryColumn {
+    pub name: String,
+    #[serde(default, rename = "type")]
+    pub value_type: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct QueryResult {
+    pub columns: Vec<QueryColumn>,
+    pub rows: Vec<std::collections::HashMap<String, Value>>,
+    #[serde(default)]
+    pub duration_ms: i64,
+    #[serde(default)]
+    pub row_count: usize,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct QueryLqlError {
+    pub category: String,
+    pub message: String,
+    pub status: Option<String>,
+}
+
+impl QueryLqlError {
+    fn new(category: &str, message: &str, status: Option<String>) -> Self {
+        Self {
+            category: category.into(),
+            message: message.into(),
+            status,
+        }
+    }
+}
+
+impl std::fmt::Display for QueryLqlError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+impl std::error::Error for QueryLqlError {}
 
 /// Collector response wrapper.
 #[derive(Clone, Debug)]

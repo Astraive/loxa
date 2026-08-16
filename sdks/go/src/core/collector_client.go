@@ -17,6 +17,8 @@ const maxCollectorClientResponseBytes = 10 << 20
 type CollectorClient struct {
 	endpoint      string
 	collectorName string
+	environment   string
+	service       string
 	apiKey        string
 	basicUsername string
 	basicPassword string
@@ -28,6 +30,8 @@ type CollectorClient struct {
 type CollectorClientConfig struct {
 	Endpoint      string
 	CollectorName string
+	Environment   string
+	Service       string
 	APIKey        string
 	BasicUsername string
 	BasicPassword string
@@ -50,6 +54,8 @@ func NewCollectorClient(cfg CollectorClientConfig) *CollectorClient {
 	return &CollectorClient{
 		endpoint:      strings.TrimRight(endpoint, "/"),
 		collectorName: cfg.CollectorName,
+		environment:   cfg.Environment,
+		service:       cfg.Service,
 		apiKey:        cfg.APIKey,
 		basicUsername: cfg.BasicUsername,
 		basicPassword: cfg.BasicPassword,
@@ -85,6 +91,12 @@ func (c *CollectorClient) do(ctx context.Context, method, path string, body []by
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	} else if c.basicUsername != "" {
 		req.Header.Set("Authorization", basicAuthorization(c.basicUsername, c.basicPassword))
+	}
+	if c.environment != "" {
+		req.Header.Set("X-Loza-Env", c.environment)
+	}
+	if c.service != "" {
+		req.Header.Set("X-Loza-Service", c.service)
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {

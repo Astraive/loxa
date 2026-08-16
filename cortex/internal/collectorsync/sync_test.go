@@ -55,33 +55,44 @@ func (f *fakeBatchProcessor) FlattenedIDs() []string {
 func TestRunSourceOfTruthSyncProcessesPollThenTail(t *testing.T) {
 	t.Helper()
 	pollEvent := map[string]any{
-		"id":         "evt-1",
-		"timestamp":  "2026-01-01T00:00:00Z",
-		"kind":       "log",
-		"service":    "checkout",
-		"provenance": "collector",
+		"id":             "evt-1",
+		"event_id":       "evt-1",
+		"timestamp":      "2026-01-01T00:00:00Z",
+		"kind":           "log",
+		"event":          "log",
+		"schema_version": "v1",
+		"event_version":  "v1",
+		"version":        "1",
+		"service":        "checkout",
+		"provenance":     "collector",
 	}
 	tailEvent := map[string]any{
-		"id":         "evt-2",
-		"timestamp":  "2026-01-01T00:00:01Z",
-		"kind":       "log",
-		"service":    "checkout",
-		"provenance": "collector",
+		"id":             "evt-2",
+		"event_id":       "evt-2",
+		"event":          "log",
+		"schema_version": "v1",
+		"event_version":  "v1",
+		"version":        "1",
+		"timestamp":      "2026-01-01T00:00:01Z",
+		"kind":           "log",
+		"service":        "checkout",
+		"provenance":     "collector",
 	}
 
 	var queryCalls atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/query":
+		case "/collectors/test/lql/query":
 			call := queryCalls.Add(1)
 			w.Header().Set("Content-Type", "application/json")
 			if call == 1 {
 				_ = json.NewEncoder(w).Encode(map[string]any{
-					"rows": []map[string]any{{"raw": pollEvent}},
+					"columns": []string{"raw"},
+					"rows":    []map[string]any{{"raw": pollEvent}},
 				})
 				return
 			}
-			_ = json.NewEncoder(w).Encode(map[string]any{"rows": []map[string]any{}})
+			_ = json.NewEncoder(w).Encode(map[string]any{"columns": []string{"raw"}, "rows": []map[string]any{}})
 		case "/tail":
 			w.Header().Set("Content-Type", "application/x-ndjson")
 			flusher, _ := w.(http.Flusher)
@@ -99,6 +110,7 @@ func TestRunSourceOfTruthSyncProcessesPollThenTail(t *testing.T) {
 	dir := t.TempDir()
 	cursorPath := filepath.Join(dir, "collector.cursor")
 	cfg := config.CollectorConfig{
+		Collector:            "test",
 		URL:                  server.URL,
 		SourceOfTruth:        true,
 		BatchSize:            10,
@@ -153,21 +165,26 @@ func TestRunSourceOfTruthSyncProcessesPollThenTail(t *testing.T) {
 func TestRunPollCatchupDoesNotAdvanceCursorOnFailure(t *testing.T) {
 	t.Helper()
 	event := map[string]any{
-		"id":         "evt-1",
-		"timestamp":  "2026-01-01T00:00:00Z",
-		"kind":       "log",
-		"service":    "checkout",
-		"provenance": "collector",
+		"schema_version": "v1",
+		"event_version":  "v1",
+		"version":        "1",
+		"event":          "log",
+		"id":             "evt-1",
+		"event_id":       "evt-1",
+		"timestamp":      "2026-01-01T00:00:00Z",
+		"kind":           "log",
+		"service":        "checkout",
+		"provenance":     "collector",
 	}
-
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/query" {
+		if r.URL.Path != "/collectors/test/lql/query" {
 			http.NotFound(w, r)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"rows": []map[string]any{{"raw": event}},
+			"columns": []string{"raw"},
+			"rows":    []map[string]any{{"raw": event}},
 		})
 	}))
 	defer server.Close()
@@ -176,6 +193,7 @@ func TestRunPollCatchupDoesNotAdvanceCursorOnFailure(t *testing.T) {
 	cursorPath := filepath.Join(dir, "collector.cursor")
 	cfg := config.CollectorConfig{
 		URL:             server.URL,
+		Collector:       "test",
 		SourceOfTruth:   true,
 		BatchSize:       10,
 		QueryTable:      "events",

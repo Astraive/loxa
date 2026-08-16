@@ -13,8 +13,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/astraive/loza/spec/dsn"
 )
 
 const (
@@ -62,6 +60,32 @@ type QueryError struct {
 	Cause       error            `json:"-"`
 }
 
+func (r *QueryResult) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Columns    []json.RawMessage `json:"columns"`
+		Rows       []map[string]any  `json:"rows"`
+		DurationMS int64             `json:"duration_ms"`
+		RowCount   int               `json:"row_count"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	r.Columns = make([]QueryColumn, 0, len(raw.Columns))
+	for _, column := range raw.Columns {
+		var name string
+		if err := json.Unmarshal(column, &name); err == nil {
+			r.Columns = append(r.Columns, QueryColumn{Name: name})
+			continue
+		}
+		var typed QueryColumn
+		if err := json.Unmarshal(column, &typed); err != nil {
+			return err
+		}
+		r.Columns = append(r.Columns, typed)
+	}
+	r.Rows, r.DurationMS, r.RowCount = raw.Rows, raw.DurationMS, raw.RowCount
+	return nil
+}
 func (e *QueryError) Error() string {
 	if e == nil {
 		return ""
@@ -114,10 +138,10 @@ func New(config ConnectionConfig) (*Client, error) {
 	if config.DSN == "" {
 		config.DSN = os.Getenv("LOZA_DSN")
 	}
-	var parsed *dsn.LozaDSN
+	var parsed *lozaDSN
 	if config.DSN != "" {
 		var err error
-		parsed, err = dsn.Parse(config.DSN)
+		parsed, err = parseLozaDSN(config.DSN)
 		if err != nil {
 			return nil, newConfigError("invalid DSN")
 		}
