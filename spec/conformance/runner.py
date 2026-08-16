@@ -269,7 +269,7 @@ def main() -> int:
     python_sdk_ok: bool | None = None
 
     for check in checks:
-        if check.sdk == "lql" and not check.cwd.is_dir():
+        if check.sdk == "lql" and not (WORKSPACE_ROOT.parent / "lql").is_dir():
             results.append(_skip_result(check, "standalone LQL repository unavailable"))
             continue
         if check.group == "collector_integration":
