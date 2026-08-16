@@ -42,7 +42,7 @@ FILES=(
 
   # JS SDK — package.json "version": "X.Y.Z"
   "sdks/js/package.json"
-  "sdks/js/package-lock.json"
+  "sdks/js/bun.lock"
 
 
   # Cortex match — Cargo.toml version = "X.Y.Z"

@@ -8,23 +8,23 @@ How to run and interpret benchmarks for the LOZA JS SDK (`loza`).
 
 ```bash
 cd sdks/js
-npx vitest bench
+bunx vitest bench
 ```
 
 Run a specific benchmark file:
 
 ```bash
-npx vitest bench bench/emit.bench.ts
+bunx vitest bench bench/emit.bench.ts
 ```
 
-### Using the bench files directly
+### Running individual benchmark files
 
 ```bash
 cd sdks/js
-npx tsx bench/emit.bench.ts
-npx tsx bench/encoder.bench.ts
-npx tsx bench/sampler.bench.ts
-npx tsx bench/middleware.bench.ts
+bunx vitest bench bench/emit.bench.ts
+bunx vitest bench bench/encoder.bench.ts
+bunx vitest bench bench/sampler.bench.ts
+bunx vitest bench bench/middleware.bench.ts
 ```
 
 ## What Is Measured
@@ -38,7 +38,7 @@ npx tsx bench/middleware.bench.ts
 
 ## Expected Results
 
-Typical results on modern hardware (Node.js 22+):
+Typical results on Bun 1.3.14+:
 
 | Benchmark | ops/sec | ns/op | Notes |
 |-----------|---------|-------|-------|
@@ -47,7 +47,7 @@ Typical results on modern hardware (Node.js 22+):
 | Sampler | 60,000-120,000 | 8,000-16,000 | SampleErrors, error event. |
 | Middleware | 10,000-30,000 | 33,000-100,000 | Express middleware overhead. |
 
-Results vary significantly by Node.js version, V8 optimizations, and system load.
+Results vary significantly by Bun version and system load.
 
 ## Benchmark Configuration
 

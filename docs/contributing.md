@@ -49,8 +49,8 @@ cargo test
 
 ```bash
 cd sdks/js
-npm install
-npm test
+bun install
+bun run test
 ```
 
 ### CLI
@@ -86,7 +86,7 @@ Python code uses `ruff` for formatting and linting with `mypy` for type checking
 
 Rust code uses `rustfmt` with the project config and must pass `cargo clippy -- -D warnings`.
 
-JavaScript code uses `prettier` for formatting and `eslint` for linting. Run `npm run lint` and `npm run format` before committing.
+JavaScript code uses `prettier` for formatting and `eslint` for linting. Run `bun run lint` before committing.
 
 ## Documentation Conventions
 
@@ -125,7 +125,7 @@ cd sdks/py && pytest
 cd sdks/rs && cargo test
 
 # JavaScript SDK
-cd sdks/js && npm test
+cd sdks/js && bun run test
 
 # CLI
 cd cli && go test ./...

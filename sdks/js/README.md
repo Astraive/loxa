@@ -496,8 +496,8 @@ const client = wrapHttpClient(originalClient);
 ## Run Tests
 
 ```bash
-npm test
-npm run build
+bun run test
+bun run build
 python ../../spec/conformance/runner.py --sdk javascript --group all
 ```
 

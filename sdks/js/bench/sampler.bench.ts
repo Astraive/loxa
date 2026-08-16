@@ -1,17 +1,17 @@
 import { bench, describe } from 'vitest';
 import {
-  Logger, production, memorySink,
+  createLoza, production, memorySink,
   sampleErrors, sampleRandom, sampleAll,
 } from '../src';
 
 describe('sampler', () => {
-  const errorsLogger = new Logger(
+  const errorsLogger = createLoza(
     production('bench').withSink(memorySink()).withSampler(sampleErrors())
   );
-  const randomLogger = new Logger(
+  const randomLogger = createLoza(
     production('bench').withSink(memorySink()).withSampler(sampleRandom(0.5))
   );
-  const allLogger = new Logger(
+  const allLogger = createLoza(
     production('bench').withSink(memorySink()).withSampler(sampleAll())
   );
 

@@ -1,8 +1,8 @@
 import { bench, describe } from 'vitest';
-import { Logger, production, memorySink, string, int, float64, bool } from '../src';
+import { createLoza, production, memorySink, string, int, float64, bool } from '../src';
 
 describe('encoder', () => {
-  const logger = new Logger(production('bench').withSink(memorySink()));
+  const logger = createLoza(production('bench').withSink(memorySink()));
 
   bench('emit with 4 enriched attrs', () => {
     const ctx = logger.startEvent({ event: 'bench.encode', kind: 'http' });

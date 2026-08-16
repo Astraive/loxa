@@ -489,7 +489,7 @@ Current verification baseline after this closure pass:
 cd sdks/go && go test ./...
 cd sdks/py && python -m pytest -q
 cd sdks/rs && cargo test -q
-cd sdks/js && npm test && npm run build
+cd sdks/js && bun run test && bun run build
 cd collector && go test ./...
 ```
 
@@ -547,8 +547,8 @@ cargo test -q
 
 # JavaScript SDK tests
 cd ../js
-npm test
-npm run build
+bun run test
+bun run build
 ```
 
 ## Contributing

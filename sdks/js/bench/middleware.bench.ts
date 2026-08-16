@@ -1,9 +1,9 @@
 import { bench, describe } from 'vitest';
 import http from 'http';
-import { Logger, production, memorySink } from '../src';
+import { createLoza, production, memorySink } from '../src';
 
 describe('middleware', () => {
-  const logger = new Logger(production('bench').withSink(memorySink()));
+  const logger = createLoza(production('bench').withSink(memorySink()));
 
   bench('http request capture simulation', () => {
     // Simulate what middleware does per request

@@ -22,5 +22,5 @@ Then run the example for your SDK:
 cd examples/quickstart/go && go run main.go
 cd examples/quickstart/py && python main.py
 cd examples/quickstart/rs && cargo run
-cd examples/quickstart/js && npx tsx src/main.ts
+cd examples/quickstart/js && bun src/main.ts
 ```

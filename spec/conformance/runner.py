@@ -14,12 +14,6 @@ from pathlib import Path
 LOZA_SPEC_ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE_ROOT = LOZA_SPEC_ROOT.parent
 
-# TS loader import hook — works on Node 18+ (replaces --experimental-strip-types which requires Node 22.6+)
-_TS_IMPORT_FLAG = (
-    'data:text/javascript,import { register } from "node:module";'
-    ' import { pathToFileURL } from "node:url";'
-    ' register("./scripts/ts-loader.mjs", pathToFileURL("./"));'
-)
 
 
 @dataclass(frozen=True)
@@ -47,18 +41,18 @@ class CheckResult:
 
 SDK_GROUPS: dict[str, list[Check]] = {
     "javascript": [
-        Check("javascript", "state_machine", ("node", "--import", _TS_IMPORT_FLAG, "--test", "--test-concurrency=1", "tests/event.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "core lifecycle state machine"),
-        Check("javascript", "canonical_fields", ("node", "--import", _TS_IMPORT_FLAG, "--test", "--test-concurrency=1", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "canonical field ownership"),
-        Check("javascript", "duplicate_policy", ("node", "--import", _TS_IMPORT_FLAG, "--test", "--test-concurrency=1", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "duplicate policy and behavior"),
-        Check("javascript", "sampling", ("node", "--import", _TS_IMPORT_FLAG, "--test", "--test-concurrency=1", "tests/sampler.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "sampling behavior"),
-        Check("javascript", "delivery_semantics", ("node", "--import", _TS_IMPORT_FLAG, "--test", "--test-concurrency=1", "tests/sink.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "delivery and sink semantics"),
-        Check("javascript", "panic_error_safety", ("node", "--import", _TS_IMPORT_FLAG, "--test", "--test-concurrency=1", "tests/event.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "panic-safe error paths"),
-        Check("javascript", "config_precedence", ("node", "--import", _TS_IMPORT_FLAG, "--test", "--test-concurrency=1", "tests/facade.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "config and facade behavior"),
-        Check("javascript", "metrics", ("node", "--import", _TS_IMPORT_FLAG, "--test", "--test-concurrency=1", "tests/sink.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "metrics-adjacent checks"),
-        Check("javascript", "golden_fixtures", ("node", "--import", _TS_IMPORT_FLAG, "--test", "--test-concurrency=1", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "shared fixture conformance"),
-        Check("javascript", "collector_integration", ("node", "--import", _TS_IMPORT_FLAG, "--test", "--test-concurrency=1", "tests/e2e-collector.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "collector integration"),
-        Check("javascript", "cortex_emitted_shape", ("node", "--import", _TS_IMPORT_FLAG, "--test", "--test-concurrency=1", "tests/emitted-shape.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "Cortex-consumable emitted event shape"),
-        Check("javascript", "parity", ("node", "--import", _TS_IMPORT_FLAG, "--test", "--test-concurrency=1", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "API parity"),
+        Check("javascript", "state_machine", ("bun", "test", "tests/event.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "core lifecycle state machine"),
+        Check("javascript", "canonical_fields", ("bun", "test", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "canonical field ownership"),
+        Check("javascript", "duplicate_policy", ("bun", "test", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "duplicate policy and behavior"),
+        Check("javascript", "sampling", ("bun", "test", "tests/sampler.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "sampling behavior"),
+        Check("javascript", "delivery_semantics", ("bun", "test", "tests/sink.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "delivery and sink semantics"),
+        Check("javascript", "panic_error_safety", ("bun", "test", "tests/event.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "panic-safe error paths"),
+        Check("javascript", "config_precedence", ("bun", "test", "tests/facade.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "config and facade behavior"),
+        Check("javascript", "metrics", ("bun", "test", "tests/sink.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "metrics-adjacent checks"),
+        Check("javascript", "golden_fixtures", ("bun", "test", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "shared fixture conformance"),
+        Check("javascript", "collector_integration", ("bun", "test", "tests/e2e-collector.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "collector integration"),
+        Check("javascript", "cortex_emitted_shape", ("bun", "test", "tests/emitted-shape.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "Cortex-consumable emitted event shape"),
+        Check("javascript", "parity", ("bun", "test", "tests/conformance.test.ts"), WORKSPACE_ROOT / "sdks" / "js", "API parity"),
     ],
     "go": [
         Check("go", "state_machine", ("go", "test", "./src/core"), WORKSPACE_ROOT / "sdks" / "go", "core lifecycle and state transitions"),

@@ -21,13 +21,13 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: "22"
+          bun-version: 1.3.14
 
       - name: Install JavaScript SDK dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
         working-directory: sdks/js
 
       - name: Install dependencies

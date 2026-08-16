@@ -20,7 +20,7 @@
 | Go        | 1.22+          | `go version`  |
 | Python    | 3.10+          | `python3 --version` |
 | Rust      | 1.75+          | `rustc --version`   |
-| Node.js   | 20+            | `node --version`    |
+| Bun       | 1.3.14         | `bun --version`    |
 
 ## Happy Path
 

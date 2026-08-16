@@ -84,8 +84,8 @@ json.dump({'suite':'sdk-rs','component':'sdks/rs','timestamp':'$TIMESTAMP','resu
 }
 
 run_js_sdk() {
-    if ! command -v node &>/dev/null; then
-        echo "SKIP: node not found"
+    if ! command -v bun &>/dev/null; then
+        echo "SKIP: bun not found"
         return 0
     fi
     if [ ! -f "$REPO_ROOT/sdks/js/package.json" ]; then
@@ -95,7 +95,9 @@ run_js_sdk() {
     echo "--- JavaScript SDK Benchmarks ---"
     cd "$REPO_ROOT/sdks/js"
     local out="$RESULTS_DIR/sdk-js-${TIMESTAMP}.json"
-    node bench/index.js > "$out" 2>/dev/null && echo "  PASS: sdk-js" || echo "  FAIL: sdk-js"
+    local tmp="/tmp/vitest_bench_${TIMESTAMP}.txt"
+    bun bench/index.js 2>&1 | tee "$tmp" || true
+    python3 "$SCRIPT_DIR/lib/parse-vitest.py" "$tmp" "sdk-js" "$TIMESTAMP" "$out" 2>/dev/null && echo "  PASS: sdk-js" || echo "  FAIL: sdk-js"
     cd "$REPO_ROOT"
 }
 

@@ -4,10 +4,10 @@ This document describes how to publish a new release of the LOZA JS SDK (`loza`)
 
 ## Prerequisites
 
-- npm account with publish access to the `loza` package.
-- Node.js 18+ installed locally.
-- All tests passing: `npm test`.
-- TypeScript compiles clean: `npm run lint`.
+- npm registry account with publish access to the `@astraive/loza` package.
+- Bun 1.3.14 installed locally.
+- All tests passing: `bun run test`.
+- TypeScript compiles clean: `bun run lint`.
 - Changelog updated in `CHANGELOG.md`.
 
 ## Steps
@@ -26,33 +26,27 @@ Edit `package.json` to set the new version:
 }
 ```
 
-Or use npm version:
+Or use Bun to update the version:
 
 ```bash
-npm version patch  # 0.2.0 -> 1.0.1
-npm version minor  # 0.2.0 -> 1.1.0
-npm version major  # 0.2.0 -> 1.1.0
+bun pm version patch  # 0.2.0 -> 1.0.1
+bun pm version minor  # 0.2.0 -> 1.1.0
+bun pm version major  # 0.2.0 -> 1.1.0
 ```
 
 ### 3. Verify the Build
 
 ```bash
-npm run build
-npm test
-npm run lint
+bun run build
+bun run test
+bun run lint
 ```
 
 ### 4. Publish to npm
 
 ```bash
-npm pack --dry-run  # verify packaging
-npm publish           # publish to npm registry
-```
-
-If this is the first publish or a scoped package:
-
-```bash
-npm publish --access public
+bun pm pack --dry-run  # verify packaging
+bun publish --access public
 ```
 
 ### 5. Tag the Release
@@ -86,9 +80,9 @@ The JS SDK follows Semantic Versioning:
 
 ## Checklist
 
-- [ ] All tests pass (`npm test`)
-- [ ] TypeScript compiles (`npm run lint`)
-- [ ] Build succeeds (`npm run build`)
+- [ ] All tests pass (`bun run test`)
+- [ ] TypeScript compiles (`bun run lint`)
+- [ ] Build succeeds (`bun run build`)
 - [ ] Changelog updated
 - [ ] Version bumped in `package.json`
 - [ ] Published to npm

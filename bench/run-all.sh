@@ -142,17 +142,17 @@ fi
 # ============================================================
 # 7. JavaScript SDK Benchmarks (with auth)
 # ============================================================
-if command -v node &>/dev/null && [ -f "$REPO_ROOT/sdks/js/package.json" ]; then
+if command -v bun &>/dev/null && [ -f "$REPO_ROOT/sdks/js/package.json" ]; then
     echo "--- JavaScript SDK Benchmarks ---"
     cd "$REPO_ROOT/sdks/js"
     JS_OUT="$RESULTS_DIR/sdk-js-${TIMESTAMP}.json"
     VITEST_TMP="/tmp/vitest_bench_${TIMESTAMP}.txt"
     rm -rf node_modules/.vitest 2>/dev/null
-    npx vitest bench --run 2>&1 | tee "$VITEST_TMP" || true
+    bunx vitest bench --run 2>&1 | tee "$VITEST_TMP" || true
     python3 "$SCRIPT_DIR/lib/parse-vitest.py" "$VITEST_TMP" "sdk-js" "$TIMESTAMP" "$JS_OUT" 2>/dev/null && echo "  PASS: sdk-js" && PASSED=$((PASSED+1)) || { echo "  FAIL: sdk-js"; FAILED=$((FAILED+1)); }
     cd "$REPO_ROOT"
 else
-    echo "  SKIP: sdk-js (node not found)"
+    echo "  SKIP: sdk-js (bun not found)"
     SKIPPED=$((SKIPPED+1))
 fi
 

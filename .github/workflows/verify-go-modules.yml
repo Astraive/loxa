@@ -29,10 +29,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.25"
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         if: inputs.component == 'spec'
         with:
-          node-version: "22"
+          bun-version: 1.3.14
       - uses: dtolnay/rust-toolchain@stable
         if: inputs.component == 'spec'
       - uses: actions/setup-python@v5
@@ -58,9 +58,9 @@ jobs:
       - name: JS SDK conformance tests
         if: inputs.component == 'spec'
         run: |
-          npm ci
-          npm run build
-          npm test
+          bun install --frozen-lockfile
+          bun run build
+          bun run test
         working-directory: sdks/js
       - name: Python SDK conformance tests
         if: inputs.component == 'spec'

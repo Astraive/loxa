@@ -87,10 +87,10 @@ To release only the collector:
 To release the JS SDK:
 
 1. Change `sdks/js/loza-js.yaml` from `0.2.6` to `0.2.7`.
-2. Ensure `sdks/js/package.json` and `sdks/js/package-lock.json` also use `0.2.7`.
+2. Ensure `sdks/js/package.json` and `sdks/js/bun.lock` also use `0.2.7`.
 3. Push to `main`.
 4. CI runs JS tests and builds the package.
-5. CI publishes npm package `loza`.
+5. CI publishes the npm package `@astraive/loza` via Bun.
 6. CI creates `sdks/js/v0.2.7`.
 
 To create a full repository release:

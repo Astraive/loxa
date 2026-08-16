@@ -20,7 +20,7 @@ cd collector && go test ./...
 cd sdks/go && go test ./...
 cd sdks/py && python -m pytest
 cd sdks/rs && cargo test
-cd sdks/js && npm test
+cd sdks/js && bun run test
 
 # Conformance
 ./conformance/run-all.sh
