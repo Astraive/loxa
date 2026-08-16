@@ -180,12 +180,12 @@ func TestStressLargePayloads(t *testing.T) {
 
 	payloadSizes := []int{1024, 10240, 102400, 512000, 1048576} // 1KB, 10KB, 100KB, 500KB, 1MB
 	type sizeResult struct {
-		size      int
-		status    int
-		accepted  int
-		rejected  int
-		elapsed   time.Duration
-		oomRisk   bool
+		size     int
+		status   int
+		accepted int
+		rejected int
+		elapsed  time.Duration
+		oomRisk  bool
 	}
 
 	var results []sizeResult
@@ -561,9 +561,9 @@ func TestStressQueryPressure(t *testing.T) {
 			for _, q := range queries {
 				body := fmt.Sprintf(`{"query":%q}`, q)
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest(http.MethodPost, "/lql/query", strings.NewReader(body))
+				req := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(body))
 				req.Header.Set("Content-Type", "application/json")
-				state.HandleLQLQuery(rec, req)
+				state.handleQuery(rec, req)
 				queryTotal.Add(1)
 				if rec.Code == http.StatusOK {
 					queryOK.Add(1)
@@ -866,11 +866,11 @@ func TestStressLargeResultSets(t *testing.T) {
 	for _, qt := range queryTests {
 		body := fmt.Sprintf(`{"query":%q,"limit":%d}`, qt.query, qt.limit)
 		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodPost, "/lql/query", strings.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 
 		start := time.Now()
-		state.HandleLQLQuery(rec, req)
+		state.handleQuery(rec, req)
 		elapsed := time.Since(start)
 
 		t.Logf("Large result [%s]: status=%d duration=%v", qt.name, rec.Code, elapsed)
@@ -942,11 +942,11 @@ func TestStressConnectionPoolExhaustion(t *testing.T) {
 	// Hammer with many concurrent writes + reads
 	concurrency := 100
 	var (
-		writeOK   atomic.Int64
-		writeErr  atomic.Int64
-		queryOK   atomic.Int64
-		queryErr  atomic.Int64
-		wg        sync.WaitGroup
+		writeOK  atomic.Int64
+		writeErr atomic.Int64
+		queryOK  atomic.Int64
+		queryErr atomic.Int64
+		wg       sync.WaitGroup
 	)
 
 	for i := 0; i < concurrency; i++ {
@@ -970,9 +970,9 @@ func TestStressConnectionPoolExhaustion(t *testing.T) {
 			// Read
 			qBody := `{"query":"SELECT COUNT(*) FROM events"}`
 			qRec := httptest.NewRecorder()
-			qReq := httptest.NewRequest(http.MethodPost, "/lql/query", strings.NewReader(qBody))
+			qReq := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(qBody))
 			qReq.Header.Set("Content-Type", "application/json")
-			state.HandleLQLQuery(qRec, qReq)
+			state.handleQuery(qRec, qReq)
 			if qRec.Code == http.StatusOK {
 				queryOK.Add(1)
 			} else {
@@ -1057,11 +1057,11 @@ func TestStressMixedWorkload(t *testing.T) {
 	// Mixed workload: 20 writers + 10 readers + 5 tail watchers
 	duration := 5 * time.Second
 	var (
-		writes     atomic.Int64
-		reads      atomic.Int64
-		writeErrs  atomic.Int64
-		readErrs   atomic.Int64
-		wg         sync.WaitGroup
+		writes    atomic.Int64
+		reads     atomic.Int64
+		writeErrs atomic.Int64
+		readErrs  atomic.Int64
+		wg        sync.WaitGroup
 	)
 
 	start := time.Now()
@@ -1098,9 +1098,9 @@ func TestStressMixedWorkload(t *testing.T) {
 			for time.Since(start) < duration {
 				qBody := `{"query":"SELECT COUNT(*) FROM events"}`
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest(http.MethodPost, "/lql/query", strings.NewReader(qBody))
+				req := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(qBody))
 				req.Header.Set("Content-Type", "application/json")
-				state.HandleLQLQuery(rec, req)
+				state.handleQuery(rec, req)
 				if rec.Code == http.StatusOK {
 					reads.Add(1)
 				} else {
