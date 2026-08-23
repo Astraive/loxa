@@ -25,7 +25,6 @@ type Config struct {
 	Authentication AuthenticationConfig `yaml:"authentication"`
 	RateLimit      RateLimitConfig      `yaml:"rate_limit"`
 	Correlation    CorrelationConfig    `yaml:"correlation"`
-	Ingestion      IngestionConfig      `yaml:"ingestion"`
 	Reconstructor  ReconstructorConfig  `yaml:"reconstructor"`
 	Memory         MemoryConfig         `yaml:"memory"`
 	Learner        LearnerConfig        `yaml:"learner"`
@@ -159,14 +158,6 @@ type CorrelationConfig struct {
 	CoOccurrenceWindow        time.Duration `yaml:"co_occurrence_window"`
 	DeploymentAdjacencyWindow time.Duration `yaml:"deployment_adjacency_window"`
 	MinCoOccurrenceCount      int           `yaml:"min_co_occurrence_count"`
-}
-
-// IngestionConfig contains async ingestion pipeline settings
-type IngestionConfig struct {
-	AsyncWorkers   int           `yaml:"async_workers"`
-	ChannelSize    int           `yaml:"channel_size"`
-	MicroBatchSize int           `yaml:"micro_batch_size"`
-	FlushInterval  time.Duration `yaml:"flush_interval"`
 }
 
 // ReconstructorConfig contains reconstruction settings

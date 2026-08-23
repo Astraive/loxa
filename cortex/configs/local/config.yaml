@@ -38,11 +38,6 @@ collector:
   raw_column: "raw"
   timestamp_column: "timestamp"
 
-ingestion:
-  async_workers: 4
-  channel_size: 8192
-  micro_batch_size: 256
-
 correlation:
   enabled: false
 

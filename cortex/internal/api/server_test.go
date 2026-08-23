@@ -4,11 +4,15 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/astraive/loza/cortex/internal/config"
 	"github.com/astraive/loza/cortex/internal/middleware"
+	"github.com/astraive/loza/cortex/internal/storage"
 )
 
 func TestServerHealthAndReadiness(t *testing.T) {
@@ -41,6 +45,25 @@ func TestRouterServesHealthz(t *testing.T) {
 	srv.Router().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected router healthz ok, got %d", rec.Code)
+	}
+}
+
+func TestNewServerDoesNotStartUnownedWorkers(t *testing.T) {
+	cfg := config.Default()
+	cfg.Storage.DuckDB.Path = filepath.Join(t.TempDir(), "cortex.duckdb")
+	stor, err := storage.NewStorage(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stor.Close()
+
+	before := runtime.NumGoroutine()
+	for range 3 {
+		_ = NewServer(cfg, stor)
+	}
+	time.Sleep(20 * time.Millisecond)
+	if delta := runtime.NumGoroutine() - before; delta > 2 {
+		t.Fatalf("server construction leaked %d background workers", delta)
 	}
 }
 

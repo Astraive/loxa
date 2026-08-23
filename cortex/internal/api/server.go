@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"strconv"
@@ -41,7 +40,6 @@ const defaultMaxBodyBytes = 10 * 1024 * 1024 // 10MB
 type Server struct {
 	config      *config.Config
 	processor   *processor.EventProcessor
-	asyncProc   *processor.AsyncProcessor
 	analyzer    *correlation.Analyzer
 	topology    *topology.Resolver
 	graph       *graph.Builder
@@ -96,9 +94,6 @@ func NewServer(cfg *config.Config, stor storage.Storage) *Server {
 	authMiddleware := middleware.NewAuthMiddleware(cfg.Authentication)
 	graphqlServer := NewGraphQLServer(cfg, stor)
 
-	asyncProc := processor.NewAsyncProcessor(eventProc,
-		cfg.Ingestion.AsyncWorkers, cfg.Ingestion.ChannelSize, cfg.Ingestion.MicroBatchSize)
-
 	corrCfg := correlation.FromConfig(
 		cfg.Correlation.Enabled,
 		cfg.Correlation.AnalysisInterval,
@@ -128,7 +123,6 @@ func NewServer(cfg *config.Config, stor storage.Storage) *Server {
 	s := &Server{
 		config:      cfg,
 		processor:   eventProc,
-		asyncProc:   asyncProc,
 		analyzer:    analyzer,
 		topology:    topology,
 		graph:       graphBuilder,
@@ -511,13 +505,4 @@ func bodySizeLimit(maxBytes int64) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-var _ io.Closer = (*Server)(nil)
-
-func (s *Server) Close() error {
-	if s.asyncProc != nil {
-		s.asyncProc.Stop()
-	}
-	return nil
 }
