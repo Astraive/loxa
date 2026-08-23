@@ -48,3 +48,26 @@ func AllSampler(samplers ...core.Sampler) core.Sampler { return core.AllSampler(
 
 // NotSampler inverts the decision of the wrapped sampler.
 func NotSampler(s core.Sampler) core.Sampler { return core.NotSampler(s) }
+// SampleFeatureFlag keeps events where a feature flag matches value.
+func SampleFeatureFlag(name string, value any) core.Sampler {
+	return core.SampleFeatureFlag(name, value)
+}
+
+// SampleByHeader keeps events where a header attr equals value.
+func SampleByHeader(header, value string) core.Sampler {
+	return core.SampleByHeader(header, value)
+}
+
+// SampleByEvent keeps events whose event name matches one of names.
+func SampleByEvent(names ...string) core.Sampler { return core.SampleByEvent(names...) }
+
+// SampleByOutcome keeps events whose outcome matches one of outcomes.
+func SampleByOutcome(outcomes ...string) core.Sampler {
+	return core.SampleByOutcome(outcomes...)
+}
+
+// AllowFields keeps events containing any of the specified attrs.
+func AllowFields(keys ...string) core.Sampler { return core.AllowFields(keys...) }
+
+// BlockFields drops events containing any of the specified attrs.
+func BlockFields(keys ...string) core.Sampler { return core.BlockFields(keys...) }

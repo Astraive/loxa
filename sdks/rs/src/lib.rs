@@ -2793,3 +2793,7 @@ pub fn allow_fields(keys: &[&str]) -> RedactorConfig {
 pub fn block_fields(keys: &[&str]) -> RedactorConfig {
     BlockFields(keys)
 }
+
+#[cfg(test)]
+#[path = "lib_coverage_tests.rs"]
+mod lib_coverage_tests;

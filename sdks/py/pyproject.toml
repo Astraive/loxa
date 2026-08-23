@@ -11,6 +11,22 @@ requires-python = ">=3.10"
 authors = [{name = "Astraive"}]
 dependencies = []
 
+[tool.coverage.run]
+branch = true
+source = ["src/loza"]
+omit = [
+    "*/generated/*",
+    "src/loza/generated/*",
+]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+omit = [
+    "*/generated/*",
+    "src/loza/generated/*",
+]
+
 [tool.setuptools]
 py-modules = ["loza_contract"]
 

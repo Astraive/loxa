@@ -8,5 +8,22 @@ version = "0.4.0"
 description = "Source-forwarding live LQL client for Loza Collector"
 requires-python = ">=3.11"
 
+[project.optional-dependencies]
+test = [
+    "coverage>=7.0",
+    "pytest>=8.0",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["lql_client"]
+omit = [
+    "tests/*",
+]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+
 [tool.setuptools.packages.find]
 where = ["."]

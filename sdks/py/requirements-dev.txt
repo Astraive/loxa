@@ -1,1 +1,2 @@
 pytest
+coverage>=7.6,<8

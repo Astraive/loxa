@@ -120,6 +120,7 @@ func (w *Writer) AppendRaw(rawJSON []byte) {
 
 // AppendString writes a bare JSON-escaped string (with quotes, no key).
 func (w *Writer) AppendString(s string) {
+	w.sep()
 	w.buf = AppendEscapedString(w.buf, s)
 }
 

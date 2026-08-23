@@ -14,7 +14,7 @@ func TestMiddlewareExtractsChiRoutePattern(t *testing.T) {
 	store := configureMemoryStore(t)
 
 	r := chipkg.NewRouter()
-	r.Use(Middleware())
+	r.Use(Middleware(Config{}))
 	r.Get("/users/{id}", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = io.WriteString(w, "ok")
 	})

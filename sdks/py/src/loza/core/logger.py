@@ -193,7 +193,12 @@ class Logger:
         data.update(named)
         ctx.checkpoint(name, **data)
 
-    def set(self, ctx: EventContext, *attrs: Attr, **named: Any) -> None:
+    def set(self, ctx: EventContext, *attrs: Attr | str, **named: Any) -> None:
+        if attrs and all(isinstance(item, str) for item in attrs):
+            if len(attrs) % 2:
+                raise TypeError("set string attributes must be key/value pairs")
+            named = {**dict(zip(attrs[::2], attrs[1::2])), **named}
+            attrs = ()
         self.enrich(ctx, *attrs, **named)
 
     def merge(self, ctx: EventContext, group: str, *attrs: Attr, **named: Any) -> None:
@@ -215,13 +220,30 @@ class Logger:
         for key in keys:
             self._delete_path(ctx.attrs, key)
 
+    def get(self, ctx: EventContext, key: str) -> Any:
+        bucket, local_key = self._resolve_bucket(ctx, key)
+        return self._get_path(bucket, local_key)
+
+    def get_group(self, ctx: EventContext, name: str) -> dict[str, Any] | None:
+        groups = {
+            "user": ctx.user,
+            "tenant": ctx.tenant,
+            "resource": ctx.resource,
+            "http": ctx.http,
+            "attrs": ctx.attrs,
+        }
+        value = groups.get(name)
+        if value is not None:
+            return value
+        nested = ctx.attrs.get(name)
+        return nested if isinstance(nested, dict) else None
+
     def finish(self, ctx: EventContext, outcome: str, *attrs: Attr, **named: Any) -> None:
         if attrs or named:
             self.enrich(ctx, *attrs, **named)
         ctx.finish(outcome)
         if self._metrics is not None:
             self._metrics.on_event_finished()
-
     def finish_error(self, ctx: EventContext, error: Exception, *attrs: Attr, **named: Any) -> None:
         if attrs or named:
             self.enrich(ctx, *attrs, **named)
