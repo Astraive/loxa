@@ -108,6 +108,33 @@ func TestGraphLookupStatusDistinguishesNotFoundFromStorageFailure(t *testing.T) 
 	}
 }
 
+func TestGraphDepthValidatesInclusiveRange(t *testing.T) {
+	tests := []struct {
+		query string
+		want  int
+		ok    bool
+	}{
+		{query: "", want: 3, ok: true},
+		{query: "?depth=1", want: 1, ok: true},
+		{query: fmt.Sprintf("?depth=%d", maxGraphDepth), want: maxGraphDepth, ok: true},
+		{query: "?depth=0"},
+		{query: "?depth=-1"},
+		{query: fmt.Sprintf("?depth=%d", maxGraphDepth+1)},
+		{query: "?depth=invalid"},
+	}
+	for _, test := range tests {
+		req := httptest.NewRequest(http.MethodGet, "/graphs/service"+test.query, nil)
+		got, err := graphDepth(req)
+		if test.ok {
+			if err != nil || got != test.want {
+				t.Errorf("query %q: depth=%d err=%v, want %d", test.query, got, err, test.want)
+			}
+		} else if err == nil {
+			t.Errorf("query %q: expected validation error, got depth %d", test.query, got)
+		}
+	}
+}
+
 func TestIngestEventClassifiesStorageFailuresAsServerErrors(t *testing.T) {
 	cfg := config.Default()
 	cfg.Storage.DuckDB.Path = filepath.Join(t.TempDir(), "cortex.duckdb")

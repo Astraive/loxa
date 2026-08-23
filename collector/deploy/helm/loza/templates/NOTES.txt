@@ -9,7 +9,7 @@ Collector:
     http://{{ include "loza.fullname" . }}-collector.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.collector.service.port }}/ingest
 
   Health check:
-    http://{{ include "loza.fullname" . }}-collector.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.collector.service.port }}/healthz
+    http://{{ include "loza.fullname" . }}-collector.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.collector.service.port }}{{ .Values.collector.config.routes.health }}
 
   Metrics:
     http://{{ include "loza.fullname" . }}-collector.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.collector.service.metricsPort }}/metrics

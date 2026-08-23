@@ -442,16 +442,25 @@ func graphLookupStatus(err error) int {
 	return http.StatusInternalServerError
 }
 
+func graphDepth(r *http.Request) (int, error) {
+	const defaultDepth = 3
+	raw := r.URL.Query().Get("depth")
+	if raw == "" {
+		return defaultDepth, nil
+	}
+	depth, err := strconv.Atoi(raw)
+	if err != nil || depth < 1 || depth > maxGraphDepth {
+		return 0, fmt.Errorf("depth must be between 1 and %d", maxGraphDepth)
+	}
+	return depth, nil
+}
+
 func (s *Server) ServiceGraph(w http.ResponseWriter, r *http.Request) {
 	service := chi.URLParam(r, "service")
-	depth := 3
-	if d := r.URL.Query().Get("depth"); d != "" {
-		if parsed, err := strconv.Atoi(d); err == nil {
-			depth = parsed
-		}
-	}
-	if depth > maxGraphDepth {
-		depth = maxGraphDepth
+	depth, err := graphDepth(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	graphView, err := s.graph.GetServiceGraph(r.Context(), service, depth)
@@ -479,14 +488,10 @@ func (s *Server) ServiceGraph(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) IncidentGraph(w http.ResponseWriter, r *http.Request) {
 	incidentID := chi.URLParam(r, "incident_id")
-	depth := 3
-	if d := r.URL.Query().Get("depth"); d != "" {
-		if parsed, err := strconv.Atoi(d); err == nil {
-			depth = parsed
-		}
-	}
-	if depth > maxGraphDepth {
-		depth = maxGraphDepth
+	depth, err := graphDepth(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	graphView, err := s.graph.GetIncidentGraph(r.Context(), incidentID, depth)
