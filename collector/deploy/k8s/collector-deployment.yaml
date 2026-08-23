@@ -6,7 +6,8 @@ metadata:
     app.kubernetes.io/name: loza-collector
     app.kubernetes.io/component: collector
 spec:
-  replicas: 2
+  # DuckDB state is pod-local; scale only after configuring a supported shared backend.
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: loza-collector
