@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"regexp"
 
-	transportcontracts "github.com/astraive/loza/spec/transport/contracts"
 	"github.com/astraive/loza/cortex/internal/config"
 	"github.com/astraive/loza/cortex/internal/graph"
 	"github.com/astraive/loza/cortex/internal/learner"
@@ -18,6 +17,7 @@ import (
 	"github.com/astraive/loza/cortex/internal/reconstructor"
 	"github.com/astraive/loza/cortex/internal/storage"
 	"github.com/astraive/loza/cortex/internal/topology"
+	transportcontracts "github.com/astraive/loza/spec/transport/contracts"
 	"github.com/rs/zerolog/log"
 )
 
@@ -151,8 +151,14 @@ func (s *GraphQLServer) executeQuery(ctx context.Context, query string, vars map
 
 	switch {
 	case containsOperation(query, "ingestEvent"):
+		if !hasWriterRole(ctx) {
+			return nil, fmt.Errorf("writer role required for ingest operations")
+		}
 		return s.handleIngestEvent(ctx, vars)
 	case containsOperation(query, "ingestBatch"):
+		if !hasWriterRole(ctx) {
+			return nil, fmt.Errorf("writer role required for ingest operations")
+		}
 		return s.handleIngestBatch(ctx, vars)
 	case containsOperation(query, "reconstruct"):
 		return s.handleReconstruct(ctx, vars)
@@ -180,15 +186,21 @@ func containsOperation(query, op string) bool {
 }
 
 func containsWord(s, word string) bool {
-	for i := 0; i <= len(s)-len(word); i++ {
+	if word == "" || len(word) > len(s) {
+		return false
+	}
+	for i := 0; i+len(word) <= len(s); i++ {
+		if s[i:i+len(word)] != word {
+			continue
+		}
 		if i > 0 && isAlpha(rune(s[i-1])) {
 			continue
 		}
-		if i+len(word) <= len(s) && !isAlpha(rune(s[i+len(word)])) {
-			if s[i:i+len(word)] == word {
-				return true
-			}
+		end := i + len(word)
+		if end < len(s) && isAlpha(rune(s[end])) {
+			continue
 		}
+		return true
 	}
 	return false
 }

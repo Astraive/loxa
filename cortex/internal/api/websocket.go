@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/astraive/loza/cortex/internal/eventconv"
 	"github.com/astraive/loza/cortex/internal/middleware"
 	transportcontracts "github.com/astraive/loza/spec/transport/contracts"
-	"github.com/astraive/loza/cortex/internal/eventconv"
 	"github.com/gorilla/websocket"
 )
 
@@ -69,7 +69,7 @@ func (s *Server) WebSocketHandler() http.Handler {
 func (s *Server) executeWebSocketAction(ctx context.Context, req transportcontracts.WebSocketRequest) (any, error) {
 	// Write operations require writer role (defense-in-depth; HTTP middleware is primary gate)
 	if req.Action == "ingest_event" || req.Action == "ingest_batch" {
-		if !wsHasWriterRole(ctx) {
+		if !hasWriterRole(ctx) {
 			return nil, fmt.Errorf("writer role required for ingest operations")
 		}
 	}
@@ -123,8 +123,8 @@ func (s *Server) executeWebSocketAction(ctx context.Context, req transportcontra
 	}
 }
 
-// wsHasWriterRole checks the auth context for writer-level permission.
-func wsHasWriterRole(ctx context.Context) bool {
+// hasWriterRole checks the auth context for writer-level permission.
+func hasWriterRole(ctx context.Context) bool {
 	result := middleware.GetAuthResult(ctx)
 	if result == nil {
 		// No auth context means auth is disabled; allow (matches HTTP middleware behavior)
