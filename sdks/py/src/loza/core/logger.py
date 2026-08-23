@@ -301,11 +301,18 @@ class Logger:
                     self._notify_drop("queue_full")
                     raise EventValidationError("async pipeline backpressure drop")
             else:
+                delivery_failed = False
                 for sink in self._config.sinks:
                     try:
                         sink.write(encoded)
                     except Exception as sink_err:
+                        delivery_failed = True
                         self._notify_delivery_failed(ctx, sink_err)
+                if delivery_failed:
+                    ctx.event_state = EVENT_DELIVERY_FAILED
+                    ctx.emitted = False
+                    ctx.emitted_payload = ""
+                    return ""
             ctx.emitted = True
             ctx.event_state = EVENT_EMITTED
             ctx.emitted_payload = encoded

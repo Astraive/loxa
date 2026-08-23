@@ -69,13 +69,11 @@ def test_sink_write_failure_doesnt_crash() -> None:
     ctx = logger.start_event(loza.Params(event="test"))
     logger.finish(ctx, "success")
 
-    # emit() should complete even if sink fails
-    try:
-        logger.emit(ctx)
-        # Event may still emit to caller even if sink fails
-    except Exception as e:
-        # Should be a known error, not a panic
-        assert isinstance(e, (IOError, OSError, RuntimeError)), f"Unexpected error type: {type(e).__name__}"
+    # Sink exceptions stay contained, but the observable event state and return
+    # value must not claim successful delivery.
+    assert logger.emit(ctx) == ""
+    assert not ctx.emitted
+    assert ctx.event_state == "delivery_failed"
 
 
 def test_invalid_duplicate_policy_rejected() -> None:

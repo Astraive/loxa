@@ -287,7 +287,7 @@ def test_pipeline_batches_buffers_retries_and_shutdown(tmp_path: Path, monkeypat
     offline = pipeline.MemoryOfflineBuffer(5)
     failing = pipeline.Pipeline([_FlakySink(3)], retry_policy=pipeline.RetryPolicy(max_attempts=2, base_delay=0), offline_buffer=offline, error_handler=errors.append)
     failing.write_sync("lost")
-    assert failing.stats.failed == 1 and len(offline) == 1 and errors
+    assert failing.stats.failed == 1 and failing.stats.emitted == 0 and len(offline) == 1 and errors
     encoded = json.loads(pipeline.encode_batch_envelope(['{"service":"api"}', "not-json", "{}"]))
     assert encoded["source"]["service"] == "api" and encoded["events"][1]["malformed"] == "not-json"
 
@@ -806,7 +806,6 @@ def test_active_logger_error_and_pipeline_lifecycle() -> None:
 
         def on_delivery_failed(self, _event: object, _error: Exception) -> None:
             return None
-    stats = Stats()
     metrics = loza.NewMetricsCollector()
     sink = _RecordingSink()
     cfg = (
@@ -888,7 +887,8 @@ def test_active_logger_error_and_pipeline_lifecycle() -> None:
     failing = Logger(loza.Config.test("failed").with_sink(bad_sink))
     failed_ctx = failing.start_event(loza.Params(event="failed"))
     failing.finish(failed_ctx, "success")
-    assert failing.emit(failed_ctx) and bad_sink.calls == 1
+    assert failing.emit(failed_ctx) == "" and bad_sink.calls == 1
+    assert not failed_ctx.emitted and failed_ctx.event_state == "delivery_failed"
 
 
 def test_legacy_config_environment_and_attr_helpers(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

@@ -275,12 +275,27 @@ class Pipeline:
     def _write_batch(self, encoded_events: list[str]) -> None:
         if not encoded_events:
             return
-        for sink in self.sinks:
-            self._write_sink_with_retry(sink, encoded_events)
-        self.stats.emitted += len(encoded_events)
+        errors = [
+            error
+            for sink in self.sinks
+            if (error := self._write_sink_with_retry(sink, encoded_events)) is not None
+        ]
+        if errors:
+            self.stats.failed += len(encoded_events)
+            self.stats.last_error = "; ".join(str(error) for error in errors)
+            if self._metrics is not None:
+                self._metrics.on_event_dropped("transport")
+            if self.offline_buffer is not None:
+                for encoded in encoded_events:
+                    self.offline_buffer.append(encoded)
+            if self.error_handler is not None:
+                for error in errors:
+                    self.error_handler(error)
+        else:
+            self.stats.emitted += len(encoded_events)
         self.stats.batches += 1
 
-    def _write_sink_with_retry(self, sink: object, encoded_events: list[str]) -> None:
+    def _write_sink_with_retry(self, sink: object, encoded_events: list[str]) -> Exception | None:
         last_error: Exception | None = None
         for attempt in range(1, self.retry_policy.max_attempts + 1):
             try:
@@ -290,22 +305,14 @@ class Pipeline:
                 else:
                     for encoded in encoded_events:
                         sink.write(encoded)
-                return
+                return None
             except Exception as exc:
                 last_error = exc
                 self.stats.retried += int(attempt < self.retry_policy.max_attempts)
                 if self._metrics is not None:
                     self._metrics.on_retry(attempt)
                 time.sleep(self.retry_policy.delay(attempt))
-        self.stats.failed += len(encoded_events)
-        self.stats.last_error = str(last_error or "unknown sink failure")
-        if self._metrics is not None:
-            self._metrics.on_event_dropped("transport")
-        if self.offline_buffer is not None:
-            for encoded in encoded_events:
-                self.offline_buffer.append(encoded)
-        if self.error_handler is not None and last_error is not None:
-            self.error_handler(last_error)
+        return last_error or RuntimeError("unknown sink failure")
 
 
 def encode_batch_envelope(encoded_events: Iterable[str]) -> str:
