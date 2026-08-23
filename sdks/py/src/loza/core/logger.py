@@ -340,10 +340,7 @@ class Logger:
     def flush(self, timeout: float = 30.0) -> None:
         if self._pipeline is not None:
             self._pipeline.drain_once()
-            if self._pipeline.offline_buffer is not None:
-                buffered = self._pipeline.offline_buffer.drain(limit=4096)
-                if buffered:
-                    self._pipeline._write_batch(buffered)
+            self._pipeline.replay_offline()
         for sink in self._config.sinks:
             flush = getattr(sink, "flush", None)
             if callable(flush):

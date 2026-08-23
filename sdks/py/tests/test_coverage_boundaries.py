@@ -257,14 +257,17 @@ def test_pipeline_batches_buffers_retries_and_shutdown(tmp_path: Path, monkeypat
     memory.append("one")
     memory.append("two")
     memory.append("three")
-    assert len(memory) == 2 and memory.dropped == 1 and memory.drain(1) == ["two"]
-    assert memory.drain() == ["three"]
+    assert len(memory) == 2 and memory.dropped == 1 and memory.peek(1) == ["two"]
+    memory.ack(1)
+    assert memory.peek() == ["three"]
+    memory.ack(1)
 
     disk = pipeline.DiskOfflineBuffer(tmp_path / "spool", max_bytes=20)
     disk.append("one")
     disk.append("two")
     disk.append("three")
-    assert disk.drain(1)
+    assert disk.peek(1)
+    disk.ack(1)
     assert pipeline.RetryPolicy(base_delay=0.5, max_delay=0.75).delay(3) == 0.75
 
     sink = _RecordingSink()
