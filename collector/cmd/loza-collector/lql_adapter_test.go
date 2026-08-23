@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,7 +34,17 @@ func testLQLConfig(binary string) collectorConfig {
 	return collectorConfig{
 		lqlBinary: binary, lqlExpectedProtocol: 1, lqlExpectedCompiler: "0.4.0",
 		lqlExpectedLanguage: "0.1", lqlStartupTimeout: 5e9, lqlCompileTimeout: 5e9,
+		lqlMaxConcurrent: 1,
+	}
+}
+
+func TestLQLStdioCompilerRejectsConcurrentRequests(t *testing.T) {
+	_, err := newLQLStdioCompiler(context.Background(), collectorConfig{
+		lqlBinary:        "lql",
 		lqlMaxConcurrent: 2,
+	})
+	if err == nil || !strings.Contains(err.Error(), "exactly one concurrent request") {
+		t.Fatalf("expected sequential stdio validation error, got %v", err)
 	}
 }
 

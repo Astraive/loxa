@@ -74,6 +74,14 @@ duckdb:
 	}
 }
 
+func TestValidateFileConfigRejectsConcurrentLQLStdioRequests(t *testing.T) {
+	cfg := validFileConfig()
+	cfg.LQL.MaxConcurrentRequests = 2
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "must be 1") {
+		t.Fatalf("expected sequential LQL stdio validation error, got %v", err)
+	}
+}
+
 func TestLoadCollectorConfigFromArgsFailFastInvalidEnv(t *testing.T) {
 	t.Setenv("COLLECTOR_MAX_EVENTS", "abc")
 	if _, err := loadCollectorConfigFromArgs(nil); err == nil || !strings.Contains(err.Error(), "COLLECTOR_MAX_EVENTS") {

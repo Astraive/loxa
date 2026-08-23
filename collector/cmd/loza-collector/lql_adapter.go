@@ -35,6 +35,9 @@ func newLQLStdioCompiler(ctx context.Context, cfg collectorConfig) (*lqlStdioCom
 	if strings.TrimSpace(cfg.lqlBinary) == "" {
 		return nil, errors.New("lql compiler binary is empty")
 	}
+	if cfg.lqlMaxConcurrent > 1 {
+		return nil, errors.New("lql stdio compiler supports exactly one concurrent request")
+	}
 	startup := cfg.lqlStartupTimeout
 	if startup <= 0 {
 		startup = 5 * time.Second
@@ -43,10 +46,7 @@ func newLQLStdioCompiler(ctx context.Context, cfg collectorConfig) (*lqlStdioCom
 	if compileTimeout <= 0 {
 		compileTimeout = 5 * time.Second
 	}
-	maxConcurrent := cfg.lqlMaxConcurrent
-	if maxConcurrent <= 0 {
-		maxConcurrent = 8
-	}
+	maxConcurrent := 1
 	compiler := &lqlStdioCompiler{
 		binary: cfg.lqlBinary, protocol: cfg.lqlExpectedProtocol,
 		compiler: cfg.lqlExpectedCompiler, language: cfg.lqlExpectedLanguage,
