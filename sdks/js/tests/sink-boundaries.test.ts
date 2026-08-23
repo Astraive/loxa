@@ -134,6 +134,53 @@ describe('Sink boundaries', () => {
     }
   });
 
+  it('serializes concurrent flushes without duplicating or deleting events', async () => {
+    const bodies: string[] = [];
+    const firstReceived = Promise.withResolvers<void>();
+    const releaseFirst = Promise.withResolvers<void>();
+    let request = 0;
+    const { server, endpoint } = await listenServer((req, res) => {
+      let body = '';
+      req.on('data', chunk => { body += chunk.toString(); });
+      req.on('end', () => {
+        request++;
+        bodies.push(body);
+        const respond = () => {
+          res.statusCode = 200;
+          res.end(acceptedResponse);
+        };
+        if (request === 1) {
+          firstReceived.resolve();
+          void releaseFirst.promise.then(respond);
+        } else {
+          respond();
+        }
+      });
+    });
+    try {
+      const sink = new HTTPBatchSink({
+        endpoint,
+        enableCompression: false,
+        ndjson: true,
+        retries: 0,
+        batchSize: 1,
+      });
+      const firstWrite = sink.write('{"event":"first"}');
+      await firstReceived.promise;
+      const secondWrite = sink.write('{"event":"second"}');
+      releaseFirst.resolve();
+      await Promise.all([firstWrite, secondWrite]);
+      await sink.close();
+
+      assert.deepEqual(bodies, ['{"event":"first"}', '{"event":"second"}']);
+      assert.equal(sink.queueSize(), 0);
+      await assert.rejects(() => sink.write('{"event":"late"}'), /closed/);
+    } finally {
+      releaseFirst.resolve();
+      await closeServer(server);
+    }
+  });
+
   it('retries retryable responses and handles callback failures', async () => {
     let requests = 0;
     const { server, endpoint } = await listenServer((_req, res) => {
@@ -244,8 +291,8 @@ describe('Sink boundaries', () => {
       await pending.write('{"event":"pending"}');
       pending.pause();
       pending.resume();
-      pending.close();
-      assert.equal(pending.queueSize(), 1);
+      await pending.close();
+      assert.equal(pending.queueSize(), 0);
     } finally {
       await closeServer(server);
     }

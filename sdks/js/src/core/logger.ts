@@ -367,14 +367,16 @@ export class Logger {
     return Promise.resolve();
   }
 
-  /** Close the sink. */
-  close(): Promise<void> {
+  /** Drain pending work, then close the sink. */
+  async close(): Promise<void> {
     const sink = this._resolvedSink;
-    if (sink) return Promise.resolve(sink.close()) as Promise<void>;
-    return Promise.resolve();
+    if (!sink) return;
+    if (sink.drain) await sink.drain();
+    else await sink.flush();
+    await sink.close();
   }
 
-  /** Shutdown — alias for close(). */
+  /** Shutdown drains and closes the sink. */
   shutdown(): Promise<void> {
     return this.close();
   }
