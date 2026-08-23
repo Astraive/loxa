@@ -31,7 +31,7 @@ func (s *collectorState) handleStatus(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":           statusString(s.isReady()),
 		"version":          collectorVersion,
-		"uptime_seconds":   0,
+		"uptime_seconds":   s.uptimeSeconds(time.Now()),
 		"reliability_mode": s.cfg.reliabilityMode,
 		"ingest": map[string]any{
 			"accepted":   s.metrics.eventsAccepted.Load(),
@@ -69,7 +69,7 @@ func (s *collectorState) handleSinks(w http.ResponseWriter, r *http.Request) {
 	sinks := s.sinksForShutdown()
 	out := make([]map[string]any, 0, len(sinks))
 	for _, sink := range sinks {
-		out = append(out, sinkStatus(sink.Name, true, ""))
+		out = append(out, sinkStatus(sink.Name, s.effectiveSinkHealthy(), ""))
 	}
 	if len(out) == 0 && s.ingestSink != nil {
 		out = append(out, sinkStatus(s.ingestSink.Name(), s.effectiveSinkHealthy(), ""))
@@ -137,18 +137,27 @@ func (s *collectorState) findSinkByName(name string) (namedSink, bool) {
 	return namedSink{}, false
 }
 
+func (s *collectorState) uptimeSeconds(now time.Time) int64 {
+	if s.startedAt.IsZero() || now.Before(s.startedAt) {
+		return 0
+	}
+	return int64(now.Sub(s.startedAt) / time.Second)
+}
+
 func sinkStatus(name string, healthy bool, lastErr string) map[string]any {
 	status := "healthy"
 	if !healthy {
 		status = "down"
 	}
-	return map[string]any{
+	result := map[string]any{
 		"name":          name,
 		"status":        status,
-		"latency_ms":    0,
-		"last_error":    lastErr,
-		"circuit_state": "closed",
+		"circuit_state": "not_configured",
 	}
+	if lastErr != "" {
+		result["last_error"] = lastErr
+	}
+	return result
 }
 
 type queryRequest struct {

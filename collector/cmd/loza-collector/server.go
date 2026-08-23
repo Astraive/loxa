@@ -177,6 +177,7 @@ func runCollector(cfg collectorConfig) error {
 
 	state := &collectorState{
 		cfg:             cfg,
+		startedAt:       time.Now(),
 		ingestSink:      sink,
 		hybridQueueSink: hybridQueueSink,
 		secondarySinks:  secondarySinks,

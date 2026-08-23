@@ -499,6 +499,42 @@ func TestHandleIngestJWTAuthorization(t *testing.T) {
 	}
 }
 
+func TestOperationalStatusUsesRuntimeValues(t *testing.T) {
+	state := &collectorState{
+		cfg:       testCollectorConfig(),
+		startedAt: time.Now().Add(-90 * time.Second),
+	}
+	state.ready.Store(true)
+	state.sinkHealthy.Store(true)
+	state.spoolHealthy.Store(true)
+	state.diskHealthy.Store(true)
+
+	rec := httptest.NewRecorder()
+	state.handleStatus(rec, httptest.NewRequest(http.MethodGet, "/status", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status code = %d, want 200", rec.Code)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode status: %v", err)
+	}
+	uptime, ok := payload["uptime_seconds"].(float64)
+	if !ok || uptime < 89 || uptime > 91 {
+		t.Fatalf("uptime_seconds = %v, want approximately 90", payload["uptime_seconds"])
+	}
+
+	down := sinkStatus("primary", false, "write failed")
+	if down["status"] != "down" || down["last_error"] != "write failed" {
+		t.Fatalf("unexpected down sink status: %#v", down)
+	}
+	if down["circuit_state"] != "not_configured" {
+		t.Fatalf("circuit_state = %v, want not_configured", down["circuit_state"])
+	}
+	if _, exists := down["latency_ms"]; exists {
+		t.Fatalf("untested sink status must not claim latency: %#v", down)
+	}
+}
+
 func TestHandleSchemaPublishAndDiff(t *testing.T) {
 	state := &collectorState{
 		cfg: testCollectorConfig(),

@@ -287,6 +287,7 @@ type collectorMetrics struct {
 
 type collectorState struct {
 	cfg               collectorConfig
+	startedAt         time.Time
 	ingestSink        collectorevent.Sink
 	hybridQueueSink   collectorevent.Sink
 	secondarySinks    []namedSink
