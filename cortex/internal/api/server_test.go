@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -72,6 +73,41 @@ func TestNewServerDoesNotStartUnownedWorkers(t *testing.T) {
 	}
 }
 
+func TestReadyzDoesNotExposeStorageErrors(t *testing.T) {
+	cfg := config.Default()
+	cfg.Storage.DuckDB.Path = filepath.Join(t.TempDir(), "private-cortex.duckdb")
+	stor, err := storage.NewStorage(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := NewServer(cfg, stor)
+	if err := stor.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	rec := httptest.NewRecorder()
+	srv.Readyz(rec, httptest.NewRequest(http.MethodGet, "/readyz", nil))
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected not ready after storage close, got %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, "private-cortex.duckdb") || strings.Contains(strings.ToLower(body), "closed") {
+		t.Fatalf("readiness response exposed storage details: %s", body)
+	}
+	if !strings.Contains(body, `"storage":"unavailable"`) {
+		t.Fatalf("readiness response omitted stable storage status: %s", body)
+	}
+}
+
+func TestGraphLookupStatusDistinguishesNotFoundFromStorageFailure(t *testing.T) {
+	if got := graphLookupStatus(fmt.Errorf("lookup: %w", storage.ErrNotFound)); got != http.StatusNotFound {
+		t.Fatalf("not-found status = %d, want 404", got)
+	}
+	if got := graphLookupStatus(errors.New("database unavailable")); got != http.StatusInternalServerError {
+		t.Fatalf("storage failure status = %d, want 500", got)
+	}
+}
+
 func TestIngestEventClassifiesStorageFailuresAsServerErrors(t *testing.T) {
 	cfg := config.Default()
 	cfg.Storage.DuckDB.Path = filepath.Join(t.TempDir(), "cortex.duckdb")
@@ -114,13 +150,17 @@ func TestIngestBatchClassifiesValidationFailuresAsClientErrors(t *testing.T) {
 
 type graphQLSignatureStore struct {
 	signatures map[string]*models.IncidentSignature
+	getErr     error
 }
 
 func (*graphQLSignatureStore) Save(context.Context, *models.IncidentSignature) error { return nil }
 func (s *graphQLSignatureStore) Get(_ context.Context, id string) (*models.IncidentSignature, error) {
+	if s.getErr != nil {
+		return nil, s.getErr
+	}
 	signature := s.signatures[id]
 	if signature == nil {
-		return nil, errors.New("signature not found")
+		return nil, storage.ErrNotFound
 	}
 	return signature, nil
 }
@@ -193,6 +233,23 @@ func TestGraphQLDoesNotDispatchFromStringArguments(t *testing.T) {
 	)
 	if len(result.Errors) == 0 || !strings.Contains(result.Errors[0].Message, "not found") {
 		t.Fatalf("expected signature lookup error, got %+v", result.Errors)
+	}
+}
+
+func TestGraphQLDoesNotExposeResolverErrors(t *testing.T) {
+	server := testGraphQLServer(t)
+	server.signatures.(*graphQLSignatureStore).getErr = errors.New("duckdb /srv/private/cortex.duckdb is locked")
+	result := server.executeQuery(
+		context.Background(),
+		`query { signature(id: "sig-1") { shape } }`,
+		nil,
+		"",
+	)
+	if len(result.Errors) != 1 || result.Errors[0].Message != "internal error" {
+		t.Fatalf("expected stable internal error, got %+v", result.Errors)
+	}
+	if strings.Contains(result.Errors[0].Message, "duckdb") || strings.Contains(result.Errors[0].Message, "private") {
+		t.Fatalf("GraphQL exposed resolver details: %+v", result.Errors)
 	}
 }
 

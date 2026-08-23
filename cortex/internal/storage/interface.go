@@ -2,10 +2,13 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/astraive/loza/cortex/internal/models"
 )
+
+var ErrNotFound = errors.New("storage record not found")
 
 // LifecycleData contains the extracted lifecycle primitives for indexing
 type LifecycleData struct {
@@ -79,18 +82,18 @@ type EventStore interface {
 
 // LifecycleFilter provides filtering for lifecycle-aware queries
 type LifecycleFilter struct {
-	Service      string
-	EventName    string
-	Outcome      string
-	Level        string
-	Environment  string
-	TraceID      string
-	From         time.Time
-	To           time.Time
-	Limit        int
-	Offset       int
-	MinDuration  float64
-	MaxDuration  float64
+	Service        string
+	EventName      string
+	Outcome        string
+	Level          string
+	Environment    string
+	TraceID        string
+	From           time.Time
+	To             time.Time
+	Limit          int
+	Offset         int
+	MinDuration    float64
+	MaxDuration    float64
 	HasCheckpoints *bool
 	HasProcesses   *bool
 	HasGroups      *bool

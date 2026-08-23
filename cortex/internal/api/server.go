@@ -239,7 +239,13 @@ func (s *Server) Readyz(w http.ResponseWriter, r *http.Request) {
 		defer cancel()
 		if _, err := s.incidents.List(ctx, 1, 0); err != nil {
 			ready = false
-			checks["storage"] = err.Error()
+			checks["storage"] = "unavailable"
+			log.Error().
+				Err(err).
+				Str("event.name", "cortex.readiness").
+				Str("event.kind", "request").
+				Str("event.outcome", "error").
+				Msg("readiness storage check failed")
 		}
 	}
 
@@ -429,6 +435,13 @@ func (s *Server) RecordIncidentFeedback(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+func graphLookupStatus(err error) int {
+	if errors.Is(err, storage.ErrNotFound) {
+		return http.StatusNotFound
+	}
+	return http.StatusInternalServerError
+}
+
 func (s *Server) ServiceGraph(w http.ResponseWriter, r *http.Request) {
 	service := chi.URLParam(r, "service")
 	depth := 3
@@ -443,8 +456,18 @@ func (s *Server) ServiceGraph(w http.ResponseWriter, r *http.Request) {
 
 	graphView, err := s.graph.GetServiceGraph(r.Context(), service, depth)
 	if err != nil {
-		log.Warn().Err(err).Str("service", service).Msg("service graph lookup failed")
-		http.Error(w, "not found", http.StatusNotFound)
+		if graphLookupStatus(err) == http.StatusNotFound {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		log.Error().
+			Err(err).
+			Str("event.name", "cortex.service_graph").
+			Str("event.kind", "request").
+			Str("event.outcome", "error").
+			Str("service", service).
+			Msg("service graph lookup failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -468,8 +491,18 @@ func (s *Server) IncidentGraph(w http.ResponseWriter, r *http.Request) {
 
 	graphView, err := s.graph.GetIncidentGraph(r.Context(), incidentID, depth)
 	if err != nil {
-		log.Warn().Err(err).Str("incident_id", incidentID).Msg("incident graph lookup failed")
-		http.Error(w, "not found", http.StatusNotFound)
+		if graphLookupStatus(err) == http.StatusNotFound {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		log.Error().
+			Err(err).
+			Str("event.name", "cortex.incident_graph").
+			Str("event.kind", "request").
+			Str("event.outcome", "error").
+			Str("incident.id", incidentID).
+			Msg("incident graph lookup failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -38,6 +39,32 @@ type GraphQLServer struct {
 	signatures  storage.SignatureStore
 	schema      graphql.Schema
 	schemaErr   error
+}
+
+type graphQLClientError struct {
+	message string
+}
+
+func (e *graphQLClientError) Error() string {
+	return e.message
+}
+
+func newGraphQLClientError(message string) error {
+	return &graphQLClientError{message: message}
+}
+
+func publicGraphQLResolverError(err error) (error, bool) {
+	var clientError *graphQLClientError
+	switch {
+	case errors.As(err, &clientError):
+		return clientError, true
+	case errors.Is(err, storage.ErrNotFound):
+		return newGraphQLClientError("not found"), true
+	case errors.Is(err, processor.ErrInvalidEvent):
+		return newGraphQLClientError("invalid event"), true
+	default:
+		return errors.New("internal error"), false
+	}
 }
 
 func NewGraphQLServer(cfg *config.Config, stor storage.Storage) *GraphQLServer {
@@ -207,13 +234,26 @@ func graphQLObject(name string, fields map[string]graphql.Output) *graphql.Objec
 func (s *GraphQLServer) resolver(handler func(context.Context, map[string]interface{}) (interface{}, error), writerOnly bool) graphql.FieldResolveFn {
 	return func(params graphql.ResolveParams) (interface{}, error) {
 		if writerOnly && !hasWriterRole(params.Context) {
-			return nil, fmt.Errorf("writer role required for ingest operations")
+			return nil, newGraphQLClientError("writer role required for ingest operations")
 		}
 		value, err := handler(params.Context, params.Args)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			value, err = normalizeGraphQLValue(value)
 		}
-		return normalizeGraphQLValue(value)
+		if err == nil {
+			return value, nil
+		}
+		publicError, safe := publicGraphQLResolverError(err)
+		if !safe {
+			log.Error().
+				Err(err).
+				Str("event.name", "graphql.resolver").
+				Str("event.kind", "request").
+				Str("event.outcome", "error").
+				Str("graphql.field", params.Info.FieldName).
+				Msg("graphql resolver failed")
+		}
+		return nil, publicError
 	}
 }
 
@@ -371,7 +411,7 @@ func (s *GraphQLServer) initSchema() error {
 func (s *GraphQLServer) handleIngestEvent(ctx context.Context, vars map[string]interface{}) (interface{}, error) {
 	eventMap, ok := vars["event"].(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("event variables required")
+		return nil, newGraphQLClientError("event variables required")
 	}
 
 	event := &models.Event{}
@@ -405,7 +445,7 @@ func (s *GraphQLServer) handleIngestEvent(ctx context.Context, vars map[string]i
 func (s *GraphQLServer) handleIngestBatch(ctx context.Context, vars map[string]interface{}) (interface{}, error) {
 	eventsRaw, ok := vars["events"].([]interface{})
 	if !ok {
-		return nil, fmt.Errorf("events array required")
+		return nil, newGraphQLClientError("events array required")
 	}
 
 	events := make([]*models.Event, 0, len(eventsRaw))
@@ -448,7 +488,7 @@ func (s *GraphQLServer) handleIngestBatch(ctx context.Context, vars map[string]i
 func (s *GraphQLServer) handleReconstruct(ctx context.Context, vars map[string]interface{}) (interface{}, error) {
 	incidentID, ok := vars["incidentId"].(string)
 	if !ok {
-		return nil, fmt.Errorf("incidentId required")
+		return nil, newGraphQLClientError("incidentId required")
 	}
 
 	mode := "fast"
@@ -474,7 +514,7 @@ func (s *GraphQLServer) handleReconstruct(ctx context.Context, vars map[string]i
 func (s *GraphQLServer) handleIncident(ctx context.Context, vars map[string]interface{}) (interface{}, error) {
 	incidentID, ok := vars["id"].(string)
 	if !ok {
-		return nil, fmt.Errorf("id required")
+		return nil, newGraphQLClientError("id required")
 	}
 
 	incident, err := s.incidents.Get(ctx, incidentID)
@@ -488,7 +528,7 @@ func (s *GraphQLServer) handleIncident(ctx context.Context, vars map[string]inte
 func (s *GraphQLServer) handleServiceGraph(ctx context.Context, vars map[string]interface{}) (interface{}, error) {
 	service, ok := vars["service"].(string)
 	if !ok {
-		return nil, fmt.Errorf("service required")
+		return nil, newGraphQLClientError("service required")
 	}
 
 	depth := 3
@@ -507,7 +547,7 @@ func (s *GraphQLServer) handleServiceGraph(ctx context.Context, vars map[string]
 func (s *GraphQLServer) handleIncidentGraph(ctx context.Context, vars map[string]interface{}) (interface{}, error) {
 	incidentID, ok := vars["incidentId"].(string)
 	if !ok {
-		return nil, fmt.Errorf("incidentId required")
+		return nil, newGraphQLClientError("incidentId required")
 	}
 
 	depth := 3
@@ -526,7 +566,7 @@ func (s *GraphQLServer) handleIncidentGraph(ctx context.Context, vars map[string
 func (s *GraphQLServer) handleRemediationSuggestions(ctx context.Context, vars map[string]interface{}) (interface{}, error) {
 	incidentID, ok := vars["incidentId"].(string)
 	if !ok {
-		return nil, fmt.Errorf("incidentId required")
+		return nil, newGraphQLClientError("incidentId required")
 	}
 
 	_, err := s.incidents.Get(ctx, incidentID)
@@ -564,7 +604,7 @@ func (s *GraphQLServer) handleRemediationSuggestions(ctx context.Context, vars m
 func (s *GraphQLServer) handleSimilarIncidents(ctx context.Context, vars map[string]interface{}) (interface{}, error) {
 	incidentID, ok := vars["incidentId"].(string)
 	if !ok {
-		return nil, fmt.Errorf("incidentId required")
+		return nil, newGraphQLClientError("incidentId required")
 	}
 
 	_, err := s.incidents.Get(ctx, incidentID)
@@ -591,7 +631,7 @@ func (s *GraphQLServer) handleSimilarIncidents(ctx context.Context, vars map[str
 func (s *GraphQLServer) handleSignature(ctx context.Context, vars map[string]interface{}) (interface{}, error) {
 	sigID, ok := vars["id"].(string)
 	if !ok {
-		return nil, fmt.Errorf("id required")
+		return nil, newGraphQLClientError("id required")
 	}
 
 	signature, err := s.signatures.Get(ctx, sigID)
