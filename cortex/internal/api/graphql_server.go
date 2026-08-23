@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 
 	"github.com/astraive/loza/cortex/internal/config"
 	"github.com/astraive/loza/cortex/internal/graph"
@@ -18,13 +17,14 @@ import (
 	"github.com/astraive/loza/cortex/internal/storage"
 	"github.com/astraive/loza/cortex/internal/topology"
 	transportcontracts "github.com/astraive/loza/spec/transport/contracts"
+	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/rs/zerolog/log"
 )
 
 const maxGraphQLDepth = 10
 
-// graphqlCommentRe matches single-line GraphQL comments (# to end of line).
-var graphqlCommentRe = regexp.MustCompile(`#[^\n]*`)
+// Introspection fields are disabled on the externally exposed schema.
 
 type GraphQLServer struct {
 	config      *config.Config
@@ -36,6 +36,8 @@ type GraphQLServer struct {
 	recon       *reconstructor.IncidentReconstructor
 	incidents   storage.IncidentStore
 	signatures  storage.SignatureStore
+	schema      graphql.Schema
+	schemaErr   error
 }
 
 func NewGraphQLServer(cfg *config.Config, stor storage.Storage) *GraphQLServer {
@@ -49,7 +51,7 @@ func NewGraphQLServer(cfg *config.Config, stor storage.Storage) *GraphQLServer {
 	recon := reconstructor.NewIncidentReconstructor(graphBuilder, matching, remediation, stor.Incidents())
 	eventProc := processor.NewEventProcessor(stor.Events(), stor.Topology(), stor.Graph())
 
-	return &GraphQLServer{
+	server := &GraphQLServer{
 		config:      cfg,
 		processor:   eventProc,
 		topology:    topology,
@@ -60,6 +62,8 @@ func NewGraphQLServer(cfg *config.Config, stor storage.Storage) *GraphQLServer {
 		incidents:   stor.Incidents(),
 		signatures:  stor.Signatures(),
 	}
+	server.schemaErr = server.initSchema()
+	return server
 }
 
 func (s *GraphQLServer) Handler() http.Handler {
@@ -72,6 +76,7 @@ func (s *GraphQLServer) handleGraphQL(w http.ResponseWriter, r *http.Request) {
 	var req transportcontracts.GraphQLRequest
 	if r.Method == "GET" {
 		req.Query = r.URL.Query().Get("query")
+		req.OperationName = r.URL.Query().Get("operationName")
 	} else {
 		body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20)) // 1MB limit
 		if err != nil {
@@ -86,21 +91,23 @@ func (s *GraphQLServer) handleGraphQL(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if isIntrospectionQuery(req.Query) {
+		s.writeError(w, http.StatusForbidden, "introspection is not allowed")
+		return
+	}
+
 	// Check query depth before executing
 	if queryDepth(req.Query) > maxGraphQLDepth {
 		s.writeError(w, http.StatusBadRequest, "query exceeds maximum depth")
 		return
 	}
 
-	ctx := r.Context()
-	result, err := s.executeQuery(ctx, req.Query, req.Variables)
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, err.Error())
+	if s.schemaErr != nil {
+		s.writeError(w, http.StatusInternalServerError, "GraphQL schema unavailable")
 		return
 	}
-
-	response := transportcontracts.GraphQLResponse{Data: result}
-	if err := json.NewEncoder(w).Encode(response); err != nil {
+	result := s.executeQuery(r.Context(), req.Query, req.Variables, req.OperationName)
+	if err := json.NewEncoder(w).Encode(result); err != nil {
 		log.Error().Err(err).Msg("failed to encode graphql response")
 	}
 }
@@ -133,56 +140,24 @@ func queryDepth(query string) int {
 	return maxDepth
 }
 
-// isIntrospectionQuery checks if the query attempts GraphQL introspection.
-// Comments are stripped before checking to prevent bypass via # __schema.
+// isIntrospectionQuery blocks the reserved GraphQL introspection fields.
 func isIntrospectionQuery(query string) bool {
-	cleaned := graphqlCommentRe.ReplaceAllString(query, "")
-	return containsWord(cleaned, "__schema") ||
-		containsWord(cleaned, "__type") ||
-		containsWord(cleaned, "__typename")
+	return containsWord(query, "__schema") ||
+		containsWord(query, "__type") ||
+		containsWord(query, "__typename")
 }
 
-func (s *GraphQLServer) executeQuery(ctx context.Context, query string, vars map[string]interface{}) (interface{}, error) {
-	query = removeWhitespace(query)
-
+func (s *GraphQLServer) executeQuery(ctx context.Context, query string, vars map[string]interface{}, operationName string) *graphql.Result {
 	if isIntrospectionQuery(query) {
-		return nil, fmt.Errorf("introspection is not allowed")
+		return &graphql.Result{Errors: []gqlerrors.FormattedError{{Message: "introspection is not allowed"}}}
 	}
-
-	switch {
-	case containsOperation(query, "ingestEvent"):
-		if !hasWriterRole(ctx) {
-			return nil, fmt.Errorf("writer role required for ingest operations")
-		}
-		return s.handleIngestEvent(ctx, vars)
-	case containsOperation(query, "ingestBatch"):
-		if !hasWriterRole(ctx) {
-			return nil, fmt.Errorf("writer role required for ingest operations")
-		}
-		return s.handleIngestBatch(ctx, vars)
-	case containsOperation(query, "reconstruct"):
-		return s.handleReconstruct(ctx, vars)
-	case containsOperation(query, "incident"):
-		return s.handleIncident(ctx, vars)
-	case containsOperation(query, "serviceGraph"):
-		return s.handleServiceGraph(ctx, vars)
-	case containsOperation(query, "incidentGraph"):
-		return s.handleIncidentGraph(ctx, vars)
-	case containsOperation(query, "remediationSuggestions"):
-		return s.handleRemediationSuggestions(ctx, vars)
-	case containsOperation(query, "similarIncidents"):
-		return s.handleSimilarIncidents(ctx, vars)
-	case containsOperation(query, "signature"):
-		return s.handleSignature(ctx, vars)
-	case containsOperation(query, "signatures"):
-		return s.handleSignatures(ctx, vars)
-	default:
-		return nil, fmt.Errorf("unknown operation")
-	}
-}
-
-func containsOperation(query, op string) bool {
-	return len(query) > len(op) && (query[:len(op)] == op || len(query) > len(op)+10 && containsWord(query, op))
+	return graphql.Do(graphql.Params{
+		Schema:         s.schema,
+		RequestString:  query,
+		VariableValues: vars,
+		OperationName:  operationName,
+		Context:        ctx,
+	})
 }
 
 func containsWord(s, word string) bool {
@@ -209,15 +184,188 @@ func isAlpha(r rune) bool {
 	return r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_'
 }
 
-func removeWhitespace(s string) string {
-	result := make([]rune, 0, len(s))
-	for _, r := range s {
-		if r == ' ' || r == '\n' || r == '\t' || r == '\r' {
-			continue
-		}
-		result = append(result, r)
+func normalizeGraphQLValue(value interface{}) (interface{}, error) {
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return nil, fmt.Errorf("encode GraphQL result: %w", err)
 	}
-	return string(result)
+	var normalized interface{}
+	if err := json.Unmarshal(encoded, &normalized); err != nil {
+		return nil, fmt.Errorf("normalize GraphQL result: %w", err)
+	}
+	return normalized, nil
+}
+
+func graphQLObject(name string, fields map[string]graphql.Output) *graphql.Object {
+	configured := make(graphql.Fields, len(fields))
+	for fieldName, fieldType := range fields {
+		configured[fieldName] = &graphql.Field{Type: fieldType}
+	}
+	return graphql.NewObject(graphql.ObjectConfig{Name: name, Fields: configured})
+}
+
+func (s *GraphQLServer) resolver(handler func(context.Context, map[string]interface{}) (interface{}, error), writerOnly bool) graphql.FieldResolveFn {
+	return func(params graphql.ResolveParams) (interface{}, error) {
+		if writerOnly && !hasWriterRole(params.Context) {
+			return nil, fmt.Errorf("writer role required for ingest operations")
+		}
+		value, err := handler(params.Context, params.Args)
+		if err != nil {
+			return nil, err
+		}
+		return normalizeGraphQLValue(value)
+	}
+}
+
+func (s *GraphQLServer) initSchema() error {
+	stringList := graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.String)))
+	nodeType := graphQLObject("Node", map[string]graphql.Output{
+		"id": graphql.NewNonNull(graphql.ID), "type": graphql.NewNonNull(graphql.String), "label": graphql.NewNonNull(graphql.String),
+	})
+	edgeType := graphQLObject("Edge", map[string]graphql.Output{
+		"id": graphql.NewNonNull(graphql.ID), "from_node_id": graphql.NewNonNull(graphql.ID),
+		"to_node_id": graphql.NewNonNull(graphql.ID), "type": graphql.NewNonNull(graphql.String),
+		"weight": graphql.NewNonNull(graphql.Float),
+	})
+	graphViewType := graphQLObject("GraphView", map[string]graphql.Output{
+		"nodes": graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(nodeType))),
+		"edges": graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(edgeType))),
+	})
+	incidentType := graphQLObject("Incident", map[string]graphql.Output{
+		"id": graphql.NewNonNull(graphql.ID), "timestamp": graphql.NewNonNull(graphql.String),
+		"signature_id": graphql.String, "status": graphql.NewNonNull(graphql.String),
+		"severity": graphql.NewNonNull(graphql.String), "primary_service": graphql.NewNonNull(graphql.String),
+		"affected_services": stringList, "resolved_at": graphql.String,
+	})
+	causalEventType := graphQLObject("CausalEvent", map[string]graphql.Output{
+		"event_id": graphql.NewNonNull(graphql.ID), "timestamp": graphql.NewNonNull(graphql.String),
+		"kind": graphql.NewNonNull(graphql.String), "service": graphql.NewNonNull(graphql.String),
+		"description": graphql.NewNonNull(graphql.String), "causal_edge": graphql.NewNonNull(graphql.String),
+		"signal_density": graphql.NewNonNull(graphql.Float),
+	})
+	symptomType := graphQLObject("Symptom", map[string]graphql.Output{
+		"type": graphql.NewNonNull(graphql.String), "service": graphql.NewNonNull(graphql.String),
+		"metric": graphql.String, "threshold": graphql.Float, "observed": graphql.Float,
+		"description": graphql.NewNonNull(graphql.String),
+	})
+	remediationType := graphQLObject("RemediationAction", map[string]graphql.Output{
+		"action": graphql.NewNonNull(graphql.String), "description": graphql.NewNonNull(graphql.String),
+		"success_rate": graphql.NewNonNull(graphql.Float), "avg_time_to_resolve_seconds": graphql.NewNonNull(graphql.Int),
+		"priority": graphql.NewNonNull(graphql.Int),
+	})
+	similarIncidentType := graphQLObject("SimilarIncident", map[string]graphql.Output{
+		"incident_id": graphql.NewNonNull(graphql.ID), "timestamp": graphql.NewNonNull(graphql.String),
+		"similarity": graphql.NewNonNull(graphql.Float), "shape": graphql.NewNonNull(graphql.String),
+		"resolution": graphql.NewNonNull(graphql.String), "resolution_time_seconds": graphql.NewNonNull(graphql.Int),
+		"success_rate": graphql.NewNonNull(graphql.Float),
+	})
+	incidentContextType := graphQLObject("IncidentContext", map[string]graphql.Output{
+		"incident_id": graphql.NewNonNull(graphql.ID), "timestamp": graphql.NewNonNull(graphql.String),
+		"causal_chain":      graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(causalEventType))),
+		"related_services":  stringList,
+		"similar_incidents": graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(similarIncidentType))),
+		"symptoms":          graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(symptomType))),
+		"suggested_actions": graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(remediationType))),
+		"confidence":        graphql.NewNonNull(graphql.Float), "explain": graphql.NewNonNull(graphql.String),
+	})
+	signatureType := graphQLObject("Signature", map[string]graphql.Output{
+		"signature_id": graphql.NewNonNull(graphql.ID), "shape": graphql.NewNonNull(graphql.String),
+		"service_roles": stringList, "symptoms": stringList,
+		"occurrence_count":            graphql.NewNonNull(graphql.Int),
+		"avg_resolution_time_seconds": graphql.NewNonNull(graphql.Int),
+		"behavioral_hash":             graphql.NewNonNull(graphql.String), "created_at": graphql.NewNonNull(graphql.String),
+	})
+	actionResultType := graphQLObject("ActionResult", map[string]graphql.Output{
+		"status": graphql.NewNonNull(graphql.String),
+	})
+	batchResultType := graphQLObject("BatchResult", map[string]graphql.Output{
+		"status": graphql.NewNonNull(graphql.String), "count": graphql.NewNonNull(graphql.Int),
+	})
+	suggestionType := graphQLObject("Suggestion", map[string]graphql.Output{
+		"action": graphql.NewNonNull(graphql.String), "confidence": graphql.NewNonNull(graphql.Float),
+		"signature": graphql.NewNonNull(signatureType),
+	})
+	eventInput := graphql.NewInputObject(graphql.InputObjectConfig{
+		Name: "EventInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"id":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"service":    &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"kind":       &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"provenance": &graphql.InputObjectFieldConfig{Type: graphql.String},
+		},
+	})
+
+	query := graphql.NewObject(graphql.ObjectConfig{Name: "Query", Fields: graphql.Fields{
+		"reconstruct": &graphql.Field{
+			Type: graphql.NewNonNull(incidentContextType),
+			Args: graphql.FieldConfigArgument{
+				"incidentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"mode":       &graphql.ArgumentConfig{Type: graphql.String},
+			},
+			Resolve: s.resolver(s.handleReconstruct, false),
+		},
+		"incident": &graphql.Field{
+			Type:    incidentType,
+			Args:    graphql.FieldConfigArgument{"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)}},
+			Resolve: s.resolver(s.handleIncident, false),
+		},
+		"serviceGraph": &graphql.Field{
+			Type: graphql.NewNonNull(graphViewType),
+			Args: graphql.FieldConfigArgument{
+				"service": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"depth":   &graphql.ArgumentConfig{Type: graphql.Int},
+			},
+			Resolve: s.resolver(s.handleServiceGraph, false),
+		},
+		"incidentGraph": &graphql.Field{
+			Type: graphql.NewNonNull(graphViewType),
+			Args: graphql.FieldConfigArgument{
+				"incidentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"depth":      &graphql.ArgumentConfig{Type: graphql.Int},
+			},
+			Resolve: s.resolver(s.handleIncidentGraph, false),
+		},
+		"remediationSuggestions": &graphql.Field{
+			Type:    graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(suggestionType))),
+			Args:    graphql.FieldConfigArgument{"incidentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)}},
+			Resolve: s.resolver(s.handleRemediationSuggestions, false),
+		},
+		"similarIncidents": &graphql.Field{
+			Type:    graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(incidentType))),
+			Args:    graphql.FieldConfigArgument{"incidentId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)}},
+			Resolve: s.resolver(s.handleSimilarIncidents, false),
+		},
+		"signature": &graphql.Field{
+			Type:    signatureType,
+			Args:    graphql.FieldConfigArgument{"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)}},
+			Resolve: s.resolver(s.handleSignature, false),
+		},
+		"signatures": &graphql.Field{
+			Type:    graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(signatureType))),
+			Resolve: s.resolver(s.handleSignatures, false),
+		},
+	}})
+	mutation := graphql.NewObject(graphql.ObjectConfig{Name: "Mutation", Fields: graphql.Fields{
+		"ingestEvent": &graphql.Field{
+			Type:    graphql.NewNonNull(actionResultType),
+			Args:    graphql.FieldConfigArgument{"event": &graphql.ArgumentConfig{Type: graphql.NewNonNull(eventInput)}},
+			Resolve: s.resolver(s.handleIngestEvent, true),
+		},
+		"ingestBatch": &graphql.Field{
+			Type: graphql.NewNonNull(batchResultType),
+			Args: graphql.FieldConfigArgument{
+				"events": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(eventInput)))},
+			},
+			Resolve: s.resolver(s.handleIngestBatch, true),
+		},
+	}})
+
+	compiled, err := graphql.NewSchema(graphql.SchemaConfig{Query: query, Mutation: mutation})
+	if err != nil {
+		return fmt.Errorf("build GraphQL schema: %w", err)
+	}
+	s.schema = compiled
+	return nil
 }
 
 func (s *GraphQLServer) handleIngestEvent(ctx context.Context, vars map[string]interface{}) (interface{}, error) {
@@ -320,15 +468,7 @@ func (s *GraphQLServer) handleReconstruct(ctx context.Context, vars map[string]i
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"incidentId":       recon.IncidentID,
-		"timestamp":        recon.Timestamp,
-		"causalChain":      recon.CausalChain,
-		"relatedServices":  recon.RelatedServices,
-		"symptoms":         recon.Symptoms,
-		"suggestedActions": recon.SuggestedActions,
-		"confidence":       recon.Confidence,
-	}, nil
+	return recon, nil
 }
 
 func (s *GraphQLServer) handleIncident(ctx context.Context, vars map[string]interface{}) (interface{}, error) {
@@ -352,8 +492,8 @@ func (s *GraphQLServer) handleServiceGraph(ctx context.Context, vars map[string]
 	}
 
 	depth := 3
-	if d, ok := vars["depth"].(float64); ok {
-		depth = int(d)
+	if d, ok := vars["depth"].(int); ok {
+		depth = d
 	}
 
 	graphView, err := s.graph.GetServiceGraph(ctx, service, depth)
@@ -371,8 +511,8 @@ func (s *GraphQLServer) handleIncidentGraph(ctx context.Context, vars map[string
 	}
 
 	depth := 3
-	if d, ok := vars["depth"].(float64); ok {
-		depth = int(d)
+	if d, ok := vars["depth"].(int); ok {
+		depth = d
 	}
 
 	graphView, err := s.graph.GetIncidentGraph(ctx, incidentID, depth)
@@ -449,9 +589,9 @@ func (s *GraphQLServer) handleSimilarIncidents(ctx context.Context, vars map[str
 }
 
 func (s *GraphQLServer) handleSignature(ctx context.Context, vars map[string]interface{}) (interface{}, error) {
-	sigID, ok := vars["incidentId"].(string)
+	sigID, ok := vars["id"].(string)
 	if !ok {
-		return nil, fmt.Errorf("incidentId required")
+		return nil, fmt.Errorf("id required")
 	}
 
 	signature, err := s.signatures.Get(ctx, sigID)
@@ -469,112 +609,4 @@ func (s *GraphQLServer) handleSignatures(ctx context.Context, vars map[string]in
 	}
 
 	return sigs, nil
-}
-
-var schema = `
-type Event {
-  id: ID!
-  timestamp: String!
-  kind: String!
-  service: String!
-  trace_id: String
-  incident_id: String
-  provenance: String!
-}
-
-type Incident {
-  id: ID!
-  timestamp: String!
-  signature_id: String
-  status: String!
-  severity: String!
-  primary_service: String!
-  affected_services: [String!]!
-  resolved_at: String
-}
-
-type Node {
-  id: ID!
-  type: String!
-  label: String!
-}
-
-type Edge {
-  id: ID!
-  from_node_id: ID!
-  to_node_id: ID!
-  type: String!
-  weight: Float!
-}
-
-type GraphView {
-  nodes: [Node!]!
-  edges: [Edge!]!
-}
-
-type RemediationAction {
-  action: String!
-  description: String!
-  success_rate: Float!
-  avg_time_to_resolve_seconds: Int!
-}
-
-type IncidentContext {
-  incident_id: ID!
-  timestamp: String!
-  causal_chain: [CausalEvent!]!
-  related_services: [String!]!
-  symptoms: [Symptom!]!
-  suggested_actions: [RemediationAction!]!
-  confidence: Float!
-}
-
-type Signature {
-  id: ID!
-  hash: String!
-  symptom_type: String!
-  affected_services: [String!]!
-  occurrence_count: Int!
-  avg_resolution_time_seconds: Int64!
-  created_at: String!
-}
-
-type Query {
-  ingestEvent(event: EventInput!): ActionResult!
-  ingestBatch(events: [EventInput!]!): BatchResult!
-  reconstruct(incidentId: ID!, mode: String): IncidentContext!
-  incident(id: ID!): Incident
-  serviceGraph(service: String!, depth: Int): GraphView!
-  incidentGraph(incidentId: ID!, depth: Int): GraphView!
-  remediationSuggestions(incidentId: ID!): [Suggestion!]!
-  similarIncidents(incidentId: ID!): [Incident!]!
-  signature(id: ID!): Signature
-  signatures: [Signature!]!
-}
-
-input EventInput {
-  id: ID!
-  service: String!
-  kind: String!
-  provenance: String
-}
-
-type ActionResult {
-  status: String!
-}
-
-type BatchResult {
-  status: String!
-  count: Int!
-}
-
-type Suggestion {
-  action: String!
-  confidence: Float!
-  signature: Signature!
-}
-`
-
-func (s *GraphQLServer) Schema() string {
-	return schema
 }

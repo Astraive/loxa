@@ -117,7 +117,7 @@ func (s *Server) executeWebSocketAction(ctx context.Context, req transportcontra
 				query = candidate
 			}
 		}
-		return s.graphql.executeQuery(ctx, query, vars)
+		return s.graphql.executeQuery(ctx, query, vars, req.OperationName), nil
 	default:
 		return nil, fmt.Errorf("unknown websocket action %q", req.Action)
 	}

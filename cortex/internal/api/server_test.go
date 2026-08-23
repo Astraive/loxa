@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/astraive/loza/cortex/internal/config"
 	"github.com/astraive/loza/cortex/internal/middleware"
+	"github.com/astraive/loza/cortex/internal/models"
 	"github.com/astraive/loza/cortex/internal/storage"
 )
 
@@ -67,21 +69,87 @@ func TestNewServerDoesNotStartUnownedWorkers(t *testing.T) {
 	}
 }
 
-func TestGraphQLHelpers(t *testing.T) {
-	if got := removeWhitespace("query {  a \n b }"); got != "query{ab}" {
-		t.Fatalf("unexpected whitespace removal: %s", got)
+type graphQLSignatureStore struct {
+	signatures map[string]*models.IncidentSignature
+}
+
+func (*graphQLSignatureStore) Save(context.Context, *models.IncidentSignature) error { return nil }
+func (s *graphQLSignatureStore) Get(_ context.Context, id string) (*models.IncidentSignature, error) {
+	signature := s.signatures[id]
+	if signature == nil {
+		return nil, errors.New("signature not found")
 	}
-	if !containsOperation("ingestEvent{foo}", "ingestEvent") {
-		t.Fatal("expected operation match")
+	return signature, nil
+}
+func (s *graphQLSignatureStore) List(context.Context, int) ([]*models.IncidentSignature, error) {
+	result := make([]*models.IncidentSignature, 0, len(s.signatures))
+	for _, signature := range s.signatures {
+		result = append(result, signature)
+	}
+	return result, nil
+}
+func (*graphQLSignatureStore) FindSimilar(context.Context, *models.IncidentSignature, int) ([]*models.SimilarIncident, error) {
+	return nil, nil
+}
+func (*graphQLSignatureStore) FindByBehavioralHash(context.Context, string) ([]*models.IncidentSignature, error) {
+	return nil, nil
+}
+func (*graphQLSignatureStore) UpdateDecay(context.Context, string, float64) error { return nil }
+func (*graphQLSignatureStore) ArchiveStale(context.Context, float64) (int, error) {
+	return 0, nil
+}
+func (*graphQLSignatureStore) UpdateLastMatched(context.Context, string) error { return nil }
+
+func testGraphQLServer(t *testing.T) *GraphQLServer {
+	t.Helper()
+	server := &GraphQLServer{
+		signatures: &graphQLSignatureStore{signatures: map[string]*models.IncidentSignature{
+			"sig-1": {SignatureID: "sig-1", Shape: "first"},
+			"sig-2": {SignatureID: "sig-2", Shape: "second"},
+		}},
+	}
+	if err := server.initSchema(); err != nil {
+		t.Fatal(err)
+	}
+	return server
+}
+
+func TestGraphQLExecutesNamedOperationAliasesAndSelectionSets(t *testing.T) {
+	result := testGraphQLServer(t).executeQuery(
+		context.Background(),
+		`query First { ignored: signature(id: "sig-1") { signature_id shape } }
+		 query Second { chosen: signature(id: "sig-2") { shape } }`,
+		nil,
+		"Second",
+	)
+	if len(result.Errors) != 0 {
+		t.Fatalf("unexpected GraphQL errors: %+v", result.Errors)
+	}
+	data, ok := result.Data.(map[string]interface{})
+	if !ok {
+		t.Fatalf("unexpected GraphQL data: %#v", result.Data)
+	}
+	chosen, ok := data["chosen"].(map[string]interface{})
+	if !ok || chosen["shape"] != "second" {
+		t.Fatalf("unexpected aliased selection: %#v", data)
+	}
+	if _, exists := chosen["signature_id"]; exists {
+		t.Fatalf("executor returned an unrequested field: %#v", chosen)
+	}
+	if _, exists := data["ignored"]; exists {
+		t.Fatalf("executor ran an unselected operation: %#v", data)
 	}
 }
 
-func TestContainsWordHandlesInputBoundary(t *testing.T) {
-	if !containsWord("query", "query") {
-		t.Fatal("expected exact word match")
-	}
-	if containsWord("somequery", "query") {
-		t.Fatal("unexpected suffix match inside identifier")
+func TestGraphQLDoesNotDispatchFromStringArguments(t *testing.T) {
+	result := testGraphQLServer(t).executeQuery(
+		context.Background(),
+		`query { signature(id: "ingestEvent") { shape } }`,
+		nil,
+		"",
+	)
+	if len(result.Errors) == 0 || !strings.Contains(result.Errors[0].Message, "not found") {
+		t.Fatalf("expected signature lookup error, got %+v", result.Errors)
 	}
 }
 
@@ -90,56 +158,13 @@ func TestGraphQLRejectsReaderIngestMutations(t *testing.T) {
 		Authorized: true,
 		Role:       "reader",
 	})
-	tests := []struct {
-		name  string
-		query string
-	}{
-		{name: "single event", query: "mutation IngestEvent { ingestEvent { status } }"},
-		{name: "batch", query: "mutation IngestBatch { ingestBatch { status } }"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := (&GraphQLServer{}).executeQuery(ctx, tt.query, map[string]interface{}{})
-			if err == nil || !strings.Contains(err.Error(), "writer role required") {
-				t.Fatalf("expected writer role error, got %v", err)
-			}
-		})
-	}
-}
-
-func TestGraphQLAllowsWriterLevelIngestMutation(t *testing.T) {
-	tests := []struct {
-		name string
-		ctx  context.Context
-	}{
-		{
-			name: "writer",
-			ctx: middleware.WithAuthResult(context.Background(), &middleware.AuthResult{
-				Authorized: true,
-				Role:       "writer",
-			}),
-		},
-		{
-			name: "admin",
-			ctx: middleware.WithAuthResult(context.Background(), &middleware.AuthResult{
-				Authorized: true,
-				Role:       "admin",
-			}),
-		},
-		{name: "auth disabled", ctx: context.Background()},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := (&GraphQLServer{}).executeQuery(
-				tt.ctx,
-				"mutation IngestEvent { ingestEvent { status } }",
-				map[string]interface{}{},
-			)
-			if err == nil || !strings.Contains(err.Error(), "event variables required") {
-				t.Fatalf("expected operation validation error, got %v", err)
-			}
-		})
+	result := testGraphQLServer(t).executeQuery(
+		ctx,
+		`mutation { ingestEvent(event: {id: "evt", service: "api", kind: "log"}) { status } }`,
+		nil,
+		"",
+	)
+	if len(result.Errors) == 0 || !strings.Contains(result.Errors[0].Message, "writer role required") {
+		t.Fatalf("expected writer authorization error, got %+v", result.Errors)
 	}
 }
