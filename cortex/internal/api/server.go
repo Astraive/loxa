@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -275,7 +276,7 @@ func (s *Server) IngestEvent(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.processor.ProcessEvent(r.Context(), &event); err != nil {
 		log.Warn().Err(err).Msg("event ingestion failed")
-		http.Error(w, "bad request", http.StatusBadRequest)
+		writeIngestionError(w, err)
 		return
 	}
 
@@ -301,7 +302,7 @@ func (s *Server) IngestBatch(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.processor.ProcessBatch(r.Context(), events); err != nil {
 		log.Error().Err(err).Msg("batch ingestion failed")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeIngestionError(w, err)
 		return
 	}
 
@@ -314,7 +315,7 @@ func (s *Server) IngestBatch(w http.ResponseWriter, r *http.Request) {
 func (s *Server) IngestJSONL(w http.ResponseWriter, r *http.Request) {
 	if err := s.processor.ProcessJSONL(r.Context(), r.Body); err != nil {
 		log.Error().Err(err).Msg("JSONL ingestion failed")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeIngestionError(w, err)
 		return
 	}
 
@@ -322,6 +323,14 @@ func (s *Server) IngestJSONL(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(map[string]string{"status": "accepted"}); err != nil {
 		log.Error().Err(err).Msg("failed to encode ingest response")
 	}
+}
+
+func writeIngestionError(w http.ResponseWriter, err error) {
+	if errors.Is(err, processor.ErrInvalidEvent) {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	http.Error(w, "internal error", http.StatusInternalServerError)
 }
 
 type ReconstructRequest struct {

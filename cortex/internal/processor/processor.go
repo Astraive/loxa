@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"sort"
@@ -15,6 +16,10 @@ import (
 	"github.com/astraive/loza/cortex/internal/storage"
 	"github.com/rs/zerolog/log"
 )
+
+// ErrInvalidEvent classifies malformed event input independently from storage
+// and processing failures.
+var ErrInvalidEvent = errors.New("invalid event")
 
 type EventProcessor struct {
 	eventStore storage.EventStore
@@ -45,7 +50,7 @@ func (p *EventProcessor) WithConfigurableRedaction(cfg redaction.Config) *EventP
 
 func (p *EventProcessor) ProcessEvent(ctx context.Context, event *models.Event) error {
 	if err := event.Validate(); err != nil {
-		return fmt.Errorf("event validation failed: %w", err)
+		return fmt.Errorf("%w: %w", ErrInvalidEvent, err)
 	}
 
 	normalized := p.normalizeEvent(event)
@@ -71,7 +76,7 @@ func (p *EventProcessor) ProcessBatch(ctx context.Context, events []*models.Even
 
 	for _, e := range events {
 		if err := e.Validate(); err != nil {
-			return fmt.Errorf("event validation failed for %s: %w", e.ID, err)
+			return fmt.Errorf("%w %s: %w", ErrInvalidEvent, e.ID, err)
 		}
 		normalized := p.normalizeEvent(e)
 		validEvents = append(validEvents, normalized)
@@ -103,12 +108,12 @@ func (p *EventProcessor) ProcessJSONL(ctx context.Context, reader io.Reader) err
 
 		var rawEvent map[string]interface{}
 		if err := json.Unmarshal(line, &rawEvent); err != nil {
-			return fmt.Errorf("line %d: failed to parse JSON: %w", lineNum, err)
+			return fmt.Errorf("%w at line %d: failed to parse JSON: %w", ErrInvalidEvent, lineNum, err)
 		}
 
 		event, err := eventconv.FromRawMap(rawEvent, "jsonl")
 		if err != nil {
-			return fmt.Errorf("line %d: %w", lineNum, err)
+			return fmt.Errorf("%w at line %d: %w", ErrInvalidEvent, lineNum, err)
 		}
 
 		events = append(events, event)

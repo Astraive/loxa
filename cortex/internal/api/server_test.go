@@ -1,7 +1,9 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +16,7 @@ import (
 	"github.com/astraive/loza/cortex/internal/config"
 	"github.com/astraive/loza/cortex/internal/middleware"
 	"github.com/astraive/loza/cortex/internal/models"
+	"github.com/astraive/loza/cortex/internal/processor"
 	"github.com/astraive/loza/cortex/internal/storage"
 )
 
@@ -66,6 +69,46 @@ func TestNewServerDoesNotStartUnownedWorkers(t *testing.T) {
 	time.Sleep(20 * time.Millisecond)
 	if delta := runtime.NumGoroutine() - before; delta > 2 {
 		t.Fatalf("server construction leaked %d background workers", delta)
+	}
+}
+
+func TestIngestEventClassifiesStorageFailuresAsServerErrors(t *testing.T) {
+	cfg := config.Default()
+	cfg.Storage.DuckDB.Path = filepath.Join(t.TempDir(), "cortex.duckdb")
+	stor, err := storage.NewStorage(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	eventProcessor := processor.NewEventProcessor(stor.Events(), stor.Topology(), stor.Graph())
+	if err := stor.Close(); err != nil {
+		t.Fatal(err)
+	}
+	body, err := json.Marshal(models.Event{
+		ID: "evt-storage", Timestamp: time.Now(), Service: "api",
+		Kind: models.EventKindLog, Provenance: "loza",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rec := httptest.NewRecorder()
+	(&Server{processor: eventProcessor}).IngestEvent(
+		rec,
+		httptest.NewRequest(http.MethodPost, "/events", bytes.NewReader(body)),
+	)
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("expected storage failure to return 500, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestIngestBatchClassifiesValidationFailuresAsClientErrors(t *testing.T) {
+	rec := httptest.NewRecorder()
+	(&Server{processor: processor.NewEventProcessor(nil, nil, nil)}).IngestBatch(
+		rec,
+		httptest.NewRequest(http.MethodPost, "/events/batch", strings.NewReader(`{"events":[{}]}`)),
+	)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected validation failure to return 400, got %d: %s", rec.Code, rec.Body.String())
 	}
 }
 
