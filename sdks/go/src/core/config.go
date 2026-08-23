@@ -1114,6 +1114,11 @@ func NewClient(cfg Config) (*Logger, error) {
 			FlushInterval: merged.Async.FlushInterval,
 			Gzip:          merged.EnableCompression,
 			Insecure:      merged.Insecure,
+			OnError: func(err error) {
+				if merged.StatsHandler != nil {
+					merged.StatsHandler.OnError(err)
+				}
+			},
 		})
 		if err != nil {
 			return nil, fmt.Errorf("loza: initialize httpbatch sink: %w", err)

@@ -193,7 +193,87 @@ func TestBatchSinkGzipAndStatusErrors(t *testing.T) {
 	if err := bad.WriteEvent(context.Background(), []byte("fails\n"), nil); err == nil || !strings.Contains(err.Error(), "unexpected status 502") {
 		t.Fatalf("status error = %v", err)
 	}
-	if err := bad.Close(context.Background()); err != nil {
-		t.Fatalf("Close after failed WriteEvent: %v", err)
+	if err := bad.Close(context.Background()); err == nil || !strings.Contains(err.Error(), "unexpected status 502") {
+		t.Fatalf("Close after failed WriteEvent = %v, want retained-batch error", err)
+	}
+}
+
+func TestBatchSinkRetainsFailedBatchAheadOfNewEvents(t *testing.T) {
+	var mu sync.Mutex
+	var bodies []string
+	fail := true
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		mu.Lock()
+		bodies = append(bodies, string(body))
+		shouldFail := fail
+		mu.Unlock()
+		if shouldFail {
+			http.Error(w, "retry", http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	got, err := New(Config{URL: server.URL, BatchSize: 1, FlushInterval: time.Hour})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if err := got.WriteEvent(context.Background(), []byte("first\n"), nil); err == nil {
+		t.Fatal("first delivery unexpectedly succeeded")
+	}
+
+	mu.Lock()
+	fail = false
+	mu.Unlock()
+	if err := got.WriteEvent(context.Background(), []byte("second\n"), nil); err != nil {
+		t.Fatalf("retry delivery: %v", err)
+	}
+	if err := got.Close(context.Background()); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(bodies) != 2 {
+		t.Fatalf("request bodies = %q, want two attempts", bodies)
+	}
+	if bodies[0] != "first\n" || bodies[1] != "first\nsecond\n" {
+		t.Fatalf("request bodies = %q, failed batch was not retried first", bodies)
+	}
+}
+
+func TestBatchSinkReportsTimerFailures(t *testing.T) {
+	reported := make(chan error, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "retry", http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	got, err := New(Config{
+		URL:           server.URL,
+		BatchSize:     100,
+		FlushInterval: time.Millisecond,
+		OnError: func(err error) {
+			reported <- err
+		},
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if err := got.WriteEvent(context.Background(), []byte("timer\n"), nil); err != nil {
+		t.Fatalf("WriteEvent: %v", err)
+	}
+	select {
+	case err := <-reported:
+		if !strings.Contains(err.Error(), "unexpected status 503") {
+			t.Fatalf("timer error = %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timer failure was not reported")
+	}
+	if err := got.Close(context.Background()); err == nil {
+		t.Fatal("Close should report the retained failed batch")
 	}
 }
