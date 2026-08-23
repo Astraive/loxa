@@ -93,7 +93,7 @@ func TestRunSourceOfTruthSyncProcessesPollThenTail(t *testing.T) {
 				return
 			}
 			_ = json.NewEncoder(w).Encode(map[string]any{"columns": []string{"raw"}, "rows": []map[string]any{}})
-		case "/tail":
+		case "/collectors/test/tail":
 			w.Header().Set("Content-Type", "application/x-ndjson")
 			flusher, _ := w.(http.Flusher)
 			_ = json.NewEncoder(w).Encode(tailEvent)

@@ -85,15 +85,21 @@ func collectorHTTPClient(cfg config.CollectorConfig) (*http.Client, error) {
 }
 func setCollectorAuth(header http.Header, cfg config.CollectorConfig) {
 	if strings.TrimSpace(cfg.APIKey) != "" {
+		if keyHeader := strings.TrimSpace(cfg.APIKeyHeader); keyHeader != "" {
+			header.Set(keyHeader, cfg.APIKey)
+			return
+		}
 		header.Set("Authorization", "Bearer "+cfg.APIKey)
 		return
 	}
 	if cfg.Username != "" {
 		header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(cfg.Username+":"+cfg.Password)))
-		return
 	}
-	if cfg.APIKeyHeader != "" {
-		header.Set(cfg.APIKeyHeader, cfg.APIKey)
+}
+
+func setCollectorScope(header http.Header, cfg config.CollectorConfig) {
+	if environment := strings.TrimSpace(cfg.Environment); environment != "" {
+		header.Set("X-Loza-Env", environment)
 	}
 }
 
@@ -149,6 +155,7 @@ func (c *Client) streamTailHTTP(ctx context.Context, handle func(*models.Event) 
 		return err
 	}
 	setCollectorAuth(req.Header, c.cfg)
+	setCollectorScope(req.Header, c.cfg)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
@@ -186,6 +193,7 @@ func (c *Client) streamTailWebSocket(ctx context.Context, handle func(*models.Ev
 	}
 	header := http.Header{}
 	setCollectorAuth(header, c.cfg)
+	setCollectorScope(header, c.cfg)
 	conn, _, err := websocket.DefaultDialer.DialContext(ctx, c.tailURL("/ws/tail", true), header)
 	if err != nil {
 		return err
@@ -685,6 +693,9 @@ func (c *Client) tailURL(path string, websocketScheme bool) string {
 	if websocketScheme {
 		base = strings.Replace(base, "http://", "ws://", 1)
 		base = strings.Replace(base, "https://", "wss://", 1)
+	}
+	if collector := strings.TrimSpace(c.cfg.Collector); collector != "" {
+		path = "/collectors/" + url.PathEscape(collector) + path
 	}
 	u, err := url.Parse(base + path)
 	if err != nil {
