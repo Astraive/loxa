@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -95,6 +96,37 @@ func TestMiddleware_ValidSecretKey(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer lx_sec_live_ksec1_testsecret")
 	req.Header.Set("X-Loza-Env", "prod")
 	req.Header.Set("X-Loza-Service", "checkout-api")
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+}
+
+func TestMiddleware_WebSocketSubprotocolCredentialAndScope(t *testing.T) {
+	serverSecret := []byte("test-server-secret")
+	store := newTestStore(serverSecret)
+	cache := NewMemoryKeyCache(10*time.Second, 5*time.Second)
+	defer cache.Close()
+
+	handler := Middleware(store, cache, serverSecret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("X-Loza-Env"); got != "prod" {
+			t.Errorf("X-Loza-Env = %q, want prod", got)
+		}
+		if got := r.Header.Get("X-Loza-Service"); got != "checkout-api" {
+			t.Errorf("X-Loza-Service = %q, want checkout-api", got)
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	credential := "lx_sec_live_ksec1_testsecret"
+	protocol := WebSocketAuthProtocolPrefix + base64.RawURLEncoding.EncodeToString([]byte(credential))
+	req := httptest.NewRequest("GET", "/collectors/orders/ws/tail?environment=prod&service=checkout-api", nil)
+	req.Header.Set("Connection", "Upgrade")
+	req.Header.Set("Upgrade", "websocket")
+	req.Header.Set("Sec-WebSocket-Protocol", "loza.tail.v1, "+protocol)
 	rec := httptest.NewRecorder()
 
 	handler.ServeHTTP(rec, req)

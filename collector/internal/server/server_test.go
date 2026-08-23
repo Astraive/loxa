@@ -2,11 +2,15 @@ package server
 
 import (
 	"context"
+	"encoding/base64"
 	"io"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/astraive/loza/collector/internal/auth"
+	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/metadata"
@@ -343,6 +347,79 @@ func TestConfigStructs(t *testing.T) {
 	assert.Equal(t, ":9309", cfg.GRPC.Port)
 	assert.True(t, cfg.GraphQL.Enabled)
 	assert.Equal(t, ":9310", cfg.GraphQL.Port)
+}
+
+type websocketTailState struct {
+	filters    chan TailFilters
+	subscriber chan chan []byte
+	removed    chan struct{}
+}
+
+func (s *websocketTailState) TailHistory(_ context.Context, filters TailFilters) ([][]byte, error) {
+	s.filters <- filters
+	return [][]byte{[]byte(`{"event_id":"evt-1","timestamp":"2026-08-24T00:00:00Z"}`)}, nil
+}
+
+func (*websocketTailState) TailMatches(_ context.Context, raw []byte, filters TailFilters) bool {
+	return RawMatchesTailFilters(raw, filters)
+}
+
+func (s *websocketTailState) AddTailSubscriber(ch chan []byte) {
+	s.subscriber <- ch
+}
+
+func (s *websocketTailState) RemoveTailSubscriber(_ chan []byte) {
+	close(s.removed)
+}
+
+func TestTailWebSocketBrowserContract(t *testing.T) {
+	state := &websocketTailState{
+		filters:    make(chan TailFilters, 1),
+		subscriber: make(chan chan []byte, 1),
+		removed:    make(chan struct{}),
+	}
+	credential := "lx_sec_live_ksec1_testsecret"
+	handler := NewTailWebSocketHandler(HTTPConfig{
+		AuthEnabled: true,
+		AuthHeader:  "X-API-Key",
+		AuthValue:   credential,
+	}, state)
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+
+	authProtocol := auth.WebSocketAuthProtocolPrefix +
+		base64.RawURLEncoding.EncodeToString([]byte(credential))
+	dialer := websocket.Dialer{Subprotocols: []string{auth.WebSocketTailProtocol, authProtocol}}
+	conn, response, err := dialer.Dial(
+		"ws"+strings.TrimPrefix(srv.URL, "http")+"?environment=production&service=checkout",
+		nil,
+	)
+	if err != nil {
+		if response != nil {
+			_ = response.Body.Close()
+		}
+		t.Fatalf("dial tail websocket: %v", err)
+	}
+
+	if got := conn.Subprotocol(); got != auth.WebSocketTailProtocol {
+		t.Fatalf("negotiated protocol = %q, want %q", got, auth.WebSocketTailProtocol)
+	}
+	if _, raw, err := conn.ReadMessage(); err != nil || string(raw) == "" {
+		t.Fatalf("read initial history: %q, %v", raw, err)
+	}
+	filters := <-state.filters
+	if filters.Service != "checkout" {
+		t.Fatalf("service filter = %q, want checkout", filters.Service)
+	}
+
+	subscriber := <-state.subscriber
+	_ = conn.Close()
+	subscriber <- []byte(`{"service":"checkout"}`)
+	select {
+	case <-state.removed:
+	case <-time.After(time.Second):
+		t.Fatal("tail subscriber was not removed after disconnect")
+	}
 }
 
 type mockIngestStream struct {

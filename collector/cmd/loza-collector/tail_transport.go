@@ -12,6 +12,8 @@ import (
 	"time"
 
 	serverruntime "github.com/astraive/loza/collector/internal/server"
+	duckdbsink "github.com/astraive/loza/collector/internal/sinks/duckdb"
+	publichttp "github.com/astraive/loza/collector/server/http"
 	transportcontracts "github.com/astraive/loza/spec/transport/contracts"
 	"github.com/gorilla/websocket"
 )
@@ -91,6 +93,7 @@ func (s *collectorState) streamHistoricalTail(ctx context.Context, filters serve
 }
 
 func (s *collectorState) queryTailHistory(ctx context.Context, filters serverruntime.TailFilters) ([][]byte, error) {
+	filters = tailFiltersWithAuthorizedScope(ctx, filters)
 	if s.queryDB == nil {
 		return nil, nil
 	}
@@ -107,7 +110,10 @@ func (s *collectorState) queryTailHistory(ctx context.Context, filters serverrun
 	if err != nil {
 		return nil, err
 	}
-	idExpr := fmt.Sprintf("coalesce(json_extract_string(%s, '$.id'), '')", rawIdent)
+	if encryptionEnabled(s.cfg.storageEncryptionKey) {
+		return s.queryEncryptedTailHistory(ctx, filters, rawIdent, tableIdent, tsIdent)
+	}
+	idExpr := fmt.Sprintf("coalesce(json_extract_string(%s, '$.event_id'), json_extract_string(%s, '$.id'), '')", rawIdent, rawIdent)
 	conds := make([]string, 0, 8)
 	if !filters.Since.IsZero() {
 		since := quoteSQLString(filters.Since.UTC().Format(time.RFC3339Nano))
@@ -118,6 +124,12 @@ func (s *collectorState) queryTailHistory(ctx context.Context, filters serverrun
 		}
 	} else if filters.AfterEventID != "" {
 		conds = append(conds, fmt.Sprintf("%s > %s", idExpr, quoteSQLString(filters.AfterEventID)))
+	}
+	if filters.Collector != "" {
+		conds = append(conds, fmt.Sprintf("json_extract_string(%s, '$.collector') = %s", rawIdent, quoteSQLString(filters.Collector)))
+	}
+	if filters.Environment != "" {
+		conds = append(conds, fmt.Sprintf("json_extract_string(%s, '$.environment') = %s", rawIdent, quoteSQLString(filters.Environment)))
 	}
 	if filters.Service != "" {
 		conds = append(conds, fmt.Sprintf("json_extract_string(%s, '$.service') = %s", rawIdent, quoteSQLString(filters.Service)))
@@ -153,6 +165,63 @@ func (s *collectorState) queryTailHistory(ctx context.Context, filters serverrun
 		out = append(out, raw)
 	}
 	return out, rows.Err()
+}
+
+func (s *collectorState) queryEncryptedTailHistory(
+	ctx context.Context,
+	filters serverruntime.TailFilters,
+	rawIdent string,
+	tableIdent string,
+	tsIdent string,
+) ([][]byte, error) {
+	query := fmt.Sprintf("SELECT %s FROM %s ORDER BY %s ASC", rawIdent, tableIdent, tsIdent)
+	rows, err := s.queryDB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([][]byte, 0, filters.Limit)
+	for rows.Next() {
+		encrypted, err := scanRawRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		raw, err := duckdbsink.DecryptRaw(encrypted, s.cfg.storageEncryptionKey)
+		if err != nil {
+			return nil, fmt.Errorf("decrypt tail history: %w", err)
+		}
+		if !rawMatchesTailCursor(raw, filters) || !rawMatchesTailFilters(raw, filters) {
+			continue
+		}
+		out = append(out, raw)
+		if len(out) == filters.Limit {
+			break
+		}
+	}
+	return out, rows.Err()
+}
+
+func rawMatchesTailCursor(raw []byte, filters serverruntime.TailFilters) bool {
+	if filters.Since.IsZero() && filters.AfterEventID == "" {
+		return true
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return false
+	}
+	eventID := stringValue(payload["event_id"])
+	if eventID == "" {
+		eventID = stringValue(payload["id"])
+	}
+	if filters.Since.IsZero() {
+		return eventID > filters.AfterEventID
+	}
+	eventTime, err := time.Parse(time.RFC3339Nano, stringValue(payload["timestamp"]))
+	if err != nil || eventTime.Before(filters.Since) {
+		return false
+	}
+	return !eventTime.Equal(filters.Since) || filters.AfterEventID == "" || eventID > filters.AfterEventID
 }
 
 func (s *collectorState) tailTimestampColumn() string {
@@ -214,8 +283,16 @@ func (s *collectorState) TailHistory(ctx context.Context, filters serverruntime.
 	return s.queryTailHistory(ctx, filters)
 }
 
-func (s *collectorState) TailMatches(raw []byte, filters serverruntime.TailFilters) bool {
-	return rawMatchesTailFilters(raw, filters)
+func (s *collectorState) TailMatches(ctx context.Context, raw []byte, filters serverruntime.TailFilters) bool {
+	return rawMatchesTailFilters(raw, tailFiltersWithAuthorizedScope(ctx, filters))
+}
+
+func tailFiltersWithAuthorizedScope(ctx context.Context, filters serverruntime.TailFilters) serverruntime.TailFilters {
+	if scope, ok := publichttp.AuthorizedCollectorFromContext(ctx); ok {
+		filters.Collector = scope.Name
+		filters.Environment = scope.Environment
+	}
+	return filters
 }
 
 func (s *collectorState) AddTailSubscriber(ch chan []byte) {

@@ -1351,6 +1351,28 @@ func TestSinkTestEndpointFailure(t *testing.T) {
 	}
 }
 
+func TestResponseCompressionBypassesWebSocketUpgrades(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	var observed http.ResponseWriter
+	handler := withResponseCompression(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		observed = w
+		w.WriteHeader(http.StatusSwitchingProtocols)
+	}))
+	req := httptest.NewRequest(http.MethodGet, "/ws/tail", nil)
+	req.Header.Set("Connection", "Upgrade")
+	req.Header.Set("Upgrade", "websocket")
+	req.Header.Set("Accept-Encoding", "gzip")
+
+	handler.ServeHTTP(recorder, req)
+
+	if observed != recorder {
+		t.Fatal("websocket response writer was wrapped by compression middleware")
+	}
+	if got := recorder.Header().Get("Content-Encoding"); got != "" {
+		t.Fatalf("websocket response Content-Encoding = %q, want empty", got)
+	}
+}
+
 func TestParquetExportPathConvention(t *testing.T) {
 	ts := time.Date(2026, time.March, 9, 14, 5, 6, 123456789, time.UTC)
 	got := filepath.ToSlash(storagepath.LocalParquetExportPath("exports", "analytics.events", ts))

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"log/slog"
 	"net"
@@ -78,6 +79,56 @@ func WithRateLimiter(rl *KeyRateLimiter) MiddlewareOption {
 	return func(c *middlewareConfig) { c.rateLimiter = rl }
 }
 
+const (
+	WebSocketTailProtocol       = "loza.tail.v1"
+	WebSocketAuthProtocolPrefix = "loza.auth.v1."
+	maxWebSocketCredentialBytes = 8 * 1024
+)
+
+// PrepareWebSocketRequest maps browser-compatible WebSocket metadata onto the
+// canonical request headers consumed by authorization and scoped routing.
+func PrepareWebSocketRequest(r *http.Request) {
+	if !isWebSocketUpgrade(r) {
+		return
+	}
+	query := r.URL.Query()
+	if r.Header.Get("X-Loza-Env") == "" {
+		r.Header.Set("X-Loza-Env", strings.TrimSpace(query.Get("environment")))
+	}
+	if r.Header.Get("X-Loza-Service") == "" {
+		r.Header.Set("X-Loza-Service", strings.TrimSpace(query.Get("service")))
+	}
+}
+
+// WebSocketCredential decodes the credential-bearing subprotocol. The server
+// negotiates only WebSocketTailProtocol, so the credential is never echoed.
+func WebSocketCredential(r *http.Request) string {
+	if !isWebSocketUpgrade(r) {
+		return ""
+	}
+	for _, protocol := range strings.Split(r.Header.Get("Sec-WebSocket-Protocol"), ",") {
+		protocol = strings.TrimSpace(protocol)
+		if !strings.HasPrefix(protocol, WebSocketAuthProtocolPrefix) {
+			continue
+		}
+		encoded := strings.TrimPrefix(protocol, WebSocketAuthProtocolPrefix)
+		if encoded == "" || len(encoded) > maxWebSocketCredentialBytes {
+			return ""
+		}
+		decoded, err := base64.RawURLEncoding.DecodeString(encoded)
+		if err != nil || len(decoded) == 0 {
+			return ""
+		}
+		return string(decoded)
+	}
+	return ""
+}
+
+func isWebSocketUpgrade(r *http.Request) bool {
+	return strings.EqualFold(strings.TrimSpace(r.Header.Get("Upgrade")), "websocket") &&
+		strings.Contains(strings.ToLower(r.Header.Get("Connection")), "upgrade")
+}
+
 // Middleware returns an http.Handler middleware that validates API keys
 // and attaches an AuthContext to the request. It does NOT check permissions
 // — that's done per-route via RequirePermission.
@@ -110,6 +161,7 @@ func Middleware(store KeyStore, cache *MemoryKeyCache, serverSecret []byte, opts
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			PrepareWebSocketRequest(r)
 			ac, errCode, _ := authenticate(r, store, cache, serverSecret, rateLimiter, mc.allowLocalDevKeys, mc.trustedProxies)
 			if ac == nil {
 				slog.Warn("auth_failure", "code", errCode, "path", r.URL.Path, "remote", r.RemoteAddr)
@@ -352,8 +404,10 @@ func extractBearerToken(r *http.Request) string {
 	if strings.HasPrefix(strings.ToLower(auth), "bearer ") {
 		return strings.TrimSpace(auth[7:])
 	}
-	// Also check X-API-Key header for backward compat
-	return strings.TrimSpace(r.Header.Get("X-API-Key"))
+	if token := strings.TrimSpace(r.Header.Get("X-API-Key")); token != "" {
+		return token
+	}
+	return WebSocketCredential(r)
 }
 
 func extractIP(r *http.Request, trustedProxies []*net.IPNet) string {
