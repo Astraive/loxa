@@ -217,3 +217,20 @@ func TestRunPollCatchupDoesNotAdvanceCursorOnFailure(t *testing.T) {
 		t.Fatalf("expected in-memory cursor to remain zero, got %+v", state.Current())
 	}
 }
+
+func TestRunSourceOfTruthSyncHaltsOnUnrecoverableCursor(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "collector.cursor")
+	if err := os.WriteFile(path, []byte(`{"timestamp":`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	processor := &fakeBatchProcessor{}
+	RunSourceOfTruthSync(context.Background(), config.CollectorConfig{
+		SourceOfTruth: true,
+		URL:           "http://127.0.0.1:1",
+		Collector:     "test",
+		CursorPath:    path,
+	}, processor)
+	if ids := processor.FlattenedIDs(); len(ids) != 0 {
+		t.Fatalf("corrupt cursor must halt before replay, processed %v", ids)
+	}
+}

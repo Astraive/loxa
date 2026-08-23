@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/astraive/loza/cortex/internal/config"
@@ -28,6 +30,8 @@ import (
 
 const maxCollectorQueryLimit = 1000
 
+var ErrCursorRecovered = errors.New("collector cursor recovered from backup")
+
 type Cursor struct {
 	Timestamp time.Time `json:"timestamp"`
 	EventID   string    `json:"event_id"`
@@ -38,6 +42,7 @@ type Client struct {
 	httpClient *http.Client
 	lqlClient  *lqlclient.Client
 	initErr    error
+	cursorMu   sync.Mutex
 }
 
 func NewClient(cfg config.CollectorConfig) *Client {
@@ -315,6 +320,9 @@ func appendTimeConditions(conditions *[]string, parameters map[string]lqlclient.
 }
 
 func (c *Client) LoadCursor() (Cursor, error) {
+	c.cursorMu.Lock()
+	defer c.cursorMu.Unlock()
+
 	path := strings.TrimSpace(c.cfg.CursorPath)
 	if path == "" {
 		return Cursor{}, nil
@@ -324,8 +332,53 @@ func (c *Client) LoadCursor() (Cursor, error) {
 		if os.IsNotExist(err) {
 			return Cursor{}, nil
 		}
-		return Cursor{}, err
+		return Cursor{}, fmt.Errorf("read collector cursor: %w", err)
 	}
+	cur, err := decodeCursor(data)
+	if err == nil {
+		return cur, nil
+	}
+
+	backupData, backupErr := os.ReadFile(path + ".bak")
+	if backupErr != nil {
+		return Cursor{}, fmt.Errorf("decode collector cursor: %w; read backup: %v", err, backupErr)
+	}
+	backup, backupErr := decodeCursor(backupData)
+	if backupErr != nil {
+		return Cursor{}, fmt.Errorf("decode collector cursor: %w; decode backup: %v", err, backupErr)
+	}
+	return backup, fmt.Errorf("%w: primary cursor is invalid: %v", ErrCursorRecovered, err)
+}
+
+func (c *Client) SaveCursor(cur Cursor) error {
+	c.cursorMu.Lock()
+	defer c.cursorMu.Unlock()
+
+	path := strings.TrimSpace(c.cfg.CursorPath)
+	if path == "" {
+		return nil
+	}
+	data, err := json.Marshal(cur)
+	if err != nil {
+		return err
+	}
+	if previous, readErr := os.ReadFile(path); readErr == nil {
+		if _, decodeErr := decodeCursor(previous); decodeErr != nil {
+			return fmt.Errorf("refusing to replace invalid collector cursor: %w", decodeErr)
+		}
+		if err := atomicWriteFile(path+".bak", previous, 0o600); err != nil {
+			return fmt.Errorf("save collector cursor backup: %w", err)
+		}
+	} else if !os.IsNotExist(readErr) {
+		return fmt.Errorf("read previous collector cursor: %w", readErr)
+	}
+	if err := atomicWriteFile(path, data, 0o600); err != nil {
+		return fmt.Errorf("save collector cursor: %w", err)
+	}
+	return nil
+}
+
+func decodeCursor(data []byte) (Cursor, error) {
 	var cur Cursor
 	if err := json.Unmarshal(data, &cur); err != nil {
 		return Cursor{}, err
@@ -333,19 +386,36 @@ func (c *Client) LoadCursor() (Cursor, error) {
 	return cur, nil
 }
 
-func (c *Client) SaveCursor(cur Cursor) error {
-	path := strings.TrimSpace(c.cfg.CursorPath)
-	if path == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+func atomicWriteFile(path string, data []byte, mode os.FileMode) (err error) {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	data, err := json.Marshal(cur)
+	file, err := os.CreateTemp(dir, "."+filepath.Base(path)+".tmp-*")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0o600)
+	tempPath := file.Name()
+	defer func() {
+		if file != nil {
+			_ = file.Close()
+		}
+		_ = os.Remove(tempPath)
+	}()
+	if err := file.Chmod(mode); err != nil {
+		return err
+	}
+	if _, err := file.Write(data); err != nil {
+		return err
+	}
+	if err := file.Sync(); err != nil {
+		return err
+	}
+	if err := file.Close(); err != nil {
+		return err
+	}
+	file = nil
+	return os.Rename(tempPath, path)
 }
 
 func (c *Client) queryLQLRows(ctx context.Context, source string, parameters map[string]lqlclient.QueryValue, limit int) ([]map[string]any, error) {

@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -282,5 +285,55 @@ func TestCollectorAuthUsesConfiguredAPIKeyHeader(t *testing.T) {
 	}
 	if got := header.Get("Authorization"); got != "" {
 		t.Fatalf("unexpected bearer authorization %q", got)
+	}
+}
+
+func TestCursorPersistenceIsAtomicAndRecoversBackup(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "collector.cursor")
+	client := NewClient(config.CollectorConfig{CursorPath: path})
+	first := Cursor{Timestamp: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), EventID: "evt-1"}
+	second := Cursor{Timestamp: time.Date(2026, 1, 1, 0, 0, 1, 0, time.UTC), EventID: "evt-2"}
+
+	if err := client.SaveCursor(first); err != nil {
+		t.Fatalf("save first cursor: %v", err)
+	}
+	if err := client.SaveCursor(second); err != nil {
+		t.Fatalf("save second cursor: %v", err)
+	}
+	backupData, err := os.ReadFile(path + ".bak")
+	if err != nil {
+		t.Fatalf("read cursor backup: %v", err)
+	}
+	backup, err := decodeCursor(backupData)
+	if err != nil || backup != first {
+		t.Fatalf("backup = %+v, err=%v; want %+v", backup, err, first)
+	}
+
+	if err := os.WriteFile(path, []byte(`{"timestamp":`), 0o600); err != nil {
+		t.Fatalf("corrupt primary cursor: %v", err)
+	}
+	recovered, err := client.LoadCursor()
+	if !errors.Is(err, ErrCursorRecovered) {
+		t.Fatalf("load error = %v, want ErrCursorRecovered", err)
+	}
+	if recovered != first {
+		t.Fatalf("recovered cursor = %+v, want %+v", recovered, first)
+	}
+}
+
+func TestCursorPersistenceRejectsCorruptPrimaryAndBackup(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "collector.cursor")
+	if err := os.WriteFile(path, []byte(`not-json`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path+".bak", []byte(`also-not-json`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	client := NewClient(config.CollectorConfig{CursorPath: path})
+	if _, err := client.LoadCursor(); err == nil || errors.Is(err, ErrCursorRecovered) {
+		t.Fatalf("load error = %v, want unrecoverable corruption", err)
+	}
+	if err := client.SaveCursor(Cursor{EventID: "evt-new"}); err == nil {
+		t.Fatal("save must not overwrite an invalid primary cursor")
 	}
 }
