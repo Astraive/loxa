@@ -632,7 +632,7 @@ func isSafeQuery(query string) bool {
 	return true
 }
 
-func deliveryQueueDepth(ch chan []byte) int {
+func deliveryQueueDepth(ch chan spoolDelivery) int {
 	if ch == nil {
 		return 0
 	}

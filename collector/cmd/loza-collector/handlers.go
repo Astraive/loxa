@@ -226,7 +226,7 @@ func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			if err := s.appendSpool(raw); err != nil {
+			if err := s.appendAndEnqueueSpool(raw); err != nil {
 				s.metrics.eventsRejected.Add(1)
 				resp.AddRejected(i, eventID, "spool_write_failed", err.Error(), true)
 				if isDiskFullErr(err) {
@@ -242,7 +242,6 @@ func (s *collectorState) handleIngest(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 			}
-			s.enqueueDelivery(raw)
 		} else {
 			// Direct mode - processor handles delivery with deduplication
 			if err := s.ensureProcessor(); err != nil {
@@ -520,7 +519,7 @@ func (s *collectorState) handleIngestBatch(ctx context.Context, rawEvents [][]by
 		}
 
 		if s.cfg.reliabilityMode == "spool" || s.cfg.reliabilityMode == "hybrid" {
-			if err := s.appendSpool(raw); err != nil {
+			if err := s.appendAndEnqueueSpool(raw); err != nil {
 				if isDiskFullErr(err) {
 					s.diskHealthy.Store(false)
 				}
@@ -532,7 +531,6 @@ func (s *collectorState) handleIngestBatch(ctx context.Context, rawEvents [][]by
 					return accepted, err
 				}
 			}
-			s.enqueueDelivery(raw)
 		} else {
 			if err := s.ensureProcessor(); err != nil {
 				s.sinkHealthy.Store(false)
