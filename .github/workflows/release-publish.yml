@@ -19,6 +19,7 @@ permissions:
   packages: write
   id-token: write
   actions: read
+  security-events: write
 
 jobs:
   plan:
