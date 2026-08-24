@@ -37,6 +37,7 @@ jobs:
       - run: python -m pip install pyyaml
       - run: python scripts/release/validate-manifests.py --component cli
       - name: Verify pinned spec module tag
+        if: inputs.dry_run != true
         shell: bash
         run: |
           set -euo pipefail
@@ -56,6 +57,10 @@ jobs:
           PY
           )"
           git ls-remote --exit-code origin "refs/tags/spec/v${spec_version}" >/dev/null
+      - name: Use local spec module for dry run
+        if: inputs.dry_run == true
+        run: go mod edit -replace=github.com/astraive/loza/spec=../spec
+        working-directory: cli
       - name: Run CLI tests
         env:
           GOWORK: off
@@ -101,6 +106,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Use local spec module for dry run
+        if: inputs.dry_run == true
+        run: go mod edit -replace=github.com/astraive/loza/spec=../spec
+        working-directory: cli
       - name: Build native CLI
         shell: bash
         working-directory: cli
