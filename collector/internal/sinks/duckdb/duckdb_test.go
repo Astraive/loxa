@@ -245,6 +245,33 @@ func TestWriteEventBatchingFlush(t *testing.T) {
 	}
 	assertRowCount(t, db, 1)
 }
+func TestFlushHonorsCanceledContextWhileWaitingForSerialization(t *testing.T) {
+	db := openSQLiteDB(t)
+	mustExec(t, db, `CREATE TABLE events (raw TEXT)`)
+
+	rawSink, err := New(Config{DB: db, Table: "events", BatchSize: 10})
+	if err != nil {
+		t.Fatalf("new sink failed: %v", err)
+	}
+	s := rawSink.(*sink)
+	s.flushMu <- struct{}{}
+	defer func() { <-s.flushMu }()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	result := make(chan error, 1)
+	go func() {
+		result <- s.Flush(ctx)
+	}()
+
+	select {
+	case err := <-result:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("expected context cancellation, got %v", err)
+		}
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("Flush blocked on serialization after context cancellation")
+	}
+}
 
 func TestWriteEventBatchingFlushInterval(t *testing.T) {
 	db := openSQLiteDB(t)

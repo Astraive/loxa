@@ -152,6 +152,19 @@ jobs:
       version: ${{ matrix.new_version }}
       dry_run: ${{ inputs.dry_run }}
 
+  publish-go:
+    name: Publish Go SDK
+    needs: plan
+    if: needs.plan.outputs.has_changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    uses: ./.github/workflows/publish-go.yml
+    with:
+      component: ${{ matrix.component }}
+      version: ${{ matrix.new_version }}
+      dry_run: ${{ inputs.dry_run }}
+
   verify-go-modules:
     name: Verify Go module tags
     needs: plan

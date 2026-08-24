@@ -98,7 +98,7 @@ type sink struct {
 	writerStmt    *sql.Stmt
 
 	mu      sync.Mutex
-	flushMu sync.Mutex
+	flushMu chan struct{}
 	buffer  [][]any
 	closed  bool
 	lastErr error
@@ -189,6 +189,7 @@ func New(cfg Config) (collectorevent.Sink, error) {
 		storeRaw:      storeRaw,
 		batchSize:     cfg.BatchSize,
 		flushEvery:    cfg.FlushInterval,
+		flushMu:       make(chan struct{}, 1),
 		stopCh:        make(chan struct{}),
 		writerLoop:    cfg.WriterLoop,
 		useAppender:   cfg.UseAppender,
@@ -235,6 +236,19 @@ func New(cfg Config) (collectorevent.Sink, error) {
 }
 
 func (s *sink) Name() string { return "duckdb" }
+
+func (s *sink) acquireFlush(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case s.flushMu <- struct{}{}:
+		return nil
+	}
+}
+
+func (s *sink) releaseFlush() {
+	<-s.flushMu
+}
 
 func (s *sink) WriteEvent(ctx context.Context, encoded []byte, _ *collectorevent.Event) error {
 	args, err := s.buildArgs(encoded)
@@ -293,8 +307,10 @@ func (s *sink) WriteEvent(ctx context.Context, encoded []byte, _ *collectorevent
 	if len(batch) == 0 {
 		return nil
 	}
-	s.flushMu.Lock()
-	defer s.flushMu.Unlock()
+	if err := s.acquireFlush(ctx); err != nil {
+		return err
+	}
+	defer s.releaseFlush()
 	return s.execBatch(ctx, batch)
 }
 
@@ -325,8 +341,10 @@ func (s *sink) Flush(ctx context.Context) error {
 			return err
 		}
 	}
-	s.flushMu.Lock()
-	defer s.flushMu.Unlock()
+	if err := s.acquireFlush(ctx); err != nil {
+		return err
+	}
+	defer s.releaseFlush()
 
 	s.mu.Lock()
 	batch := s.buffer

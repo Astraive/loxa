@@ -92,8 +92,7 @@ This workflow runs focused tests only for components that actually changed.
 **Triggers:** `workflow_call` only (called by release-publish).
 
 **Jobs:**
-- **verify** — Tests Go module resolution, runs conformance for all SDKs, verifies `go install` works
-
+- **verify** — Validates the spec Go module, runs conformance for all SDKs, and verifies spec module resolution
 ## Benchmark Workflows
 
 ### benchmarks.yml
@@ -133,39 +132,43 @@ This workflow runs focused tests only for components that actually changed.
 **Triggers:** manual dispatch only.
 
 **Inputs:**
-- `components` — Comma-separated list (e.g., `collector,cortex`)
-- `version` — Version to publish (e.g., `0.2.6`)
-- `dry_run` — Validate and build without publishing (default: `true`)
+- **components** — Comma-separated list (e.g., `collector,cortex,sdk-go,sdk-js,sdk-py,sdk-rs`)
+- **version** — Version to publish (e.g., `0.2.6`)
+- **dry_run** — Validate and build without publishing (default: `true`)
 
 **Jobs:**
 - **plan** — Reads manifests, builds publish matrix
-- **publish-docker** — Builds/pushes Docker images (collector, cortex)
+- **publish-docker** — Builds/pushes Docker images for collector and cortex
 - **publish-cli** — Publishes CLI via GoReleaser
+- **publish-go** — Creates and verifies the Go SDK module tag
 - **publish-js** — Publishes JS SDK to npm
 - **publish-py** — Publishes Python SDK to PyPI
 - **publish-rs** — Publishes Rust SDK to crates.io
 - **publish-github-release** — Creates umbrella GitHub Release
-- **verify-go-modules** — Verifies Go module tags
-
+- **verify-go-modules** — Verifies spec module and SDK conformance
 ### publish-docker.yml
 
-Reusable workflow. Builds Docker images for `collector` or `cortex`, pushes to Docker Hub and GHCR, creates component tag.
+Reusable workflow. Builds Docker images for `collector` or `cortex`, pushes both configured image names to Docker Hub and GHCR, creates the component tag, and signs the published digest.
 
 ### publish-cli.yml
 
 Reusable workflow. Runs GoReleaser for the `cli` component, creates tag, verifies `go install` works.
 
-### publish-js.yml
+### publish-go.yml
+
+Reusable workflow. Tests the Go SDK, creates `sdks/go/v<version>`, and verifies module resolution through the Go proxy.
+
+### npm-publish.yml
 
 Reusable workflow. Publishes `sdk-js` to npm with provenance, creates tag.
 
-### publish-py.yml
+### pypip-publish.yml
 
 Reusable workflow. Publishes `sdk-py` to PyPI using trusted publishing, creates tag.
 
-### publish-rs.yml
+### cargo-publish.yml
 
-Reusable workflow. Publishes `sdk-rs` to crates.io and creates the component tag.
+Reusable workflow. Publishes `sdk-rs` to crates.io using trusted publishing, creates tag.
 
 ### publish-github-release.yml
 
@@ -182,16 +185,16 @@ Requires AWS secrets: `LOZA_CONTRACT_BUCKET`, `LOZA_CONTRACT_PREFIX`, `CLOUDFRON
 
 ## Workflow Dependency Graph
 
-```
 release-publish.yml
-├── plan (reads manifests, builds matrix)
+├── plan (reads manifests, builds publish matrix)
 ├── publish-docker.yml ──────────── (collector, cortex)
 ├── publish-cli.yml ─────────────── (cli)
-├── publish-js.yml ──────────────── (sdk-js)
-├── publish-py.yml ──────────────── (sdk-py)
-├── publish-rs.yml ──────────────── (sdk-rs)
+├── publish-go.yml ──────────────── (sdk-go)
+├── npm-publish.yml ─────────────── (sdk-js)
+├── pypip-publish.yml ───────────── (sdk-py)
+├── cargo-publish.yml ───────────── (sdk-rs)
 ├── publish-github-release.yml ──── (loza umbrella)
-└── verify-go-modules.yml ───────── (spec, sdk-go)
+└── verify-go-modules.yml ───────── (spec and SDK conformance)
 
 release-detect.yml
 ├── detect (finds changed components)
@@ -203,7 +206,5 @@ release-detect.yml
 
 ## Removed Workflows
 
-| Workflow | Why removed |
-|----------|-------------|
-| `sdks-py-release.yml` | Old tag-based (`py-v*`); replaced by `release-publish.yml → publish-py.yml` |
-| `sdks-rs-release.yml` | Old tag-based (`rs-v*`); replaced by `release-publish.yml → publish-rs.yml` |
+| `sdks-py-release.yml` | Old tag-based (`py-v*`); replaced by `release-publish.yml → pypip-publish.yml` |
+| `sdks-rs-release.yml` | Old tag-based (`rs-v*`); replaced by `release-publish.yml → cargo-publish.yml` |

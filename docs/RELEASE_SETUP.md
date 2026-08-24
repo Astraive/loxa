@@ -15,9 +15,10 @@ The release system is manifest-driven. Each component has a YAML manifest (e.g.,
 | `collector` | `collector/loza.yaml` | Docker Hub + GHCR |
 | `cortex` | `cortex/loza-cortex.yaml` | Docker Hub + GHCR |
 | `cli` | `cli/loza-cli.yaml` | GitHub Releases (GoReleaser) |
-| `sdk-js` | `sdks/js/package.json` | npm |
-| `sdk-py` | `sdks/py/pyproject.toml` | PyPI |
-| `sdk-rs` | `sdks/rs/Cargo.toml` | crates.io |
+| `sdk-go` | `sdks/go/loza-go.yaml` | Go module proxy (component tag) |
+| `sdk-js` | `sdks/js/loza-js.yaml` | npm |
+| `sdk-py` | `sdks/py/loza-py.yaml` | PyPI |
+| `sdk-rs` | `sdks/rs/loza-rs.yaml` | crates.io |
 | `spec` | `spec/loza-spec.yaml` | GitHub Releases |
 | `loza` | `loza.yaml` | GitHub Release (umbrella) |
 
@@ -60,15 +61,14 @@ The release controller calls these reusable workflows:
 
 | Workflow | Trigger | What it does |
 |----------|---------|--------------|
-| `publish-docker.yml` | `workflow_call` | Builds and pushes Docker images for collector/cortex |
+| `publish-docker.yml` | `workflow_call` | Builds and pushes collector/cortex images to Docker Hub and GHCR |
 | `publish-cli.yml` | `workflow_call` | Runs GoReleaser for the CLI binary |
-| `publish-js.yml` | `workflow_call` | Publishes JS SDK to npm with provenance |
-| `publish-py.yml` | `workflow_call` | Publishes Python SDK to PyPI |
-| `publish-rs.yml` | `workflow_call` | Publishes Rust SDK to crates.io |
-| `publish-github-release.yml` | `workflow_call` | Creates umbrella GitHub Release |
-| `verify-go-modules.yml` | `workflow_call` | Verifies Go module tags resolve correctly |
-
-All reusable workflows accept `component`, `version`, and `dry_run` inputs. Each workflow checks if it's responsible for the given component and skips otherwise.
+| `npm-publish.yml` | `workflow_call` | Publishes the JS SDK to npm with provenance |
+| `pypip-publish.yml` | `workflow_call` | Publishes the Python SDK to PyPI with trusted publishing |
+| `cargo-publish.yml` | `workflow_call` | Publishes the Rust SDK to crates.io with trusted publishing |
+| `publish-go.yml` | `workflow_call` | Creates and verifies the Go SDK module tag |
+| `publish-github-release.yml` | `workflow_call` | Creates the umbrella GitHub Release |
+| `verify-go-modules.yml` | `workflow_call` | Verifies the spec Go module and all SDK conformance |
 
 ## Secrets Required
 
@@ -76,10 +76,7 @@ All reusable workflows accept `component`, `version`, and `dry_run` inputs. Each
 |--------|---------|
 | `DOCKERHUB_USERNAME` | publish-docker |
 | `DOCKERHUB_TOKEN` | publish-docker |
-| `NPM_TOKEN` | publish-js |
-| `PYPI_API_TOKEN` | publish-py |
-| `CARGO_REGISTRY_TOKEN` | publish-rs |
-| `GITHUB_TOKEN` | publish-cli, publish-github-release, publish-rs |
+| `GITHUB_TOKEN` | all workflows that create tags/releases |
 
 ## Component Tags
 
@@ -90,9 +87,10 @@ Each component gets a Git tag after successful publishing:
 | collector | `collector/v0.2.6` |
 | cortex | `cortex/v0.2.6` |
 | cli | `cli/v0.2.6` |
-| sdk-js | `sdk-js/v0.2.6` |
-| sdk-py | `sdk-py/v0.2.6` |
-| sdk-rs | `sdk-rs/v0.2.6` |
+| sdk-go | `sdks/go/v0.2.6` |
+| sdk-js | `sdks/js/v0.2.6` |
+| sdk-py | `sdks/py/v0.2.6` |
+| sdk-rs | `sdks/rs/v0.2.6` |
 | spec | `spec/v0.2.6` |
 | loza (umbrella) | `v0.2.6` |
 
@@ -100,19 +98,15 @@ Each component gets a Git tag after successful publishing:
 
 The following old tag-based release workflows have been removed:
 
-- `sdks-py-release.yml` (triggered on `py-v*` tags) — replaced by `release-publish.yml → publish-py.yml`
-- `sdks-rs-release.yml` (triggered on `rs-v*` tags) — replaced by `release-publish.yml → publish-rs.yml`
+- `sdks-py-release.yml` (triggered on `py-v*` tags) — replaced by `release-publish.yml → pypip-publish.yml`
+- `sdks-rs-release.yml` (triggered on `rs-v*` tags) — replaced by `release-publish.yml → cargo-publish.yml`
 
 ## Troubleshooting
 
-### "manifest version does not match requested version"
-
-The version in the component's manifest file doesn't match the version you passed to the workflow. Update the manifest first.
-
 ### "unknown component"
 
-Check the component name against the `release.yaml` registry file. Valid names: `collector`, `cortex`, `cli`, `sdk-js`, `sdk-py`, `sdk-rs`, `spec`, `loza`.
+Check the component name against the `release.yaml` registry file. Valid names: `collector`, `cortex`, `cli`, `sdk-go`, `sdk-js`, `sdk-py`, `sdk-rs`, `spec`, `loza`.
 
 ### Dry run succeeded but real publish failed
 
-Check that the required secrets are configured in the repository settings. Each publish workflow needs its own secret (see table above).
+Check that the Docker Hub secrets are configured when publishing `collector` or `cortex`. The SDK workflows use trusted publishing or Git tags and do not require registry API tokens.

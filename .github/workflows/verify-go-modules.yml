@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   verify:
-    if: inputs.component == 'spec' || inputs.component == 'sdk-go'
+    if: inputs.component == 'spec'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,10 +44,6 @@ jobs:
         if: inputs.component == 'spec'
         run: go test ./...
         working-directory: spec
-      - name: Test Go SDK module
-        if: inputs.component == 'sdk-go'
-        run: go test ./...
-        working-directory: sdks/go
       - name: Run spec dependent checks
         if: inputs.component == 'spec'
         run: python -m pip install -e sdks/py
@@ -123,10 +119,5 @@ jobs:
           tmp="$(mktemp -d)"
           cd "$tmp"
           go mod init verify-loza-module
-          if [ "${{ inputs.component }}" = "spec" ]; then
-            go get github.com/astraive/loza/spec@v${{ inputs.version }}
-            go list -m github.com/astraive/loza/spec
-          else
-            go get github.com/astraive/loza/sdks/go@v${{ inputs.version }}
-            go list -m github.com/astraive/loza/sdks/go
-          fi
+          go get github.com/astraive/loza/spec@v${{ inputs.version }}
+          go list -m github.com/astraive/loza/spec
