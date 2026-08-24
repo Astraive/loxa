@@ -142,7 +142,7 @@ jobs:
           LQL_HANDSHAKE="$response" python -c 'import json, os; result=json.loads(os.environ["LQL_HANDSHAKE"]); assert result["result"]["compiler_version"] == "0.4.0", result'
       - name: Scan image for vulnerabilities
         if: inputs.dry_run != true
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.manifest.outputs.primary_tag }}
           format: sarif
