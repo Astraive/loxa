@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 
-_FALLBACK_PRODUCT_VERSION = "0.2.6"
+_FALLBACK_PRODUCT_VERSION = "0.3.1"
 
 
 def _load_product_version(spec_root: Path) -> str:
@@ -109,7 +109,9 @@ def build_contract(spec_root: Path) -> dict[str, Any]:
     event_schema = load_json(event_schema_path)
     ingest_schema = load_json(ingest_schema_path)
     collector_response_schema = load_json(collector_response_path)
+    product_version = _load_product_version(spec_root)
     manifest = normalize_manifest(load_json(manifest_path))
+    manifest["product_version"] = product_version
 
     props = event_schema["properties"]
     source_sdk_values: set[str] = set()
@@ -128,7 +130,7 @@ def build_contract(spec_root: Path) -> dict[str, Any]:
     allowed_top_level_fields = sorted(props.keys())
 
     return {
-        "product_version": _load_product_version(spec_root),
+        "product_version": product_version,
         "spec_version": props["schema_version"]["enum"][0],
         "api_version": ingest_schema["properties"]["api_version"]["enum"][0],
         "event_version": props["event_version"]["enum"][0],

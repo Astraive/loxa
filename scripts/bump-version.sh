@@ -42,7 +42,23 @@ FILES=(
 
   # JS SDK — package.json "version": "X.Y.Z"
   "sdks/js/package.json"
-  "sdks/js/bun.lock"
+
+  # User-facing release versions and SDK runtime fallbacks
+  "README.md"
+  "sdks/go/README.md"
+  "sdks/js/README.md"
+  "sdks/py/README.md"
+  "sdks/rs/README.md"
+  "sdks/go/src/core/version.go"
+  "sdks/js/src/config/version.ts"
+  "sdks/py/src/loza/version.py"
+  "sdks/rs/src/core/version.rs"
+  "sdks/go/tests/conformance/manifest_sync_test.go"
+  "sdks/go/docs/sdk-parity-manifest.json"
+  "sdks/js/docs/sdk-parity-manifest.json"
+  "sdks/py/docs/sdk-parity-manifest.json"
+  "sdks/rs/docs/sdk-parity-manifest.json"
+  "spec/codegen/model.py"
 
 
   # Cortex match — Cargo.toml version = "X.Y.Z"
@@ -173,7 +189,11 @@ check_versions() {
       return
     fi
     local v
-    v=$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' "$file" | head -1) || true
+    if [[ "$file" == */package.json ]]; then
+      v=$(grep -m1 '"version"' "$file" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+') || true
+    else
+      v=$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' "$file" | head -1) || true
+    fi
     if [[ -z "$v" ]]; then
       echo "  NO VERSION: ${file#"$REPO_ROOT/"}"
       all_ok=false
@@ -266,6 +286,13 @@ echo "---"
 for rel in "${FILES[@]}"; do
   bump_file "$REPO_ROOT/$rel" "$OLD_VER" "$NEW_VER" "$DRY_RUN"
 done
+
+if [[ "$DRY_RUN" == "true" ]]; then
+  echo "  WOULD REGENERATE: spec contract artifacts"
+else
+  python "$REPO_ROOT/spec/codegen/generate.py"
+  echo "  REGENERATED: spec contract artifacts"
+fi
 
 echo "---"
 
