@@ -106,7 +106,11 @@ jobs:
         run: python scripts/release/tag-component.py "${{ inputs.component }}" --dry-run
       - name: Create component tag
         if: inputs.dry_run != true
-        run: python scripts/release/tag-component.py "${{ inputs.component }}" --push
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(python scripts/release/tag-component.py "${{ inputs.component }}" --dry-run)"
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" -f "ref=refs/tags/${tag}" -f "sha=${GITHUB_SHA}"
       - name: Create spec GitHub Release
         if: inputs.component == 'spec' && inputs.dry_run != true
         env:

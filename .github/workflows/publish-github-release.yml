@@ -41,7 +41,11 @@ jobs:
 
       - name: Create umbrella tag
         if: inputs.dry_run != true
-        run: python scripts/release/tag-component.py loza --push
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(python scripts/release/tag-component.py loza --dry-run)"
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" -f "ref=refs/tags/${tag}" -f "sha=${GITHUB_SHA}"
 
       - name: Create GitHub Release
         if: inputs.dry_run != true
