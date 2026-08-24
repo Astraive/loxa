@@ -193,7 +193,12 @@ class Logger:
         data.update(named)
         ctx.checkpoint(name, **data)
 
-    def set(self, ctx: EventContext, *attrs: Attr, **named: Any) -> None:
+    def set(self, ctx: EventContext, *attrs: Attr | str, **named: Any) -> None:
+        if attrs and all(isinstance(item, str) for item in attrs):
+            if len(attrs) % 2:
+                raise TypeError("set string attributes must be key/value pairs")
+            named = {**dict(zip(attrs[::2], attrs[1::2])), **named}
+            attrs = ()
         self.enrich(ctx, *attrs, **named)
 
     def merge(self, ctx: EventContext, group: str, *attrs: Attr, **named: Any) -> None:
@@ -215,13 +220,30 @@ class Logger:
         for key in keys:
             self._delete_path(ctx.attrs, key)
 
+    def get(self, ctx: EventContext, key: str) -> Any:
+        bucket, local_key = self._resolve_bucket(ctx, key)
+        return self._get_path(bucket, local_key)
+
+    def get_group(self, ctx: EventContext, name: str) -> dict[str, Any] | None:
+        groups = {
+            "user": ctx.user,
+            "tenant": ctx.tenant,
+            "resource": ctx.resource,
+            "http": ctx.http,
+            "attrs": ctx.attrs,
+        }
+        value = groups.get(name)
+        if value is not None:
+            return value
+        nested = ctx.attrs.get(name)
+        return nested if isinstance(nested, dict) else None
+
     def finish(self, ctx: EventContext, outcome: str, *attrs: Attr, **named: Any) -> None:
         if attrs or named:
             self.enrich(ctx, *attrs, **named)
         ctx.finish(outcome)
         if self._metrics is not None:
             self._metrics.on_event_finished()
-
     def finish_error(self, ctx: EventContext, error: Exception, *attrs: Attr, **named: Any) -> None:
         if attrs or named:
             self.enrich(ctx, *attrs, **named)
@@ -279,11 +301,18 @@ class Logger:
                     self._notify_drop("queue_full")
                     raise EventValidationError("async pipeline backpressure drop")
             else:
+                delivery_failed = False
                 for sink in self._config.sinks:
                     try:
                         sink.write(encoded)
                     except Exception as sink_err:
+                        delivery_failed = True
                         self._notify_delivery_failed(ctx, sink_err)
+                if delivery_failed:
+                    ctx.event_state = EVENT_DELIVERY_FAILED
+                    ctx.emitted = False
+                    ctx.emitted_payload = ""
+                    return ""
             ctx.emitted = True
             ctx.event_state = EVENT_EMITTED
             ctx.emitted_payload = encoded
@@ -311,10 +340,7 @@ class Logger:
     def flush(self, timeout: float = 30.0) -> None:
         if self._pipeline is not None:
             self._pipeline.drain_once()
-            if self._pipeline.offline_buffer is not None:
-                buffered = self._pipeline.offline_buffer.drain(limit=4096)
-                if buffered:
-                    self._pipeline._write_batch(buffered)
+            self._pipeline.replay_offline()
         for sink in self._config.sinks:
             flush = getattr(sink, "flush", None)
             if callable(flush):

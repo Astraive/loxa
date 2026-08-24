@@ -38,6 +38,26 @@ func EncryptBytes(plain []byte, key string) ([]byte, error) {
 	return []byte(text), nil
 }
 
+func DecryptBytes(data []byte, key string) ([]byte, error) {
+	raw := strings.TrimSpace(string(data))
+	if strings.TrimSpace(key) == "" || !strings.HasPrefix(raw, Prefix) {
+		return append([]byte(nil), data...), nil
+	}
+	payload, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(raw, Prefix))
+	if err != nil {
+		return nil, err
+	}
+	aead, err := buildAEAD(key)
+	if err != nil {
+		return nil, err
+	}
+	if len(payload) < aead.NonceSize() {
+		return nil, io.ErrUnexpectedEOF
+	}
+	nonce := payload[:aead.NonceSize()]
+	return aead.Open(nil, nonce, payload[aead.NonceSize():], nil)
+}
+
 func buildAEAD(key string) (cipher.AEAD, error) {
 	derived := make([]byte, 32)
 	reader := hkdf.New(sha256.New, []byte(key), []byte("loza-at-rest-v1"), []byte("aes-256-gcm"))

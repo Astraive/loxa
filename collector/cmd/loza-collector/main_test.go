@@ -499,6 +499,42 @@ func TestHandleIngestJWTAuthorization(t *testing.T) {
 	}
 }
 
+func TestOperationalStatusUsesRuntimeValues(t *testing.T) {
+	state := &collectorState{
+		cfg:       testCollectorConfig(),
+		startedAt: time.Now().Add(-90 * time.Second),
+	}
+	state.ready.Store(true)
+	state.sinkHealthy.Store(true)
+	state.spoolHealthy.Store(true)
+	state.diskHealthy.Store(true)
+
+	rec := httptest.NewRecorder()
+	state.handleStatus(rec, httptest.NewRequest(http.MethodGet, "/status", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status code = %d, want 200", rec.Code)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode status: %v", err)
+	}
+	uptime, ok := payload["uptime_seconds"].(float64)
+	if !ok || uptime < 89 || uptime > 91 {
+		t.Fatalf("uptime_seconds = %v, want approximately 90", payload["uptime_seconds"])
+	}
+
+	down := sinkStatus("primary", false, "write failed")
+	if down["status"] != "down" || down["last_error"] != "write failed" {
+		t.Fatalf("unexpected down sink status: %#v", down)
+	}
+	if down["circuit_state"] != "not_configured" {
+		t.Fatalf("circuit_state = %v, want not_configured", down["circuit_state"])
+	}
+	if _, exists := down["latency_ms"]; exists {
+		t.Fatalf("untested sink status must not claim latency: %#v", down)
+	}
+}
+
 func TestHandleSchemaPublishAndDiff(t *testing.T) {
 	state := &collectorState{
 		cfg: testCollectorConfig(),
@@ -1348,6 +1384,28 @@ func TestSinkTestEndpointFailure(t *testing.T) {
 	}
 	if state.sinkHealthy.Load() {
 		t.Fatalf("expected sinkHealthy to be false after failure")
+	}
+}
+
+func TestResponseCompressionBypassesWebSocketUpgrades(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	var observed http.ResponseWriter
+	handler := withResponseCompression(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		observed = w
+		w.WriteHeader(http.StatusSwitchingProtocols)
+	}))
+	req := httptest.NewRequest(http.MethodGet, "/ws/tail", nil)
+	req.Header.Set("Connection", "Upgrade")
+	req.Header.Set("Upgrade", "websocket")
+	req.Header.Set("Accept-Encoding", "gzip")
+
+	handler.ServeHTTP(recorder, req)
+
+	if observed != recorder {
+		t.Fatal("websocket response writer was wrapped by compression middleware")
+	}
+	if got := recorder.Header().Get("Content-Encoding"); got != "" {
+		t.Fatalf("websocket response Content-Encoding = %q, want empty", got)
 	}
 }
 

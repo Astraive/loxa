@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -12,9 +13,9 @@ import (
 
 // AdjacencyCache preloads edges into memory for fast in-memory BFS.
 type AdjacencyCache struct {
-	edges    map[string][]*models.Edge // nodeID -> edges
-	loaded   bool
-	mu       sync.RWMutex
+	edges  map[string][]*models.Edge // nodeID -> edges
+	loaded bool
+	mu     sync.RWMutex
 }
 
 func NewAdjacencyCache() *AdjacencyCache {
@@ -127,7 +128,10 @@ func (b *Builder) TraverseGraph(ctx context.Context, startNodeID string, opts mo
 
 			node, err := b.graphStore.GetNode(ctx, nodeID)
 			if err != nil {
-				continue
+				if errors.Is(err, storage.ErrNotFound) {
+					continue
+				}
+				return nil, fmt.Errorf("load graph node %q: %w", nodeID, err)
 			}
 
 			if opts.TimeWindowMin != nil && node.CreatedAt.Before(*opts.TimeWindowMin) {
@@ -144,7 +148,7 @@ func (b *Builder) TraverseGraph(ctx context.Context, startNodeID string, opts mo
 			if edges == nil {
 				fetched, err := b.graphStore.GetEdges(ctx, nodeID, "")
 				if err != nil {
-					continue
+					return nil, fmt.Errorf("load graph edges for %q: %w", nodeID, err)
 				}
 				edges = fetched
 				b.adjCache.SetEdges(nodeID, edges)
@@ -179,6 +183,9 @@ func (b *Builder) TraverseGraph(ctx context.Context, startNodeID string, opts mo
 }
 
 func (b *Builder) GetServiceGraph(ctx context.Context, service string, depth int) (*models.GraphView, error) {
+	if _, err := b.graphStore.GetNode(ctx, service); err != nil {
+		return nil, fmt.Errorf("service graph root: %w", err)
+	}
 	opts := models.TraversalOptions{
 		MaxDepth: depth,
 	}

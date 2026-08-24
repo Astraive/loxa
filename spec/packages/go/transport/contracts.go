@@ -1,9 +1,9 @@
 package contracts
 
 type GraphQLRequest struct {
-	Query     string                 `json:"query"`
-	Variables map[string]interface{} `json:"variables,omitempty"`
-	Operation string                 `json:"operation,omitempty"`
+	Query         string                 `json:"query"`
+	Variables     map[string]interface{} `json:"variables,omitempty"`
+	OperationName string                 `json:"operationName,omitempty"`
 }
 
 type GraphQLResponse struct {
@@ -22,14 +22,15 @@ type Location struct {
 }
 
 type WebSocketRequest struct {
-	Action     string                 `json:"action"`
-	Query      string                 `json:"query,omitempty"`
-	Variables  map[string]interface{} `json:"variables,omitempty"`
-	Event      map[string]any         `json:"event,omitempty"`
-	IncidentID string                 `json:"incident_id,omitempty"`
-	Service    string                 `json:"service,omitempty"`
-	Mode       string                 `json:"mode,omitempty"`
-	Depth      int                    `json:"depth,omitempty"`
+	Action        string                 `json:"action"`
+	Query         string                 `json:"query,omitempty"`
+	Variables     map[string]interface{} `json:"variables,omitempty"`
+	OperationName string                 `json:"operationName,omitempty"`
+	Event         map[string]any         `json:"event,omitempty"`
+	IncidentID    string                 `json:"incident_id,omitempty"`
+	Service       string                 `json:"service,omitempty"`
+	Mode          string                 `json:"mode,omitempty"`
+	Depth         int                    `json:"depth,omitempty"`
 }
 
 type WebSocketResponse struct {

@@ -6,11 +6,16 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gorilla/websocket"
 	"github.com/klauspost/compress/zstd"
 )
 
 func withResponseCompression(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if websocket.IsWebSocketUpgrade(r) {
+			next.ServeHTTP(w, r)
+			return
+		}
 		acceptEncoding := strings.ToLower(r.Header.Get("Accept-Encoding"))
 
 		var (

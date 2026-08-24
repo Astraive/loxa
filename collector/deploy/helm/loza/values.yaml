@@ -15,7 +15,7 @@ collector:
 
   image:
     repository: loza
-    tag: "0.3.0"
+    tag: "0.3.1"
     digest: ""
     pullPolicy: IfNotPresent
 
@@ -133,7 +133,8 @@ collector:
       expected_language_version: 0.1
       startup_timeout: 5s
       compile_timeout: 5s
-      max_concurrent_requests: 8
+      # The stdio compiler protocol is sequential.
+      max_concurrent_requests: 1
     logging:
       level: info
       format: json
@@ -147,7 +148,7 @@ worker:
 
   image:
     repository: loza-worker
-    tag: "0.3.0"
+    tag: "0.3.1"
     digest: ""
     pullPolicy: IfNotPresent
 

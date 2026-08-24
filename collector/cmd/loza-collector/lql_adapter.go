@@ -14,22 +14,29 @@ import (
 )
 
 type lqlStdioCompiler struct {
-	mu       sync.Mutex
-	cmd      *exec.Cmd
-	stdin    io.WriteCloser
-	stdout   *bufio.Reader
-	binary   string
-	protocol int
-	compiler string
-	language string
-	timeout  time.Duration
-	sem      chan struct{}
-	nextID   int64
+	mu               sync.Mutex
+	cmd              *exec.Cmd
+	stdin            io.WriteCloser
+	stdout           *bufio.Reader
+	binary           string
+	protocol         int
+	compiler         string
+	language         string
+	timeout          time.Duration
+	startupTimeout   time.Duration
+	sem              chan struct{}
+	nextID           int64
+	restartFailures  uint
+	restartNotBefore time.Time
+	lastRestartError error
 }
 
 func newLQLStdioCompiler(ctx context.Context, cfg collectorConfig) (*lqlStdioCompiler, error) {
 	if strings.TrimSpace(cfg.lqlBinary) == "" {
 		return nil, errors.New("lql compiler binary is empty")
+	}
+	if cfg.lqlMaxConcurrent > 1 {
+		return nil, errors.New("lql stdio compiler supports exactly one concurrent request")
 	}
 	startup := cfg.lqlStartupTimeout
 	if startup <= 0 {
@@ -39,14 +46,11 @@ func newLQLStdioCompiler(ctx context.Context, cfg collectorConfig) (*lqlStdioCom
 	if compileTimeout <= 0 {
 		compileTimeout = 5 * time.Second
 	}
-	maxConcurrent := cfg.lqlMaxConcurrent
-	if maxConcurrent <= 0 {
-		maxConcurrent = 8
-	}
+	maxConcurrent := 1
 	compiler := &lqlStdioCompiler{
 		binary: cfg.lqlBinary, protocol: cfg.lqlExpectedProtocol,
 		compiler: cfg.lqlExpectedCompiler, language: cfg.lqlExpectedLanguage,
-		timeout: compileTimeout, sem: make(chan struct{}, maxConcurrent),
+		timeout: compileTimeout, startupTimeout: startup, sem: make(chan struct{}, maxConcurrent),
 	}
 	if compiler.protocol == 0 {
 		compiler.protocol = 1
@@ -65,6 +69,10 @@ func newLQLStdioCompiler(ctx context.Context, cfg collectorConfig) (*lqlStdioCom
 func (c *lqlStdioCompiler) start(ctx context.Context) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	return c.startLocked(ctx)
+}
+
+func (c *lqlStdioCompiler) startLocked(ctx context.Context) error {
 	cmd := exec.Command(c.binary, "serve", "--stdio")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -98,6 +106,9 @@ func (c *lqlStdioCompiler) start(ctx context.Context) error {
 		_ = c.killLocked()
 		return fmt.Errorf("lql version mismatch: protocol=%d compiler=%s language=%s", result.ProtocolVersion, result.CompilerVersion, result.LanguageVersion)
 	}
+	c.restartFailures = 0
+	c.restartNotBefore = time.Time{}
+	c.lastRestartError = nil
 	return nil
 }
 
@@ -126,19 +137,25 @@ func (c *lqlStdioCompiler) Compile(ctx context.Context, req LQLCompileRequest) (
 	defer cancel()
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if err := c.ensureStartedLocked(compileCtx); err != nil {
+		return ParameterizedPlan{}, NewLQLCompilerUnavailable(err)
+	}
 	response, err := c.requestLocked(compileCtx, "compile", map[string]any{
 		"query":      source,
 		"target":     req.Target,
 		"parameters": req.Parameters,
 		"schema":     nil,
 		"policy": map[string]any{
-			"allowed_sources":  []string{"events"},
+			"allowed_sources": []string{"events"},
 			"max_result_rows": req.Limit,
 		},
 		"scope": req.Scope,
 	})
 	if err != nil {
 		_ = c.killLocked()
+		c.restartFailures = 0
+		c.restartNotBefore = time.Time{}
+		c.lastRestartError = err
 		return ParameterizedPlan{}, NewLQLCompilerUnavailable(err)
 	}
 	if response.Error != nil {
@@ -159,6 +176,9 @@ func (c *lqlStdioCompiler) Compile(ctx context.Context, req LQLCompileRequest) (
 	}
 	if err := json.Unmarshal(response.Result, &body); err != nil {
 		_ = c.killLocked()
+		c.restartFailures = 0
+		c.restartNotBefore = time.Time{}
+		c.lastRestartError = err
 		return ParameterizedPlan{}, NewLQLCompilerUnavailable(err)
 	}
 	for index := range body.Plan.OutputSchema {
@@ -180,16 +200,49 @@ func (c *lqlStdioCompiler) Close(context.Context) error {
 }
 
 func (c *lqlStdioCompiler) killLocked() error {
-	if c.stdin != nil {
-		_ = c.stdin.Close()
+	stdin, cmd := c.stdin, c.cmd
+	c.cmd, c.stdin, c.stdout = nil, nil, nil
+	if stdin != nil {
+		_ = stdin.Close()
 	}
-	if c.cmd == nil {
+	if cmd == nil {
 		return nil
 	}
-	_ = c.cmd.Process.Kill()
-	err := c.cmd.Wait()
-	c.cmd, c.stdin, c.stdout = nil, nil, nil
-	return err
+	_ = cmd.Process.Kill()
+	return cmd.Wait()
+}
+
+func (c *lqlStdioCompiler) ensureStartedLocked(ctx context.Context) error {
+	if c.cmd != nil && c.stdin != nil && c.stdout != nil {
+		return nil
+	}
+	if wait := time.Until(c.restartNotBefore); wait > 0 {
+		return fmt.Errorf("lql compiler restart backoff active: %w", c.lastRestartError)
+	}
+	startCtx := ctx
+	cancel := func() {}
+	if c.startupTimeout > 0 {
+		startCtx, cancel = context.WithTimeout(ctx, c.startupTimeout)
+	}
+	defer cancel()
+	if err := c.startLocked(startCtx); err != nil {
+		c.restartFailures++
+		c.lastRestartError = err
+		c.restartNotBefore = time.Now().Add(lqlRestartBackoff(c.restartFailures))
+		return err
+	}
+	return nil
+}
+
+func lqlRestartBackoff(failures uint) time.Duration {
+	delay := 100 * time.Millisecond
+	for attempt := uint(1); attempt < failures && delay < 5*time.Second; attempt++ {
+		delay *= 2
+	}
+	if delay > 5*time.Second {
+		return 5 * time.Second
+	}
+	return delay
 }
 
 type lqlRPCResponse struct {

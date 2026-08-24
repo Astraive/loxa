@@ -106,11 +106,6 @@ collector:
   timestamp_column: "timestamp"
   cursor_path: "./cortex-collector.cursor"
 
-ingestion:
-  async_workers: 4
-  channel_size: 8192
-  micro_batch_size: 256
-  flush_interval: 500ms
 
 correlation:
   enabled: true

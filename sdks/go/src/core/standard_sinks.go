@@ -534,11 +534,13 @@ type HTTPBatchSinkConfig struct {
 	FlushInterval time.Duration
 	Gzip          bool
 	Client        *http.Client
+	OnError       func(error)
 }
 
 type httpBatchSink struct {
 	cfg       HTTPBatchSinkConfig
 	mu        sync.Mutex
+	flushMu   sync.Mutex
 	buf       [][]byte
 	timer     *time.Ticker
 	stop      chan struct{}
@@ -611,15 +613,26 @@ func (s *httpBatchSink) WriteBatch(ctx context.Context, encoded [][]byte, _ []*E
 }
 
 func (s *httpBatchSink) Flush(ctx context.Context) error {
+	s.flushMu.Lock()
+	defer s.flushMu.Unlock()
+
 	s.mu.Lock()
 	if len(s.buf) == 0 {
 		s.mu.Unlock()
 		return nil
 	}
-	payload := bytes.Join(s.buf, nil)
-	s.buf = s.buf[:0]
+	batch := s.buf
+	s.buf = make([][]byte, 0, s.cfg.BatchSize)
 	s.mu.Unlock()
-	return s.send(ctx, payload)
+
+	if err := s.send(ctx, bytes.Join(batch, nil)); err != nil {
+		s.mu.Lock()
+		batch = append(batch, s.buf...)
+		s.buf = batch
+		s.mu.Unlock()
+		return err
+	}
+	return nil
 }
 
 func (s *httpBatchSink) send(ctx context.Context, payload []byte) error {
@@ -675,7 +688,9 @@ func (s *httpBatchSink) loop() {
 	for {
 		select {
 		case <-s.timer.C:
-			_ = s.Flush(context.Background())
+			if err := s.Flush(context.Background()); err != nil && s.cfg.OnError != nil {
+				s.cfg.OnError(err)
+			}
 		case <-s.stop:
 			return
 		}

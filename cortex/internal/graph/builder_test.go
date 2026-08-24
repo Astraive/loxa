@@ -7,13 +7,16 @@ import (
 	"time"
 
 	"github.com/astraive/loza/cortex/internal/models"
+	"github.com/astraive/loza/cortex/internal/storage"
 )
 
 type fakeGraphStore struct {
-	nodes map[string]*models.Node
-	edges map[string][]*models.Edge
+	nodes      map[string]*models.Node
+	edges      map[string][]*models.Edge
 	savedNodes []*models.Node
 	savedEdges []*models.Edge
+	nodeErr    error
+	edgeErr    error
 }
 
 func (f *fakeGraphStore) SaveNode(_ context.Context, node *models.Node) error {
@@ -23,10 +26,13 @@ func (f *fakeGraphStore) SaveNode(_ context.Context, node *models.Node) error {
 }
 
 func (f *fakeGraphStore) GetNode(_ context.Context, id string) (*models.Node, error) {
+	if f.nodeErr != nil {
+		return nil, f.nodeErr
+	}
 	if node, ok := f.nodes[id]; ok {
 		return node, nil
 	}
-	return nil, errors.New("not found")
+	return nil, storage.ErrNotFound
 }
 
 func (f *fakeGraphStore) ListNodes(_ context.Context, nodeType string, limit int) ([]*models.Node, error) {
@@ -49,6 +55,9 @@ func (f *fakeGraphStore) SaveEdge(_ context.Context, edge *models.Edge) error {
 }
 
 func (f *fakeGraphStore) GetEdges(_ context.Context, nodeID string, edgeType string) ([]*models.Edge, error) {
+	if f.edgeErr != nil {
+		return nil, f.edgeErr
+	}
 	var out []*models.Edge
 	for _, edge := range f.edges[nodeID] {
 		if edgeType == "" || string(edge.Type) == edgeType {
@@ -96,7 +105,7 @@ func TestTraverseGraph(t *testing.T) {
 	store.edges["n2"] = []*models.Edge{{ID: "e2", FromNodeID: "n2", ToNodeID: "n3", Type: models.EdgeTypeDependsOn, Weight: 1}}
 
 	view, err := NewBuilder(store).TraverseGraph(context.Background(), "n1", models.TraversalOptions{
-		MaxDepth: 2,
+		MaxDepth:  2,
 		EdgeTypes: []models.EdgeType{models.EdgeTypeDependsOn},
 	})
 	if err != nil {
@@ -107,5 +116,25 @@ func TestTraverseGraph(t *testing.T) {
 	}
 	if len(view.Edges) != 2 {
 		t.Fatalf("expected 2 edges, got %d", len(view.Edges))
+	}
+}
+
+func TestGraphLookupPreservesNotFoundAndStorageErrors(t *testing.T) {
+	notFound := NewBuilder(&fakeGraphStore{
+		nodes: map[string]*models.Node{},
+		edges: map[string][]*models.Edge{},
+	})
+	if _, err := notFound.GetServiceGraph(context.Background(), "missing", 3); !errors.Is(err, storage.ErrNotFound) {
+		t.Fatalf("expected typed not-found error, got %v", err)
+	}
+
+	storageFailure := errors.New("graph database unavailable")
+	failing := NewBuilder(&fakeGraphStore{
+		nodes:   map[string]*models.Node{},
+		edges:   map[string][]*models.Edge{},
+		nodeErr: storageFailure,
+	})
+	if _, err := failing.GetIncidentGraph(context.Background(), "inc-1", 3); !errors.Is(err, storageFailure) {
+		t.Fatalf("expected storage error propagation, got %v", err)
 	}
 }

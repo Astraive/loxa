@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/astraive/loza/collector/internal/auth"
 	"github.com/gorilla/websocket"
 )
 
@@ -20,12 +21,14 @@ type TailFilters struct {
 	Kind         string
 	TraceID      string
 	IncidentID   string
+	Collector    string
+	Environment  string
 	Limit        int
 }
 
 type TailState interface {
 	TailHistory(context.Context, TailFilters) ([][]byte, error)
-	TailMatches([]byte, TailFilters) bool
+	TailMatches(context.Context, []byte, TailFilters) bool
 	AddTailSubscriber(chan []byte)
 	RemoveTailSubscriber(chan []byte)
 }
@@ -36,6 +39,7 @@ func NewWebSocketUpgrader(allowedOrigins []string) websocket.Upgrader {
 	return websocket.Upgrader{
 		ReadBufferSize:  16 * 1024,
 		WriteBufferSize: 16 * 1024,
+		Subprotocols:    []string{auth.WebSocketTailProtocol},
 		CheckOrigin: func(r *http.Request) bool {
 			origin := r.Header.Get("Origin")
 			if origin == "" {
@@ -61,6 +65,7 @@ func NewWebSocketUpgrader(allowedOrigins []string) websocket.Upgrader {
 var websocketUpgrader = websocket.Upgrader{
 	ReadBufferSize:  16 * 1024,
 	WriteBufferSize: 16 * 1024,
+	Subprotocols:    []string{auth.WebSocketTailProtocol},
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
 		if origin == "" {
@@ -107,8 +112,13 @@ func ParseTailFilters(r *http.Request) (TailFilters, error) {
 func NewTailWebSocketHandler(cfg HTTPConfig, state TailState) http.Handler {
 	upgrader := NewWebSocketUpgrader(cfg.AllowedOrigins)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth.PrepareWebSocketRequest(r)
 		if cfg.AuthEnabled {
-			if subtle.ConstantTimeCompare([]byte(r.Header.Get(cfg.AuthHeader)), []byte(cfg.AuthValue)) != 1 {
+			provided := strings.TrimSpace(r.Header.Get(cfg.AuthHeader))
+			if credential := auth.WebSocketCredential(r); credential != "" {
+				provided = credential
+			}
+			if subtle.ConstantTimeCompare([]byte(provided), []byte(cfg.AuthValue)) != 1 {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
@@ -125,6 +135,15 @@ func NewTailWebSocketHandler(cfg HTTPConfig, state TailState) http.Handler {
 		}
 		defer conn.Close()
 		conn.SetReadLimit(1 * 1024 * 1024) // 1MB max frame
+		clientClosed := make(chan struct{})
+		go func() {
+			defer close(clientClosed)
+			for {
+				if _, _, err := conn.NextReader(); err != nil {
+					return
+				}
+			}
+		}()
 
 		history, err := state.TailHistory(r.Context(), filters)
 		if err != nil {
@@ -144,11 +163,13 @@ func NewTailWebSocketHandler(cfg HTTPConfig, state TailState) http.Handler {
 			select {
 			case <-r.Context().Done():
 				return
+			case <-clientClosed:
+				return
 			case raw, ok := <-ch:
 				if !ok {
 					return
 				}
-				if !state.TailMatches(raw, filters) {
+				if !state.TailMatches(r.Context(), raw, filters) {
 					continue
 				}
 				if err := conn.WriteMessage(websocket.TextMessage, raw); err != nil {
@@ -160,11 +181,18 @@ func NewTailWebSocketHandler(cfg HTTPConfig, state TailState) http.Handler {
 }
 
 func RawMatchesTailFilters(raw []byte, filters TailFilters) bool {
-	if filters.Service == "" && filters.Kind == "" && filters.TraceID == "" && filters.IncidentID == "" {
+	if filters.Collector == "" && filters.Environment == "" && filters.Service == "" &&
+		filters.Kind == "" && filters.TraceID == "" && filters.IncidentID == "" {
 		return true
 	}
 	var payload map[string]any
 	if err := json.Unmarshal(raw, &payload); err != nil {
+		return false
+	}
+	if filters.Collector != "" && stringValue(payload["collector"]) != filters.Collector {
+		return false
+	}
+	if filters.Environment != "" && stringValue(payload["environment"]) != filters.Environment {
 		return false
 	}
 	if filters.Service != "" && stringValue(payload["service"]) != filters.Service {

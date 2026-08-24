@@ -1316,8 +1316,8 @@ func validateFileConfig(fc fileConfig) error {
 		if fc.LQL.StartupTimeout <= 0 || fc.LQL.CompileTimeout <= 0 {
 			return errors.New("lql startup_timeout and compile_timeout must be > 0")
 		}
-		if fc.LQL.MaxConcurrentRequests <= 0 {
-			return errors.New("lql.max_concurrent_requests must be > 0")
+		if fc.LQL.MaxConcurrentRequests != 1 {
+			return errors.New("lql.max_concurrent_requests must be 1 for the sequential stdio protocol")
 		}
 	}
 	if strings.TrimSpace(fc.DuckDB.Driver) == "" {

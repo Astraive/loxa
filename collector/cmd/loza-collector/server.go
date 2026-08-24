@@ -177,6 +177,7 @@ func runCollector(cfg collectorConfig) error {
 
 	state := &collectorState{
 		cfg:             cfg,
+		startedAt:       time.Now(),
 		ingestSink:      sink,
 		hybridQueueSink: hybridQueueSink,
 		secondarySinks:  secondarySinks,
@@ -376,17 +377,13 @@ func shutdownCollector(server *http.Server, auxServers []serverruntime.Server, s
 			logJSON("error", "collector_aux_shutdown_failed", map[string]any{"server": srv.Name(), "error": err.Error()})
 		}
 	}
+	state.closeReliability()
 	for _, sink := range state.sinksForShutdown() {
 		if err := sink.Sink.Flush(ctx); err != nil {
 			logJSON("error", "collector_sink_flush_failed", map[string]any{"sink": sink.Name, "error": err.Error()})
 		}
 		if err := sink.Sink.Close(ctx); err != nil {
 			logJSON("error", "collector_sink_close_failed", map[string]any{"sink": sink.Name, "error": err.Error()})
-		}
-	}
-	if state.processor != nil {
-		if err := state.processor.Close(); err != nil {
-			logJSON("error", "collector_processor_close_failed", map[string]any{"error": err.Error()})
 		}
 	}
 	if state.dedupeStore != nil {

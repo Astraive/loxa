@@ -40,7 +40,12 @@ func RunSourceOfTruthSync(ctx context.Context, cfg config.CollectorConfig, proc 
 	client := collectorbridge.NewClient(cfg)
 	cursor, err := client.LoadCursor()
 	if err != nil {
-		log.Warn().Err(err).Str("cursor_path", cfg.CursorPath).Msg("Failed to load collector cursor; starting from zero cursor")
+		if errors.Is(err, collectorbridge.ErrCursorRecovered) {
+			log.Error().Err(err).Str("cursor_path", cfg.CursorPath).Msg("Collector cursor was corrupt; recovered from backup")
+		} else {
+			log.Error().Err(err).Str("cursor_path", cfg.CursorPath).Msg("Collector cursor is unreadable; source-of-truth sync halted")
+			return
+		}
 	}
 	state := &cursorState{cursor: cursor}
 

@@ -4,13 +4,17 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/astraive/loza/cortex/internal/config"
+	"github.com/astraive/loza/cortex/internal/models"
 )
 
 func TestFetchEventsSinceUsesScopedLQLRouteAndTypedCursorBindings(t *testing.T) {
@@ -219,5 +223,117 @@ func TestLQLQueriesUseBasicAuthAndScopeHeaders(t *testing.T) {
 	}
 	if gotEnv != "prod" || gotService != "checkout" {
 		t.Fatalf("unexpected scope headers env=%q service=%q", gotEnv, gotService)
+	}
+}
+
+func TestTailURLUsesConfiguredCollectorScope(t *testing.T) {
+	client := &Client{cfg: config.CollectorConfig{
+		URL:       "https://collector.example/base",
+		Collector: "demo",
+	}}
+
+	if got, want := client.tailURL("/tail", false), "https://collector.example/base/collectors/demo/tail"; got != want {
+		t.Fatalf("HTTP tail URL = %q, want %q", got, want)
+	}
+	if got, want := client.tailURL("/ws/tail", true), "wss://collector.example/base/collectors/demo/ws/tail"; got != want {
+		t.Fatalf("WebSocket tail URL = %q, want %q", got, want)
+	}
+}
+
+func TestStreamTailHTTPSendsConfiguredScope(t *testing.T) {
+	var gotPath, gotEnvironment string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotEnvironment = r.Header.Get("X-Loza-Env")
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		_, _ = w.Write([]byte(`{"id":"tail-1","schema_version":"v1","event_version":"v1","event_id":"tail-1","timestamp":"2026-01-01T00:00:00Z","service":"checkout","event":"checkout.request","kind":"event"}` + "\n"))
+	}))
+	defer server.Close()
+
+	client := NewClient(config.CollectorConfig{
+		URL:         server.URL,
+		Collector:   "demo",
+		Environment: "prod",
+	})
+	var received int
+	if err := client.StreamTail(context.Background(), func(_ *models.Event) error {
+		received++
+		return nil
+	}); err != nil {
+		t.Fatalf("stream tail: %v", err)
+	}
+	if gotPath != "/collectors/demo/tail" {
+		t.Fatalf("tail path = %q, want scoped collector path", gotPath)
+	}
+	if gotEnvironment != "prod" {
+		t.Fatalf("environment header = %q, want prod", gotEnvironment)
+	}
+	if received != 1 {
+		t.Fatalf("received %d events, want 1", received)
+	}
+}
+
+func TestCollectorAuthUsesConfiguredAPIKeyHeader(t *testing.T) {
+	header := http.Header{}
+	setCollectorAuth(header, config.CollectorConfig{
+		APIKey:       "secret",
+		APIKeyHeader: "X-Collector-Key",
+	})
+
+	if got := header.Get("X-Collector-Key"); got != "secret" {
+		t.Fatalf("custom API-key header = %q, want secret", got)
+	}
+	if got := header.Get("Authorization"); got != "" {
+		t.Fatalf("unexpected bearer authorization %q", got)
+	}
+}
+
+func TestCursorPersistenceIsAtomicAndRecoversBackup(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "collector.cursor")
+	client := NewClient(config.CollectorConfig{CursorPath: path})
+	first := Cursor{Timestamp: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), EventID: "evt-1"}
+	second := Cursor{Timestamp: time.Date(2026, 1, 1, 0, 0, 1, 0, time.UTC), EventID: "evt-2"}
+
+	if err := client.SaveCursor(first); err != nil {
+		t.Fatalf("save first cursor: %v", err)
+	}
+	if err := client.SaveCursor(second); err != nil {
+		t.Fatalf("save second cursor: %v", err)
+	}
+	backupData, err := os.ReadFile(path + ".bak")
+	if err != nil {
+		t.Fatalf("read cursor backup: %v", err)
+	}
+	backup, err := decodeCursor(backupData)
+	if err != nil || backup != first {
+		t.Fatalf("backup = %+v, err=%v; want %+v", backup, err, first)
+	}
+
+	if err := os.WriteFile(path, []byte(`{"timestamp":`), 0o600); err != nil {
+		t.Fatalf("corrupt primary cursor: %v", err)
+	}
+	recovered, err := client.LoadCursor()
+	if !errors.Is(err, ErrCursorRecovered) {
+		t.Fatalf("load error = %v, want ErrCursorRecovered", err)
+	}
+	if recovered != first {
+		t.Fatalf("recovered cursor = %+v, want %+v", recovered, first)
+	}
+}
+
+func TestCursorPersistenceRejectsCorruptPrimaryAndBackup(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "collector.cursor")
+	if err := os.WriteFile(path, []byte(`not-json`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path+".bak", []byte(`also-not-json`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	client := NewClient(config.CollectorConfig{CursorPath: path})
+	if _, err := client.LoadCursor(); err == nil || errors.Is(err, ErrCursorRecovered) {
+		t.Fatalf("load error = %v, want unrecoverable corruption", err)
+	}
+	if err := client.SaveCursor(Cursor{EventID: "evt-new"}); err == nil {
+		t.Fatal("save must not overwrite an invalid primary cursor")
 	}
 }

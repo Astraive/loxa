@@ -171,6 +171,8 @@ export class HTTPBatchSink implements Sink {
   private ndjson: boolean;
   private buffer: string[] = [];
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  private flushTail: Promise<void> = Promise.resolve();
+  private closed = false;
   private batchSize: number;
   private flushIntervalMs: number;
   private statsHandler: StatsHandler | null;
@@ -235,78 +237,88 @@ export class HTTPBatchSink implements Sink {
   get lastCollectorResponse(): CollectorResponse | null { return this._lastResponse; }
 
   async write(encoded: string): Promise<void> {
+    if (this.closed) throw new Error('httpbatch sink is closed');
     this.buffer.push(encoded);
     if (this.buffer.length >= this.batchSize) {
       await this.flush();
-    } else if (!this.flushTimer) {
-      this.flushTimer = setTimeout(() => this.flush(), this.flushIntervalMs);
+    } else {
+      this.scheduleFlush();
     }
   }
 
-  async flush(): Promise<void> {
+  flush(): Promise<void> {
     if (this.flushTimer) {
       clearTimeout(this.flushTimer);
       this.flushTimer = null;
     }
+    const operation = this.flushTail.then(() => this.flushOnce());
+    this.flushTail = operation.catch(() => undefined);
+    return operation;
+  }
+
+  private async flushOnce(): Promise<void> {
     if (this.buffer.length === 0) return;
 
-    const events = [...this.buffer];
-    // Buffer is not cleared here — only removed on successful send so events are not lost on failure
+    const events = this.buffer;
+    this.buffer = [];
+    try {
+      const envelope = this.ndjson
+        ? events.join('\n')
+        : JSON.stringify({
+            api_version: 'v1',
+            source: { sdk: this.sdkName, version: this.sdkVersion, service: this.service },
+            events: events.map(e => JSON.parse(e)),
+          });
 
-    const envelope = this.ndjson
-      ? events.join('\n')
-      : JSON.stringify({
-          api_version: 'v1',
-          source: { sdk: this.sdkName, version: this.sdkVersion, service: this.service },
-          events: events.map(e => JSON.parse(e)),
-        });
+      const body = this.enableCompression
+        ? await gzipAsync(Buffer.from(envelope, 'utf-8'))
+        : Buffer.from(envelope, 'utf-8');
 
-    const body = this.enableCompression
-      ? await gzipAsync(Buffer.from(envelope, 'utf-8'))
-      : Buffer.from(envelope, 'utf-8');
+      let lastError: Error | null = null;
+      for (let attempt = 0; attempt <= this.retries; attempt++) {
+        try {
+          const result = await this.post(body);
+          this._lastResponse = result.response;
+          this.notifyCollectorAck(result.response);
 
-    let lastError: Error | null = null;
-    for (let attempt = 0; attempt <= this.retries; attempt++) {
-      try {
-        const result = await this.post(body);
-        this._lastResponse = result.response;
-        this.notifyCollectorAck(result.response);
+          const outcome = this.classifyOutcome(result.statusCode, result.response);
+          if (outcome === 'success') return;
 
-        const outcome = this.classifyOutcome(result.statusCode, result.response);
-        if (outcome === 'success') {
-          this.buffer.splice(0, events.length);
-          return;
+          const retryAfterMs = result.response.retry_after_ms
+            ?? this.parseRetryAfter(result.retryAfterHeader);
+
+          lastError = new Error(
+            `collector reported ${outcome === 'retryable' ? 'retryable errors' : 'batch failure'}: ` +
+            `${result.response.error || result.response.reason || `accepted=${result.response.accepted} rejected=${result.response.rejected}`}`
+          );
+
+          if (outcome === 'retryable' && attempt < this.retries) {
+            const delay = retryAfterMs
+              ?? Math.min(this.baseDelay * 2 ** attempt, this.maxDelay);
+            await sleep(delay);
+            continue;
+          }
+          throw lastError;
+        } catch (err) {
+          if (err instanceof Error && err.message.startsWith('collector reported')) throw err;
+          lastError = err instanceof Error ? err : new Error(String(err));
+          if (attempt < this.retries) {
+            await sleep(Math.min(this.baseDelay * 2 ** attempt, this.maxDelay));
+            continue;
+          }
+          throw new Error(`collector send failed: ${lastError.message}`);
         }
-
-        const retryAfterMs = result.response.retry_after_ms
-          ?? this.parseRetryAfter(result.retryAfterHeader);
-
-        lastError = new Error(
-          `collector reported ${outcome === 'retryable' ? 'retryable errors' : 'batch failure'}: ` +
-          `${result.response.error || result.response.reason || `accepted=${result.response.accepted} rejected=${result.response.rejected}`}`
-        );
-
-        if (outcome === 'retryable' && attempt < this.retries) {
-          const delay = retryAfterMs
-            ?? Math.min(this.baseDelay * 2 ** attempt, this.maxDelay);
-          await sleep(delay);
-          continue;
-        }
-        throw lastError;
-      } catch (err) {
-        if (err instanceof Error && err.message.startsWith('collector reported')) throw err;
-        lastError = err instanceof Error ? err : new Error(String(err));
-        if (attempt < this.retries) {
-          await sleep(Math.min(this.baseDelay * 2 ** attempt, this.maxDelay));
-          continue;
-        }
-        throw new Error(`collector send failed: ${lastError.message}`);
       }
+      if (lastError) throw new Error(`collector send failed: ${lastError.message}`);
+    } catch (error) {
+      this.buffer = [...events, ...this.buffer];
+      throw error;
     }
-    if (lastError) throw new Error(`collector send failed: ${lastError.message}`);
   }
 
   async drain(): Promise<void> {
+    this.closed = true;
+    this.pause();
     await this.flush();
   }
   pause(): void {
@@ -316,19 +328,26 @@ export class HTTPBatchSink implements Sink {
     }
   }
   resume(): void {
-    if (this.buffer.length > 0 && !this.flushTimer) {
-      this.flushTimer = setTimeout(() => this.flush(), this.flushIntervalMs);
-    }
+    if (!this.closed) this.scheduleFlush();
   }
   queueSize(): number {
     return this.buffer.length;
   }
 
-  close(): void {
-    if (this.flushTimer) {
-      clearTimeout(this.flushTimer);
+  async close(): Promise<void> {
+    await this.drain();
+  }
+
+  private scheduleFlush(): void {
+    if (this.closed || this.buffer.length === 0 || this.flushTimer) return;
+    this.flushTimer = setTimeout(() => {
       this.flushTimer = null;
-    }
+      void this.flush().catch(error => {
+        try {
+          (this.statsHandler as DeliveryFailureHandler | null)?.onDeliveryFailed?.(undefined, error);
+        } catch { /* stats callbacks cannot break delivery */ }
+      });
+    }, this.flushIntervalMs);
   }
 
   private classifyOutcome(statusCode: number, response: CollectorResponse): 'success' | 'retryable' | 'permanent' {

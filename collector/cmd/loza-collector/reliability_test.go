@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -39,6 +40,67 @@ func (s *capturedSink) Len() int {
 	return len(s.events)
 }
 
+type shutdownOrderSink struct {
+	started             chan struct{}
+	release             chan struct{}
+	startOnce           sync.Once
+	mu                  sync.Mutex
+	closed              bool
+	wroteAfterClose     bool
+	canceledBeforeDrain bool
+}
+
+func newShutdownOrderSink() *shutdownOrderSink {
+	return &shutdownOrderSink{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+}
+
+func (s *shutdownOrderSink) Name() string { return "shutdown-order" }
+
+func (s *shutdownOrderSink) WriteEvent(ctx context.Context, _ []byte, _ *collectorevent.Event) error {
+	s.startOnce.Do(func() { close(s.started) })
+	select {
+	case <-s.release:
+	case <-ctx.Done():
+		s.mu.Lock()
+		s.canceledBeforeDrain = true
+		s.mu.Unlock()
+		return ctx.Err()
+	}
+	s.mu.Lock()
+	s.wroteAfterClose = s.closed
+	s.mu.Unlock()
+	return nil
+}
+
+func (s *shutdownOrderSink) Flush(_ context.Context) error { return nil }
+
+func (s *shutdownOrderSink) Close(_ context.Context) error {
+	s.mu.Lock()
+	s.closed = true
+	s.mu.Unlock()
+	return nil
+}
+
+func (s *shutdownOrderSink) isClosed() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.closed
+}
+
+func (s *shutdownOrderSink) deliveredAfterClose() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.wroteAfterClose
+}
+
+func (s *shutdownOrderSink) deliveryCanceledBeforeDrain() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.canceledBeforeDrain
+}
 func TestHandleIngestDedupeWindowExpiry(t *testing.T) {
 	sink := &fakeSink{}
 	cfg := testCollectorConfig()
@@ -158,6 +220,229 @@ func TestSpoolCrashReplay(t *testing.T) {
 	}
 }
 
+func TestEncryptedSpoolCheckpointUsesStoredRecordLength(t *testing.T) {
+	cfg := testCollectorConfig()
+	cfg.storageEncryptionKey = "checkpoint-test-key"
+	cfg.maxSpoolBytes = 1024 * 1024
+
+	spoolPath := filepath.Join(t.TempDir(), "events.ndjson")
+	spoolFile, err := os.OpenFile(spoolPath, os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		t.Fatalf("open spool: %v", err)
+	}
+	defer spoolFile.Close()
+
+	state := &collectorState{
+		cfg:          cfg,
+		spoolFile:    spoolFile,
+		spoolPosFile: spoolPath + ".pos",
+	}
+	first := []byte(`{"event_id":"encrypted-1","event":"first"}`)
+	second := []byte(`{"event_id":"encrypted-2","event":"second"}`)
+	firstItem, err := state.appendSpool(first)
+	if err != nil {
+		t.Fatalf("append first record: %v", err)
+	}
+	if _, err := state.appendSpool(second); err != nil {
+		t.Fatalf("append second record: %v", err)
+	}
+
+	stored, err := os.ReadFile(spoolPath)
+	if err != nil {
+		t.Fatalf("read spool: %v", err)
+	}
+	firstRecordEnd := bytes.IndexByte(stored, '\n') + 1
+	if firstRecordEnd <= len(first)+1 {
+		t.Fatalf("expected encrypted record expansion, got stored=%d plain=%d", firstRecordEnd, len(first)+1)
+	}
+
+	state.markSpoolDelivered(firstItem)
+	if got, want := state.spoolProcessedPos, int64(firstRecordEnd); got != want {
+		t.Fatalf("processed position = %d, want stored record end %d", got, want)
+	}
+}
+
+func TestSpoolCheckpointDoesNotAdvanceAcrossGap(t *testing.T) {
+	cfg := testCollectorConfig()
+	cfg.maxSpoolBytes = 1024 * 1024
+
+	spoolPath := filepath.Join(t.TempDir(), "events.ndjson")
+	spoolFile, err := os.OpenFile(spoolPath, os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		t.Fatalf("open spool: %v", err)
+	}
+	defer spoolFile.Close()
+
+	state := &collectorState{
+		cfg:          cfg,
+		spoolFile:    spoolFile,
+		spoolPosFile: spoolPath + ".pos",
+	}
+	first, err := state.appendSpool([]byte(`{"event":"first"}`))
+	if err != nil {
+		t.Fatalf("append first record: %v", err)
+	}
+	second, err := state.appendSpool([]byte(`{"event":"second"}`))
+	if err != nil {
+		t.Fatalf("append second record: %v", err)
+	}
+
+	state.markSpoolDelivered(second)
+	if state.spoolProcessedPos != 0 {
+		t.Fatalf("checkpoint advanced across undelivered first record to %d", state.spoolProcessedPos)
+	}
+	state.markSpoolDelivered(first)
+	if state.spoolProcessedPos != first.endOffset {
+		t.Fatalf("checkpoint = %d, want first record end %d", state.spoolProcessedPos, first.endOffset)
+	}
+}
+
+func TestShutdownDrainsSpoolBeforeClosingSinks(t *testing.T) {
+	cfg := testCollectorConfig()
+	cfg.reliabilityMode = "spool"
+	cfg.spoolDir = t.TempDir()
+	cfg.maxSpoolBytes = 1024 * 1024
+	cfg.deliveryQueueSize = 1
+	cfg.shutdownTimeout = 2 * time.Second
+
+	sink := newShutdownOrderSink()
+	state := &collectorState{
+		cfg:          cfg,
+		ingestSink:   sink,
+		rateLimiter:  rate.NewLimiter(rate.Limit(1000), 1000),
+		rng:          randSourceForTests(),
+		dedupeSeenAt: make(map[string]time.Time),
+	}
+	state.ready.Store(true)
+	state.sinkHealthy.Store(true)
+	state.spoolHealthy.Store(true)
+	state.diskHealthy.Store(true)
+	if err := state.initReliability(); err != nil {
+		t.Fatalf("initialize reliability: %v", err)
+	}
+	defer state.closeReliability()
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/ingest", strings.NewReader(`{"event_id":"shutdown-1","event":"queued"}`))
+	state.handleIngest(rec, req)
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("ingest status = %d, want 202", rec.Code)
+	}
+	select {
+	case <-sink.started:
+	case <-time.After(time.Second):
+		t.Fatal("queued delivery did not start")
+	}
+
+	shutdownDone := make(chan struct{})
+	go func() {
+		shutdownCollector(&http.Server{}, nil, state, nil, cfg, nil, &sync.WaitGroup{})
+		close(shutdownDone)
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+	closedBeforeDrain := sink.isClosed()
+	close(sink.release)
+	select {
+	case <-shutdownDone:
+	case <-time.After(3 * time.Second):
+		t.Fatal("collector shutdown did not complete")
+	}
+
+	if closedBeforeDrain || sink.deliveredAfterClose() || sink.deliveryCanceledBeforeDrain() {
+		t.Fatal("queued spool delivery was canceled or its sink closed before draining")
+	}
+}
+
+func TestDeliveryQueueBackpressuresInsteadOfDropping(t *testing.T) {
+	cfg := testCollectorConfig()
+	state := &collectorState{
+		cfg:           cfg,
+		ingestSink:    &fakeSink{},
+		rng:           randSourceForTests(),
+		dedupeSeenAt:  make(map[string]time.Time),
+		deliveryQueue: make(chan spoolDelivery, 1),
+	}
+	if err := state.ensureProcessor(); err != nil {
+		t.Fatalf("initialize processor: %v", err)
+	}
+	defer state.processor.Close()
+
+	first := []byte(`{"event":"first"}`)
+	second := []byte(`{"event":"second"}`)
+	if err := state.enqueueDelivery(spoolDelivery{payload: first}); err != nil {
+		t.Fatalf("enqueue first record: %v", err)
+	}
+
+	enqueued := make(chan struct{})
+	go func() {
+		_ = state.enqueueDelivery(spoolDelivery{payload: second})
+		close(enqueued)
+	}()
+
+	select {
+	case <-enqueued:
+		t.Fatal("second enqueue returned before queue capacity was available")
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	<-state.deliveryQueue
+	select {
+	case <-enqueued:
+	case <-time.After(time.Second):
+		t.Fatal("second enqueue did not resume after queue capacity became available")
+	}
+}
+
+func TestDeliveryQueueReservesBytesBeforePublication(t *testing.T) {
+	cfg := testCollectorConfig()
+	state := &collectorState{
+		cfg:           cfg,
+		ingestSink:    &fakeSink{},
+		rng:           randSourceForTests(),
+		dedupeSeenAt:  make(map[string]time.Time),
+		deliveryQueue: make(chan spoolDelivery),
+	}
+	if err := state.ensureProcessor(); err != nil {
+		t.Fatalf("initialize processor: %v", err)
+	}
+	defer state.processor.Close()
+
+	raw := []byte(`{"event":"reserved"}`)
+	enqueued := make(chan struct{})
+	go func() {
+		_ = state.enqueueDelivery(spoolDelivery{payload: raw})
+		close(enqueued)
+	}()
+
+	deadline := time.Now().Add(100 * time.Millisecond)
+	reserved := false
+	for time.Now().Before(deadline) {
+		if state.metrics.queueBytes.Load() == int64(len(raw)) {
+			reserved = true
+			break
+		}
+		select {
+		case <-enqueued:
+			if !reserved {
+				t.Fatal("enqueue returned before reserving queue bytes")
+			}
+		default:
+		}
+		time.Sleep(time.Millisecond)
+	}
+
+	select {
+	case <-enqueued:
+	default:
+		<-state.deliveryQueue
+		<-enqueued
+	}
+	if !reserved {
+		t.Fatal("queue bytes were not reserved before the item became receivable")
+	}
+}
+
 func TestDLQContainsRawAndReason(t *testing.T) {
 	cfg := testCollectorConfig()
 	cfg.reliabilityMode = "spool"
@@ -219,7 +504,7 @@ func TestDLQContainsRawAndReason(t *testing.T) {
 	}
 }
 
-func TestP0CollectorReadinessFailsWhenSpoolOverLimit(t *testing.T) {
+func TestSpoolLimitRejectsBeforeWriting(t *testing.T) {
 	cfg := testCollectorConfig()
 	cfg.reliabilityMode = "spool"
 	cfg.spoolDir = t.TempDir()
@@ -245,20 +530,20 @@ func TestP0CollectorReadinessFailsWhenSpoolOverLimit(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/ingest", strings.NewReader(`{"event":"this-payload-is-longer-than-the-spool-limit"}`))
 	state.handleIngest(rec, req)
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("expected 202, got %d", rec.Code)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d", rec.Code)
 	}
-	if got := state.metrics.spoolBytes.Load(); got <= cfg.maxSpoolBytes {
-		t.Fatalf("expected spool bytes > %d, got %d", cfg.maxSpoolBytes, got)
+	if got := state.metrics.spoolBytes.Load(); got > cfg.maxSpoolBytes {
+		t.Fatalf("spool bytes exceeded limit %d: %d", cfg.maxSpoolBytes, got)
 	}
-	if state.effectiveSpoolHealthy() {
-		t.Fatalf("expected spool health to fail when spool exceeds max bytes")
+	if !state.effectiveSpoolHealthy() {
+		t.Fatal("rejected write should not make the existing spool unhealthy")
 	}
 
 	ready := httptest.NewRecorder()
 	state.handleReady(ready, httptest.NewRequest(http.MethodGet, "/readyz", nil))
-	if ready.Code != http.StatusServiceUnavailable {
-		t.Fatalf("expected 503 when spool is unhealthy, got %d", ready.Code)
+	if ready.Code != http.StatusOK {
+		t.Fatalf("expected ready collector after rejected write, got %d", ready.Code)
 	}
 }
 
@@ -287,7 +572,9 @@ func TestSpoolQueueBytesLimitDropsToDLQ(t *testing.T) {
 	}
 	defer state.closeReliability()
 
-	state.enqueueDelivery([]byte(`{"event":"payload-too-large-for-queue-budget"}`))
+	if err := state.enqueueDelivery(spoolDelivery{payload: []byte(`{"event":"payload-too-large-for-queue-budget"}`)}); err == nil {
+		t.Fatal("expected oversized delivery to be rejected")
+	}
 
 	rawDLQ, err := os.ReadFile(cfg.dlqPath)
 	if err != nil {

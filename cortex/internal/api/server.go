@@ -3,8 +3,8 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"strconv"
@@ -41,7 +41,6 @@ const defaultMaxBodyBytes = 10 * 1024 * 1024 // 10MB
 type Server struct {
 	config      *config.Config
 	processor   *processor.EventProcessor
-	asyncProc   *processor.AsyncProcessor
 	analyzer    *correlation.Analyzer
 	topology    *topology.Resolver
 	graph       *graph.Builder
@@ -96,9 +95,6 @@ func NewServer(cfg *config.Config, stor storage.Storage) *Server {
 	authMiddleware := middleware.NewAuthMiddleware(cfg.Authentication)
 	graphqlServer := NewGraphQLServer(cfg, stor)
 
-	asyncProc := processor.NewAsyncProcessor(eventProc,
-		cfg.Ingestion.AsyncWorkers, cfg.Ingestion.ChannelSize, cfg.Ingestion.MicroBatchSize)
-
 	corrCfg := correlation.FromConfig(
 		cfg.Correlation.Enabled,
 		cfg.Correlation.AnalysisInterval,
@@ -128,7 +124,6 @@ func NewServer(cfg *config.Config, stor storage.Storage) *Server {
 	s := &Server{
 		config:      cfg,
 		processor:   eventProc,
-		asyncProc:   asyncProc,
 		analyzer:    analyzer,
 		topology:    topology,
 		graph:       graphBuilder,
@@ -244,7 +239,13 @@ func (s *Server) Readyz(w http.ResponseWriter, r *http.Request) {
 		defer cancel()
 		if _, err := s.incidents.List(ctx, 1, 0); err != nil {
 			ready = false
-			checks["storage"] = err.Error()
+			checks["storage"] = "unavailable"
+			log.Error().
+				Err(err).
+				Str("event.name", "cortex.readiness").
+				Str("event.kind", "request").
+				Str("event.outcome", "error").
+				Msg("readiness storage check failed")
 		}
 	}
 
@@ -281,7 +282,7 @@ func (s *Server) IngestEvent(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.processor.ProcessEvent(r.Context(), &event); err != nil {
 		log.Warn().Err(err).Msg("event ingestion failed")
-		http.Error(w, "bad request", http.StatusBadRequest)
+		writeIngestionError(w, err)
 		return
 	}
 
@@ -307,7 +308,7 @@ func (s *Server) IngestBatch(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.processor.ProcessBatch(r.Context(), events); err != nil {
 		log.Error().Err(err).Msg("batch ingestion failed")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeIngestionError(w, err)
 		return
 	}
 
@@ -320,7 +321,7 @@ func (s *Server) IngestBatch(w http.ResponseWriter, r *http.Request) {
 func (s *Server) IngestJSONL(w http.ResponseWriter, r *http.Request) {
 	if err := s.processor.ProcessJSONL(r.Context(), r.Body); err != nil {
 		log.Error().Err(err).Msg("JSONL ingestion failed")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeIngestionError(w, err)
 		return
 	}
 
@@ -328,6 +329,14 @@ func (s *Server) IngestJSONL(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(map[string]string{"status": "accepted"}); err != nil {
 		log.Error().Err(err).Msg("failed to encode ingest response")
 	}
+}
+
+func writeIngestionError(w http.ResponseWriter, err error) {
+	if errors.Is(err, processor.ErrInvalidEvent) {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	http.Error(w, "internal error", http.StatusInternalServerError)
 }
 
 type ReconstructRequest struct {
@@ -426,22 +435,48 @@ func (s *Server) RecordIncidentFeedback(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+func graphLookupStatus(err error) int {
+	if errors.Is(err, storage.ErrNotFound) {
+		return http.StatusNotFound
+	}
+	return http.StatusInternalServerError
+}
+
+func graphDepth(r *http.Request) (int, error) {
+	const defaultDepth = 3
+	raw := r.URL.Query().Get("depth")
+	if raw == "" {
+		return defaultDepth, nil
+	}
+	depth, err := strconv.Atoi(raw)
+	if err != nil || depth < 1 || depth > maxGraphDepth {
+		return 0, fmt.Errorf("depth must be between 1 and %d", maxGraphDepth)
+	}
+	return depth, nil
+}
+
 func (s *Server) ServiceGraph(w http.ResponseWriter, r *http.Request) {
 	service := chi.URLParam(r, "service")
-	depth := 3
-	if d := r.URL.Query().Get("depth"); d != "" {
-		if parsed, err := strconv.Atoi(d); err == nil {
-			depth = parsed
-		}
-	}
-	if depth > maxGraphDepth {
-		depth = maxGraphDepth
+	depth, err := graphDepth(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	graphView, err := s.graph.GetServiceGraph(r.Context(), service, depth)
 	if err != nil {
-		log.Warn().Err(err).Str("service", service).Msg("service graph lookup failed")
-		http.Error(w, "not found", http.StatusNotFound)
+		if graphLookupStatus(err) == http.StatusNotFound {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		log.Error().
+			Err(err).
+			Str("event.name", "cortex.service_graph").
+			Str("event.kind", "request").
+			Str("event.outcome", "error").
+			Str("service", service).
+			Msg("service graph lookup failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -453,20 +488,26 @@ func (s *Server) ServiceGraph(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) IncidentGraph(w http.ResponseWriter, r *http.Request) {
 	incidentID := chi.URLParam(r, "incident_id")
-	depth := 3
-	if d := r.URL.Query().Get("depth"); d != "" {
-		if parsed, err := strconv.Atoi(d); err == nil {
-			depth = parsed
-		}
-	}
-	if depth > maxGraphDepth {
-		depth = maxGraphDepth
+	depth, err := graphDepth(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	graphView, err := s.graph.GetIncidentGraph(r.Context(), incidentID, depth)
 	if err != nil {
-		log.Warn().Err(err).Str("incident_id", incidentID).Msg("incident graph lookup failed")
-		http.Error(w, "not found", http.StatusNotFound)
+		if graphLookupStatus(err) == http.StatusNotFound {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		log.Error().
+			Err(err).
+			Str("event.name", "cortex.incident_graph").
+			Str("event.kind", "request").
+			Str("event.outcome", "error").
+			Str("incident.id", incidentID).
+			Msg("incident graph lookup failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -511,13 +552,4 @@ func bodySizeLimit(maxBytes int64) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-var _ io.Closer = (*Server)(nil)
-
-func (s *Server) Close() error {
-	if s.asyncProc != nil {
-		s.asyncProc.Stop()
-	}
-	return nil
 }

@@ -84,6 +84,24 @@ jobs:
           --test lifecycle_event
           --test process_group_timer_stopwatch
 
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --version 0.6.16 --locked
+
+      - name: Coverage
+        run: >
+          cargo llvm-cov --all-features --all-targets
+          --ignore-filename-regex 'coverage_tests\.rs$'
+          --fail-under-lines 95
+          --lcov --output-path lcov.info
+
+      - name: Upload Rust coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-sdk-coverage
+          path: sdks/rs/lcov.info
+          if-no-files-found: ignore
+
   conformance:
     name: Conformance
     runs-on: ubuntu-latest

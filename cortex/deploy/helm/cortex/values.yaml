@@ -9,7 +9,7 @@ replicaCount: 2
 
 image:
   repository: loza-cortex
-  tag: "0.3.0"
+  tag: "0.3.1"
   digest: ""
   pullPolicy: IfNotPresent
 
@@ -126,11 +126,6 @@ logging:
   level: info
   format: json
 
-ingestion:
-  async_workers: 4
-  channel_size: 8192
-  micro_batch_size: 256
-  flush_interval: 500ms
 
 correlation:
   enabled: true

@@ -2,6 +2,7 @@ package correlation
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -69,8 +70,8 @@ func (a *Analyzer) Run(ctx context.Context) {
 	ticker := time.NewTicker(a.cfg.AnalysisInterval)
 	defer ticker.Stop()
 
-	// Run once on startup
-	a.analyze(ctx)
+	// Run once on startup.
+	a.runAnalysis(ctx)
 
 	for {
 		select {
@@ -78,19 +79,32 @@ func (a *Analyzer) Run(ctx context.Context) {
 			log.Info().Msg("Correlation analyzer stopped")
 			return
 		case <-ticker.C:
-			a.analyze(ctx)
+			a.runAnalysis(ctx)
 		}
 	}
 }
 
-func (a *Analyzer) analyze(ctx context.Context) {
+func (a *Analyzer) runAnalysis(ctx context.Context) {
+	startedAt := time.Now()
+	err := a.analyze(ctx)
+	event := log.Info().
+		Str("event.name", "cortex.correlation.analysis").
+		Str("event.kind", "job").
+		Dur("duration", time.Since(startedAt))
+	if err != nil {
+		event = event.Err(err).Str("event.outcome", "error")
+	} else {
+		event = event.Str("event.outcome", "success")
+	}
+	event.Msg("Correlation analysis completed")
+}
+
+func (a *Analyzer) analyze(ctx context.Context) error {
 	events, err := a.eventStore.List(ctx, 10000, 0)
 	if err != nil {
-		log.Warn().Err(err).Msg("Failed to list events for correlation analysis")
-		return
+		return fmt.Errorf("list events for correlation analysis: %w", err)
 	}
 
-	// Filter to recent events only
 	cutoff := time.Now().Add(-a.cfg.CoOccurrenceWindow * 2)
 	var recent []*models.Event
 	for _, e := range events {
@@ -98,19 +112,21 @@ func (a *Analyzer) analyze(ctx context.Context) {
 			recent = append(recent, e)
 		}
 	}
-
 	if len(recent) == 0 {
-		return
+		return nil
 	}
 
-	a.synthesizeCoOccurrence(ctx, recent)
-	a.synthesizeDeploymentAdjacency(ctx, recent)
+	return errors.Join(
+		a.synthesizeCoOccurrence(ctx, recent),
+		a.synthesizeDeploymentAdjacency(ctx, recent),
+	)
 }
 
 // synthesizeCoOccurrence creates co_occurred edges between events from different
 // services within a sliding time window that share anomaly signals.
-func (a *Analyzer) synthesizeCoOccurrence(ctx context.Context, events []*models.Event) {
+func (a *Analyzer) synthesizeCoOccurrence(ctx context.Context, events []*models.Event) error {
 	window := a.cfg.CoOccurrenceWindow
+	var persistenceErrors []error
 
 	// Group events by time bucket (1-minute granularity)
 	type bucket struct {
@@ -164,7 +180,7 @@ func (a *Analyzer) synthesizeCoOccurrence(ctx context.Context, events []*models.
 				timeDelta := math.Abs(float64(e1.Timestamp.Sub(e2.Timestamp).Seconds()))
 				weight := 1.0 / (1.0 + timeDelta/window.Seconds())
 
-				_ = a.graphStore.SaveEdge(ctx, &models.Edge{
+				if err := a.saveEdge(ctx, &models.Edge{
 					ID:         edgeID,
 					FromNodeID: e1.ID,
 					ToNodeID:   e2.ID,
@@ -175,16 +191,23 @@ func (a *Analyzer) synthesizeCoOccurrence(ctx context.Context, events []*models.
 						"window_seconds":     window.Seconds(),
 					},
 					CreatedAt: time.Now(),
-				})
+				}); err != nil {
+					persistenceErrors = append(persistenceErrors, err)
+					if ctx.Err() != nil {
+						return errors.Join(persistenceErrors...)
+					}
+				}
 			}
 		}
 	}
+	return errors.Join(persistenceErrors...)
 }
 
 // synthesizeDeploymentAdjacency creates deployment_adjacent edges when a deployment
 // on service A is followed by anomalous events on service B within 30 minutes.
-func (a *Analyzer) synthesizeDeploymentAdjacency(ctx context.Context, events []*models.Event) {
+func (a *Analyzer) synthesizeDeploymentAdjacency(ctx context.Context, events []*models.Event) error {
 	window := a.cfg.DeploymentAdjacencyWindow
+	var persistenceErrors []error
 	now := time.Now()
 
 	// Find deployment events
@@ -224,21 +247,47 @@ func (a *Analyzer) synthesizeDeploymentAdjacency(ctx context.Context, events []*
 			decay := 1.0 - float64(timeSinceDeploy)/float64(window)
 			weight := math.Max(0.1, decay)
 
-			_ = a.graphStore.SaveEdge(ctx, &models.Edge{
+			if err := a.saveEdge(ctx, &models.Edge{
 				ID:         edgeID,
 				FromNodeID: deploy.ID,
 				ToNodeID:   event.ID,
 				Type:       models.EdgeTypeDeploymentAdjacent,
 				Weight:     weight,
 				Attributes: map[string]interface{}{
-					"deploy_service":  deploy.Service,
+					"deploy_service":   deploy.Service,
 					"affected_service": event.Service,
-					"seconds_after":   int(timeSinceDeploy.Seconds()),
+					"seconds_after":    int(timeSinceDeploy.Seconds()),
 				},
 				CreatedAt: now,
-			})
+			}); err != nil {
+				persistenceErrors = append(persistenceErrors, err)
+				if ctx.Err() != nil {
+					return errors.Join(persistenceErrors...)
+				}
+			}
 		}
 	}
+	return errors.Join(persistenceErrors...)
+}
+
+func (a *Analyzer) saveEdge(ctx context.Context, edge *models.Edge) error {
+	var err error
+	for attempt := 1; attempt <= 3; attempt++ {
+		if err = a.graphStore.SaveEdge(ctx, edge); err == nil {
+			return nil
+		}
+		if attempt == 3 {
+			break
+		}
+		timer := time.NewTimer(time.Duration(attempt) * 10 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return errors.Join(ctx.Err(), err)
+		case <-timer.C:
+		}
+	}
+	return fmt.Errorf("save correlation edge %q after 3 attempts: %w", edge.ID, err)
 }
 
 // isAnomaly returns true if an event represents an anomalous condition.

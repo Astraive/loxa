@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"sort"
@@ -15,6 +16,10 @@ import (
 	"github.com/astraive/loza/cortex/internal/storage"
 	"github.com/rs/zerolog/log"
 )
+
+// ErrInvalidEvent classifies malformed event input independently from storage
+// and processing failures.
+var ErrInvalidEvent = errors.New("invalid event")
 
 type EventProcessor struct {
 	eventStore storage.EventStore
@@ -45,7 +50,7 @@ func (p *EventProcessor) WithConfigurableRedaction(cfg redaction.Config) *EventP
 
 func (p *EventProcessor) ProcessEvent(ctx context.Context, event *models.Event) error {
 	if err := event.Validate(); err != nil {
-		return fmt.Errorf("event validation failed: %w", err)
+		return fmt.Errorf("%w: %w", ErrInvalidEvent, err)
 	}
 
 	normalized := p.normalizeEvent(event)
@@ -71,7 +76,7 @@ func (p *EventProcessor) ProcessBatch(ctx context.Context, events []*models.Even
 
 	for _, e := range events {
 		if err := e.Validate(); err != nil {
-			return fmt.Errorf("event validation failed for %s: %w", e.ID, err)
+			return fmt.Errorf("%w %s: %w", ErrInvalidEvent, e.ID, err)
 		}
 		normalized := p.normalizeEvent(e)
 		validEvents = append(validEvents, normalized)
@@ -103,12 +108,12 @@ func (p *EventProcessor) ProcessJSONL(ctx context.Context, reader io.Reader) err
 
 		var rawEvent map[string]interface{}
 		if err := json.Unmarshal(line, &rawEvent); err != nil {
-			return fmt.Errorf("line %d: failed to parse JSON: %w", lineNum, err)
+			return fmt.Errorf("%w at line %d: failed to parse JSON: %w", ErrInvalidEvent, lineNum, err)
 		}
 
 		event, err := eventconv.FromRawMap(rawEvent, "jsonl")
 		if err != nil {
-			return fmt.Errorf("line %d: %w", lineNum, err)
+			return fmt.Errorf("%w at line %d: %w", ErrInvalidEvent, lineNum, err)
 		}
 
 		events = append(events, event)
@@ -124,8 +129,6 @@ func (p *EventProcessor) ProcessJSONL(ctx context.Context, reader io.Reader) err
 
 	return nil
 }
-
-
 
 func (p *EventProcessor) normalizeEvent(event *models.Event) *models.Event {
 	normalized := *event
@@ -195,25 +198,25 @@ func (p *EventProcessor) createGraphNodes(ctx context.Context, event *models.Eve
 		return err
 	}
 	if event.TraceID != "" {
-			relatedEvents, err := p.eventStore.FindByTraceID(ctx, event.TraceID)
-			if err == nil {
-				for _, related := range relatedEvents {
-					if related.ID != event.ID {
-						edge := &models.Edge{
-							ID:         fmt.Sprintf("%s->%s", event.ID, related.ID),
-							FromNodeID: event.ID,
-							ToNodeID:   related.ID,
-							Type:       models.EdgeTypeSameTrace,
-							Weight:     1.0,
-							CreatedAt:  time.Now(),
-						}
-						if saveErr := p.graph.SaveEdge(ctx, edge); saveErr != nil {
-							log.Warn().Err(saveErr).Str("edge_id", edge.ID).Msg("failed to save trace edge")
-						}
+		relatedEvents, err := p.eventStore.FindByTraceID(ctx, event.TraceID)
+		if err == nil {
+			for _, related := range relatedEvents {
+				if related.ID != event.ID {
+					edge := &models.Edge{
+						ID:         fmt.Sprintf("%s->%s", event.ID, related.ID),
+						FromNodeID: event.ID,
+						ToNodeID:   related.ID,
+						Type:       models.EdgeTypeSameTrace,
+						Weight:     1.0,
+						CreatedAt:  time.Now(),
+					}
+					if saveErr := p.graph.SaveEdge(ctx, edge); saveErr != nil {
+						log.Warn().Err(saveErr).Str("edge_id", edge.ID).Msg("failed to save trace edge")
 					}
 				}
 			}
 		}
+	}
 
 	if event.IncidentID != "" {
 		relatedEvents, err := p.eventStore.FindByIncidentID(ctx, event.IncidentID)
@@ -459,122 +462,4 @@ func (p *EventProcessor) linkExternalEvents(ctx context.Context, event *models.E
 		}
 	}
 	return nil
-}
-
-// AsyncProcessor wraps EventProcessor with async batch ingestion for high throughput.
-type AsyncProcessor struct {
-	processor *EventProcessor
-	ch        chan *models.Event
-	batchSize int
-	workers   int
-	done      chan struct{}
-	flushCh   chan chan struct{}
-}
-
-// NewAsyncProcessor creates an async ingestion pipeline.
-func NewAsyncProcessor(processor *EventProcessor, workers, channelSize, batchSize int) *AsyncProcessor {
-	if workers <= 0 {
-		workers = 4
-	}
-	if channelSize <= 0 {
-		channelSize = 8192
-	}
-	if batchSize <= 0 {
-		batchSize = 256
-	}
-
-	ap := &AsyncProcessor{
-		processor: processor,
-		ch:        make(chan *models.Event, channelSize),
-		batchSize: batchSize,
-		workers:   workers,
-		done:      make(chan struct{}),
-		flushCh:   make(chan chan struct{}),
-	}
-
-	for i := 0; i < workers; i++ {
-		go ap.worker()
-	}
-
-	return ap
-}
-
-// IngestChan returns the channel for fire-and-forget event submission.
-func (ap *AsyncProcessor) IngestChan() chan<- *models.Event {
-	return ap.ch
-}
-
-// Ingest sends an event to the async pipeline.
-func (ap *AsyncProcessor) Ingest(event *models.Event) {
-	ap.ch <- event
-}
-
-// Sync flushes all pending events and waits for completion.
-func (ap *AsyncProcessor) Sync() error {
-	done := make(chan struct{}, ap.workers)
-	for i := 0; i < ap.workers; i++ {
-		ap.flushCh <- done
-	}
-	for i := 0; i < ap.workers; i++ {
-		<-done
-	}
-	return nil
-}
-
-// Stop gracefully shuts down the async processor.
-func (ap *AsyncProcessor) Stop() {
-	close(ap.done)
-}
-
-func (ap *AsyncProcessor) worker() {
-	batch := make([]*models.Event, 0, ap.batchSize)
-	flushTimer := time.NewTicker(500 * time.Millisecond)
-	defer flushTimer.Stop()
-
-	for {
-		select {
-		case <-ap.done:
-			return
-		case event := <-ap.ch:
-			batch = append(batch, event)
-			if len(batch) >= ap.batchSize {
-				ap.flushBatch(batch)
-				batch = batch[:0]
-			}
-		case <-flushTimer.C:
-			if len(batch) > 0 {
-				ap.flushBatch(batch)
-				batch = batch[:0]
-			}
-		case syncCh := <-ap.flushCh:
-			for {
-				select {
-				case event := <-ap.ch:
-					batch = append(batch, event)
-					if len(batch) >= ap.batchSize {
-						ap.flushBatch(batch)
-						batch = batch[:0]
-					}
-				default:
-					goto doneFlush
-				}
-			}
-		doneFlush:
-			if len(batch) > 0 {
-				ap.flushBatch(batch)
-				batch = batch[:0]
-			}
-			syncCh <- struct{}{}
-		}
-	}
-}
-
-func (ap *AsyncProcessor) flushBatch(batch []*models.Event) {
-	if len(batch) == 0 {
-		return
-	}
-	ctx := context.Background()
-	if err := ap.processor.ProcessBatch(ctx, batch); err != nil {
-		log.Error().Err(err).Int("batch_size", len(batch)).Msg("async processor: batch processing failed")
-	}
 }

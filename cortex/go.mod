@@ -3,9 +3,9 @@ module github.com/astraive/loza/cortex
 go 1.25.0
 
 require (
-	github.com/astraive/lql/client/go v0.4.0
 	github.com/astraive/loza/gen/go v0.0.0-00010101000000-000000000000
 	github.com/astraive/loza/spec v0.0.0
+	github.com/astraive/lql/client/go v0.4.0
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/gorilla/websocket v1.5.3
 	github.com/lib/pq v1.10.9
@@ -43,6 +43,7 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/google/flatbuffers v25.1.24+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/graphql-go/graphql v0.8.1 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect

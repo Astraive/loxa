@@ -2,6 +2,8 @@ package learner
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/astraive/loza/cortex/internal/models"
@@ -33,7 +35,7 @@ func (st *SalienceTracker) WithConfig(alpha, defaultScore float64) *SalienceTrac
 }
 
 // RecordOutcome updates salience scores based on an incident outcome code.
-func (st *SalienceTracker) RecordOutcome(ctx context.Context, eventTypes []string, outcomeCode int) {
+func (st *SalienceTracker) RecordOutcome(ctx context.Context, eventTypes []string, outcomeCode int) error {
 	category := models.OutcomeCategory(outcomeCode)
 	var reward float64
 	switch category {
@@ -44,20 +46,27 @@ func (st *SalienceTracker) RecordOutcome(ctx context.Context, eventTypes []strin
 	case "failed":
 		reward = -0.5
 	default:
-		return
+		return nil
 	}
 
+	var persistenceErrors []error
 	for _, eventType := range eventTypes {
-		current, _ := st.store.Get(ctx, eventType)
+		current, err := st.store.Get(ctx, eventType)
+		if err != nil {
+			persistenceErrors = append(persistenceErrors, fmt.Errorf("get salience for %q: %w", eventType, err))
+			continue
+		}
 		newScore := current + st.alpha*(reward-current)
-
-		_ = st.store.Save(ctx, &models.SalienceScore{
+		if err := st.store.Save(ctx, &models.SalienceScore{
 			EventType:   eventType,
 			Score:       newScore,
 			SampleCount: 1,
 			UpdatedAt:   time.Now(),
-		})
+		}); err != nil {
+			persistenceErrors = append(persistenceErrors, fmt.Errorf("save salience for %q: %w", eventType, err))
+		}
 	}
+	return errors.Join(persistenceErrors...)
 }
 
 // GetSalience returns the salience score for an event type.

@@ -278,7 +278,7 @@ type collectorMetrics struct {
 	queueBytes             atomic.Int64
 	inflightRequests       atomic.Int64
 	inflightEvents         atomic.Int64
-	spoolReplayCount       int64
+	spoolReplayCount       atomic.Int64
 	cortexBridgeFlushes    atomic.Int64
 	cortexBridgeEvents     atomic.Int64
 	cortexBridgeErrors     atomic.Int64
@@ -287,6 +287,7 @@ type collectorMetrics struct {
 
 type collectorState struct {
 	cfg               collectorConfig
+	startedAt         time.Time
 	ingestSink        collectorevent.Sink
 	hybridQueueSink   collectorevent.Sink
 	secondarySinks    []namedSink
@@ -303,7 +304,8 @@ type collectorState struct {
 	spoolBadFile      string
 	spoolProcessedPos int64
 	spoolMu           sync.Mutex
-	deliveryQueue     chan []byte
+	deliveryQueue     chan spoolDelivery
+	deliverySpace     chan struct{}
 	deliveryWG        sync.WaitGroup
 	metricsInit       sync.Once
 	metricsHTTP       http.Handler

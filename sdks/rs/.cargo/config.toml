@@ -1,0 +1,2 @@
+[alias]
+coverage = "llvm-cov --all-features --all-targets --ignore-filename-regex coverage_tests\\.rs$ --fail-under-lines 95 --lcov --output-path lcov.info"

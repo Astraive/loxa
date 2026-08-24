@@ -7,3 +7,6 @@ pub mod queue;
 pub mod retry;
 pub mod safe;
 pub mod transport;
+
+#[cfg(test)]
+mod internal_coverage_tests;

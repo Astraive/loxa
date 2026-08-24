@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -305,5 +306,56 @@ func TestCollectorClient_RejectsRemotePlaintextBasicAuth(t *testing.T) {
 	_, err := client.Ingest(context.Background(), nil)
 	if err == nil || !strings.Contains(err.Error(), "require TLS") {
 		t.Fatalf("Ingest() error = %v, want plaintext Basic-auth rejection", err)
+	}
+}
+
+func TestHTTPBatchSinkRetainsFailedBatchAheadOfNewEvents(t *testing.T) {
+	var mu sync.Mutex
+	var bodies []string
+	fail := true
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		mu.Lock()
+		bodies = append(bodies, string(body))
+		shouldFail := fail
+		mu.Unlock()
+		if shouldFail {
+			http.Error(w, "retry", http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	got, err := HTTPBatchSink(HTTPBatchSinkConfig{
+		Endpoint:      server.URL,
+		Insecure:      true,
+		BatchSize:     1,
+		FlushInterval: time.Hour,
+	})
+	if err != nil {
+		t.Fatalf("HTTPBatchSink: %v", err)
+	}
+	if err := got.WriteEvent(context.Background(), []byte("first\n"), nil); err == nil {
+		t.Fatal("first delivery unexpectedly succeeded")
+	}
+
+	mu.Lock()
+	fail = false
+	mu.Unlock()
+	if err := got.WriteEvent(context.Background(), []byte("second\n"), nil); err != nil {
+		t.Fatalf("retry delivery: %v", err)
+	}
+	if err := got.Close(context.Background()); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(bodies) != 2 {
+		t.Fatalf("request bodies = %q, want two attempts", bodies)
+	}
+	if bodies[0] != "first\n" || bodies[1] != "first\nsecond\n" {
+		t.Fatalf("request bodies = %q, failed batch was not retried first", bodies)
 	}
 }

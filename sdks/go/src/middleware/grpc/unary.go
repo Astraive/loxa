@@ -31,7 +31,7 @@ func UnaryInterceptorWithConfig(cfg Config) grpc.UnaryServerInterceptor {
 		eventName = "grpc.request"
 	}
 
-	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		evCtx := loza.StartEvent(ctx, loza.Params{
 			Event:  eventName,
 			Method: "grpc",
@@ -51,8 +51,6 @@ func UnaryInterceptorWithConfig(cfg Config) grpc.UnaryServerInterceptor {
 			return resp, err
 		}
 
-		var resp any
-		var err error
 		defer func() {
 			if rec := recover(); rec != nil {
 				err = status.Error(codes.Internal, fmt.Sprintf("panic recovered: %v", rec))

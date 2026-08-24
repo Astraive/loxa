@@ -94,6 +94,16 @@ func (p *Pipeline) Enqueue(item PipelineItem) (bool, error) {
 	default:
 	}
 
+	// Reserve pending work before publishing it. A worker must never be able to
+	// finish an item before that item is visible to drain accounting.
+	p.reserveItem()
+	reserved := true
+	defer func() {
+		if reserved {
+			p.finishItems(1)
+		}
+	}()
+
 	// Own encoded bytes so callers can safely reuse buffers after Enqueue returns.
 	if len(item.Encoded) > 0 {
 		item.Encoded = append([]byte(nil), item.Encoded...)
@@ -130,7 +140,7 @@ func (p *Pipeline) Enqueue(item PipelineItem) (bool, error) {
 			case <-p.done:
 				return false, ErrPipelineClosed
 			case <-p.queue:
-				p.pending.Add(-1)
+				p.finishItems(1)
 			default:
 			}
 			select {
@@ -195,9 +205,15 @@ func (p *Pipeline) Enqueue(item PipelineItem) (bool, error) {
 		}
 	}
 	if enqueued {
-		p.pending.Add(1)
+		reserved = false
 	}
 	return enqueued, nil
+}
+
+func (p *Pipeline) reserveItem() {
+	p.drainMu.Lock()
+	p.pending.Add(1)
+	p.drainMu.Unlock()
 }
 
 func (p *Pipeline) writeDirect(item PipelineItem) error {
@@ -393,10 +409,10 @@ func (p *Pipeline) finishItems(count int) {
 	if count <= 0 {
 		return
 	}
+	p.drainMu.Lock()
+	defer p.drainMu.Unlock()
 	if p.pending.Add(int64(-count)) == 0 {
-		p.drainMu.Lock()
 		p.drainCond.Broadcast()
-		p.drainMu.Unlock()
 	}
 }
 

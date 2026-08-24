@@ -128,6 +128,32 @@ func TestBuildMuxCollectorScopedAuthorization(t *testing.T) {
 	}
 }
 
+func TestBuildMuxRoutesScopedWebSocketTail(t *testing.T) {
+	handlers := &routeTestHandlers{}
+	tail := http.HandlerFunc(handlers.handle)
+	collectorProtect := func(next http.Handler, _ string, resolve CollectorResolver, mode CollectorRouteMode) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			collector, ok := resolve(r)
+			if mode != CanonicalCollectorRoute || !ok {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r.WithContext(WithAuthorizedCollector(r.Context(), collector, "prod")))
+		})
+	}
+	mux := BuildMux("", "/health", "/ready", "/metrics", false, nil, tail, handlers, nil, collectorProtect, "")
+
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/collectors/orders/ws/tail", nil))
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("scoped websocket tail status = %d, want %d", response.Code, http.StatusOK)
+	}
+	if !handlers.seen || handlers.scope.Name != "orders" || handlers.scope.Environment != "prod" {
+		t.Fatalf("handler scope = %#v (seen %t), want authorized orders/prod", handlers.scope, handlers.seen)
+	}
+}
+
 func TestBuildMuxUsesLogWriteScopeForCanonicalOTLPLogs(t *testing.T) {
 	handlers := &routeTestHandlers{}
 	var requiredPermission string

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -66,9 +65,12 @@ func main() {
 
 	log.Info().Msg("Storage initialized")
 
+	processCtx, stopSignals := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stopSignals()
+
+	syncProcessor := processor.NewEventProcessor(stor.Events(), stor.Topology(), stor.Graph())
+	syncDone := startCollectorSync(processCtx, cfg.Collector, syncProcessor)
 	if cfg.Collector.SourceOfTruth && cfg.Collector.Mode == "pull" {
-		syncProcessor := processor.NewEventProcessor(stor.Events(), stor.Topology(), stor.Graph())
-		go collectorsync.RunSourceOfTruthSync(context.Background(), cfg.Collector, syncProcessor)
 		log.Info().
 			Str("collector_url", cfg.Collector.URL).
 			Bool("tail_enabled", cfg.Collector.TailEnabled).
@@ -89,16 +91,13 @@ func main() {
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
 	go func() {
 		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal().Err(err).Msg("Server failed")
 		}
 	}()
 
-	<-sigChan
+	<-processCtx.Done()
 	log.Info().Msg("Shutting down server...")
 
 	if grpcServer != nil {
@@ -121,7 +120,23 @@ func main() {
 	if err := httpSrv.Shutdown(shutdownCtx); err != nil {
 		log.Error().Err(err).Msg("Server shutdown error")
 	}
+
+	<-syncDone
+	log.Info().Msg("Collector source-of-truth sync stopped")
 	log.Info().Msg("Server shutdown complete")
+}
+
+func startCollectorSync(ctx context.Context, cfg config.CollectorConfig, proc collectorsync.BatchProcessor) <-chan struct{} {
+	done := make(chan struct{})
+	if !cfg.SourceOfTruth || cfg.Mode != "pull" {
+		close(done)
+		return done
+	}
+	go func() {
+		defer close(done)
+		collectorsync.RunSourceOfTruthSync(ctx, cfg, proc)
+	}()
+	return done
 }
 
 func startGRPCServer(cfg *config.Config, stor storage.Storage) {

@@ -183,3 +183,44 @@ func TestPipelineWorkerReportsWriteErrors(t *testing.T) {
 		t.Fatalf("shutdown failed: %v", err)
 	}
 }
+
+func TestPipelineConcurrentEnqueueAndFlushDoesNotLoseDrainWakeup(t *testing.T) {
+	p := NewPipeline(PipelineConfig{
+		QueueSize:     1,
+		Workers:       4,
+		FlushInterval: time.Hour,
+		Backpressure:  Block,
+		Sinks:         []SinkWriter{nopSinkWriter{}},
+	})
+
+	for round := range 100 {
+		var producers sync.WaitGroup
+		for range 32 {
+			producers.Add(1)
+			go func() {
+				defer producers.Done()
+				ok, err := p.Enqueue(PipelineItem{Encoded: []byte(`{"event":"race"}`)})
+				if err != nil || !ok {
+					t.Errorf("enqueue failed: ok=%v err=%v", ok, err)
+				}
+			}()
+		}
+		producers.Wait()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		if err := p.Flush(ctx); err != nil {
+			cancel()
+			t.Fatalf("flush round %d failed: %v (pending=%d)", round, err, p.pending.Load())
+		}
+		cancel()
+		if pending := p.pending.Load(); pending != 0 {
+			t.Fatalf("flush round %d left pending=%d", round, pending)
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := p.Shutdown(ctx); err != nil {
+		t.Fatalf("shutdown failed: %v", err)
+	}
+}

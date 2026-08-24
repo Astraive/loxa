@@ -6,11 +6,11 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"math/rand"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
-	"math/rand"
 
 	collectorevent "github.com/astraive/loza/collector/internal/event"
 	"github.com/astraive/loza/collector/internal/sinks/internal/atrest"
@@ -19,6 +19,11 @@ import (
 )
 
 var identPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+// DecryptRaw decodes a raw event written with Config.EncryptRaw.
+func DecryptRaw(data []byte, key string) ([]byte, error) {
+	return atrest.DecryptBytes(data, key)
+}
 
 func retrySleep(base time.Duration) time.Duration {
 	if base <= 0 {
@@ -83,14 +88,14 @@ type sink struct {
 	flushEvery   time.Duration
 	batchEnabled bool
 
-	writerLoop  bool
-	useAppender bool
-	encryptRaw  bool
-	encryptKey  string
+	writerLoop    bool
+	useAppender   bool
+	encryptRaw    bool
+	encryptKey    string
 	writeTimeout  time.Duration
 	retryAttempts int
 	retryBackoff  time.Duration
-	writerStmt  *sql.Stmt
+	writerStmt    *sql.Stmt
 
 	mu      sync.Mutex
 	buffer  [][]any
@@ -172,23 +177,23 @@ func New(cfg Config) (collectorevent.Sink, error) {
 	}
 
 	s := &sink{
-		db:          db,
-		ownsDB:      owns,
-		table:       quotedTable,
-		rawColumn:   quotedRaw,
-		schema:      schema,
-		columns:     columns,
-		rawQuery:    fmt.Sprintf("INSERT INTO %s (%s) VALUES (?)", quotedTable, quotedRaw),
-		schemaQuery: schemaQuery,
-		storeRaw:    storeRaw,
-		batchSize:   cfg.BatchSize,
-		flushEvery:  cfg.FlushInterval,
-		stopCh:      make(chan struct{}),
-		writerLoop:  cfg.WriterLoop,
-		useAppender: cfg.UseAppender,
-		encryptRaw:  cfg.EncryptRaw,
-		encryptKey:  cfg.EncryptKey,
-		writeTimeout: cfg.WriteTimeout,
+		db:            db,
+		ownsDB:        owns,
+		table:         quotedTable,
+		rawColumn:     quotedRaw,
+		schema:        schema,
+		columns:       columns,
+		rawQuery:      fmt.Sprintf("INSERT INTO %s (%s) VALUES (?)", quotedTable, quotedRaw),
+		schemaQuery:   schemaQuery,
+		storeRaw:      storeRaw,
+		batchSize:     cfg.BatchSize,
+		flushEvery:    cfg.FlushInterval,
+		stopCh:        make(chan struct{}),
+		writerLoop:    cfg.WriterLoop,
+		useAppender:   cfg.UseAppender,
+		encryptRaw:    cfg.EncryptRaw,
+		encryptKey:    cfg.EncryptKey,
+		writeTimeout:  cfg.WriteTimeout,
 		retryAttempts: cfg.RetryAttempts,
 		retryBackoff:  cfg.RetryBackoff,
 	}
@@ -767,6 +772,3 @@ func buildSchemaInsertQuery(table string, columns []string, storeRaw bool, rawCo
 		strings.Join(placeholders, ", "),
 	)
 }
-
-
-

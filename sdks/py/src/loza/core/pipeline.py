@@ -104,12 +104,14 @@ class MemoryOfflineBuffer:
                 self.dropped += 1
             self._events.append(encoded)
 
-    def drain(self, limit: int = 1024) -> list[str]:
+    def peek(self, limit: int = 1024) -> list[str]:
         with self._lock:
-            events: list[str] = []
-            while self._events and len(events) < limit:
-                events.append(self._events.popleft())
-            return events
+            return list(self._events)[: max(0, limit)]
+
+    def ack(self, count: int) -> None:
+        with self._lock:
+            for _ in range(min(max(0, count), len(self._events))):
+                self._events.popleft()
 
     def __len__(self) -> int:
         with self._lock:
@@ -136,23 +138,36 @@ class DiskOfflineBuffer:
                 handle.flush()
                 os.fsync(handle.fileno())
 
-    def drain(self, limit: int = 1024) -> list[str]:
+    def peek(self, limit: int = 1024) -> list[str]:
         with self._lock:
-            if not self.path.exists():
-                return []
-            lines = self.path.read_text(encoding="utf-8").splitlines()
-            head, tail = lines[:limit], lines[limit:]
-            if tail:
-                self.path.write_text("\n".join(tail) + "\n", encoding="utf-8")
-            else:
-                self.path.unlink(missing_ok=True)
-            return [line for line in head if line.strip()]
+            return self._read_lines()[: max(0, limit)]
+
+    def ack(self, count: int) -> None:
+        with self._lock:
+            lines = self._read_lines()
+            self._replace_lines(lines[min(max(0, count), len(lines)) :])
+
+    def _read_lines(self) -> list[str]:
+        if not self.path.exists():
+            return []
+        return [line for line in self.path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+    def _replace_lines(self, lines: list[str]) -> None:
+        if not lines:
+            self.path.unlink(missing_ok=True)
+            return
+        temporary = self.path.with_name(f".{self.path.name}.tmp")
+        with temporary.open("w", encoding="utf-8") as handle:
+            handle.write("\n".join(lines) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, self.path)
 
     def _truncate_half(self) -> None:
-        lines = self.path.read_text(encoding="utf-8").splitlines()
+        lines = self._read_lines()
         kept = lines[len(lines) // 2 :]
         self.dropped += len(lines) - len(kept)
-        self.path.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+        self._replace_lines(kept)
 
 
 @dataclass(slots=True)
@@ -188,6 +203,7 @@ class Pipeline:
         self._workers: list[Thread] = []
         self._closed = False
         self._lock = Lock()
+        self._offline_lock = Lock()
 
     def write_sync(self, encoded: str) -> None:
         self._write_batch([encoded])
@@ -226,6 +242,18 @@ class Pipeline:
             self._metrics.set_buffer_size(self.queue.qsize())
         return drained
 
+    def replay_offline(self, limit: int = 4096) -> int:
+        if self.offline_buffer is None:
+            return 0
+        delivered = 0
+        with self._offline_lock:
+            while buffered := self.offline_buffer.peek(limit=limit):
+                if not self._write_batch(buffered, buffer_on_failure=False):
+                    break
+                self.offline_buffer.ack(len(buffered))
+                delivered += len(buffered)
+        return delivered
+
     def start(self, workers: int = 1) -> None:
         with self._lock:
             if self._workers:
@@ -236,24 +264,29 @@ class Pipeline:
                 self._workers.append(worker)
 
     def close(self, timeout: float = 30.0) -> None:
-        self.stop.set()
-        deadline = time.monotonic() + timeout
-        for worker in self._workers:
-            remaining = max(0.1, deadline - time.monotonic())
-            worker.join(remaining)
-        self.drain_once()
-        if self.offline_buffer is not None:
-            buffered = self.offline_buffer.drain(limit=4096)
-            if buffered:
-                self._write_batch(buffered)
-        self._closed = True
-        for sink in self.sinks:
-            flush = getattr(sink, "flush", None)
-            if callable(flush):
-                flush()
-            close_fn = getattr(sink, "close", None)
-            if callable(close_fn):
-                close_fn()
+        with self._lock:
+            if self._closed:
+                return
+            self.stop.set()
+            deadline = time.monotonic() + max(0.0, timeout)
+            for worker in self._workers:
+                worker.join(max(0.0, deadline - time.monotonic()))
+            live_workers = [worker.name for worker in self._workers if worker.is_alive()]
+            if live_workers:
+                names = ", ".join(live_workers)
+                raise TimeoutError(f"pipeline workers did not stop before timeout: {names}")
+
+            self.drain_once()
+            self.replay_offline()
+
+            for sink in self.sinks:
+                flush = getattr(sink, "flush", None)
+                if callable(flush):
+                    flush()
+                close_fn = getattr(sink, "close", None)
+                if callable(close_fn):
+                    close_fn()
+            self._closed = True
 
     def _run_worker(self) -> None:
         batcher = ByteBatcher(self.max_batch_bytes)
@@ -272,15 +305,31 @@ class Pipeline:
         if tail:
             self._write_batch(tail)
 
-    def _write_batch(self, encoded_events: list[str]) -> None:
+    def _write_batch(self, encoded_events: list[str], *, buffer_on_failure: bool = True) -> bool:
         if not encoded_events:
-            return
-        for sink in self.sinks:
-            self._write_sink_with_retry(sink, encoded_events)
-        self.stats.emitted += len(encoded_events)
+            return True
+        errors = [
+            error
+            for sink in self.sinks
+            if (error := self._write_sink_with_retry(sink, encoded_events)) is not None
+        ]
+        if errors:
+            self.stats.failed += len(encoded_events)
+            self.stats.last_error = "; ".join(str(error) for error in errors)
+            if self._metrics is not None:
+                self._metrics.on_event_dropped("transport")
+            if buffer_on_failure and self.offline_buffer is not None:
+                for encoded in encoded_events:
+                    self.offline_buffer.append(encoded)
+            if self.error_handler is not None:
+                for error in errors:
+                    self.error_handler(error)
+        else:
+            self.stats.emitted += len(encoded_events)
         self.stats.batches += 1
+        return not errors
 
-    def _write_sink_with_retry(self, sink: object, encoded_events: list[str]) -> None:
+    def _write_sink_with_retry(self, sink: object, encoded_events: list[str]) -> Exception | None:
         last_error: Exception | None = None
         for attempt in range(1, self.retry_policy.max_attempts + 1):
             try:
@@ -290,22 +339,14 @@ class Pipeline:
                 else:
                     for encoded in encoded_events:
                         sink.write(encoded)
-                return
+                return None
             except Exception as exc:
                 last_error = exc
                 self.stats.retried += int(attempt < self.retry_policy.max_attempts)
                 if self._metrics is not None:
                     self._metrics.on_retry(attempt)
                 time.sleep(self.retry_policy.delay(attempt))
-        self.stats.failed += len(encoded_events)
-        self.stats.last_error = str(last_error or "unknown sink failure")
-        if self._metrics is not None:
-            self._metrics.on_event_dropped("transport")
-        if self.offline_buffer is not None:
-            for encoded in encoded_events:
-                self.offline_buffer.append(encoded)
-        if self.error_handler is not None and last_error is not None:
-            self.error_handler(last_error)
+        return last_error or RuntimeError("unknown sink failure")
 
 
 def encode_batch_envelope(encoded_events: Iterable[str]) -> str:

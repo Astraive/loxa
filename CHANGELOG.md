@@ -4,6 +4,22 @@ All notable changes to the LOZA project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/0.2.0/).
 
+## [0.3.1] - 2026-08-24
+
+### Security
+
+- Closed collector and Cortex authorization gaps, hardened encrypted spool
+  recovery, and redacted internal errors from public API responses.
+
+### Fixed
+
+- Corrected collector shutdown ordering, spool accounting, scoped live sync,
+  LQL parameter binding, and cross-backend query behavior.
+- Restored deterministic SDK delivery, batching, generated contracts, and
+  release-version consistency across Go, Python, Rust, and JavaScript.
+- Restored the Lozana lint gate and corrected streaming, query-cache, trace,
+  dashboard, and API-client behavior.
+
 ## [0.3.0] - 2026-08-14
 
 ### Security

@@ -5,11 +5,15 @@ on:
     branches: [main]
     paths:
       - "sdks/go/**"
+      - "clients/go/**"
       - "spec/**"
+      - ".github/workflows/sdks-go.yml"
   pull_request:
     paths:
       - "sdks/go/**"
+      - "clients/go/**"
       - "spec/**"
+      - ".github/workflows/sdks-go.yml"
   workflow_dispatch:
 
 permissions:
@@ -93,6 +97,17 @@ jobs:
             go test ./... -count=1 -race
             Pop-Location
           }
+
+      - name: SDK coverage gate
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: bash coverage.sh
+
+      - name: Go client coverage gate
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        working-directory: clients/go
+        run: bash coverage.sh
 
       # --- Conformance ---
 

@@ -60,7 +60,7 @@ func (f *fakeFeedbackStore) GetSuccessRate(_ context.Context, action string, sig
 }
 
 type fakeSignatureStoreForLearner struct {
-	sigs map[string]*models.IncidentSignature
+	sigs  map[string]*models.IncidentSignature
 	saved []*models.IncidentSignature
 }
 
@@ -99,6 +99,31 @@ func (f *fakeSignatureStoreForLearner) ArchiveStale(context.Context, float64) (i
 
 func (f *fakeSignatureStoreForLearner) UpdateLastMatched(context.Context, string) error {
 	return nil
+}
+
+type failingSalienceStore struct {
+	saveErr error
+}
+
+func (s *failingSalienceStore) Save(context.Context, *models.SalienceScore) error {
+	return s.saveErr
+}
+
+func (*failingSalienceStore) Get(context.Context, string) (float64, error) {
+	return 0.5, nil
+}
+
+func (*failingSalienceStore) List(context.Context, int) ([]*models.SalienceScore, error) {
+	return nil, nil
+}
+
+func TestRecordOutcomeReturnsPersistenceErrors(t *testing.T) {
+	persistErr := errors.New("persist salience")
+	tracker := NewSalienceTracker(&failingSalienceStore{saveErr: persistErr})
+
+	if err := tracker.RecordOutcome(context.Background(), []string{"http.error"}, 200); !errors.Is(err, persistErr) {
+		t.Fatalf("expected persistence error, got %v", err)
+	}
 }
 
 func TestRecordRemediationAndFeedback(t *testing.T) {

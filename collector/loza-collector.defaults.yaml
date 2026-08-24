@@ -122,7 +122,8 @@ lql:
   expected_language_version: 0.1
   startup_timeout: 5s
   compile_timeout: 5s
-  max_concurrent_requests: 8
+  # The stdio compiler protocol is sequential: one request must pair with one response.
+  max_concurrent_requests: 1
 
 retention:
   enabled: false
