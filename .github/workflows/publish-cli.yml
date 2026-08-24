@@ -48,10 +48,16 @@ jobs:
       - name: Run CLI tests
         run: go test ./...
 
-      - name: Create local release tag
+      - name: Prepare SemVer release tag
         if: inputs.dry_run != true
-        run: python scripts/release/tag-component.py cli
-        working-directory: .
+        shell: bash
+        run: |
+          release_tag="v${{ inputs.version }}"
+          if git show-ref --verify --quiet "refs/tags/$release_tag"; then
+            test "$(git rev-list -n 1 "$release_tag")" = "$(git rev-parse HEAD)"
+          else
+            git tag "$release_tag"
+          fi
 
       - name: Dry-run release tag
         if: inputs.dry_run == true
@@ -67,9 +73,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Push component tag
+      - name: Create component tag
         if: inputs.dry_run != true
-        run: git push origin "cli/v${{ inputs.version }}"
+        run: python scripts/release/tag-component.py cli --push
         working-directory: .
 
       - name: Verify go install target

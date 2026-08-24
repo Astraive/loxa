@@ -101,8 +101,8 @@ jobs:
 
   publish-cli:
     name: Publish CLI
-    needs: plan
-    if: needs.plan.outputs.has_changes == 'true'
+    needs: [plan, publish-github-release]
+    if: ${{ always() && needs.plan.outputs.has_changes == 'true' && (needs.publish-github-release.result == 'success' || needs.publish-github-release.result == 'skipped') }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
