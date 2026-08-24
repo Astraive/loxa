@@ -25,6 +25,7 @@ class _Response:
     def __init__(self, payload: bytes, status: int = 200, headers: dict[str, str] | None = None) -> None:
         self.payload = payload
         self.status = status
+
     def __iter__(self):
         return iter(self.payload.splitlines(keepends=True))
 
@@ -82,7 +83,9 @@ def test_config_validation_and_layer_precedence(monkeypatch: pytest.MonkeyPatch,
     assert config_module._collector_ingest_endpoint("https://collector", "tenant/a") == (
         "https://collector/collectors/tenant%2Fa/events"
     )
-    assert config_module._parse_simple_yaml("# comment\nservice: checkout\nasync_config:\n  enabled: true\n  queue_size: 9\n") == {
+    assert config_module._parse_simple_yaml(
+        "# comment\nservice: checkout\nasync_config:\n  enabled: true\n  queue_size: 9\n"
+    ) == {
         "service": "checkout",
         "async_config": {"enabled": True, "queue_size": 9},
     }
@@ -162,7 +165,9 @@ def test_lql_queries_encode_values_and_decode_failures(monkeypatch: pytest.Monke
 
     def success(req: object, timeout: float) -> _Response:
         captured.append((req, timeout))
-        return _Response(json.dumps({"columns": [{"name": "id"}, "name"], "rows": [{"id": 1}], "row_count": 1}).encode())
+        return _Response(
+            json.dumps({"columns": [{"name": "id"}, "name"], "rows": [{"id": 1}], "row_count": 1}).encode()
+        )
 
     monkeypatch.setattr(lql.urllib.request, "urlopen", success)
     result = lql.query_lql(
@@ -190,7 +195,9 @@ def test_lql_queries_encode_values_and_decode_failures(monkeypatch: pytest.Monke
     monkeypatch.setattr(lql.urllib.request, "urlopen", basic)
     assert lql.query_lql("https://collector", "select", username="u", password="p").row_count == 0
 
-    error = HTTPError("https://collector", 422, "bad", {}, io.BytesIO(b'{"error":"invalid","diagnostics":[{"line":2}]}'))
+    error = HTTPError(
+        "https://collector", 422, "bad", {}, io.BytesIO(b'{"error":"invalid","diagnostics":[{"line":2}]}')
+    )
     monkeypatch.setattr(lql.urllib.request, "urlopen", lambda *_args, **_kwargs: (_ for _ in ()).throw(error))
     with pytest.raises(lql.LQLCompilationError, match="invalid") as exc:
         lql.query_lql("https://collector", "bad")
@@ -204,10 +211,14 @@ def test_lql_queries_encode_values_and_decode_failures(monkeypatch: pytest.Monke
     with pytest.raises(lql.LQLCompilationError, match="transport"):
         lql.query_lql("https://collector", "bad")
 
-    monkeypatch.setattr(lql.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(b'{"columns": [], "rows": {}}'))
+    monkeypatch.setattr(
+        lql.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(b'{"columns": [], "rows": {}}')
+    )
     with pytest.raises(lql.LQLCompilationError, match="invalid result"):
         lql.query_lql("https://collector", "bad")
-    monkeypatch.setattr(lql.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(b'{"columns": [], "rows": []}'))
+    monkeypatch.setattr(
+        lql.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(b'{"columns": [], "rows": []}')
+    )
     assert lql.query_sql("https://collector", "select 1", api_key="sql-key").rows == []
 
 
@@ -288,7 +299,12 @@ def test_pipeline_batches_buffers_retries_and_shutdown(tmp_path: Path, monkeypat
     assert flaky.calls == 2 and retry_pipe.stats.retried == 1
     errors: list[Exception] = []
     offline = pipeline.MemoryOfflineBuffer(5)
-    failing = pipeline.Pipeline([_FlakySink(3)], retry_policy=pipeline.RetryPolicy(max_attempts=2, base_delay=0), offline_buffer=offline, error_handler=errors.append)
+    failing = pipeline.Pipeline(
+        [_FlakySink(3)],
+        retry_policy=pipeline.RetryPolicy(max_attempts=2, base_delay=0),
+        offline_buffer=offline,
+        error_handler=errors.append,
+    )
     failing.write_sync("lost")
     assert failing.stats.failed == 1 and failing.stats.emitted == 0 and len(offline) == 1 and errors
     encoded = json.loads(pipeline.encode_batch_envelope(['{"service":"api"}', "not-json", "{}"]))
@@ -304,7 +320,12 @@ def test_redaction_sampling_and_schemas_cover_boundaries() -> None:
     assert "*" in redactor.mask_keys("password")(payload)["password"]
     assert redactor.redact_patterns(r"secret")(payload)["password"] == redactor.REDACTED_VALUE
     assert redactor.sensitive_attrs_redactor(set())(payload) is payload
-    assert "token" not in redactor.compose_redactors(redactor.redact_keys("password"), redactor.drop_keys("token"))(payload)["nested"]
+    assert (
+        "token"
+        not in redactor.compose_redactors(redactor.redact_keys("password"), redactor.drop_keys("token"))(payload)[
+            "nested"
+        ]
+    )
     assert redactor.default_redactor()({"password": "secret"})["password"] == redactor.REDACTED_VALUE
 
     ctx = _event(method="GET", path="/checkout", route="checkout", status_code=500)
@@ -437,19 +458,35 @@ def test_sinks_and_cortex_adapters(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
     mapped = engine._map_response(
         {
             "incident_id": "i",
-            "causal_chain": [{"event_id": "e", "timestamp": "t", "kind": "error", "service": "api", "attributes": {"cause_id": "c", "confidence": 0.9}, "description": "because"}],
+            "causal_chain": [
+                {
+                    "event_id": "e",
+                    "timestamp": "t",
+                    "kind": "error",
+                    "service": "api",
+                    "attributes": {"cause_id": "c", "confidence": 0.9},
+                    "description": "because",
+                }
+            ],
             "similar_incidents": [{"incident_id": "old", "similarity": 0.8, "shape": "same"}],
-            "suggested_actions": [{"action": "restart", "success_rate": 0.9, "avg_time_to_resolve_seconds": 2, "priority": 1}],
+            "suggested_actions": [
+                {"action": "restart", "success_rate": 0.9, "avg_time_to_resolve_seconds": 2, "priority": 1}
+            ],
             "confidence": 0.7,
         }
     )
     assert mapped.related_events[0]["event_id"] == "e" and mapped.causal_chain[0].cause_id == "c"
-    assert mapped.similar_past_incidents[0].past_incident_id == "old" and mapped.suggested_remediations[0].action == "restart"
+    assert (
+        mapped.similar_past_incidents[0].past_incident_id == "old"
+        and mapped.suggested_remediations[0].action == "restart"
+    )
     error = HTTPError("https://cortex", 500, "bad", {}, io.BytesIO(b"boom"))
     monkeypatch.setattr(cortex_engine.urllib.request, "urlopen", lambda *_args, **_kwargs: (_ for _ in ()).throw(error))
     with pytest.raises(RuntimeError, match="500"):
         engine._post("/bad", {})
-    monkeypatch.setattr(cortex_engine.urllib.request, "urlopen", lambda *_args, **_kwargs: (_ for _ in ()).throw(URLError("down")))
+    monkeypatch.setattr(
+        cortex_engine.urllib.request, "urlopen", lambda *_args, **_kwargs: (_ for _ in ()).throw(URLError("down"))
+    )
     with pytest.raises(RuntimeError, match="connection"):
         engine._post("/bad", {})
 
@@ -459,11 +496,17 @@ def test_http_batch_auth_and_response_paths(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(
         httpbatch_module.urllib.request,
         "urlopen",
-        lambda req, **kwargs: (calls.append((req, kwargs)) or _Response(b'{"acks":[{"event_id":"e"}],"errors":[],"request_id":"r"}')),
+        lambda req, **kwargs: (
+            calls.append((req, kwargs)) or _Response(b'{"acks":[{"event_id":"e"}],"errors":[],"request_id":"r"}')
+        ),
     )
     stats = SimpleNamespace(on_collector_ack=lambda **kwargs: calls.append(kwargs))
     sink = HTTPBatchSink("https://collector/events", api_key="key", stats_handler=stats, enable_compression=False)
-    sink.write_batch(['{"timestamp":"2025-01-01T00:00:00Z","schema_version":"v1","event_version":"v1","event_id":"e","request_id":"r","service":"s","event":"x","kind":"event","level":"info"}'])
+    sink.write_batch(
+        [
+            '{"timestamp":"2025-01-01T00:00:00Z","schema_version":"v1","event_version":"v1","event_id":"e","request_id":"r","service":"s","event":"x","kind":"event","level":"info"}'
+        ]
+    )
     assert sink.last_collector_response and calls[-1]["request_id"] == "r"
     assert calls[0][0].headers["Authorization"] == "Bearer key"
     basic = HTTPBatchSink("https://collector/events", username="u", password="p", enable_compression=False)
@@ -475,7 +518,9 @@ def test_http_batch_auth_and_response_paths(monkeypatch: pytest.MonkeyPatch) -> 
     ndjson.write_batch(["one\n", "two"])
     with pytest.raises(ValueError):
         HTTPBatchSink("http://remote.example/events", username="u", password="p")
-    monkeypatch.setattr(httpbatch_module.urllib.request, "urlopen", lambda *_args, **_kwargs: (_ for _ in ()).throw(URLError("down")))
+    monkeypatch.setattr(
+        httpbatch_module.urllib.request, "urlopen", lambda *_args, **_kwargs: (_ for _ in ()).throw(URLError("down"))
+    )
     with pytest.raises(RuntimeError, match="collector send failed"):
         HTTPBatchSink("https://collector/events", retries=0).write(
             '{"timestamp":"2025-01-01T00:00:00Z","schema_version":"v1","event_version":"v1","event_id":"e","service":"s","event":"x","kind":"event"}'
@@ -560,7 +605,12 @@ def test_root_facade_and_lifecycle_surface() -> None:
     assert clone is not partial
 
     request_ctx = loza.from_request(
-        {"method": "post", "path": "/checkout?id=1", "route": "/checkout", "headers": {"X-Request-Id": "req", "X-Trace-Id": "trace", "User-Agent": "agent", "referer": "/from?x=1"}},
+        {
+            "method": "post",
+            "path": "/checkout?id=1",
+            "route": "/checkout",
+            "headers": {"X-Request-Id": "req", "X-Trace-Id": "trace", "User-Agent": "agent", "referer": "/from?x=1"},
+        },
         logger,
     )
     assert loza.get(request_ctx, "http.method") == "POST"
@@ -576,14 +626,33 @@ def test_root_facade_and_lifecycle_surface() -> None:
     assert normalized["requestId"] == "r"
 
     for fn, args in (
-        (loza.UserID, ("u",)), (loza.TenantID, ("t",)), (loza.WorkspaceID, ("w",)),
-        (loza.OrganizationID, ("o",)), (loza.SessionID, ("s",)), (loza.RequestID, ("r",)),
-        (loza.TraceID, ("tr",)), (loza.SpanID, ("sp",)), (loza.FeatureFlag, ("f", True)),
-        (loza.FeatureFlagBool, ("f", True)), (loza.Experiment, ("e", "a")), (loza.OrderID, ("o",)),
-        (loza.CartID, ("c",)), (loza.ProductID, ("p",)), (loza.CustomerID, ("c",)), (loza.Plan, ("p",)),
-        (loza.Currency, ("USD",)), (loza.Amount, (1,)), (loza.Country, ("US",)), (loza.Device, ("d",)),
-        (loza.Platform, ("web",)), (loza.AppVersion, ("v",)), (loza.ErrorType, ("Type",)),
-        (loza.ErrorCode, ("E",)), (loza.ErrorMessage, ("m",)), (loza.ErrorStack, ("s",)), (loza.Retryable, (True,)),
+        (loza.UserID, ("u",)),
+        (loza.TenantID, ("t",)),
+        (loza.WorkspaceID, ("w",)),
+        (loza.OrganizationID, ("o",)),
+        (loza.SessionID, ("s",)),
+        (loza.RequestID, ("r",)),
+        (loza.TraceID, ("tr",)),
+        (loza.SpanID, ("sp",)),
+        (loza.FeatureFlag, ("f", True)),
+        (loza.FeatureFlagBool, ("f", True)),
+        (loza.Experiment, ("e", "a")),
+        (loza.OrderID, ("o",)),
+        (loza.CartID, ("c",)),
+        (loza.ProductID, ("p",)),
+        (loza.CustomerID, ("c",)),
+        (loza.Plan, ("p",)),
+        (loza.Currency, ("USD",)),
+        (loza.Amount, (1,)),
+        (loza.Country, ("US",)),
+        (loza.Device, ("d",)),
+        (loza.Platform, ("web",)),
+        (loza.AppVersion, ("v",)),
+        (loza.ErrorType, ("Type",)),
+        (loza.ErrorCode, ("E",)),
+        (loza.ErrorMessage, ("m",)),
+        (loza.ErrorStack, ("s",)),
+        (loza.Retryable, (True,)),
     ):
         assert fn(*args).key
     assert loza.OTelSchema() and loza.CustomSchema(lambda event: {}).encode(None) == {}
@@ -606,19 +675,32 @@ def test_config_options_security_and_legacy_helpers(tmp_path: Path) -> None:
 
     cfg = loza.Config()
     option_calls = (
-        (config_options.WithService, "service"), (config_options.WithVersion, "v"),
-        (config_options.WithEnvironment, "test"), (config_options.WithSink, NoopSink()),
-        (config_options.WithSampler, loza.SampleAll()), (config_options.WithRedactor, loza.DefaultRedactor()),
-        (config_options.WithMetrics, loza.NewMetricsCollector()), (config_options.WithSchema, loza.OTelSchema()),
-        (config_options.WithEventSchema, loza.OTelSchema()), (config_options.WithAsync, True),
-        (config_options.WithCollectorEndpoint, "https://collector"), (config_options.WithDuplicatePolicy, loza.LastWins),
-        (config_options.WithStatsHandler, object()), (config_options.WithDeploymentID, "dep"),
-        (config_options.WithIncludeHost, True), (config_options.WithPanicRecovery, True),
-        (config_options.WithExitOnFatal, False), (config_options.WithRelease, "r"),
-        (config_options.WithNamespace, "n"), (config_options.WithApiKey, "k"),
-        (config_options.WithOtelBridge, True), (config_options.WithRetry, True),
-        (config_options.WithTimeout, 1.0), (config_options.WithQueueSize, 4),
-        (config_options.WithFlushInterval, 2), (config_options.WithBatchSize, 2),
+        (config_options.WithService, "service"),
+        (config_options.WithVersion, "v"),
+        (config_options.WithEnvironment, "test"),
+        (config_options.WithSink, NoopSink()),
+        (config_options.WithSampler, loza.SampleAll()),
+        (config_options.WithRedactor, loza.DefaultRedactor()),
+        (config_options.WithMetrics, loza.NewMetricsCollector()),
+        (config_options.WithSchema, loza.OTelSchema()),
+        (config_options.WithEventSchema, loza.OTelSchema()),
+        (config_options.WithAsync, True),
+        (config_options.WithCollectorEndpoint, "https://collector"),
+        (config_options.WithDuplicatePolicy, loza.LastWins),
+        (config_options.WithStatsHandler, object()),
+        (config_options.WithDeploymentID, "dep"),
+        (config_options.WithIncludeHost, True),
+        (config_options.WithPanicRecovery, True),
+        (config_options.WithExitOnFatal, False),
+        (config_options.WithRelease, "r"),
+        (config_options.WithNamespace, "n"),
+        (config_options.WithApiKey, "k"),
+        (config_options.WithOtelBridge, True),
+        (config_options.WithRetry, True),
+        (config_options.WithTimeout, 1.0),
+        (config_options.WithQueueSize, 4),
+        (config_options.WithFlushInterval, 2),
+        (config_options.WithBatchSize, 2),
     )
     for factory, value in option_calls:
         cfg = factory(value)(cfg)
@@ -629,8 +711,14 @@ def test_config_options_security_and_legacy_helpers(tmp_path: Path) -> None:
 
     limiter = security.SecurityLimiter(loza.SecurityConfig(max_event_bytes=5))
     assert not limiter.check_payload({"long": "value"}).allowed
-    assert security.SecurityLimiter(loza.SecurityConfig(max_attr_count=1)).check_payload({"a": 1, "b": 2}).reason == "max_attr_count"
-    assert security.SecurityLimiter(loza.SecurityConfig(max_field_bytes=1)).check_payload({"a": "xx"}).reason == "max_field_bytes"
+    assert (
+        security.SecurityLimiter(loza.SecurityConfig(max_attr_count=1)).check_payload({"a": 1, "b": 2}).reason
+        == "max_attr_count"
+    )
+    assert (
+        security.SecurityLimiter(loza.SecurityConfig(max_field_bytes=1)).check_payload({"a": "xx"}).reason
+        == "max_field_bytes"
+    )
     assert security.SecurityLimiter().check_payload({"a": 1}).allowed
     assert len(security.hash_value("secret")) == 64 and security.sensitive_string("secret", "x").sensitive
     assert security.hash_string("secret", "x").hash_value
@@ -671,7 +759,9 @@ def test_collector_client_helpers_and_http_paths(monkeypatch: pytest.MonkeyPatch
     assert http_client._retry_delay(2, 1, 2) == 2 and http_client._retry_delay(1, 1, 2, -1) == 0
     assert http_client._parse_retry_after("2") == 2 and http_client._parse_retry_after("") is None
     assert http_client._parse_retry_after("not-a-date") is None
-    http_client._validate_ingest_envelope({"api_version": "v1", "source": {"sdk": "s", "version": "v", "service": "x"}, "events": [{}]})
+    http_client._validate_ingest_envelope(
+        {"api_version": "v1", "source": {"sdk": "s", "version": "v", "service": "x"}, "events": [{}]}
+    )
     with pytest.raises(ValueError):
         http_client._validate_ingest_envelope({})
     assert http_client._private_endpoint_allowed() is False
@@ -681,10 +771,20 @@ def test_collector_client_helpers_and_http_paths(monkeypatch: pytest.MonkeyPatch
     assert client._base_url() == "https://collector"
     assert client._auth_headers()["Authorization"] == "Bearer key"
 
-    responses = iter([_Response(b'{"accepted":1,"rejected":0,"invalid":0}'), _Response(b'{"status":"ok"}'), _Response(b'{"status":"ready"}'), _Response(b'{"version":"v"}'), _Response(b'{"state":"ok"}')])
+    responses = iter(
+        [
+            _Response(b'{"accepted":1,"rejected":0,"invalid":0}'),
+            _Response(b'{"status":"ok"}'),
+            _Response(b'{"status":"ready"}'),
+            _Response(b'{"version":"v"}'),
+            _Response(b'{"state":"ok"}'),
+        ]
+    )
     monkeypatch.setattr(http_client, "urlopen", lambda *_args, **_kwargs: next(responses))
     assert client.send_batch([valid]).accepted == 1
-    assert client.health() and client.ready() and client.version()["version"] == "v" and client.status()["state"] == "ok"
+    assert (
+        client.health() and client.ready() and client.version()["version"] == "v" and client.status()["state"] == "ok"
+    )
 
     lines_response = _Response(b'{"event":"one"}\nnot-json\n\n')
     monkeypatch.setattr(http_client, "urlopen", lambda *_args, **_kwargs: lines_response)
@@ -710,8 +810,16 @@ def test_legacy_logger_and_duplicate_policies() -> None:
     sink = loza.MemorySink()
     cfg = loza.Config.test("legacy").with_sink(sink)
     legacy = LegacyLogger(cfg)
-    ctx = legacy.start_event(loza.Params(event="legacy", user_id="u", tenant_id="t", workspace_id="w", custom=[loza.String("custom", 1)]))
-    legacy.enrich(ctx, loza.String("user.name", "U"), loza.String("tenant.name", "T"), loza.String("resource.id", "R"), loza.String("http.path", "/"))
+    ctx = legacy.start_event(
+        loza.Params(event="legacy", user_id="u", tenant_id="t", workspace_id="w", custom=[loza.String("custom", 1)])
+    )
+    legacy.enrich(
+        ctx,
+        loza.String("user.name", "U"),
+        loza.String("tenant.name", "T"),
+        loza.String("resource.id", "R"),
+        loza.String("http.path", "/"),
+    )
     legacy.append(ctx, plain=1)
     legacy.set(ctx, loza.String("set", 1))
     legacy.merge(ctx, "attrs", nested=1)
@@ -809,6 +917,7 @@ def test_active_logger_error_and_pipeline_lifecycle() -> None:
 
         def on_delivery_failed(self, _event: object, _error: Exception) -> None:
             return None
+
     metrics = loza.NewMetricsCollector()
     sink = _RecordingSink()
     cfg = (
@@ -862,7 +971,9 @@ def test_active_logger_error_and_pipeline_lifecycle() -> None:
         policy_logger.enrich(policy_ctx, loza.Attr("event", "user"))
         policy_logger.finish(policy_ctx, "success")
         policy_logger.emit(policy_ctx)
-    strict_error = Logger(loza.Config.test("strict").with_sink(_RecordingSink()).with_duplicate_policy(loza.ErrorOnDuplicate))
+    strict_error = Logger(
+        loza.Config.test("strict").with_sink(_RecordingSink()).with_duplicate_policy(loza.ErrorOnDuplicate)
+    )
     strict_ctx = strict_error.start_event(loza.Params(event="strict"))
     strict_error.enrich(strict_ctx, loza.Attr("event", "user"))
     strict_error.finish(strict_ctx, "success")
@@ -902,8 +1013,14 @@ def test_legacy_config_environment_and_attr_helpers(monkeypatch: pytest.MonkeyPa
 
     cfg = legacy_config.Config.dev("dev").with_service("svc").with_version("v").with_environment("test")
     cfg = cfg.with_region("us").with_sink(NoopSink()).with_sampler(lambda _: True).with_redactor(lambda x: x)
-    cfg = cfg.with_metrics(loza.NewMetricsCollector()).with_schema(loza.DefaultSchema()).with_event_schema(loza.DefaultSchema())
-    cfg = cfg.with_async(True).with_collector_endpoint("https://collector").with_duplicate_policy(legacy_config.LastWins)
+    cfg = (
+        cfg.with_metrics(loza.NewMetricsCollector())
+        .with_schema(loza.DefaultSchema())
+        .with_event_schema(loza.DefaultSchema())
+    )
+    cfg = (
+        cfg.with_async(True).with_collector_endpoint("https://collector").with_duplicate_policy(legacy_config.LastWins)
+    )
     cfg.validate()
     for bad in (
         legacy_config.Config(service="x", level="bad"),
@@ -924,7 +1041,9 @@ def test_legacy_config_environment_and_attr_helpers(monkeypatch: pytest.MonkeyPa
     assert applied.service == "env-service" and applied.strict and applied.async_config.queue_size == 4
     merged = legacy_config._merge_dicts({"nested": {"a": 1}}, {"nested": {"b": 2}})
     assert merged == {"nested": {"a": 1, "b": 2}}
-    parsed = legacy_config._parse_simple_yaml("# comment\nservice: checkout\nasync_config:\n  enabled: true\n  queue_size: 2\nquoted: 'value'\nnumber: 2")
+    parsed = legacy_config._parse_simple_yaml(
+        "# comment\nservice: checkout\nasync_config:\n  enabled: true\n  queue_size: 2\nquoted: 'value'\nnumber: 2"
+    )
     assert parsed["service"] == "checkout" and parsed["async_config"]["enabled"] is True
     mapped = legacy_config._config_from_mapping(parsed)
     assert mapped.service == "checkout"
@@ -946,25 +1065,84 @@ def test_legacy_config_environment_and_attr_helpers(monkeypatch: pytest.MonkeyPa
     assert legacy_env.load_env_config().service == "svc"
 
     values = [
-        attrs.String("s", "v"), attrs.Int("i", 1), attrs.Int64("i64", 1), attrs.Uint64("u", 1),
-        attrs.Float64("f", 1.0), attrs.Bool("b", True), attrs.Time("t", datetime.now()), attrs.Duration("d", timedelta(seconds=1)),
-        attrs.Any("a", object()), attrs.Null("n"), attrs.Group("g", attrs.String("nested.key", "v")),
-        attrs.SensitiveString("ss", "v"), attrs.HashString("hs", "v"), attrs.MarkSensitive(attrs.String("m", "v")),
-        attrs.list_("list", 1, 2), attrs.map_("map", {"x": 1}), attrs.enum_("enum", "x", "x"), attrs.id_("id", "x"),
-        attrs.hash_("hash", "x"), attrs.redacted("red"), attrs.account_id("a"), attrs.deployment_id("d"),
-        attrs.http_route("/"), attrs.http_method("get"), attrs.http_path("/"), attrs.http_user_agent("ua"),
-        attrs.http_referer("https://x?a=1"), attrs.payment_id("p"), attrs.subscription_id("s"), attrs.invoice_id("i"),
-        attrs.job_id("j"), attrs.message_id("m"), attrs.correlation_id("c"), attrs.commit_sha("sha"), attrs.release("r"),
-        attrs.money("money", 1, "USD"), attrs.percent("pct", 1.0), attrs.bytes_attr("bytes", 1), attrs.http_status("status", 200),
-        attrs.status_code("status", 200), attrs.error_code("err", "e"), attrs.bucket("bucket", "b"), attrs.tags("tags", "a", "b"),
-        attrs.masked("mask", "123456", 2, 2), attrs.masked("short", "x"), attrs.url("https://x"), attrs.email_hash("E@x"), attrs.ip_hash("127.0.0.1"),
-        attrs.region("us"), attrs.checkout_cart_item_count(1), attrs.checkout_cart_total(2), attrs.checkout_payment_method("card"),
-        attrs.checkout_status("ok"), attrs.payment_provider("p"), attrs.payment_method("m"), attrs.payment_intent_id("i"),
-        attrs.payment_failure_code("e"), attrs.payment_retry_attempt(1), attrs.billing_plan("p"), attrs.billing_subscription_id("s"),
-        attrs.billing_invoice_id("i"), attrs.billing_amount(1), attrs.billing_interval("month"), attrs.agent_name("a"),
-        attrs.agent_provider("p"), attrs.agent_model("m"), attrs.agent_run_type("r"), attrs.agent_tool_name("t"),
-        attrs.agent_tool_outcome("o"), attrs.agent_input_tokens(1), attrs.agent_output_tokens(2), attrs.agent_cost(1.0),
-        attrs.rag_index("i"), attrs.rag_embedding_model("m"), attrs.rag_chunks_retrieved(1), attrs.rag_top_score(1.0),
-        attrs.rag_query_hash("q"), attrs.rag_citation_count(1), attrs.rag_retrieval_latency(1),
+        attrs.String("s", "v"),
+        attrs.Int("i", 1),
+        attrs.Int64("i64", 1),
+        attrs.Uint64("u", 1),
+        attrs.Float64("f", 1.0),
+        attrs.Bool("b", True),
+        attrs.Time("t", datetime.now()),
+        attrs.Duration("d", timedelta(seconds=1)),
+        attrs.Any("a", object()),
+        attrs.Null("n"),
+        attrs.Group("g", attrs.String("nested.key", "v")),
+        attrs.SensitiveString("ss", "v"),
+        attrs.HashString("hs", "v"),
+        attrs.MarkSensitive(attrs.String("m", "v")),
+        attrs.list_("list", 1, 2),
+        attrs.map_("map", {"x": 1}),
+        attrs.enum_("enum", "x", "x"),
+        attrs.id_("id", "x"),
+        attrs.hash_("hash", "x"),
+        attrs.redacted("red"),
+        attrs.account_id("a"),
+        attrs.deployment_id("d"),
+        attrs.http_route("/"),
+        attrs.http_method("get"),
+        attrs.http_path("/"),
+        attrs.http_user_agent("ua"),
+        attrs.http_referer("https://x?a=1"),
+        attrs.payment_id("p"),
+        attrs.subscription_id("s"),
+        attrs.invoice_id("i"),
+        attrs.job_id("j"),
+        attrs.message_id("m"),
+        attrs.correlation_id("c"),
+        attrs.commit_sha("sha"),
+        attrs.release("r"),
+        attrs.money("money", 1, "USD"),
+        attrs.percent("pct", 1.0),
+        attrs.bytes_attr("bytes", 1),
+        attrs.http_status("status", 200),
+        attrs.status_code("status", 200),
+        attrs.error_code("err", "e"),
+        attrs.bucket("bucket", "b"),
+        attrs.tags("tags", "a", "b"),
+        attrs.masked("mask", "123456", 2, 2),
+        attrs.masked("short", "x"),
+        attrs.url("https://x"),
+        attrs.email_hash("E@x"),
+        attrs.ip_hash("127.0.0.1"),
+        attrs.region("us"),
+        attrs.checkout_cart_item_count(1),
+        attrs.checkout_cart_total(2),
+        attrs.checkout_payment_method("card"),
+        attrs.checkout_status("ok"),
+        attrs.payment_provider("p"),
+        attrs.payment_method("m"),
+        attrs.payment_intent_id("i"),
+        attrs.payment_failure_code("e"),
+        attrs.payment_retry_attempt(1),
+        attrs.billing_plan("p"),
+        attrs.billing_subscription_id("s"),
+        attrs.billing_invoice_id("i"),
+        attrs.billing_amount(1),
+        attrs.billing_interval("month"),
+        attrs.agent_name("a"),
+        attrs.agent_provider("p"),
+        attrs.agent_model("m"),
+        attrs.agent_run_type("r"),
+        attrs.agent_tool_name("t"),
+        attrs.agent_tool_outcome("o"),
+        attrs.agent_input_tokens(1),
+        attrs.agent_output_tokens(2),
+        attrs.agent_cost(1.0),
+        attrs.rag_index("i"),
+        attrs.rag_embedding_model("m"),
+        attrs.rag_chunks_retrieved(1),
+        attrs.rag_top_score(1.0),
+        attrs.rag_query_hash("q"),
+        attrs.rag_citation_count(1),
+        attrs.rag_retrieval_latency(1),
     ]
     assert all(item.key for item in values)

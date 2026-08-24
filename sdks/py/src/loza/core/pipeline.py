@@ -309,9 +309,7 @@ class Pipeline:
         if not encoded_events:
             return True
         errors = [
-            error
-            for sink in self.sinks
-            if (error := self._write_sink_with_retry(sink, encoded_events)) is not None
+            error for sink in self.sinks if (error := self._write_sink_with_retry(sink, encoded_events)) is not None
         ]
         if errors:
             self.stats.failed += len(encoded_events)

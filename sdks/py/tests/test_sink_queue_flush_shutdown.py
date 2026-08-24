@@ -42,6 +42,7 @@ def test_disk_offline_buffer_acknowledges_only_after_delivery(tmp_path):
     buffer.ack(1)
     assert DiskOfflineBuffer(path).peek(2) == ["two"]
 
+
 class _ReplaySink:
     def __init__(self, failure: Exception | None = None) -> None:
         self.failure = failure
