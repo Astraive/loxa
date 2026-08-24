@@ -15,7 +15,7 @@ on:
         default: false
     secrets:
       NPM_TOKEN:
-        required: true
+        required: false
 
 permissions:
   contents: write
@@ -60,6 +60,12 @@ jobs:
       - name: Check component tag is available
         run: python scripts/release/tag-component.py sdk-js --dry-run
         working-directory: .
+
+      - name: Validate npm credentials
+        if: inputs.dry_run != true
+        run: test -n "$NPM_CONFIG_TOKEN"
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish package
         if: inputs.dry_run != true

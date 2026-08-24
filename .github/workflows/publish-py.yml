@@ -15,7 +15,7 @@ on:
         default: false
     secrets:
       PYPI_API_TOKEN:
-        required: true
+        required: false
 
 permissions:
   contents: write
@@ -62,6 +62,12 @@ jobs:
       - name: Check component tag is available
         run: python scripts/release/tag-component.py sdk-py --dry-run
         working-directory: .
+
+      - name: Validate PyPI credentials
+        if: inputs.dry_run != true
+        run: test -n "$PYPI_API_TOKEN"
+        env:
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
 
       - name: Publish package
         if: inputs.dry_run != true
