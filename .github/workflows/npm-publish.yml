@@ -13,9 +13,6 @@ on:
         required: false
         type: boolean
         default: false
-    secrets:
-      NPM_TOKEN:
-        required: false
 
 permissions:
   contents: write
@@ -37,6 +34,10 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
 
       - uses: actions/setup-python@v5
         with:
@@ -61,21 +62,16 @@ jobs:
         run: python scripts/release/tag-component.py sdk-js --dry-run
         working-directory: .
 
-      - name: Validate npm credentials
-        if: inputs.dry_run != true
-        run: test -n "$NPM_CONFIG_TOKEN"
-        env:
-          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Install OIDC-capable npm
+        run: npm install --global npm@12.0.2
 
       - name: Publish package
         if: inputs.dry_run != true
-        run: bun publish --access public
-        env:
-          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
 
-      - name: Pack package
+      - name: Validate package archive
         if: inputs.dry_run == true
-        run: bun pm pack
+        run: npm pack --dry-run
 
       - name: Create component tag
         if: inputs.dry_run != true

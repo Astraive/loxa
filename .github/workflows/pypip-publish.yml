@@ -13,9 +13,6 @@ on:
         required: false
         type: boolean
         default: false
-    secrets:
-      PYPI_API_TOKEN:
-        required: false
 
 permissions:
   contents: write
@@ -63,18 +60,11 @@ jobs:
         run: python scripts/release/tag-component.py sdk-py --dry-run
         working-directory: .
 
-      - name: Validate PyPI credentials
-        if: inputs.dry_run != true
-        run: test -n "$PYPI_API_TOKEN"
-        env:
-          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-
       - name: Publish package
         if: inputs.dry_run != true
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: sdks/py/dist
-          password: ${{ secrets.PYPI_API_TOKEN }}
 
       - name: Create component tag
         if: inputs.dry_run != true

@@ -20,6 +20,7 @@ permissions:
   id-token: write
   actions: read
   security-events: write
+  attestations: write
 
 jobs:
   plan:
@@ -119,13 +120,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
-    uses: ./.github/workflows/publish-js.yml
+    uses: ./.github/workflows/npm-publish.yml
     with:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
       dry_run: ${{ inputs.dry_run }}
-    secrets:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-py:
     name: Publish Python SDK
@@ -134,13 +133,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
-    uses: ./.github/workflows/publish-py.yml
+    uses: ./.github/workflows/pypip-publish.yml
     with:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
       dry_run: ${{ inputs.dry_run }}
-    secrets:
-      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
 
   publish-rs:
     name: Publish Rust crate
@@ -149,13 +146,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
-    uses: ./.github/workflows/publish-rs.yml
+    uses: ./.github/workflows/cargo-publish.yml
     with:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
       dry_run: ${{ inputs.dry_run }}
-    secrets:
-      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
   verify-go-modules:
     name: Verify Go module tags
