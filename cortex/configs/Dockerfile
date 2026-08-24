@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY cortex/go.mod cortex/go.sum ./cortex/
 COPY gen/go/go.mod ./gen/go/go.mod
 COPY spec/go.mod ./spec/go.mod
+COPY clients/go/go.mod ./clients/go/go.mod
 RUN cd cortex && go mod download
 
 # Copy the entire repo (proto/ and gen/ are needed for proto generation)

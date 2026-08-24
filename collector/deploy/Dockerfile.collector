@@ -1,4 +1,4 @@
-FROM ghcr.io/astraive/lql:0.4.0 AS lql
+FROM ghcr.io/astraive/lql:0.4.1 AS lql
 
 FROM golang:1.25-bookworm AS builder
 

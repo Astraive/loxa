@@ -98,6 +98,7 @@ type sink struct {
 	writerStmt    *sql.Stmt
 
 	mu      sync.Mutex
+	flushMu sync.Mutex
 	buffer  [][]any
 	closed  bool
 	lastErr error
@@ -292,6 +293,8 @@ func (s *sink) WriteEvent(ctx context.Context, encoded []byte, _ *collectorevent
 	if len(batch) == 0 {
 		return nil
 	}
+	s.flushMu.Lock()
+	defer s.flushMu.Unlock()
 	return s.execBatch(ctx, batch)
 }
 
@@ -322,6 +325,8 @@ func (s *sink) Flush(ctx context.Context) error {
 			return err
 		}
 	}
+	s.flushMu.Lock()
+	defer s.flushMu.Unlock()
 
 	s.mu.Lock()
 	batch := s.buffer
