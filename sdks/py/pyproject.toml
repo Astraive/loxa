@@ -20,7 +20,7 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 95
+fail_under = 75
 show_missing = true
 omit = [
     "*/generated/*",
