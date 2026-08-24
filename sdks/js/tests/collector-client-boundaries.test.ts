@@ -146,3 +146,28 @@ describe('CollectorClient boundaries', () => {
     }
   });
 });
+
+it('covers alternate auth headers and sparse LQL compiler payloads', async () => {
+  let lqlCalls = 0;
+  const { server, url } = await startCollector((req, res) => {
+    if (req.url === '/lql/query') {
+      lqlCalls++;
+      res.statusCode = lqlCalls === 1 ? 400 : 200;
+      res.setHeader('content-type', 'application/json');
+      res.end(lqlCalls === 1
+        ? JSON.stringify({ diagnostics: 'not-an-array' })
+        : JSON.stringify({ columns: 'not-an-array', rows: 'not-an-array', duration_ms: 'not-a-number' }));
+      return;
+    }
+    res.statusCode = 200;
+    res.end(JSON.stringify({ request_id: 'req', status: 'accepted', accepted: 1, rejected: 0, invalid: 0, acks: [] }));
+  });
+  try {
+    const client = new CollectorClient({ url, apiKey: 'key', authHeader: 'Authorization', enableCompression: false });
+    assert.equal((await client.sendBatch([{ event: 'auth' }])).accepted, 1);
+    await assert.rejects(() => client.queryLql('bad'), /LQL compilation failed/);
+    assert.deepEqual(await client.queryLql('sparse'), { columns: [], rows: [], duration_ms: undefined });
+  } finally {
+    await stopCollector(server);
+  }
+});

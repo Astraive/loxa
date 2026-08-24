@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/astraive/loza/gen/go v0.0.0-00010101000000-000000000000
 	github.com/astraive/loza/spec v0.0.0
-	github.com/astraive/lql/client/go v0.4.0
+	github.com/astraive/lql/client/go v0.4.1
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/gorilla/websocket v1.5.3
 	github.com/lib/pq v1.10.9

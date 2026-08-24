@@ -13,13 +13,11 @@ on:
         required: false
         type: boolean
         default: false
-    secrets:
-      CARGO_REGISTRY_TOKEN:
-        required: false
 
 permissions:
   contents: write
   actions: read
+  id-token: write
 
 jobs:
   publish-sdk:
@@ -45,17 +43,18 @@ jobs:
       - name: Check component tag is available
         run: python scripts/release/tag-component.py sdk-rs --dry-run
         working-directory: .
-      - name: Validate crates.io credentials
+
+      - name: Authenticate with crates.io
         if: inputs.dry_run != true
-        run: test -n "$CARGO_REGISTRY_TOKEN"
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        id: crates-auth
+        uses: rust-lang/crates-io-auth-action@v1
 
       - name: Publish crate
         if: inputs.dry_run != true
-        run: cargo publish --token "$CARGO_REGISTRY_TOKEN"
+        run: cargo publish
         env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-auth.outputs.token }}
+
       - name: Create component tag
         if: inputs.dry_run != true
         env:

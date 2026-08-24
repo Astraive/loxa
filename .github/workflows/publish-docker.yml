@@ -15,9 +15,9 @@ on:
         default: false
     secrets:
       DOCKERHUB_USERNAME:
-        required: false
+        required: true
       DOCKERHUB_TOKEN:
-        required: false
+        required: true
 
 permissions:
   contents: write
@@ -30,6 +30,9 @@ jobs:
   publish:
     if: inputs.component == 'collector' || inputs.component == 'cortex'
     runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -105,11 +108,10 @@ jobs:
         if: inputs.dry_run != true
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
 
       - name: Login to GHCR
-        if: inputs.dry_run != true
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -139,7 +141,7 @@ jobs:
             printf '%s\n' '{"id":1,"method":"handshake","protocol_version":1,"language_version":"0.1","params":{}}' |
               docker run --rm -i --entrypoint /usr/local/bin/lql "$IMAGE" serve --stdio
           )"
-          LQL_HANDSHAKE="$response" python -c 'import json, os; result=json.loads(os.environ["LQL_HANDSHAKE"]); assert result["result"]["compiler_version"] == "0.4.0", result'
+          LQL_HANDSHAKE="$response" python -c 'import json, os; result=json.loads(os.environ["LQL_HANDSHAKE"]); assert result["result"]["compiler_version"] == "0.4.1", result'
       - name: Scan image for vulnerabilities
         id: scan
         if: inputs.dry_run != true
