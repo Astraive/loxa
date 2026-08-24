@@ -123,7 +123,7 @@ jobs:
           context: ${{ steps.manifest.outputs.context }}
           file: ${{ steps.manifest.outputs.dockerfile }}
           push: ${{ inputs.dry_run != true }}
-          load: true
+          load: ${{ inputs.dry_run == true }}
           tags: ${{ steps.manifest.outputs.tags }}
           provenance: true
           sbom: true
@@ -141,6 +141,7 @@ jobs:
           )"
           LQL_HANDSHAKE="$response" python -c 'import json, os; result=json.loads(os.environ["LQL_HANDSHAKE"]); assert result["result"]["compiler_version"] == "0.4.0", result'
       - name: Scan image for vulnerabilities
+        id: scan
         if: inputs.dry_run != true
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -152,8 +153,8 @@ jobs:
           exit-code: "1"
 
       - name: Upload vulnerability scan
-        if: inputs.dry_run != true && always()
-        uses: github/codeql-action/upload-sarif@v3
+        if: ${{ inputs.dry_run != true && always() && steps.scan.outcome != 'skipped' }}
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
 
