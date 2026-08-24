@@ -106,6 +106,10 @@ __pycache__/
 .venv/
 venv/
 env/
+# The Go SDK has a real internal/env package; do not hide its tests behind
+# Python's conventional virtualenv directory name.
+!sdks/go/src/internal/env/
+!sdks/go/src/internal/env/env_test.go
 
 # =============================================================================
 # JavaScript / TypeScript
