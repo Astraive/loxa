@@ -15,7 +15,7 @@ on:
         default: false
     secrets:
       CARGO_REGISTRY_TOKEN:
-        required: true
+        required: false
 
 permissions:
   contents: write
@@ -45,6 +45,12 @@ jobs:
       - name: Check component tag is available
         run: python scripts/release/tag-component.py sdk-rs --dry-run
         working-directory: .
+      - name: Validate crates.io credentials
+        if: inputs.dry_run != true
+        run: test -n "$CARGO_REGISTRY_TOKEN"
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
       - name: Publish crate
         if: inputs.dry_run != true
         run: cargo publish --token "$CARGO_REGISTRY_TOKEN"
