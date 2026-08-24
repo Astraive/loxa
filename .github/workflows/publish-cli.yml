@@ -51,13 +51,7 @@ jobs:
       - name: Prepare SemVer release tag
         if: inputs.dry_run != true
         shell: bash
-        run: |
-          release_tag="v${{ inputs.version }}"
-          if git show-ref --verify --quiet "refs/tags/$release_tag"; then
-            test "$(git rev-list -n 1 "$release_tag")" = "$(git rev-parse HEAD)"
-          else
-            git tag "$release_tag"
-          fi
+        run: git tag --force "v${{ inputs.version }}" HEAD
 
       - name: Dry-run release tag
         if: inputs.dry_run == true
