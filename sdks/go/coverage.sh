@@ -50,7 +50,6 @@ check_module() {
 }
 
 mapfile -t source_packages < <(cd "$root_dir" && {
-  printf '.\n'
   go_run list ./src/...
 } | sed 's#^github.com/astraive/loza/sdks/go#.#')
 check_module "$root_dir" "${source_packages[@]}"
