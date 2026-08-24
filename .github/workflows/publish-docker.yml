@@ -127,8 +127,8 @@ jobs:
           push: ${{ inputs.dry_run != true }}
           load: ${{ inputs.dry_run == true }}
           tags: ${{ steps.manifest.outputs.tags }}
-          provenance: true
-          sbom: true
+          provenance: ${{ inputs.dry_run != true }}
+          sbom: ${{ inputs.dry_run != true }}
 
       - name: Smoke test bundled LQL handshake
         if: inputs.component == 'collector'
