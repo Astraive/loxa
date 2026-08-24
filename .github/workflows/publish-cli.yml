@@ -108,7 +108,7 @@ jobs:
           python-version: "3.11"
       - name: Use local spec module for dry run
         if: inputs.dry_run == true
-        run: go mod edit -replace=github.com/astraive/loza/spec=../spec
+        run: go mod edit "-replace=github.com/astraive/loza/spec=../spec"
         working-directory: cli
       - name: Build native CLI
         shell: bash
