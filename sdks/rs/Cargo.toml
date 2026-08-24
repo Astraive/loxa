@@ -1,6 +1,6 @@
 [package]
 name = "loza"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 description = "Rust LOZA wide-event SDK"
 license = "MIT"

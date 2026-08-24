@@ -1,6 +1,6 @@
 name: loza-cli
 kind: cli
-version: 0.3.1
+version: 0.3.2
 description: Local operator and developer CLI for LOZA
 license: MIT
 repository: https://github.com/Astraive/loza
