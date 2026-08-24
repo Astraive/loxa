@@ -1,13 +1,26 @@
-FROM ghcr.io/astraive/lql:0.4.1 AS lql
-
 FROM golang:1.25-bookworm AS builder
+ARG LQL_VERSION=0.4.1
+ARG TARGETARCH
+
 
 WORKDIR /build
 
 # Install protoc and Go protobuf plugins for proto generation
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential pkg-config ca-certificates protobuf-compiler libprotobuf-dev \
+    build-essential pkg-config ca-certificates protobuf-compiler libprotobuf-dev curl \
     && rm -rf /var/lib/apt/lists/*
+
+RUN case "$TARGETARCH" in \
+      amd64) lql_arch=x64; lql_sha256=728a3a7f3601760fefecff8ab0ee86f7798a7697181fa98d999dd8d172c437f4 ;; \
+      arm64) lql_arch=arm64; lql_sha256=8e4585d43e86b83580d6abb8e5544c6db7831c77cca84a62b45bb6d154141ef2 ;; \
+      *) echo "unsupported TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
+    esac && \
+    curl --fail --location --retry 3 \
+      "https://github.com/Astraive/lql/releases/download/v${LQL_VERSION}/lql-linux-${lql_arch}" \
+      --output /usr/local/bin/lql && \
+    printf '%s  %s\n' "$lql_sha256" /usr/local/bin/lql | sha256sum --check --status && \
+    chmod 0755 /usr/local/bin/lql
+
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36 && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5
 
@@ -34,7 +47,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 WORKDIR /app
 
 COPY --from=builder /out/loza-collector /usr/local/bin/loza-collector
-COPY --from=lql /usr/local/bin/lql /usr/local/bin/lql
+COPY --from=builder /usr/local/bin/lql /usr/local/bin/lql
 COPY collector/deploy/docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 COPY collector/loza-collector.defaults.yaml /app/config.yaml
 
