@@ -3,7 +3,7 @@ module github.com/astraive/loza/cli
 go 1.25.0
 
 require (
-	github.com/astraive/loza/spec v0.3.1
+	github.com/astraive/loza/spec v0.3.2
 	github.com/marcboeker/go-duckdb v1.8.5
 	gopkg.in/yaml.v3 v3.0.1
 )

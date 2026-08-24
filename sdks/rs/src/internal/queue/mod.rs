@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use std::fs::{self};
+use std::mem;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -67,7 +68,7 @@ impl ByteBatcher {
     }
 
     pub fn drain(&mut self) -> Vec<String> {
-        let out = self.events.drain(..).collect();
+        let out = mem::take(&mut self.events);
         self.current_bytes = 0;
         out
     }

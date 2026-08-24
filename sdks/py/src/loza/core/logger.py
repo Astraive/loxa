@@ -244,6 +244,7 @@ class Logger:
         ctx.finish(outcome)
         if self._metrics is not None:
             self._metrics.on_event_finished()
+
     def finish_error(self, ctx: EventContext, error: Exception, *attrs: Attr, **named: Any) -> None:
         if attrs or named:
             self.enrich(ctx, *attrs, **named)

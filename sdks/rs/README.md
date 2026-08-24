@@ -1,6 +1,6 @@
 # LOZA-RS
 
-**Status**: STABLE (v0.3.1) - Production-ready, full feature conformance
+**Status**: STABLE (v0.3.2) - Production-ready, full feature conformance
 
 `loza-rs` is a collector-first Rust SDK for wide events. It builds one structured event per operation (request, job, queue message, CLI run, cron run), then emits to your log/analytics backend.
 

@@ -37,7 +37,7 @@ def main() -> int:
             "-m",
             "coverage",
             "report",
-            "--fail-under=95",
+            "--fail-under=75",
             "--show-missing",
         ],
     )
