@@ -39,6 +39,8 @@ FILES=(
 
   # Rust SDK — Cargo.toml version = "X.Y.Z"
   "sdks/rs/Cargo.toml"
+  # Rust lockfile package version — Cargo package requires a clean lockfile.
+  "sdks/rs/Cargo.lock"
 
   # JS SDK — package.json "version": "X.Y.Z"
   "sdks/js/package.json"
