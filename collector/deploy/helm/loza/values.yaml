@@ -15,7 +15,7 @@ collector:
 
   image:
     repository: loza
-    tag: "0.3.2"
+    tag: "0.3.3"
     digest: ""
     pullPolicy: IfNotPresent
 
@@ -148,7 +148,7 @@ worker:
 
   image:
     repository: loza-worker
-    tag: "0.3.2"
+    tag: "0.3.3"
     digest: ""
     pullPolicy: IfNotPresent
 
