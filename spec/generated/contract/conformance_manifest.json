@@ -1,6 +1,6 @@
 {
   "version": "v1",
-  "product_version": "0.3.2",
+  "product_version": "0.3.3",
   "strict_schema": "../schema/event.strict.schema.json",
   "loose_schema": "../schema/event.loose.schema.json",
   "valid": [

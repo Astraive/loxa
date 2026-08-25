@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const FALLBACK_VERSION = '0.3.2';
+const FALLBACK_VERSION = '0.3.3';
 
 /** Resolve the package root directory (two levels up from this file). */
 function getPackageRoot(): string {

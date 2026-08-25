@@ -2,7 +2,7 @@
 
 LOZA wide-event SDK for JavaScript/TypeScript — lightweight bridge connector to loza-collector.
 
-**Status**: STABLE (v0.3.2) - Production-ready, full feature conformance
+**Status**: STABLE (v0.3.3) - Production-ready, full feature conformance
 
 ## Installation
 
