@@ -125,6 +125,8 @@ jobs:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
       dry_run: ${{ inputs.dry_run }}
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-py:
     name: Publish Python SDK

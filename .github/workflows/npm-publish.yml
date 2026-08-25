@@ -13,6 +13,10 @@ on:
         required: false
         type: boolean
         default: false
+    secrets:
+      NPM_TOKEN:
+        required: false
+
 
 permissions:
   contents: write
@@ -67,6 +71,8 @@ jobs:
 
       - name: Publish package
         if: inputs.dry_run != true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public
 
       - name: Validate package archive
