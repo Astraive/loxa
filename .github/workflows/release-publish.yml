@@ -138,6 +138,8 @@ jobs:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
       dry_run: ${{ inputs.dry_run }}
+    secrets:
+      PYPIP_TOKEN: ${{ secrets.PYPIP_TOKEN }}
 
   publish-rs:
     name: Publish Rust crate
