@@ -13,6 +13,10 @@ on:
         required: false
         type: boolean
         default: false
+    secrets:
+      PYPIP_TOKEN:
+        required: false
+
 
 permissions:
   contents: write
@@ -65,6 +69,9 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: sdks/py/dist
+          user: __token__
+          password: ${{ secrets.PYPIP_TOKEN }}
+          attestations: false
 
       - name: Create component tag
         if: inputs.dry_run != true
