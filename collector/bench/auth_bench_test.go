@@ -45,7 +45,7 @@ func makeBenchKeyRecord() *auth.KeyRecord {
 
 // BenchmarkAuthParseKey measures API key parsing.
 func BenchmarkAuthParseKey(b *testing.B) {
-	raw := "lx_sec_live_kBenchKey_bench_secret_value"
+	raw := "lz_sec_live_kBenchKey_bench_secret_value"
 	b.ReportAllocs()
 	b.ResetTimer()
 
@@ -99,7 +99,7 @@ func BenchmarkAuthMiddlewareHit(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		req := httptest.NewRequest("POST", "/events", bytes.NewReader([]byte(`[{"event_name":"test"}]`)))
-		req.Header.Set("Authorization", "Bearer lx_sec_live_kBenchKey_bench_secret_value")
+		req.Header.Set("Authorization", "Bearer lz_sec_live_kBenchKey_bench_secret_value")
 		req.Header.Set("X-Loza-Service", "bench-service")
 		req.Header.Set("X-Loza-Env", "live")
 		rec := httptest.NewRecorder()
@@ -128,7 +128,7 @@ func BenchmarkAuthMiddlewareMiss(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		cache.Invalidate(record.KeyID) // force miss every time
 		req := httptest.NewRequest("POST", "/events", bytes.NewReader([]byte(`[{"event_name":"test"}]`)))
-		req.Header.Set("Authorization", "Bearer lx_sec_live_kBenchKey_bench_secret_value")
+		req.Header.Set("Authorization", "Bearer lz_sec_live_kBenchKey_bench_secret_value")
 		req.Header.Set("X-Loza-Service", "bench-service")
 		req.Header.Set("X-Loza-Env", "live")
 		rec := httptest.NewRecorder()
@@ -155,7 +155,7 @@ func BenchmarkAuthLocalKey(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		req := httptest.NewRequest("POST", "/events", bytes.NewReader([]byte(`[{"event_name":"test"}]`)))
-		req.Header.Set("Authorization", "Bearer lx_local_dev_mydevtoken")
+		req.Header.Set("Authorization", "Bearer lz_local_dev_mydevtoken")
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)
 		if rec.Code != http.StatusAccepted {

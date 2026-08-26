@@ -51,7 +51,7 @@ export function validateConfig(cfg: Config): Config {
     throw new Error('invalid Loza config: Basic password requires a username');
   }
   if (cfg.username && !cfg.password && !isPublicDSNUsername(cfg.username)) {
-    throw new Error('invalid Loza config: Basic credentials require a password unless username is an lx_pub_ capability');
+    throw new Error('invalid Loza config: Basic credentials require a password unless username is an lz_pub_ capability');
   }
   if (hasBasicCredentials(cfg) && endpoint.protocol === 'http:' && !isLocalhost(endpoint.hostname)) {
     throw new Error('invalid Loza config: Basic credentials require HTTPS (HTTP is allowed only for localhost)');

@@ -242,7 +242,7 @@ class Config:
         if not self.username and self.password:
             raise ValueError("collector basic auth password requires a username")
         if self.username and not self.password and not is_public_dsn_username(self.username):
-            raise ValueError("collector basic auth requires a password unless username is an lx_pub_ capability")
+            raise ValueError("collector basic auth requires a password unless username is an lz_pub_ capability")
         if self.username and self.collector_endpoint.lower().startswith("http://"):
             from urllib.parse import urlparse
 

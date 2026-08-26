@@ -114,7 +114,7 @@ test('query accepts a DSN and derives endpoint, credentials, and headers', async
 test('query accepts public DSN credentials with automatic TLS', async () => {
   let requestURL = '';
   const client = new Client({
-    dsn: 'loza://lx_pub_token@api.example/demo',
+    dsn: 'loza://lz_pub_token@api.example/demo',
     fetch: async url => {
       requestURL = url;
       return new Response(JSON.stringify({ columns: [], rows: [] }));

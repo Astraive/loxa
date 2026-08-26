@@ -96,7 +96,7 @@ auth:
 ```
 
 `secret_env` is the secret segment of
-`lx_{kind}_live_{key_id}_{secret}`, not the full token. Key IDs are unique;
+`lz_{kind}_live_{key_id}_{secret}`, not the full token. Key IDs are unique;
 `kind` must be `sec` or `pub`; `mode` is `private` or `public`; public
 credentials require `allowed_origins` and may use only the `client` role.
 Scoped keys require a configured `collector`, non-empty `permissions`, and
@@ -121,12 +121,12 @@ auth:
       allowed_origins: [https://app.example.com]
 ```
 
-`token_env` must contain an opaque value, not an `lx_` API key. The raw token
+`token_env` must contain an opaque value, not an `lz_` API key. The raw token
 is only accepted in `Authorization: Bearer`; it is not used as a stored ID.
 
 ```bash
 curl -X POST http://localhost:9308/collectors/checkout/events \
-  -H "Authorization: Bearer lx_sec_live_kcheckoutwriter_${CHECKOUT_WRITER_KEY_SECRET}" \
+  -H "Authorization: Bearer lz_sec_live_kcheckoutwriter_${CHECKOUT_WRITER_KEY_SECRET}" \
   -H "X-Loza-Env: prod" \
   -H 'Content-Type: application/json' -d '[{"event":"example"}]'
 curl http://localhost:9308/health

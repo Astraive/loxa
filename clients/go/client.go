@@ -187,7 +187,7 @@ func New(config ConnectionConfig) (*Client, error) {
 	if config.Collector == "" || !collectorSlug.MatchString(config.Collector) {
 		return nil, newConfigError("collector slug is required and must contain only letters, digits, '_' or '-'")
 	}
-	if config.Username != "" && config.Password == "" && !strings.HasPrefix(config.Username, "lx_pub_") {
+	if config.Username != "" && config.Password == "" && !strings.HasPrefix(config.Username, "lz_pub_") {
 		return nil, newConfigError("basic username requires a password")
 	}
 	if config.APIKey == "" && config.Username != "" && endpoint.Scheme == "http" && !isLocalhost(endpoint.Hostname()) {

@@ -285,7 +285,7 @@ describe('Coverage boundaries', () => {
     });
     assert.equal(credentialed.password, 'secret');
     const publicConfig = mergeFileConfig(defaultConfig(), {
-      collector_url: 'loza://lx_pub_capability:@example.com/project',
+      collector_url: 'loza://lz_pub_capability:@example.com/project',
     });
     assert.equal(publicConfig.password, '');
     const builder = new ConfigBuilder(defaultConfig());

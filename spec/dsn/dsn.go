@@ -8,7 +8,7 @@
 //	loza://[username:password@][host][:port]/[collector]?env=<env>&service=<service>&tls=<true|false>&transport=<http|otlp|grpc>
 //
 // A private credential is username:password. A public bearer capability uses
-// lx_pub_...: with an explicitly empty password.
+// lz_pub_...: with an explicitly empty password.
 // Userinfo credentials are percent-decoded and exposed in Username/Password.
 // They are never included in resolved endpoint URLs.
 //
@@ -16,7 +16,7 @@
 //
 //	loza://localhost:9308/demo?env=dev&tls=false
 //	loza://key-id:s%40cret@collector.example.com/my-app?env=prod
-//	loza://lx_pub_...:@collector.example.com/my-app?env=prod
+//	loza://lz_pub_...:@collector.example.com/my-app?env=prod
 //	loza://collector.example.com/my-app?env=prod&tls=true
 //	loza://loza.internal:4318/backend?env=staging&service=auth&transport=otlp
 package dsn
@@ -68,7 +68,7 @@ func (d LozaDSN) GoString() string {
 //   - Host is required (loza:// or loza:///project are rejected)
 //   - Collector path is required (loza://host is rejected)
 //   - Private userinfo must contain non-empty username/password
-//   - Public userinfo is lx_pub_...: with an explicitly empty password
+//   - Public userinfo is lz_pub_...: with an explicitly empty password
 //   - Username cannot contain a colon or whitespace after decoding
 //   - tls must be "true", "false", or "auto"
 //   - transport must be "http", "otlp", or "grpc"
@@ -105,7 +105,7 @@ func Parse(raw string) (*LozaDSN, error) {
 		username = u.User.Username()
 		password, hasPassword = u.User.Password()
 		if !hasPassword || username == "" || (password == "" && !IsPublicCredentialUsername(username)) {
-			return nil, fmt.Errorf("invalid Loza DSN: credentials require username:password or lx_pub_...:")
+			return nil, fmt.Errorf("invalid Loza DSN: credentials require username:password or lz_pub_...:")
 		}
 		if strings.Contains(username, ":") || hasWhitespace(username) {
 			return nil, fmt.Errorf("invalid Loza DSN: username contains an invalid character")
@@ -292,7 +292,7 @@ func isHexDigit(value byte) bool {
 // IsPublicCredentialUsername reports whether username is the public DSN bearer
 // capability form. Its empty Basic password is intentional.
 func IsPublicCredentialUsername(username string) bool {
-	const prefix = "lx_pub_"
+	const prefix = "lz_pub_"
 	return strings.HasPrefix(username, prefix) && len(username) > len(prefix)
 }
 

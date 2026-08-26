@@ -7,8 +7,8 @@
  * Format:
  *   loza://[username:password@][host][:port]/[collector]?env=<env>&service=<service>&tls=<true|false|auto>&transport=<http|otlp|grpc>
  *
- * Private credentials use username:password. Public lx_pub_... credentials use
- * an explicitly empty password (lx_pub_...:) as a bearer capability.
+ * Private credentials use username:password. Public lz_pub_... credentials use
+ * an explicitly empty password (lz_pub_...:) as a bearer capability.
 
 /** Parsed and resolved values from a loza:// connection URI. */
 export interface LozaDSN {
@@ -42,7 +42,7 @@ function isLocalhost(host: string): boolean {
 }
 
 export function isPublicDSNUsername(username: string): boolean {
-  const prefix = 'lx_pub_';
+  const prefix = 'lz_pub_';
   return username.startsWith(prefix) && username.length > prefix.length;
 }
 
@@ -52,7 +52,7 @@ export function isPublicDSNUsername(username: string): boolean {
  * Validation rules:
  *   - Collector path is required (loza://host is rejected)
  *   - Private userinfo must contain non-empty username/password.
- *   - Public userinfo is lx_pub_...: with an explicitly empty password.
+ *   - Public userinfo is lz_pub_...: with an explicitly empty password.
  *   - Userinfo is percent-decoded and malformed escapes are rejected.
  *   - Basic usernames cannot contain ':' or whitespace.
  *   - Password reserved characters must be percent-encoded.
@@ -101,7 +101,7 @@ export function parse(raw: string): LozaDSN {
     const rawUsername = userinfo.slice(0, separator);
     const rawPassword = userinfo.slice(separator + 1);
     if (!rawUsername) {
-      throw new Error('invalid Loza DSN: credentials require username:password or lx_pub_...:');
+      throw new Error('invalid Loza DSN: credentials require username:password or lz_pub_...:');
     }
     if (PASSWORD_RESERVED.test(rawPassword)) {
       throw new Error('invalid Loza DSN: reserved password characters must be percent-encoded');
@@ -113,7 +113,7 @@ export function parse(raw: string): LozaDSN {
       throw new Error('invalid Loza DSN: malformed percent-encoded userinfo');
     }
     if (!username || (password === '' && !isPublicDSNUsername(username))) {
-      throw new Error('invalid Loza DSN: credentials require username:password or lx_pub_...:');
+      throw new Error('invalid Loza DSN: credentials require username:password or lz_pub_...:');
     }
     if (USERINFO_RESERVED.test(username)) {
       throw new Error('invalid Loza DSN: username must not contain ":" or whitespace');

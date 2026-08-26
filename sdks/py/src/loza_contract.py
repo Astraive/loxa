@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable
 
 CONTRACT = {
-  "product_version": "0.3.3",
+  "product_version": "0.3.4",
   "spec_version": "v1",
   "api_version": "v1",
   "event_version": "v1",
@@ -298,7 +298,7 @@ CONTRACT = {
 },
   "fixtures": {
   "version": "v1",
-  "product_version": "0.3.3",
+  "product_version": "0.3.4",
   "strict_schema": "../schema/event.strict.schema.json",
   "loose_schema": "../schema/event.loose.schema.json",
   "valid": [

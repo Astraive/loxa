@@ -5,7 +5,7 @@
 ```
 Go SDK
   |  HTTPS
-  |  Authorization: Bearer lx_sec_live_k_xxx_yyyy
+  |  Authorization: Bearer lz_sec_live_k_xxx_yyyy
   |  X-Loza-Service: checkout-api
   |  X-Loza-Env: prod
   v
@@ -24,9 +24,9 @@ loza-cortex / sinks
 
 | Type | Format | Use Case |
 |------|--------|----------|
-| Secret | `lx_sec_live_k_xxx_yyy` | Backend/server SDKs |
-| Public | `lx_pub_live_k_xxx_yyy` | Frontend/browser/mobile |
-| Local | `lx_local_dev_yyy` | Local development |
+| Secret | `lz_sec_live_k_xxx_yyy` | Backend/server SDKs |
+| Public | `lz_pub_live_k_xxx_yyy` | Frontend/browser/mobile |
+| Local | `lz_local_dev_yyy` | Local development |
 
 ## RBAC Roles
 
@@ -53,7 +53,7 @@ client := loza.New(loza.Config{
 // Local dev
 client := loza.New(loza.Config{
     Endpoint: "http://localhost:9308",
-    APIKey:   "lx_local_dev_mydevtoken",
+    APIKey:   "lz_local_dev_mydevtoken",
     Service:  "test-service",
     Env:      "dev",
     Insecure: true,

@@ -22,7 +22,7 @@ type grpcAuthConfig struct {
 	trustedProxies    []*net.IPNet
 }
 
-// GRPCWithAllowLocalDevKeys controls whether lx_local_dev_* keys are accepted.
+// GRPCWithAllowLocalDevKeys controls whether lz_local_dev_* keys are accepted.
 func GRPCWithAllowLocalDevKeys(v bool) GRPCAuthOption {
 	return func(c *grpcAuthConfig) { c.allowLocalDevKeys = v }
 }

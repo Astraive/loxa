@@ -74,7 +74,7 @@ def test_dsn_repr_redacts_credentials() -> None:
 
 
 def test_public_dsn_routes_and_redacts_bearer_capability() -> None:
-    capability = "lx_pub_6DJvd3D0izOaQx3n5BhKqN"
+    capability = "lz_pub_6DJvd3D0izOaQx3n5BhKqN"
     dsn = parse(f"loza://{capability}:@example.com/public-collector")
 
     assert dsn.username == capability

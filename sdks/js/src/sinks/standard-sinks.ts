@@ -209,7 +209,7 @@ export class HTTPBatchSink implements Sink {
       throw new Error('invalid HTTP sink options: Basic password requires a username');
     }
     if (this.username && !this.password && !isPublicDSNUsername(this.username)) {
-      throw new Error('invalid HTTP sink options: Basic credentials require a password unless username is an lx_pub_ capability');
+      throw new Error('invalid HTTP sink options: Basic credentials require a password unless username is an lz_pub_ capability');
     }
     if (!this.apiKey && this.username &&
       endpoint.protocol === 'http:' &&

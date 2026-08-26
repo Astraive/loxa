@@ -114,7 +114,7 @@ func (s *collectorState) handleKeyCreate(w http.ResponseWriter, r *http.Request)
 	}
 	keyID := "k" + token8
 	secret := token24
-	key := "lx_" + kind + "_" + env + "_" + keyID + "_" + secret
+	key := "lz_" + kind + "_" + env + "_" + keyID + "_" + secret
 
 	// Store the new key in the key store so it can authenticate requests
 	if s.keyStore != nil {
@@ -231,7 +231,7 @@ func (s *collectorState) handleKeyRotate(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"id":         newKeyID,
 		"key_id":     newKeyID,
-		"key":        "lx_" + kind + "_" + env + "_" + newKeyID + "_" + newSecret,
+		"key":        "lz_" + kind + "_" + env + "_" + newKeyID + "_" + newSecret,
 		"rotated":    true,
 		"old_key_id": oldKeyID,
 	})
@@ -300,6 +300,6 @@ func randomToken(size int) (string, error) {
 		return "", fmt.Errorf("crypto/rand.Read failed: %w", err)
 	}
 	// Use base64 RawStdEncoding (uses + and /, not _) to avoid
-	// conflicts with the _ separator in the key format lx_{kind}_{env}_{keyID}_{secret}.
+	// conflicts with the _ separator in the key format lz_{kind}_{env}_{keyID}_{secret}.
 	return strings.TrimRight(base64.RawStdEncoding.EncodeToString(buf), "="), nil
 }

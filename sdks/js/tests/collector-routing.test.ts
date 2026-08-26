@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { CollectorClient } from '../src/collector/client.ts';
 
 test('public Basic credentials reach a collector-scoped endpoint without URL userinfo', async () => {
-  const capability = 'lx_pub_6DJvd3D0izOaQx3n5BhKqN';
+  const capability = 'lz_pub_6DJvd3D0izOaQx3n5BhKqN';
   let requestPath = '';
   let authorization = '';
   const server = createServer((request, response) => {

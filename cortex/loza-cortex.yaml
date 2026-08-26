@@ -1,6 +1,6 @@
 name: loza-cortex
 kind: docker
-version: 0.3.3
+version: 0.3.4
 description: Incident intelligence and graph analysis engine for LOZA
 license: MIT
 repository: https://github.com/Astraive/loza

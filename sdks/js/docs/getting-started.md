@@ -119,16 +119,16 @@ The SDK automatically sets `Authorization: Bearer <key>` headers.
 
 | Config Field | Env Var | Description |
 |---|---|---|
-| `apiKey` | `LOZA_API_KEY` | Ingest API key (`lx_sec_live_k_xxx_yyyy`) |
+| `apiKey` | `LOZA_API_KEY` | Ingest API key (`lz_sec_live_k_xxx_yyyy`) |
 
 ```typescript
 import { configure, production, dev } from '@astraive/loza';
 
 // Production
-configure(production('my-service').withApiKey('lx_sec_live_k_xxx_yyyy'));
+configure(production('my-service').withApiKey('lz_sec_live_k_xxx_yyyy'));
 
 // Local dev
-configure(dev('my-service').withApiKey('lx_local_dev_mytoken'));
+configure(dev('my-service').withApiKey('lz_local_dev_mytoken'));
 ```
 
 See [Security](../../docs/security.md) for key types and RBAC roles.

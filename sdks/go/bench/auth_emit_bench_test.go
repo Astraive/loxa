@@ -12,7 +12,7 @@ func BenchmarkEmitWithAuth(b *testing.B) {
 	sink, _ := loza.MemorySink()
 	cfg := loza.Test().
 		WithSink(sink).
-		WithAPIKey("lx_sec_live_kBenchKey_bench_secret_value")
+		WithAPIKey("lz_sec_live_kBenchKey_bench_secret_value")
 	_ = loza.Configure(cfg)
 
 	b.ReportAllocs()
@@ -30,7 +30,7 @@ func BenchmarkEmitWithAuthAndAttrs(b *testing.B) {
 	sink, _ := loza.MemorySink()
 	cfg := loza.Test().
 		WithSink(sink).
-		WithAPIKey("lx_sec_live_kBenchKey_bench_secret_value")
+		WithAPIKey("lz_sec_live_kBenchKey_bench_secret_value")
 	_ = loza.Configure(cfg)
 
 	b.ReportAllocs()
@@ -69,7 +69,7 @@ func BenchmarkEmitWithSamplerAuth(b *testing.B) {
 	sink, _ := loza.MemorySink()
 	cfg := loza.Test().
 		WithSink(sink).
-		WithAPIKey("lx_sec_live_kBenchKey_bench_secret_value").
+		WithAPIKey("lz_sec_live_kBenchKey_bench_secret_value").
 		WithSampler(loza.SampleRandom(0.5))
 	_ = loza.Configure(cfg)
 
@@ -88,7 +88,7 @@ func BenchmarkEmitBatch10(b *testing.B) {
 	sink, _ := loza.MemorySink()
 	cfg := loza.Test().
 		WithSink(sink).
-		WithAPIKey("lx_sec_live_kBenchKey_bench_secret_value")
+		WithAPIKey("lz_sec_live_kBenchKey_bench_secret_value")
 	_ = loza.Configure(cfg)
 
 	b.ReportAllocs()
@@ -109,7 +109,7 @@ func BenchmarkEmitBatch100(b *testing.B) {
 	sink, _ := loza.MemorySink()
 	cfg := loza.Test().
 		WithSink(sink).
-		WithAPIKey("lx_sec_live_kBenchKey_bench_secret_value")
+		WithAPIKey("lz_sec_live_kBenchKey_bench_secret_value")
 	_ = loza.Configure(cfg)
 
 	b.ReportAllocs()

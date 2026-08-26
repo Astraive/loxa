@@ -10,7 +10,7 @@ go run ./cmd/loza-collector run -c configs/loza.local.yaml
 If auth is enabled on the collector, set:
 
 ```bash
-export LOZA_API_KEY="lx_local_dev_mydevtoken"
+export LOZA_API_KEY="lz_local_dev_mydevtoken"
 ```
 
 Run the Python example:

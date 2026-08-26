@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4] - 2026-08-26
+
+### Changed
+
+- Updated the Cortex release version and credential examples to the `lz_`
+  prefix.
+
 ## [0.2.6] - 2026-05-30
 
 ### Security

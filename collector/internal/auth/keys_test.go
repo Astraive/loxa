@@ -6,7 +6,7 @@ import (
 
 func TestParseKey_SecretKey(t *testing.T) {
 	// Real format: keyID is "k" + base64 token (no underscore), e.g. "k2M9aQpXy"
-	pk, err := ParseKey("lx_sec_live_k2M9aQpXy_7QmVxN8pT4zRbK1sYw")
+	pk, err := ParseKey("lz_sec_live_k2M9aQpXy_7QmVxN8pT4zRbK1sYw")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -25,7 +25,7 @@ func TestParseKey_SecretKey(t *testing.T) {
 }
 
 func TestParseKey_PublicKey(t *testing.T) {
-	pk, err := ParseKey("lx_pub_live_kabc123_xxxxx")
+	pk, err := ParseKey("lz_pub_live_kabc123_xxxxx")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -41,7 +41,7 @@ func TestParseKey_PublicKey(t *testing.T) {
 }
 
 func TestParseKey_LocalKey(t *testing.T) {
-	pk, err := ParseKey("lx_local_dev_mydevtoken")
+	pk, err := ParseKey("lz_local_dev_mydevtoken")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestParseKey_LocalKey(t *testing.T) {
 }
 
 func TestParseKey_TestEnv(t *testing.T) {
-	pk, err := ParseKey("lx_sec_test_ktest123ab_secretvalue")
+	pk, err := ParseKey("lz_sec_test_ktest123ab_secretvalue")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -76,15 +76,23 @@ func TestParseKey_InvalidPrefix(t *testing.T) {
 	}
 }
 
+func TestParseKey_RejectsLegacyPrefix(t *testing.T) {
+	legacy := "l" + "x_sec_live_klegacy_secret"
+	if _, err := ParseKey(legacy); err == nil {
+		t.Fatal("expected legacy prefix to be rejected")
+	}
+}
+
+
 func TestParseKey_InvalidKind(t *testing.T) {
-	_, err := ParseKey("lx_bad_live_k_xxx_yyy")
+	_, err := ParseKey("lz_bad_live_k_xxx_yyy")
 	if err == nil {
 		t.Fatal("expected error for invalid kind")
 	}
 }
 
 func TestParseKey_InvalidEnv(t *testing.T) {
-	_, err := ParseKey("lx_sec_staging_k_xxx_yyy")
+	_, err := ParseKey("lz_sec_staging_k_xxx_yyy")
 	if err == nil {
 		t.Fatal("expected error for invalid env")
 	}
@@ -98,16 +106,16 @@ func TestParseKey_EmptyString(t *testing.T) {
 }
 
 func TestParseKey_MissingSecret(t *testing.T) {
-	// "lx_sec_live_kxxx" has 4 parts: lx, sec, live, kxxx
+	// "lz_sec_live_kxxx" has 4 parts: lz, sec, live, kxxx
 	// This is < 5 parts, so it should fail (missing secret).
-	_, err := ParseKey("lx_sec_live_kxxx")
+	_, err := ParseKey("lz_sec_live_kxxx")
 	if err == nil {
 		t.Fatal("expected error for missing key_id and secret")
 	}
 }
 
 func TestParseKey_TrimmedWhitespace(t *testing.T) {
-	pk, err := ParseKey("  lx_sec_live_kXxXyYy_secrettoken  ")
+	pk, err := ParseKey("  lz_sec_live_kXxXyYy_secrettoken  ")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

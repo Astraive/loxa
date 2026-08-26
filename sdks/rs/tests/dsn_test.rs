@@ -391,7 +391,7 @@ fn parse_userinfo_credentials() {
 
 #[test]
 fn public_credentials_route_and_redact_bearer_capability() {
-    let capability = "lx_pub_6DJvd3D0izOaQx3n5BhKqN";
+    let capability = "lz_pub_6DJvd3D0izOaQx3n5BhKqN";
     let dsn = loza::dsn::parse(&format!(
         "loza://{capability}:@collector.example.com/public-collector"
     ))

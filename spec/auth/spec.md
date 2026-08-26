@@ -7,7 +7,7 @@ LOZA uses scoped ingest API keys with RBAC+ABAC for authentication and authoriza
 ## Key Format
 
 ```
-lx_{kind}_{env}_{key_id}_{secret}
+lz_{kind}_{env}_{key_id}_{secret}
 ```
 
 | Component | Values | Example |
@@ -21,19 +21,19 @@ lx_{kind}_{env}_{key_id}_{secret}
 ### Examples
 
 ```
-lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw    # Backend server (production)
-lx_pub_live_kabc123_xxxxx                    # Frontend/browser (production)
-lx_sec_test_ktest1_testsecret                # Backend server (test)
-lx_local_dev_mydevtoken                      # Local development only
+lz_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw    # Backend server (production)
+lz_pub_live_kabc123_xxxxx                    # Frontend/browser (production)
+lz_sec_test_ktest1_testsecret                # Backend server (test)
+lz_local_dev_mydevtoken                      # Local development only
 ```
 
 ### Key Kinds
 
 | Kind | Prefix | Use Case | Scopes |
 |------|--------|----------|--------|
-| `sec` | `lx_sec_` | Backend/server SDKs | Full ingest |
-| `pub` | `lx_pub_` | Frontend/browser/mobile | Limited ingest |
-| `local` | `lx_local_` | Local dev only | Full ingest (blocked in prod) |
+| `sec` | `lz_sec_` | Backend/server SDKs | Full ingest |
+| `pub` | `lz_pub_` | Frontend/browser/mobile | Limited ingest |
+| `local` | `lz_local_` | Local dev only | Full ingest (blocked in prod) |
 
 ## Wire Protocol
 
@@ -41,7 +41,7 @@ lx_local_dev_mydevtoken                      # Local development only
 
 ```
 POST /events
-Authorization: Bearer lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
+Authorization: Bearer lz_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
 X-Loza-Service: checkout-api
 X-Loza-Env: prod
 Content-Type: application/json
@@ -51,7 +51,7 @@ Content-Type: application/json
 
 Metadata:
 ```
-authorization: Bearer lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
+authorization: Bearer lz_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
 x-loza-service: checkout-api
 x-loza-env: prod
 ```
@@ -137,7 +137,7 @@ Each API key can have attribute-based restrictions:
 
 ## Public Key Strict Defaults
 
-Public keys (`lx_pub_*`) are assumed exposed:
+Public keys (`lz_pub_*`) are assumed exposed:
 
 - Only `events:write` + `heartbeat:write` permissions
 - No logs, traces, metrics, attachments, PII
@@ -158,7 +158,7 @@ X-Auth-Failure-Code: <machine-readable code>
 | Code | Reason |
 |------|--------|
 | `missing_token` | No Authorization header |
-| `invalid_key_format` | Key doesn't match lx_ format |
+| `invalid_key_format` | Key doesn't match lz_ format |
 | `key_not_found` | Key ID not in store |
 | `key_revoked` | Key has been revoked |
 | `key_expired` | Key has expired |
@@ -195,7 +195,7 @@ Env vars: `LOZA_API_KEY`, `LOZA_COLLECTOR_URL`
 ### Headers Set Automatically
 
 ```
-Authorization: Bearer lx_sec_live_k_xxx_yyyy
+Authorization: Bearer lz_sec_live_k_xxx_yyyy
 X-Loza-Service: checkout-service
 X-Loza-Env: prod
 ```
@@ -205,7 +205,7 @@ X-Loza-Env: prod
 ```go
 client := loza.New(loza.Config{
     Endpoint: "http://localhost:9308",
-    APIKey:   "lx_local_dev_mydevtoken",
+    APIKey:   "lz_local_dev_mydevtoken",
     Service:  "test-service",
     Env:      "dev",
     Insecure: true,

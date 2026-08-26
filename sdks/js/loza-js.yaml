@@ -1,7 +1,7 @@
 name: loza-js
 kind: sdk
 language: javascript
-version: 0.3.3
+version: 0.3.4
 description: JavaScript and TypeScript SDK for LOZA
 license: MIT
 repository: https://github.com/Astraive/loza

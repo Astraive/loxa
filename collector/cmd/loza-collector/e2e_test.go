@@ -30,7 +30,7 @@ func TestCollectorE2ERawPreservation(t *testing.T) {
 	cfg := testCollectorConfig()
 	cfg.authEnabled = true
 	cfg.storageEncryptionKey = "test-encryption-key-for-e2e-32bytes!"
-	cfg.apiKey = "lx_sec_live_ktest_testsecret"
+	cfg.apiKey = "lz_sec_live_ktest_testsecret"
 	cfg.duckDBPath = dbPath
 	cfg.duckDBBatchSize = 10
 	cfg.duckDBFlushInterval = 5 * time.Millisecond

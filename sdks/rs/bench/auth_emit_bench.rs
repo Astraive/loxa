@@ -6,7 +6,7 @@ pub fn run_auth_emit_iterations(iterations: usize) -> (usize, u128, usize) {
     let sink = loza::MemorySink::new();
     let _logger = Config::test("bench")
         .with_sink(sink)
-        .with_api_key("lx_sec_live_kBenchKey_bench_secret_value")
+        .with_api_key("lz_sec_live_kBenchKey_bench_secret_value")
         .build()
         .expect("config");
 
@@ -28,7 +28,7 @@ pub fn run_auth_emit_enriched_iterations(iterations: usize) -> (usize, u128, usi
     let sink = loza::MemorySink::new();
     let _logger = Config::test("bench")
         .with_sink(sink)
-        .with_api_key("lx_sec_live_kBenchKey_bench_secret_value")
+        .with_api_key("lz_sec_live_kBenchKey_bench_secret_value")
         .build()
         .expect("config");
 

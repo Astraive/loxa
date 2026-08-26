@@ -52,7 +52,7 @@ func (s *GRPCServer) WithAuth(store auth.KeyStore, cache *auth.MemoryKeyCache, s
 	return s
 }
 
-// WithAllowLocalDevKeys enables lx_local_dev_* key acceptance on this server.
+// WithAllowLocalDevKeys enables lz_local_dev_* key acceptance on this server.
 func (s *GRPCServer) WithAllowLocalDevKeys(v bool) *GRPCServer {
 	s.allowLocalDevKeys = v
 	return s

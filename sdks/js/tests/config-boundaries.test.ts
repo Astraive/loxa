@@ -55,7 +55,7 @@ describe('Config boundaries', () => {
       WithService('svc'), WithAlias('alias'), WithVersion('1'), WithEnvironment('prod'),
       WithSink(sink), WithSampler(sampleNone()), WithRedactor(redact('token')), WithSchema(schema),
       WithEventSchema(schema), WithAsync(true), WithCollectorEndpoint('http://localhost:9308'),
-      WithDuplicatePolicy('drop'), WithBasicAuth('lx_pub_capability', ''), WithStatsHandler({}),
+      WithDuplicatePolicy('drop'), WithBasicAuth('lz_pub_capability', ''), WithStatsHandler({}),
       WithDeploymentID('dep'), WithIncludeHost(false), WithPanicRecovery(true), WithApiKey(' key '),
       WithRelease('release'), WithNamespace('ns'), WithOtelBridge(true), WithRetry(2),
       WithTimeout(100), WithQueueSize(4), WithLogger(noopLogger),
@@ -97,11 +97,11 @@ describe('Config boundaries', () => {
 
   it('handles collector DSNs with public capabilities', () => {
     const cfg = withOptions(defaultConfig(), {
-      collectorUrl: 'loza://lx_pub_capability:@localhost:9308/project?service=payments&env=staging',
+      collectorUrl: 'loza://lz_pub_capability:@localhost:9308/project?service=payments&env=staging',
     });
     assert.equal(cfg.collectorUrl, 'http://localhost:9308');
     assert.equal(cfg.collectorName, 'project');
-    assert.equal(cfg.username, 'lx_pub_capability');
+    assert.equal(cfg.username, 'lz_pub_capability');
     assert.equal(cfg.password, '');
     assert.equal(cfg.service, 'payments');
     assert.equal(cfg.environment, 'staging');

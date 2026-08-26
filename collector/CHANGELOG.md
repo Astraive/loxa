@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.4] - 2026-08-26
+
+### Security
+
+- Replaced the credential prefix with `lz_`; legacy prefixes are rejected.
+
+### Changed
+
+- Updated the Collector release version and authentication examples.
+
 ## [0.2.6] - 2026-05-30
 
 ### Security

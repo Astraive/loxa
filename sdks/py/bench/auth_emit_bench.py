@@ -80,7 +80,7 @@ def bench_emit_auth(iterations: int = 10000) -> BenchmarkResult:
     """Emit with API key configured."""
     def setup():
         sink = NullSink()
-        return loza.new(loza.test("bench").with_sink(sink).with_api_key("lx_sec_live_kBenchKey_secret"))
+        return loza.new(loza.test("bench").with_sink(sink).with_api_key("lz_sec_live_kBenchKey_secret"))
 
     def run(logger):
         ctx = logger.start_event(loza.Params(event="bench.auth.emit"))
@@ -94,7 +94,7 @@ def bench_emit_auth_attrs(iterations: int = 10000) -> BenchmarkResult:
     """Emit with API key + enriched attributes."""
     def setup():
         sink = NullSink()
-        return loza.new(loza.test("bench").with_sink(sink).with_api_key("lx_sec_live_kBenchKey_secret"))
+        return loza.new(loza.test("bench").with_sink(sink).with_api_key("lz_sec_live_kBenchKey_secret"))
 
     def run(logger):
         ctx = logger.start_event(loza.Params(event="bench.auth.attrs"))
@@ -130,7 +130,7 @@ def bench_emit_sampler_auth(iterations: int = 10000) -> BenchmarkResult:
     def setup():
         sink = NullSink()
         return loza.new(loza.test("bench").with_sink(sink)
-            .with_api_key("lx_sec_live_kBenchKey_secret")
+            .with_api_key("lz_sec_live_kBenchKey_secret")
             .with_sampler(loza.SampleRandom(0.5)))
 
     def run(logger):
@@ -145,7 +145,7 @@ def bench_emit_batch_10(iterations: int = 1000) -> BenchmarkResult:
     """Emit 10 events per iteration."""
     def setup():
         sink = NullSink()
-        return loza.new(loza.test("bench").with_sink(sink).with_api_key("lx_sec_live_kBenchKey_secret"))
+        return loza.new(loza.test("bench").with_sink(sink).with_api_key("lz_sec_live_kBenchKey_secret"))
 
     def run(logger):
         for j in range(10):

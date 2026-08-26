@@ -87,8 +87,8 @@ def test_dsn_normalization_decodes_credentials_and_query_options() -> None:
 
 
 def test_dsn_accepts_public_username_without_password() -> None:
-    parsed = _parse_dsn("loza://lx_pub_abc@team.example/events")
-    assert parsed["username"] == "lx_pub_abc"
+    parsed = _parse_dsn("loza://lz_pub_abc@team.example/events")
+    assert parsed["username"] == "lz_pub_abc"
     assert parsed["password"] == ""
 
 

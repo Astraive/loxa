@@ -1,5 +1,5 @@
 project_name: loza
-version: 0.3.3
+version: 0.3.4
 archives:
   - format: tar.gz
 builds:

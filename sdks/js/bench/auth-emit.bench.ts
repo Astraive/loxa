@@ -1,7 +1,7 @@
 import { bench, describe } from 'vitest';
 import { createLoza, memorySink } from '../src';
 
-const API_KEY = 'lx_sec_live_kBenchKey_bench_secret_value';
+const API_KEY = 'lz_sec_live_kBenchKey_bench_secret_value';
 
 describe('Emit with Auth', () => {
   const sink = memorySink();

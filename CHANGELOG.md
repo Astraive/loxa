@@ -4,6 +4,19 @@ All notable changes to the LOZA project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/0.2.0/).
 
+## [0.3.4] - 2026-08-26
+
+### Security
+
+- Changed all LOZA credential prefixes to `lz_`; credentials using the
+  previous prefix are rejected by the key parser.
+
+### Changed
+
+- Synchronized the next release version across Collector, Cortex, CLI, spec,
+  and Go, JavaScript, Python, Rust SDK manifests and runtime fallbacks.
+- Updated Go SDK module references and regenerated shared contract artifacts.
+
 ## [0.3.2] - 2026-08-25
 
 ### Changed

@@ -36,7 +36,7 @@ func validFileConfig() fileConfig {
 func TestLoadCollectorConfigFromArgsPrecedence(t *testing.T) {
 	t.Setenv("COLLECTOR_ADDR", ":9001")
 	t.Setenv("DUCKDB_BATCH_SIZE", "20")
-	t.Setenv("COLLECTOR_API_KEY", "lx_sec_live_klegacy_envsecret")
+	t.Setenv("COLLECTOR_API_KEY", "lz_sec_live_klegacy_envsecret")
 
 	path := filepath.Join(t.TempDir(), "collector.yaml")
 	raw := `
@@ -69,7 +69,7 @@ duckdb:
 	if cfg.duckDBBatchSize != 30 {
 		t.Fatalf("batch size precedence mismatch: %d", cfg.duckDBBatchSize)
 	}
-	if cfg.apiKey != "lx_sec_live_klegacy_envsecret" || !cfg.authEnabled {
+	if cfg.apiKey != "lz_sec_live_klegacy_envsecret" || !cfg.authEnabled {
 		t.Fatalf("expected env API key to enable auth")
 	}
 }
@@ -96,7 +96,7 @@ func TestLoadCollectorConfigFromArgsFailFastInvalidFlag(t *testing.T) {
 }
 
 func TestLoadCollectorConfigFromArgsExplicitEmptyFlagOverridesEnv(t *testing.T) {
-	t.Setenv("COLLECTOR_API_KEY", "lx_sec_live_klegacy_envsecret")
+	t.Setenv("COLLECTOR_API_KEY", "lz_sec_live_klegacy_envsecret")
 	cfg, err := loadCollectorConfigFromArgs([]string{"--api-key="})
 	if err != nil {
 		t.Fatalf("explicit empty legacy key should leave configured auth keys usable: %v", err)
@@ -212,7 +212,7 @@ storage:
 }
 
 func TestResolveCollectorAuthGrantsBuildsPrivateAndPublicCredentials(t *testing.T) {
-	publicID := "lx_pub_0123456789abcdefghijklmnopqrstuv"
+	publicID := "lz_pub_0123456789abcdefghijklmnopqrstuv"
 	t.Setenv("COLLECTOR_PRIVATE_GRANT_PASSWORD", "private-grant-password")
 	t.Setenv("COLLECTOR_PUBLIC_ACCESS_ID", publicID)
 	cfg := validFileConfig()
@@ -288,7 +288,7 @@ func TestResolveAuthConfigBuildsCollectorScopedKey(t *testing.T) {
 }
 
 func TestValidateFileConfigRejectsInvalidCollectorGrantConfiguration(t *testing.T) {
-	publicID := "lx_pub_0123456789abcdefghijklmnopqrstuv"
+	publicID := "lz_pub_0123456789abcdefghijklmnopqrstuv"
 	t.Setenv("COLLECTOR_PUBLIC_ACCESS_ID", publicID)
 	cfg := validFileConfig()
 	cfg.Auth.Collectors = []collectorconfig.AuthCollectorConfig{{Slug: "web"}, {Slug: "web"}}
@@ -316,8 +316,8 @@ func TestValidateFileConfigRejectsInvalidCollectorGrantConfiguration(t *testing.
 	}
 
 	cfg.Auth.Grants[0].Collector = "web"
-	t.Setenv("COLLECTOR_PUBLIC_ACCESS_ID", "lx_pub_invalid")
-	if err := validateFileConfig(cfg); err == nil || strings.Contains(err.Error(), "lx_pub_invalid") {
+	t.Setenv("COLLECTOR_PUBLIC_ACCESS_ID", "lz_pub_invalid")
+	if err := validateFileConfig(cfg); err == nil || strings.Contains(err.Error(), "lz_pub_invalid") {
 		t.Fatalf("expected redacted malformed public ID rejection, got %v", err)
 	}
 }
