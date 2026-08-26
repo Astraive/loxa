@@ -50,13 +50,6 @@ jobs:
       - name: Coverage
         run: bun run coverage
 
-      - name: Upload SDK coverage
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: js-sdk-coverage
-          path: sdks/js/coverage/
-          if-no-files-found: ignore
 
       - uses: actions/setup-python@v5
         with:
@@ -96,11 +89,3 @@ jobs:
 
       - name: Coverage
         run: bun run coverage
-
-      - name: Upload client coverage
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: javascript-client-coverage
-          path: clients/javascript/coverage/
-          if-no-files-found: ignore

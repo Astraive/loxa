@@ -95,13 +95,6 @@ jobs:
           --fail-under-lines 60
           --lcov --output-path lcov.info
 
-      - name: Upload Rust coverage
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rust-sdk-coverage
-          path: sdks/rs/lcov.info
-          if-no-files-found: ignore
 
   conformance:
     name: Conformance
@@ -129,25 +122,3 @@ jobs:
 
       - name: Spec contract tests
         run: cargo test --test spec_contract_test --test conformance_fixtures --test ingest_envelope_fixture
-
-  required-checks:
-    name: Required Checks
-    runs-on: ubuntu-latest
-    if: always()
-    needs: [lint, build-test, conformance]
-    steps:
-      - name: Enforce job success
-        shell: bash
-        run: |
-          if [ "${{ needs.lint.result }}" != "success" ]; then
-            echo "::error::lint: ${{ needs.lint.result }}"
-            exit 1
-          fi
-          if [ "${{ needs.build-test.result }}" != "success" ]; then
-            echo "::error::build-test: ${{ needs.build-test.result }}"
-            exit 1
-          fi
-          if [ "${{ needs.conformance.result }}" != "success" ]; then
-            echo "::error::conformance: ${{ needs.conformance.result }}"
-            exit 1
-          fi

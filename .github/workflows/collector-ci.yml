@@ -81,7 +81,6 @@ jobs:
 
       - name: Run unit tests
         run: go test ./...
-
   integration:
     runs-on: ubuntu-latest
     defaults:

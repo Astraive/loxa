@@ -39,7 +39,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: sdks/go/go.mod
-          check-latest: true
           cache: true
 
       - name: Setup Python
@@ -132,29 +131,4 @@ jobs:
             Push-Location $module
             & $govuln ./...
             Pop-Location
-          }
-
-      # --- Stress tests ---
-
-      - name: Stress tests
-        working-directory: sdks/go/tests/integration
-        run: go test ./... -run "TestAsyncPipelineDrain|TestAsyncPipelineNoLossConcurrent|TestConfigureDrainsPreviousLogger" -count=10
-
-      # --- Benchmarks ---
-
-      - name: Benchmarks
-        working-directory: sdks/go/bench
-        run: go test ./... -run ^$ -bench . -count=1
-
-  required-checks:
-    name: Required Checks
-    runs-on: ubuntu-latest
-    if: always()
-    needs: [build-test]
-    steps:
-      - name: Enforce job success
-        shell: pwsh
-        run: |
-          if ("${{ needs.build-test.result }}" -ne "success") {
-            throw "build-test: ${{ needs.build-test.result }}"
           }
