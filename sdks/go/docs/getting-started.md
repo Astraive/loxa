@@ -96,7 +96,7 @@ The SDK automatically sets `Authorization: Bearer <key>`, `X-Loza-Service`, and 
 
 | Config Field | Env Var | Description |
 |---|---|---|
-| `APIKey` | `LOZA_API_KEY` | Ingest API key (`lx_sec_live_k_xxx_yyyy`) |
+| `APIKey` | `LOZA_API_KEY` | Ingest API key (`lz_sec_live_k_xxx_yyyy`) |
 | `Insecure` | -- | Allow plain HTTP (local dev only) |
 
 ```go
@@ -104,14 +104,14 @@ The SDK automatically sets `Authorization: Bearer <key>`, `X-Loza-Service`, and 
 loza.Configure(
 	loza.Production().
 		WithService("my-service").
-		WithAPIKey("lx_sec_live_k_xxx_yyyy"),
+		WithAPIKey("lz_sec_live_k_xxx_yyyy"),
 )
 
 // Local dev (HTTP allowed)
 loza.Configure(
 	loza.Dev().
 		WithService("my-service").
-		WithAPIKey("lx_local_dev_mytoken").
+		WithAPIKey("lz_local_dev_mytoken").
 		WithInsecure(true),
 )
 ```

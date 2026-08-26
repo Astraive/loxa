@@ -134,7 +134,7 @@ func TestHandleIngestAuthFailure(t *testing.T) {
 	cfg.authCacheTTL = time.Minute
 	cfg.authNegativeCacheTTL = time.Second
 	cfg.storageEncryptionKey = "test-encryption-key-for-e2e-32bytes!"
-	cfg.apiKey = "lx_sec_live_ktest_testsecret"
+	cfg.apiKey = "lz_sec_live_ktest_testsecret"
 	state := &collectorState{
 		cfg:         cfg,
 		ingestSink:  sink,
@@ -201,7 +201,7 @@ func TestConfiguredAdminKeyCanReadStatus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.Header.Set("Authorization", "Bearer lx_sec_live_kadmin_adminsecret")
+	req.Header.Set("Authorization", "Bearer lz_sec_live_kadmin_adminsecret")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
@@ -242,7 +242,7 @@ func TestConfiguredScopedKeyRestrictsCanonicalRoutes(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		req.Header.Set("Authorization", "Bearer lx_sec_live_korders_orderssecret")
+		req.Header.Set("Authorization", "Bearer lz_sec_live_korders_orderssecret")
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("X-Loza-Env", "production")
 		return req

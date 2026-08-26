@@ -1,8 +1,8 @@
 {
-  "version": "0.3.3",
+  "version": "0.3.4",
   "package": "loza",
   "scope": "lightweight-sdk",
-  "stability": "product-parity-v0.3.3",
+  "stability": "product-parity-v0.3.4",
   "policy": "full-product-method-family",
   "sdks": ["go", "python", "rust", "javascript"],
   "lifecycle": [

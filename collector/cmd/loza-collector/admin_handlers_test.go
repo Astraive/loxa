@@ -93,7 +93,7 @@ func TestHandleKeyCreate_CreatedKeyCanAuthenticate(t *testing.T) {
 		t.Fatal("expected key and key_id in response")
 	}
 
-	// Extract the secret from the key: format is lx_{kind}_{env}_{keyID}_{secret}
+	// Extract the secret from the key: format is lz_{kind}_{env}_{keyID}_{secret}
 	// The secret is the last underscore-separated segment
 	keyParts := strings.Split(fullKey, "_")
 	if len(keyParts) < 5 {

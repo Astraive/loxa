@@ -2,6 +2,13 @@
 
 All notable changes to the LOZA Go SDK are documented in this file.
 
+## [0.3.4] - 2026-08-26
+
+### Changed
+
+- Updated the Go SDK release version and key examples to the `lz_` prefix.
+- Updated the shared spec module reference for the next release.
+
 ## [0.2.6] - 2026-05-30
 
 ### Fixed

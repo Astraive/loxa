@@ -141,9 +141,9 @@ type Config struct {
 	TenantID     string // Multi-tenant identifier
 
 	// ── Authentication ───────────────────────────────────────────────────────
-	APIKey      string // Ingest API key (e.g., "lx_sec_live_k_xxx_yyyy")
+	APIKey      string // Ingest API key (e.g., "lz_sec_live_k_xxx_yyyy")
 	DSNUsername string // Private Basic username or public bearer capability from a DSN.
-	DSNPassword string // Basic password; intentionally empty for lx_pub_ DSNs.
+	DSNPassword string // Basic password; intentionally empty for lz_pub_ DSNs.
 	Insecure    bool   // Allow plain HTTP (local dev only). Default: false.
 
 	// ── Collector configuration ───────────────────────────────────────────────
@@ -587,7 +587,7 @@ func (c Config) Validate() error {
 	if c.DSNUsername != "" && c.DSNPassword == "" && !dsn.IsPublicCredentialUsername(c.DSNUsername) {
 		return &ConfigValidationError{
 			Field:   "DSNUsername/DSNPassword",
-			Problem: "basic auth username requires a password unless it is an lx_pub_ capability",
+			Problem: "basic auth username requires a password unless it is an lz_pub_ capability",
 		}
 	}
 	if c.DSNUsername != "" {
@@ -682,7 +682,7 @@ func validateCollectorCredentials(endpoint, username, password string, insecure 
 		return fmt.Errorf("loza: basic auth password requires a username")
 	}
 	if username != "" && password == "" && !dsn.IsPublicCredentialUsername(username) {
-		return fmt.Errorf("loza: basic auth username requires a password unless it is an lx_pub_ capability")
+		return fmt.Errorf("loza: basic auth username requires a password unless it is an lz_pub_ capability")
 	}
 	if username == "" {
 		return nil

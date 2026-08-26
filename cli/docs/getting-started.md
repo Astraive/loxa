@@ -30,7 +30,7 @@ Set the collector URL and API key via environment variables:
 
 ```bash
 export LOZA_COLLECTOR_URL=https://collector.loza.dev
-export LOZA_API_KEY=lx_sec_live_k_xxx_yyyy
+export LOZA_API_KEY=lz_sec_live_k_xxx_yyyy
 ```
 
 ### Authentication
@@ -45,7 +45,7 @@ The CLI authenticates with the collector using `Authorization: Bearer <key>`. Se
 
 ```bash
 # Production
-export LOZA_API_KEY=lx_sec_live_k_xxx_yyyy
+export LOZA_API_KEY=lz_sec_live_k_xxx_yyyy
 loza query "SELECT * FROM events LIMIT 10"
 
 # Local dev (no auth)

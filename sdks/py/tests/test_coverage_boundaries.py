@@ -116,7 +116,7 @@ def test_config_validation_and_layer_precedence(monkeypatch: pytest.MonkeyPatch,
     with pytest.raises(ValueError, match="HTTPS"):
         loza.Config(collector_endpoint="http://remote.example/events", username="basic", password="secret").validate()
 
-    monkeypatch.setenv("LOZA_DSN", "loza://lx_pub_abc:ignored@collector.example/tenant?env=prod&service=api")
+    monkeypatch.setenv("LOZA_DSN", "loza://lz_pub_abc:ignored@collector.example/tenant?env=prod&service=api")
     monkeypatch.setenv("LOZA_SERVICE_VERSION", "v2")
     monkeypatch.setenv("LOZA_STRICT", "yes")
     monkeypatch.setenv("LOZA_ASYNC_ENABLED", "true")

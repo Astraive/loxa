@@ -220,7 +220,7 @@ func TestCredentialedDSNMappingAndPrecedence(t *testing.T) {
 }
 
 func TestPublicDSNUsesScopedEndpointAndEmptyBasicPassword(t *testing.T) {
-	const capability = "lx_pub_6DJvd3D0izOaQx3n5BhKqN"
+	const capability = "lz_pub_6DJvd3D0izOaQx3n5BhKqN"
 	cfg := ApplyConfig(
 		Config{},
 		WithDSN("loza://"+capability+":@collector.example.com/public-collector?env=prod"),

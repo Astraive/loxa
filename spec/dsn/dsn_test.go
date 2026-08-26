@@ -190,9 +190,9 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:      "public credential DSN",
-			input:     "loza://lx_pub_6DJvd3D0izOaQx3n5BhKqN:@collector.example.com/public-collector?env=prod",
+			input:     "loza://lz_pub_6DJvd3D0izOaQx3n5BhKqN:@collector.example.com/public-collector?env=prod",
 			valid:     true,
-			username:  "lx_pub_6DJvd3D0izOaQx3n5BhKqN",
+			username:  "lz_pub_6DJvd3D0izOaQx3n5BhKqN",
 			password:  "",
 			host:      "collector.example.com",
 			port:      443,
@@ -416,7 +416,7 @@ func TestParseStringRedactsCredentials(t *testing.T) {
 }
 
 func TestParsePublicCredentialRedactsBearerCapability(t *testing.T) {
-	const capability = "lx_pub_6DJvd3D0izOaQx3n5BhKqN"
+	const capability = "lz_pub_6DJvd3D0izOaQx3n5BhKqN"
 	dsn, err := Parse("loza://" + capability + ":@collector.example.com/demo")
 	if err != nil {
 		t.Fatal(err)

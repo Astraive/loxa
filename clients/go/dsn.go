@@ -33,7 +33,7 @@ func parseLozaDSN(raw string) (*lozaDSN, error) {
 		var hasPassword bool
 		username = u.User.Username()
 		password, hasPassword = u.User.Password()
-		if !hasPassword || username == "" || (password == "" && !strings.HasPrefix(username, "lx_pub_")) {
+		if !hasPassword || username == "" || (password == "" && !strings.HasPrefix(username, "lz_pub_")) {
 			return nil, fmt.Errorf("invalid Loza DSN credentials")
 		}
 		if strings.Contains(username, ":") || strings.IndexFunc(username, unicode.IsSpace) >= 0 {

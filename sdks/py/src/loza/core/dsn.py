@@ -7,8 +7,8 @@ Format::
 
     loza://[username:password@][host][:port]/[collector]?env=<env>&service=<service>&tls=<true|false|auto>&transport=<http|otlp|grpc>
 
-Private credentials use username:password. Public `lx_pub_...` bearer
-capabilities use an explicitly empty password (`lx_pub_...:`).
+Private credentials use username:password. Public `lz_pub_...` bearer
+capabilities use an explicitly empty password (`lz_pub_...:`).
 
 """
 
@@ -78,7 +78,7 @@ def _is_localhost(host: str) -> bool:
 
 
 def is_public_dsn_username(username: str) -> bool:
-    prefix = "lx_pub_"
+    prefix = "lz_pub_"
     return username.startswith(prefix) and len(username) > len(prefix)
 
 
@@ -107,13 +107,13 @@ def parse(raw: str) -> LozaDSN:
             raise ValueError("invalid Loza DSN: userinfo must include username and password")
         raw_username, raw_password = raw_userinfo.split(":", 1)
         if not raw_username:
-            raise ValueError("invalid Loza DSN: credentials require username:password or lx_pub_...:")
+            raise ValueError("invalid Loza DSN: credentials require username:password or lz_pub_...:")
         if any(char in _PASSWORD_RESERVED for char in raw_password):
             raise ValueError("invalid Loza DSN: reserved password characters must be percent-encoded")
         username = _decode_userinfo(raw_username, "username")
         password = _decode_userinfo(raw_password, "password")
         if not username or (not password and not is_public_dsn_username(username)):
-            raise ValueError("invalid Loza DSN: credentials require username:password or lx_pub_...:")
+            raise ValueError("invalid Loza DSN: credentials require username:password or lz_pub_...:")
         if ":" in username or any(char.isspace() for char in username):
             raise ValueError("invalid Loza DSN: username must not contain ':' or whitespace")
     elif u.username is not None or u.password is not None:

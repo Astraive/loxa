@@ -43,7 +43,7 @@ func (s *GraphQLServer) WithAuth(store auth.KeyStore, cache *auth.MemoryKeyCache
 	return s
 }
 
-// WithAllowLocalDevKeys enables lx_local_dev_* key acceptance on this server.
+// WithAllowLocalDevKeys enables lz_local_dev_* key acceptance on this server.
 func (s *GraphQLServer) WithAllowLocalDevKeys(v bool) *GraphQLServer {
 	s.allowLocalDevKeys = v
 	return s

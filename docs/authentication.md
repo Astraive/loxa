@@ -7,7 +7,7 @@ LOZA supports scoped API keys and opaque bearer tokens with the `Authorization: 
 Bearer example:
 
 ```http
-Authorization: Bearer lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
+Authorization: Bearer lz_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
 ```
 
 Credentialed DSN example:
@@ -23,7 +23,7 @@ Credentialed DSN passwords are never included in resolved endpoint URLs or norma
 ## Key Format
 
 ```
-lx_{kind}_{env}_{key_id}_{secret}
+lz_{kind}_{env}_{key_id}_{secret}
 ```
 
 | Component | Values | Example |
@@ -37,26 +37,26 @@ lx_{kind}_{env}_{key_id}_{secret}
 ### Examples
 
 ```
-lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw    # Backend server (production)
-lx_pub_live_kabc123_xxxxx                    # Frontend/browser (production)
-lx_sec_test_ktest1_testsecret                # Backend server (test)
-lx_local_dev_mydevtoken                      # Local development only
+lz_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw    # Backend server (production)
+lz_pub_live_kabc123_xxxxx                    # Frontend/browser (production)
+lz_sec_test_ktest1_testsecret                # Backend server (test)
+lz_local_dev_mydevtoken                      # Local development only
 ```
 
 ## Key Types
 
 | Kind | Prefix | Use Case | Permissions |
 |------|--------|----------|-------------|
-| `sec` | `lx_sec_` | Backend/server SDKs | Full ingest (events, logs, traces, metrics) |
-| `pub` | `lx_pub_` | Frontend/browser/mobile | Limited ingest (events + heartbeat only) |
-| `local` | `lx_local_` | Local development | Full ingest (blocked in production) |
+| `sec` | `lz_sec_` | Backend/server SDKs | Full ingest (events, logs, traces, metrics) |
+| `pub` | `lz_pub_` | Frontend/browser/mobile | Limited ingest (events + heartbeat only) |
+| `local` | `lz_local_` | Local development | Full ingest (blocked in production) |
 
 ### Secret Keys (`sec`)
 
 For backend services that send events, logs, traces, and metrics. These keys have full ingest permissions and can include PII and attachments.
 
 ```
-lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
+lz_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw
 ```
 
 ### Public Keys (`pub`)
@@ -70,7 +70,7 @@ For frontend applications exposed in browsers. Public keys are restricted:
 - Lower rate limits and smaller payload limits
 
 ```
-lx_pub_live_kabc123_xxxxx
+lz_pub_live_kabc123_xxxxx
 ```
 
 ### Local Keys (`local`)
@@ -78,7 +78,7 @@ lx_pub_live_kabc123_xxxxx
 For local development. Full ingest permissions but blocked in production environments.
 
 ```
-lx_local_dev_mydevtoken
+lz_local_dev_mydevtoken
 ```
 
 ## RBAC roles and credential modes
@@ -209,7 +209,7 @@ When an API key is configured, the SDK sends Bearer authentication. When a crede
 
 | Header | Value | Description |
 |--------|-------|-------------|
-| `Authorization` | `Bearer lx_sec_live_k_xxx_yyyy` | Existing API-key authentication |
+| `Authorization` | `Bearer lz_sec_live_k_xxx_yyyy` | Existing API-key authentication |
 | `Authorization` | `Basic <base64(key_id:secret)>` | Credentialed DSN authentication |
 | `X-Loza-Service` | `checkout-api` | Service name from config |
 | `X-Loza-Env` | `prod` | Environment from config |
@@ -221,7 +221,7 @@ Basic credentials are sent over TLS by default. Never put the password in query 
 The Collector validates configured key records using RBAC and ABAC.
 `server_secret` is an independent HMAC key; it is not the at-rest storage key.
 `secret_env` holds only the token secret, so a configured key is presented as
-`lx_{kind}_live_{key_id}_${SECRET_ENV}`.
+`lz_{kind}_live_{key_id}_${SECRET_ENV}`.
 
 ```yaml
 auth:
@@ -312,10 +312,10 @@ auth:
 
 Private grants require `username:password` and a password sourced from a
 secret environment variable. A public DSN uses an opaque, high-entropy
-`lx_pub_...` access ID as its username and no password:
+`lz_pub_...` access ID as its username and no password:
 
 ```text
-loza://lx_pub_<random>@collector.example.com/payments?env=prod
+loza://lz_pub_<random>@collector.example.com/payments?env=prod
 ```
 
 Despite appearing in the username position, a public access ID is a revocable
@@ -371,14 +371,14 @@ X-Auth-Failure-Reason: authentication required
 For local development, either deliberately disable auth or set `allow_local_dev_keys: true` alongside enabled auth. Local keys are rejected by default.
 
 ```bash
-export LOZA_API_KEY="lx_local_dev_mydevtoken"
+export LOZA_API_KEY="lz_local_dev_mydevtoken"
 ```
 
 ```go
 client, _ := loza.New(loza.Config{
     Service:  "test-service",
     Sink:     sink,
-    APIKey:   "lx_local_dev_mydevtoken",
+    APIKey:   "lz_local_dev_mydevtoken",
     Env:      "dev",
     Insecure: true,
 })

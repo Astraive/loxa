@@ -71,7 +71,7 @@ impl std::error::Error for DsnError {}
 /// - Host is required
 /// - Collector path is required
 /// - Private userinfo must contain a non-empty username and password
-/// - Public lx_pub_... userinfo uses an explicitly empty password
+/// - Public lz_pub_... userinfo uses an explicitly empty password
 /// - tls must be "true", "false", or "auto"
 /// - transport must be "http", "otlp", or "grpc"
 /// - Port must be 1-65535 if specified
@@ -121,7 +121,7 @@ pub fn parse(raw: &str) -> Result<LozaDSN, DsnError> {
                 .ok_or_else(|| DsnError("userinfo must be username:password".into()))?;
             if raw_username.is_empty() {
                 return Err(DsnError(
-                    "userinfo requires username:password or lx_pub_...:".into(),
+                    "userinfo requires username:password or lz_pub_...:".into(),
                 ));
             }
             let username = percent_decode_userinfo(raw_username, "username")?;
@@ -130,7 +130,7 @@ pub fn parse(raw: &str) -> Result<LozaDSN, DsnError> {
                 || (password.is_empty() && !is_public_credential_username(&username))
             {
                 return Err(DsnError(
-                    "userinfo requires username:password or lx_pub_...:".into(),
+                    "userinfo requires username:password or lz_pub_...:".into(),
                 ));
             }
             if username.contains(':') || username.chars().any(char::is_whitespace) {
@@ -356,7 +356,7 @@ fn hex_value(byte: u8) -> Option<u8> {
 }
 
 pub fn is_public_credential_username(username: &str) -> bool {
-    const PREFIX: &str = "lx_pub_";
+    const PREFIX: &str = "lz_pub_";
     username.starts_with(PREFIX) && username.len() > PREFIX.len()
 }
 

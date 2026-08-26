@@ -103,16 +103,16 @@ The SDK automatically sets `Authorization: Bearer <key>` headers.
 
 | Config Field | Env Var | Description |
 |---|---|---|
-| `api_key` | `LOZA_API_KEY` | Ingest API key (`lx_sec_live_k_xxx_yyyy`) |
+| `api_key` | `LOZA_API_KEY` | Ingest API key (`lz_sec_live_k_xxx_yyyy`) |
 
 ```python
 import loza
 
 # Production
-loza.configure(loza.production("my-service").with_api_key("lx_sec_live_k_xxx_yyyy"))
+loza.configure(loza.production("my-service").with_api_key("lz_sec_live_k_xxx_yyyy"))
 
 # Local dev
-loza.configure(loza.dev("my-service").with_api_key("lx_local_dev_mytoken"))
+loza.configure(loza.dev("my-service").with_api_key("lz_local_dev_mytoken"))
 ```
 
 See [Security](../../docs/security.md) for key types and RBAC roles.

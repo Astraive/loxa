@@ -110,7 +110,7 @@ describe('mergeFileConfig', () => {
 
   it('accepts a public DSN capability with an intentionally empty password', () => {
     const base = defaultConfig();
-    const capability = 'lx_pub_6DJvd3D0izOaQx3n5BhKqN';
+    const capability = 'lz_pub_6DJvd3D0izOaQx3n5BhKqN';
     const result = mergeFileConfig(base, {
       collector_url: `loza://${capability}:@localhost:9308/public-collector`,
     });

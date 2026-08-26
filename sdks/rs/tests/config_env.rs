@@ -48,7 +48,7 @@ fn remote_plaintext_basic_auth_is_rejected() {
 
 #[test]
 fn credentialed_dsn_configures_scoped_endpoint_and_preserves_api_key_precedence() {
-    let capability = "lx_pub_6DJvd3D0izOaQx3n5BhKqN";
+    let capability = "lz_pub_6DJvd3D0izOaQx3n5BhKqN";
     let logger = loza::New(
         Config::production("checkout")
             .with_dsn(format!(

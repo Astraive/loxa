@@ -25,8 +25,8 @@ def test_collector_base_url_targets_ingest_route(logger_type):
             "private-collector",
         ),
         (
-            "loza://lx_pub_6DJvd3D0izOaQx3n5BhKqN:@collector.example/public-collector",
-            "lx_pub_6DJvd3D0izOaQx3n5BhKqN",
+            "loza://lz_pub_6DJvd3D0izOaQx3n5BhKqN:@collector.example/public-collector",
+            "lz_pub_6DJvd3D0izOaQx3n5BhKqN",
             "",
             "public-collector",
         ),
@@ -48,7 +48,7 @@ def test_api_key_precedes_public_basic_auth() -> None:
     sink = HTTPBatchSink(
         "https://collector.example/collectors/public-collector/events",
         api_key="api-key",
-        username="lx_pub_6DJvd3D0izOaQx3n5BhKqN",
+        username="lz_pub_6DJvd3D0izOaQx3n5BhKqN",
         password="",
     )
 

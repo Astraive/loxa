@@ -12,14 +12,14 @@ import (
 type KeyKind string
 
 const (
-	KeyKindPublic KeyKind = "pub"   // lx_pub_live_kxxx_yyyy
-	KeyKindSecret KeyKind = "sec"   // lx_sec_live_kxxx_yyyy
-	KeyKindLocal  KeyKind = "local" // lx_local_dev_yyyy (dev only)
+	KeyKindPublic KeyKind = "pub"   // lz_pub_live_kxxx_yyyy
+	KeyKindSecret KeyKind = "sec"   // lz_sec_live_kxxx_yyyy
+	KeyKindLocal  KeyKind = "local" // lz_local_dev_yyyy (dev only)
 	KeyKindToken  KeyKind = "token" // opaque Bearer token, stored by HMAC-derived ID
 )
 
 const (
-	publicAccessIDPrefix   = "lx_pub_"
+	publicAccessIDPrefix   = "lz_pub_"
 	minPublicAccessIDToken = 32
 	maxPublicAccessIDToken = 128
 )
@@ -59,13 +59,13 @@ type ParsedKey struct {
 
 // ParseKey parses a LOZA API key into its components.
 //
-// Format: lx_{kind}_{env}_{key_id}_{secret}
+// Format: lz_{kind}_{env}_{key_id}_{secret}
 // key_id is "k" + base64 token (no underscore between k and token).
 // Examples:
 //
-//	lx_sec_live_k2M9aQpXy_7QmVxN8pT4zRbK1sYw
-//	lx_pub_live_kabc12345_xxxxx
-//	lx_local_dev_yyyy
+//	lz_sec_live_k2M9aQpXy_7QmVxN8pT4zRbK1sYw
+//	lz_pub_live_kabc12345_xxxxx
+//	lz_local_dev_yyyy
 func ParseKey(raw string) (*ParsedKey, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -74,11 +74,11 @@ func ParseKey(raw string) (*ParsedKey, error) {
 
 	parts := strings.Split(raw, "_")
 	if len(parts) < 3 {
-		return nil, fmt.Errorf("invalid api key format: expected lx_{kind}_{env}_...")
+		return nil, fmt.Errorf("invalid api key format: expected lz_{kind}_{env}_...")
 	}
 
-	if parts[0] != "lx" {
-		return nil, fmt.Errorf("invalid api key prefix: expected 'lx', got %q", parts[0])
+	if parts[0] != "lz" {
+		return nil, fmt.Errorf("invalid api key prefix: expected 'lz', got %q", parts[0])
 	}
 
 	kind := KeyKind(parts[1])
@@ -104,7 +104,7 @@ func ParseKey(raw string) (*ParsedKey, error) {
 	}
 
 	if kind == KeyKindLocal {
-		// Local keys: lx_local_dev_{secret} (remaining parts form the secret)
+		// Local keys: lz_local_dev_{secret} (remaining parts form the secret)
 		if len(parts) < 4 {
 			return nil, fmt.Errorf("local key missing secret")
 		}
@@ -112,7 +112,7 @@ func ParseKey(raw string) (*ParsedKey, error) {
 		return pk, nil
 	}
 
-	// Public/secret keys: lx_{kind}_{env}_{key_id}_{secret}
+	// Public/secret keys: lz_{kind}_{env}_{key_id}_{secret}
 	// key_id is always a single segment: "k" + base64 token (e.g., "k2M9aQpXy")
 	// secret is everything after key_id
 	if len(parts) < 5 {

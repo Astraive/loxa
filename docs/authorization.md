@@ -122,7 +122,7 @@ auth:
 
 ### Public Key Restrictions
 
-Public keys (`lx_pub_*`) have forced restrictions that cannot be overridden:
+Public keys (`lz_pub_*`) have forced restrictions that cannot be overridden:
 
 - `allow_pii: false` — always
 - `allow_attachments: false` — always
@@ -214,7 +214,7 @@ The same RBAC+ABAC model applies to gRPC endpoints. Keys are passed via gRPC met
 
 ```go
 metadata := metadata.Pairs(
-    "authorization", "Bearer lx_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw",
+    "authorization", "Bearer lz_sec_live_k2M9aQp_7QmVxN8pT4zRbK1sYw",
     "x-loza-service", "checkout-api",
     "x-loza-env", "prod",
 )

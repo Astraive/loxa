@@ -248,11 +248,11 @@
     },
     {
       "name": "public credential DSN",
-      "input": "loza://lx_pub_6DJvd3D0izOaQx3n5BhKqN:@collector.example.com/public-collector?env=prod",
+      "input": "loza://lz_pub_6DJvd3D0izOaQx3n5BhKqN:@collector.example.com/public-collector?env=prod",
       "valid": true,
       "expected": {
         "scheme": "loza",
-        "username": "lx_pub_6DJvd3D0izOaQx3n5BhKqN",
+        "username": "lz_pub_6DJvd3D0izOaQx3n5BhKqN",
         "password": "",
         "host": "collector.example.com",
         "port": 443,

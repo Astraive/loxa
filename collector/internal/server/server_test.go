@@ -378,7 +378,7 @@ func TestTailWebSocketBrowserContract(t *testing.T) {
 		subscriber: make(chan chan []byte, 1),
 		removed:    make(chan struct{}),
 	}
-	credential := "lx_sec_live_ksec1_testsecret"
+	credential := "lz_sec_live_ksec1_testsecret"
 	handler := NewTailWebSocketHandler(HTTPConfig{
 		AuthEnabled: true,
 		AuthHeader:  "X-API-Key",

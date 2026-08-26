@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 pub const CONTRACT_JSON: &str = r#"{
-  \"product_version\": \"0.3.3\",
+  \"product_version\": \"0.3.4\",
   \"spec_version\": \"v1\",
   \"api_version\": \"v1\",
   \"event_version\": \"v1\",
@@ -292,7 +292,7 @@ pub const CONTRACT_JSON: &str = r#"{
   },
   \"fixtures\": {
     \"version\": \"v1\",
-    \"product_version\": \"0.3.3\",
+    \"product_version\": \"0.3.4\",
     \"strict_schema\": \"../schema/event.strict.schema.json\",
     \"loose_schema\": \"../schema/event.loose.schema.json\",
     \"valid\": [

@@ -68,7 +68,7 @@ it('redacts credentials from string and JSON representations', () => {
 });
 
 it('routes and redacts public bearer credentials', () => {
-  const capability = 'lx_pub_6DJvd3D0izOaQx3n5BhKqN';
+  const capability = 'lz_pub_6DJvd3D0izOaQx3n5BhKqN';
   const dsn = parse(`loza://${capability}:@example.com/public-collector`);
   assert.equal(dsn.username, capability);
   assert.equal(dsn.password, '');

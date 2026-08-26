@@ -238,7 +238,7 @@ func TestHTTPBatchSink_BasicAuthAndSafeEndpoint(t *testing.T) {
 }
 
 func TestHTTPBatchSink_PublicBasicAuthUsesEmptyPassword(t *testing.T) {
-	const capability = "lx_pub_6DJvd3D0izOaQx3n5BhKqN"
+	const capability = "lz_pub_6DJvd3D0izOaQx3n5BhKqN"
 	var gotUser, gotPassword, gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotUser, gotPassword, _ = r.BasicAuth()

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/astraive/loza/actions/workflows/sdks-go-ci.yml/badge.svg)](https://github.com/astraive/loza/actions/workflows/sdks-go-ci.yml)
 
-**Status**: 🟢 **STABLE** (v0.3.3) - Production-ready, collector-first stable-v1 SDK
+**Status**: 🟢 **STABLE** (v0.3.4) - Production-ready, collector-first stable-v1 SDK
 
 Full emitter SDK conformance is tracked through `spec/`:
 

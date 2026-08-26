@@ -62,7 +62,7 @@ type middlewareConfig struct {
 	rateLimiter       *KeyRateLimiter
 }
 
-// WithAllowLocalDevKeys controls whether lx_local_dev_* keys are accepted.
+// WithAllowLocalDevKeys controls whether lz_local_dev_* keys are accepted.
 // Default is false (local dev keys rejected), which is safe for production.
 func WithAllowLocalDevKeys(v bool) MiddlewareOption {
 	return func(c *middlewareConfig) { c.allowLocalDevKeys = v }

@@ -151,7 +151,7 @@ function resolveConfig(input: ConnectionConfig): ResolvedConfig {
   if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(collector)) {
     throw new QueryError('invalid LQL connection configuration: collector slug is required', ErrorCategory.InvalidConfiguration);
   }
-  if (username && !password && !username.startsWith('lx_pub_')) {
+  if (username && !password && !username.startsWith('lz_pub_')) {
     throw new QueryError('invalid LQL connection configuration: basic username requires a password', ErrorCategory.InvalidConfiguration);
   }
   if (username && !apiKey && endpointURL.protocol === 'http:' && !isLocalhost(endpointURL.hostname)) {
@@ -180,7 +180,7 @@ function parseDSN(raw: string): { endpoint: string; collector: string; username:
   const port = parsed.port || (isLocalhost(parsed.hostname) ? '9308' : tls ? '443' : '80');
   const username = decodeURIComponent(parsed.username);
   const password = decodeURIComponent(parsed.password);
-  if (username && !password && !username.startsWith('lx_pub_')) throw new QueryError('invalid LQL connection configuration: invalid DSN credentials', ErrorCategory.InvalidConfiguration);
+  if (username && !password && !username.startsWith('lz_pub_')) throw new QueryError('invalid LQL connection configuration: invalid DSN credentials', ErrorCategory.InvalidConfiguration);
   return {
     endpoint: `${tls ? 'https' : 'http'}://${parsed.hostname}:${port}`,
     collector, username, password,

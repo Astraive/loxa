@@ -103,7 +103,7 @@ CORTEX_SERVER_PORT=9312
 LOZA_ENVIRONMENT=production
 
 # Secrets
-LOZA_API_KEY=lx_sec_live_xxx
+LOZA_API_KEY=lz_sec_live_xxx
 # Optional Basic-auth form; percent-encode reserved password characters
 LOZA_DSN='loza://kingest:s%40cret%3Avalue@collector.example.com/my-app?env=prod'
 LOZA_STORAGE_ENCRYPTION_KEY=xxx

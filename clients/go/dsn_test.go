@@ -53,9 +53,9 @@ func TestParseLozaDSNResolvesDefaultsAndOverrides(t *testing.T) {
 		},
 		{
 			name: "public key with empty password",
-			dsn: "loza://lx_pub_key:@example.com/demo?tls=false&transport=grpc&env=prod&service=api",
+			dsn: "loza://lz_pub_key:@example.com/demo?tls=false&transport=grpc&env=prod&service=api",
 			baseURL: "http://example.com:80",
-			username: "lx_pub_key", env: "prod", service: "api",
+			username: "lz_pub_key", env: "prod", service: "api",
 		},
 		{
 			name: "localhost auto port",
@@ -155,12 +155,12 @@ func TestNewAcceptsPublicBasicUserAndLocalHTTP(t *testing.T) {
 	client, err := New(ConnectionConfig{
 		Endpoint: "http://127.0.0.1:9308/",
 		Collector: "demo_1",
-		Username: "lx_pub_key",
+		Username: "lz_pub_key",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if client.endpoint != "http://127.0.0.1:9308" || client.username != "lx_pub_key" || client.password != "" {
+	if client.endpoint != "http://127.0.0.1:9308" || client.username != "lz_pub_key" || client.password != "" {
 		t.Fatalf("client = %#v", client)
 	}
 }

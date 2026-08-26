@@ -13,7 +13,7 @@
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT">
   </a>
   <a href="https://github.com/astraive/loza/releases">
-    <img src="https://img.shields.io/badge/version-v0.3.3-green.svg" alt="Version">
+    <img src="https://img.shields.io/badge/version-v0.3.4-green.svg" alt="Version">
   </a>
   <br>
   <a href="https://github.com/astraive/loza/actions/workflows/collector-ci.yml">
@@ -233,7 +233,7 @@ export COLLECTOR_AUTH_SERVER_SECRET="$(openssl rand -hex 32)"
 export COLLECTOR_INGEST_KEY_SECRET="$(openssl rand -hex 24)"
 export COLLECTOR_ADMIN_KEY_SECRET="$(openssl rand -hex 24)"
 export LOZA_STORAGE_ENCRYPTION_KEY="$(openssl rand -hex 32)"
-export LOZA_API_KEY="lx_sec_live_kingest_${COLLECTOR_INGEST_KEY_SECRET}"
+export LOZA_API_KEY="lz_sec_live_kingest_${COLLECTOR_INGEST_KEY_SECRET}"
 go run ./cmd/loza-collector run -c configs/loza.yaml
 ```
 
@@ -247,7 +247,7 @@ curl -X POST http://127.0.0.1:9308/events \
   -d '[{"event":"checkout.request","service":"checkout"}]'
 ```
 
-The admin token uses `lx_sec_live_kadmin_${COLLECTOR_ADMIN_KEY_SECRET}` and is intended for query and administrative routes.
+The admin token uses `lz_sec_live_kadmin_${COLLECTOR_ADMIN_KEY_SECRET}` and is intended for query and administrative routes.
 
 ### 2. Emit an Event from an SDK
 
@@ -418,7 +418,7 @@ flowchart TD
 
 | Language                | Command                                          |
 | ----------------------- | ------------------------------------------------ |
-| Go                      | `go get github.com/astraive/loza/sdks/go@v0.3.3` |
+| Go                      | `go get github.com/astraive/loza/sdks/go@v0.3.4` |
 | Python                  | `pip install loza`                               |
 | Rust                    | `cargo add loza`                                 |
 | JavaScript / TypeScript | `npm install @astraive/loza`               |

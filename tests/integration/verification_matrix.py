@@ -257,8 +257,8 @@ def _start_collector(
         results,
         CollectorRuntime(
             base_url=f"http://127.0.0.1:{port}",
-            ingest_token=f"lx_sec_live_kingest_{ingest_secret}",
-            admin_token=f"lx_sec_live_kadmin_{admin_secret}",
+            ingest_token=f"lz_sec_live_kingest_{ingest_secret}",
+            admin_token=f"lz_sec_live_kadmin_{admin_secret}",
         ),
     )
 

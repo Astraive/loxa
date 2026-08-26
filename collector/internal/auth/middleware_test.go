@@ -93,7 +93,7 @@ func TestMiddleware_ValidSecretKey(t *testing.T) {
 	}))
 
 	req := httptest.NewRequest("POST", "/events", nil)
-	req.Header.Set("Authorization", "Bearer lx_sec_live_ksec1_testsecret")
+	req.Header.Set("Authorization", "Bearer lz_sec_live_ksec1_testsecret")
 	req.Header.Set("X-Loza-Env", "prod")
 	req.Header.Set("X-Loza-Service", "checkout-api")
 	rec := httptest.NewRecorder()
@@ -121,7 +121,7 @@ func TestMiddleware_WebSocketSubprotocolCredentialAndScope(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	credential := "lx_sec_live_ksec1_testsecret"
+	credential := "lz_sec_live_ksec1_testsecret"
 	protocol := WebSocketAuthProtocolPrefix + base64.RawURLEncoding.EncodeToString([]byte(credential))
 	req := httptest.NewRequest("GET", "/collectors/orders/ws/tail?environment=prod&service=checkout-api", nil)
 	req.Header.Set("Connection", "Upgrade")
@@ -241,7 +241,7 @@ func TestMiddleware_ValidPublicKey(t *testing.T) {
 	}))
 
 	req := httptest.NewRequest("POST", "/events", nil)
-	req.Header.Set("Authorization", "Bearer lx_pub_live_kpub1_pubsecret")
+	req.Header.Set("Authorization", "Bearer lz_pub_live_kpub1_pubsecret")
 	req.Header.Set("X-Loza-Env", "prod")
 	req.Header.Set("Origin", "https://app.example.com") // must match AllowedOrigins in test store
 	rec := httptest.NewRecorder()
@@ -295,7 +295,7 @@ func TestMiddleware_InvalidKey(t *testing.T) {
 	}))
 
 	req := httptest.NewRequest("POST", "/events", nil)
-	req.Header.Set("Authorization", "Bearer lx_sec_live_k_nonexistent_secret")
+	req.Header.Set("Authorization", "Bearer lz_sec_live_k_nonexistent_secret")
 	rec := httptest.NewRecorder()
 
 	handler.ServeHTTP(rec, req)
@@ -317,7 +317,7 @@ func TestMiddleware_RevokedKey(t *testing.T) {
 	}))
 
 	req := httptest.NewRequest("POST", "/events", nil)
-	req.Header.Set("Authorization", "Bearer lx_sec_live_krevoked_testsecret")
+	req.Header.Set("Authorization", "Bearer lz_sec_live_krevoked_testsecret")
 	rec := httptest.NewRecorder()
 
 	handler.ServeHTTP(rec, req)
@@ -340,7 +340,7 @@ func TestMiddleware_ExpiredKey(t *testing.T) {
 	}))
 
 	req := httptest.NewRequest("POST", "/events", nil)
-	req.Header.Set("Authorization", "Bearer lx_sec_live_kexpired_testsecret")
+	req.Header.Set("Authorization", "Bearer lz_sec_live_kexpired_testsecret")
 	rec := httptest.NewRecorder()
 
 	handler.ServeHTTP(rec, req)
@@ -363,7 +363,7 @@ func TestMiddleware_WrongEnv(t *testing.T) {
 	}))
 
 	req := httptest.NewRequest("POST", "/events", nil)
-	req.Header.Set("Authorization", "Bearer lx_sec_live_ksec1_testsecret")
+	req.Header.Set("Authorization", "Bearer lz_sec_live_ksec1_testsecret")
 	req.Header.Set("X-Loza-Env", "dev") // not in allowed_envs
 	rec := httptest.NewRecorder()
 
@@ -387,7 +387,7 @@ func TestMiddleware_WrongService(t *testing.T) {
 	}))
 
 	req := httptest.NewRequest("POST", "/events", nil)
-	req.Header.Set("Authorization", "Bearer lx_sec_live_ksec1_testsecret")
+	req.Header.Set("Authorization", "Bearer lz_sec_live_ksec1_testsecret")
 	req.Header.Set("X-Loza-Env", "prod")
 	req.Header.Set("X-Loza-Service", "wrong-service") // not in allowed_services
 	rec := httptest.NewRecorder()
