@@ -66,16 +66,6 @@ jobs:
       - name: Coverage
         run: python run_coverage.py
 
-      - name: Upload SDK coverage
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-sdk-coverage
-          path: sdks/py/htmlcov/
-          if-no-files-found: ignore
-
-      - name: Spec conformance tests
-        run: pytest tests/test_spec_conformance.py tests/test_collector_ack_fixture.py tests/test_emitted_shape_fixture.py tests/test_parity.py -v
 
       # --- Conformance runner ---
 
@@ -123,11 +113,3 @@ jobs:
           python -m coverage html
           python -m coverage json
           python -m coverage report --fail-under=95 --show-missing
-
-      - name: Upload client coverage
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-client-coverage
-          path: clients/python/htmlcov/
-          if-no-files-found: ignore

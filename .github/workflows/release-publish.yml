@@ -27,8 +27,23 @@ jobs:
     name: Build publish plan
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.plan.outputs.matrix }}
       has_changes: ${{ steps.plan.outputs.has_changes }}
+      has_docker: ${{ steps.plan.outputs.has_docker }}
+      has_cli: ${{ steps.plan.outputs.has_cli }}
+      has_github_release: ${{ steps.plan.outputs.has_github_release }}
+      has_js: ${{ steps.plan.outputs.has_js }}
+      has_py: ${{ steps.plan.outputs.has_py }}
+      has_rs: ${{ steps.plan.outputs.has_rs }}
+      has_go: ${{ steps.plan.outputs.has_go }}
+      has_spec: ${{ steps.plan.outputs.has_spec }}
+      docker_matrix: ${{ steps.plan.outputs.docker_matrix }}
+      cli_matrix: ${{ steps.plan.outputs.cli_matrix }}
+      github_release_matrix: ${{ steps.plan.outputs.github_release_matrix }}
+      js_matrix: ${{ steps.plan.outputs.js_matrix }}
+      py_matrix: ${{ steps.plan.outputs.py_matrix }}
+      rs_matrix: ${{ steps.plan.outputs.rs_matrix }}
+      go_matrix: ${{ steps.plan.outputs.go_matrix }}
+      spec_matrix: ${{ steps.plan.outputs.spec_matrix }}
     steps:
       - name: Require main for publishing
         if: ${{ inputs.dry_run != true && github.ref != 'refs/heads/main' }}
@@ -53,11 +68,16 @@ jobs:
         shell: bash
         run: |
           python - <<'PY' >> "$GITHUB_OUTPUT"
-          import json, os, re, sys, yaml
+          import json
+          import re
+          import sys
+          import yaml
+
           version = "${{ inputs.version }}"
           selected = [item.strip() for item in "${{ inputs.components }}".split(",") if item.strip()]
           if not re.match(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$", version):
               sys.exit("manual publish version must be X.Y.Z without leading v")
+
           registry = yaml.safe_load(open("release.yaml", encoding="utf-8"))["components"]
           include = []
           for component in selected:
@@ -66,18 +86,37 @@ jobs:
               manifest = yaml.safe_load(open(registry[component], encoding="utf-8"))
               if str(manifest["version"]) != version:
                   sys.exit(f"{component} manifest version {manifest['version']} does not match requested {version}")
-              include.append({"component": component, "manifest": registry[component], "new_version": version, "kind": manifest.get("kind"), "language": manifest.get("language"), "changed": True})
-          print("matrix=" + json.dumps({"include": include}, separators=(",", ":")))
+              include.append({
+                  "component": component,
+                  "manifest": registry[component],
+                  "new_version": version,
+                  "kind": manifest.get("kind"),
+                  "language": manifest.get("language"),
+              })
+
+          groups = {
+              "docker": [item for item in include if item["kind"] == "docker"],
+              "cli": [item for item in include if item["kind"] == "cli"],
+              "github_release": [item for item in include if item["component"] == "loza"],
+              "js": [item for item in include if item["component"] == "sdk-js"],
+              "py": [item for item in include if item["component"] == "sdk-py"],
+              "rs": [item for item in include if item["component"] == "sdk-rs"],
+              "go": [item for item in include if item["component"] == "sdk-go"],
+              "spec": [item for item in include if item["component"] == "spec"],
+          }
           print("has_changes=" + str(bool(include)).lower())
+          for name, entries in groups.items():
+              print(f"has_{name}=" + str(bool(entries)).lower())
+              print(f"{name}_matrix=" + json.dumps({"include": entries}, separators=(",", ":")))
           PY
 
   publish-docker:
     name: Publish Docker component
     needs: plan
-    if: needs.plan.outputs.has_changes == 'true'
+    if: needs.plan.outputs.has_docker == 'true'
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.docker_matrix) }}
     uses: ./.github/workflows/publish-docker.yml
     with:
       component: ${{ matrix.component }}
@@ -90,11 +129,24 @@ jobs:
   publish-github-release:
     name: Publish umbrella GitHub Release
     needs: plan
-    if: needs.plan.outputs.has_changes == 'true'
+    if: needs.plan.outputs.has_github_release == 'true'
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.github_release_matrix) }}
     uses: ./.github/workflows/publish-github-release.yml
+    with:
+      component: ${{ matrix.component }}
+      version: ${{ matrix.new_version }}
+      dry_run: ${{ inputs.dry_run }}
+
+  verify-go-modules:
+    name: Verify Go module tags
+    needs: plan
+    if: needs.plan.outputs.has_spec == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.spec_matrix) }}
+    uses: ./.github/workflows/verify-go-modules.yml
     with:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}
@@ -102,11 +154,11 @@ jobs:
 
   publish-cli:
     name: Publish CLI
-    needs: [plan, publish-github-release, verify-go-modules]
-    if: ${{ always() && needs.plan.outputs.has_changes == 'true' && (needs.publish-github-release.result == 'success' || needs.publish-github-release.result == 'skipped') && (needs.verify-go-modules.result == 'success' || needs.verify-go-modules.result == 'skipped') }}
+    needs: [plan, verify-go-modules]
+    if: ${{ always() && needs.plan.outputs.has_cli == 'true' && (needs.verify-go-modules.result == 'success' || needs.verify-go-modules.result == 'skipped') }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.cli_matrix) }}
     uses: ./.github/workflows/publish-cli.yml
     with:
       component: ${{ matrix.component }}
@@ -116,10 +168,10 @@ jobs:
   publish-js:
     name: Publish JS SDK
     needs: plan
-    if: needs.plan.outputs.has_changes == 'true'
+    if: needs.plan.outputs.has_js == 'true'
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.js_matrix) }}
     uses: ./.github/workflows/npm-publish.yml
     with:
       component: ${{ matrix.component }}
@@ -131,10 +183,10 @@ jobs:
   publish-py:
     name: Publish Python SDK
     needs: plan
-    if: needs.plan.outputs.has_changes == 'true'
+    if: needs.plan.outputs.has_py == 'true'
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.py_matrix) }}
     uses: ./.github/workflows/pypip-publish.yml
     with:
       component: ${{ matrix.component }}
@@ -146,10 +198,10 @@ jobs:
   publish-rs:
     name: Publish Rust crate
     needs: plan
-    if: needs.plan.outputs.has_changes == 'true'
+    if: needs.plan.outputs.has_rs == 'true'
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.rs_matrix) }}
     uses: ./.github/workflows/cargo-publish.yml
     with:
       component: ${{ matrix.component }}
@@ -159,24 +211,11 @@ jobs:
   publish-go:
     name: Publish Go SDK
     needs: plan
-    if: needs.plan.outputs.has_changes == 'true'
+    if: needs.plan.outputs.has_go == 'true'
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.go_matrix) }}
     uses: ./.github/workflows/publish-go.yml
-    with:
-      component: ${{ matrix.component }}
-      version: ${{ matrix.new_version }}
-      dry_run: ${{ inputs.dry_run }}
-
-  verify-go-modules:
-    name: Verify Go module tags
-    needs: plan
-    if: needs.plan.outputs.has_changes == 'true'
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
-    uses: ./.github/workflows/verify-go-modules.yml
     with:
       component: ${{ matrix.component }}
       version: ${{ matrix.new_version }}

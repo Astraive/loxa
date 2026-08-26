@@ -63,21 +63,6 @@ jobs:
         with:
           go-version-file: collector/go.mod
 
-      - name: Install protoc
-        run: |
-          PROTOC_VERSION=34.1
-          curl -fsSL "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip" -o /tmp/protoc.zip
-          sudo unzip -o /tmp/protoc.zip -d /usr/local bin/protoc 'include/*'
-          rm /tmp/protoc.zip
-
-      - name: Install Go protoc plugins
-        run: |
-          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
-          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.2
-
-      - name: Generate protobuf code
-        working-directory: .
-        run: make proto
 
       - name: Run unit tests
         run: go test ./...
@@ -117,21 +102,6 @@ jobs:
         with:
           go-version-file: collector/go.mod
 
-      - name: Install protoc
-        run: |
-          PROTOC_VERSION=34.1
-          curl -fsSL "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip" -o /tmp/protoc.zip
-          sudo unzip -o /tmp/protoc.zip -d /usr/local bin/protoc 'include/*'
-          rm /tmp/protoc.zip
-
-      - name: Install Go protoc plugins
-        run: |
-          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
-          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.2
-
-      - name: Generate protobuf code
-        working-directory: .
-        run: make proto
 
       - name: Run queue and Redis integration tests
         run: go test -tags=integration -run TestCollectorIntegration_ ./cmd/loza-collector
