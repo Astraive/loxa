@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
-
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"reflect"
+	"time"
 )
 
 // Metadata is safe to expose through the Collector API.
@@ -89,6 +89,7 @@ func QueryPostgresRows(rows pgx.Rows, limit int) (Result, error) {
 
 type clickHouseRows interface {
 	Columns() []string
+	ColumnTypes() []driver.ColumnType
 	Next() bool
 	Scan(...any) error
 	Err() error
@@ -96,7 +97,38 @@ type clickHouseRows interface {
 }
 
 func QueryClickHouseRows(rows clickHouseRows, limit int) (Result, error) {
-	return collectRows(rows.Columns(), rows.Next, rows.Scan, rows.Err, func() { _ = rows.Close() }, limit)
+	defer func() { _ = rows.Close() }()
+	columns := rows.Columns()
+	types := rows.ColumnTypes()
+	result := Result{Columns: append([]string(nil), columns...), Rows: make([][]any, 0)}
+	for rows.Next() {
+		pointers := make([]any, len(columns))
+		for i := range columns {
+			scanType := reflect.TypeOf("")
+			if i < len(types) && types[i].ScanType() != nil {
+				scanType = types[i].ScanType()
+			}
+			pointers[i] = reflect.New(scanType).Interface()
+		}
+		if err := rows.Scan(pointers...); err != nil {
+			return Result{}, err
+		}
+		values := make([]any, len(pointers))
+		for i, pointer := range pointers {
+			value := reflect.ValueOf(pointer)
+			if value.IsValid() && value.Kind() == reflect.Ptr && !value.IsNil() {
+				values[i] = value.Elem().Interface()
+			}
+		}
+		result.Rows = append(result.Rows, values)
+		if limit > 0 && len(result.Rows) >= limit {
+			break
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return Result{}, err
+	}
+	return result, nil
 }
 
 type SQL struct {
