@@ -12,6 +12,7 @@ import (
 
 	"github.com/astraive/loza/collector/internal/auth"
 	collectorconfig "github.com/astraive/loza/collector/internal/config"
+	"github.com/astraive/loza/collector/internal/database"
 	collectorevent "github.com/astraive/loza/collector/internal/event"
 	"github.com/astraive/loza/collector/internal/eventbus"
 	processing "github.com/astraive/loza/collector/internal/processing"
@@ -77,6 +78,29 @@ type collectorAuthToken struct {
 	maxEventsPerMinute   int
 }
 
+type databaseConnectionConfig struct {
+	name              string
+	backend           string
+	enabled           bool
+	path              string
+	driver            string
+	host              string
+	port              int
+	hosts             []string
+	database          string
+	username          string
+	password          string
+	sslMode           string
+	tls               bool
+	table             string
+	rawColumn         string
+	storeRaw          bool
+	schema            map[string]string
+	columnTypes       map[string]string
+	connectionTimeout time.Duration
+	queryTimeout      time.Duration
+}
+
 type collectorConfig struct {
 	configFile              string
 	configArgs              []string
@@ -113,6 +137,7 @@ type collectorConfig struct {
 	duckDBStoreRaw          bool
 	duckDBCheckpointOnStop  bool
 	duckDBMaxOpenConns      int
+	readyPath               string
 	duckDBMaxIdleConns      int
 	duckDBBatchSize         int
 	duckDBFlushInterval     time.Duration
@@ -131,10 +156,11 @@ type collectorConfig struct {
 	duckDBColumnTypes       map[string]string
 	ingestPath              string
 	healthPath              string
-	readyPath               string
 	metricsPath             string
 	storagePrimary          string
+	storageConnection       string
 	storageEncryptionKey    string
+	databaseConnections     []databaseConnectionConfig
 	rateLimitEnabled        bool
 	rateLimitRPS            float64
 	rateLimitBurst          int
@@ -286,48 +312,51 @@ type collectorMetrics struct {
 }
 
 type collectorState struct {
-	cfg               collectorConfig
-	startedAt         time.Time
-	ingestSink        collectorevent.Sink
-	hybridQueueSink   collectorevent.Sink
-	secondarySinks    []namedSink
-	fallbackSink      *namedSink
-	ready             atomic.Bool
-	sinkHealthy       atomic.Bool
-	spoolHealthy      atomic.Bool
-	diskHealthy       atomic.Bool
-	rateLimiter       *rate.Limiter
-	metrics           collectorMetrics
-	rng               *rand.Rand
-	spoolFile         *os.File
-	spoolPosFile      string
-	spoolBadFile      string
-	spoolProcessedPos int64
-	spoolMu           sync.Mutex
-	deliveryQueue     chan spoolDelivery
-	deliverySpace     chan struct{}
-	deliveryWG        sync.WaitGroup
-	metricsInit       sync.Once
-	metricsHTTP       http.Handler
-	dedupeMu          sync.Mutex
-	dedupeSeenAt      map[string]time.Time
-	dedupeStore       dedupeStore
-	tailMu            sync.Mutex
-	tailSubscribers   map[chan []byte]struct{}
-	processorMu       sync.RWMutex
-	processor         *processing.Processor
-	cortexBridge      *cortexBridgeClient
-	queryDB           *sql.DB
-	lqlCompiler       LQLCompiler
-	reliabilityCtx    context.Context
-	reliabilityCancel context.CancelFunc
-	retentionStop     chan struct{}
-	closeOnce         sync.Once
-	eventBus          eventbus.Bus
-	keyStore          *memoryKeyStore
-	keyCache          *auth.MemoryKeyCache
-	keyRateLimiter    *auth.KeyRateLimiter
-	serverSecret      []byte
+	cfg                 collectorConfig
+	startedAt           time.Time
+	ingestSink          collectorevent.Sink
+	hybridQueueSink     collectorevent.Sink
+	secondarySinks      []namedSink
+	fallbackSink        *namedSink
+	ready               atomic.Bool
+	sinkHealthy         atomic.Bool
+	spoolHealthy        atomic.Bool
+	diskHealthy         atomic.Bool
+	rateLimiter         *rate.Limiter
+	metrics             collectorMetrics
+	rng                 *rand.Rand
+	spoolFile           *os.File
+	spoolPosFile        string
+	spoolBadFile        string
+	spoolProcessedPos   int64
+	spoolMu             sync.Mutex
+	deliveryQueue       chan spoolDelivery
+	deliverySpace       chan struct{}
+	deliveryWG          sync.WaitGroup
+	metricsInit         sync.Once
+	metricsHTTP         http.Handler
+	dedupeMu            sync.Mutex
+	dedupeSeenAt        map[string]time.Time
+	dedupeStore         dedupeStore
+	tailMu              sync.Mutex
+	tailSubscribers     map[chan []byte]struct{}
+	processorMu         sync.RWMutex
+	processor           *processing.Processor
+	cortexBridge        *cortexBridgeClient
+	queryDB             *sql.DB
+	queryConnection     database.Connection
+	databaseConnections map[string]database.Connection
+	databaseMetadata    map[string]database.Metadata
+	lqlCompiler         LQLCompiler
+	reliabilityCtx      context.Context
+	reliabilityCancel   context.CancelFunc
+	retentionStop       chan struct{}
+	closeOnce           sync.Once
+	eventBus            eventbus.Bus
+	keyStore            *memoryKeyStore
+	keyCache            *auth.MemoryKeyCache
+	keyRateLimiter      *auth.KeyRateLimiter
+	serverSecret        []byte
 }
 
 func (c *collectorConfig) buildEventBusConfig() eventbus.Config {

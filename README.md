@@ -13,7 +13,7 @@
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT">
   </a>
   <a href="https://github.com/astraive/loza/releases">
-    <img src="https://img.shields.io/badge/version-v0.3.4-green.svg" alt="Version">
+    <img src="https://img.shields.io/badge/version-v0.4.0-green.svg" alt="Version">
   </a>
   <br>
   <a href="https://github.com/astraive/loza/actions/workflows/collector-ci.yml">
@@ -418,7 +418,7 @@ flowchart TD
 
 | Language                | Command                                          |
 | ----------------------- | ------------------------------------------------ |
-| Go                      | `go get github.com/astraive/loza/sdks/go@v0.3.4` |
+| Go                      | `go get github.com/astraive/loza/sdks/go@v0.4.0` |
 | Python                  | `pip install loza`                               |
 | Rust                    | `cargo add loza`                                 |
 | JavaScript / TypeScript | `npm install @astraive/loza`               |

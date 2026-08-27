@@ -61,7 +61,16 @@ func (h *routeTestHandlers) HandleDLQShow(w http.ResponseWriter, r *http.Request
 func (h *routeTestHandlers) HandleDLQReplay(w http.ResponseWriter, r *http.Request) { h.handle(w, r) }
 func (h *routeTestHandlers) HandleDLQDelete(w http.ResponseWriter, r *http.Request) { h.handle(w, r) }
 func (h *routeTestHandlers) HandleTail(w http.ResponseWriter, r *http.Request)      { h.handle(w, r) }
-func (h *routeTestHandlers) HandleReplay(w http.ResponseWriter, r *http.Request)    { h.handle(w, r) }
+func (h *routeTestHandlers) HandleDatabaseConnections(w http.ResponseWriter, r *http.Request) {
+	h.handle(w, r)
+}
+func (h *routeTestHandlers) HandleDatabaseConnectionTest(w http.ResponseWriter, r *http.Request) {
+	h.handle(w, r)
+}
+func (h *routeTestHandlers) HandleDatabaseQuery(w http.ResponseWriter, r *http.Request) {
+	h.handle(w, r)
+}
+func (h *routeTestHandlers) HandleReplay(w http.ResponseWriter, r *http.Request) { h.handle(w, r) }
 
 func TestBuildMuxCollectorScopedAuthorization(t *testing.T) {
 	handlers := &routeTestHandlers{}

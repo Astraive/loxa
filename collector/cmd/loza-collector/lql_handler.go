@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/astraive/loza/collector/internal/database"
 	publichttp "github.com/astraive/loza/collector/server/http"
 	"github.com/rs/zerolog/log"
 )
@@ -26,6 +26,7 @@ type QueryValue struct {
 // LQLRequest is the source-oriented body for POST /lql/query.
 type LQLRequest struct {
 	Query      string                `json:"query"`
+	Connection string                `json:"connection,omitempty"`
 	Parameters map[string]QueryValue `json:"parameters,omitempty"`
 	Limit      int                   `json:"limit,omitempty"`
 }
@@ -132,128 +133,79 @@ func (s *collectorState) HandleLQLQuery(w http.ResponseWriter, r *http.Request) 
 	}
 	if req.Limit <= 0 || req.Limit > 1000 {
 		req.Limit = 1000
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
-	if s.lqlCompiler == nil {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "lql_compiler_unavailable"})
-		return
-	}
-	plan, err := s.lqlCompiler.Compile(ctx, LQLCompileRequest{
-		Source:     query,
-		Parameters: req.Parameters,
-		Limit:      req.Limit,
-		Target:     "duckdb",
-		Scope: LQLScope{
-			Collector:   scope.Name,
-			Environment: scope.Environment,
-		},
-	})
-	if err != nil {
-		var compileErr *LQLCompileError
-		if errors.As(err, &compileErr) && !compileErr.Unavailable {
-			writeJSON(w, http.StatusBadRequest, map[string]any{
-				"error":       "lql_compile_failed",
-				"diagnostics": compileErr.Diagnostics,
-			})
-		} else {
-			log.Error().Err(err).Str("request_id", requestID).Msg("lql compiler unavailable")
-			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "lql_compiler_unavailable"})
-		}
-		return
-	}
-	if strings.TrimSpace(plan.SQL) == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]any{
-			"error": "lql_compile_failed",
-			"diagnostics": []LQLDiagnostic{{
-				Code:     "empty_plan",
-				Severity: "error",
-				Message:  "compiler returned an empty parameterized plan",
-			}},
-		})
-		return
-	}
-
-	db := s.queryDB
-	var closeDB func()
-	if db == nil {
-		var err error
-		db, err = sql.Open(s.cfg.duckDBDriver, s.cfg.duckDBPath)
+		connection, queryTimeout, err := s.databaseConnection(req.Connection)
 		if err != nil {
-			log.Error().Err(err).Str("request_id", requestID).Msg("lql query db open failed")
-			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_unavailable", "request_id": requestID})
+			writeJSON(w, http.StatusNotFound, map[string]any{"error": "connection_not_found"})
 			return
 		}
-		closeDB = func() { _ = db.Close() }
-	}
-	if closeDB != nil {
-		defer closeDB()
-	}
-
-	conn, err := db.Conn(ctx)
-	if err != nil {
-		log.Error().Err(err).Str("request_id", requestID).Msg("lql query conn acquire failed")
-		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_unavailable", "request_id": requestID})
-		return
-	}
-	defer conn.Close()
-
-	// Disable external access to block read_csv, read_json, etc.
-	if _, err := conn.ExecContext(ctx, "SET enable_external_access=false"); err != nil {
-		log.Error().Err(err).Str("request_id", requestID).Msg("failed to disable external access in DuckDB")
-		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "query_safety_check_failed", "request_id": requestID})
-		return
-	}
-
-	start := time.Now()
-	rows, err := conn.QueryContext(ctx, plan.SQL, plan.Args...)
-	if err != nil {
-		log.Error().Err(err).Str("request_id", requestID).Msg("lql query failed")
-		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "query_failed", "request_id": requestID})
-		return
-	}
-	defer rows.Close()
-
-	columns, err := rows.Columns()
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "columns_error"})
-		return
-	}
-	result := make([]map[string]any, 0)
-	for rows.Next() {
-		values := make([]any, len(columns))
-		valuePtrs := make([]any, len(columns))
-		for i := range values {
-			valuePtrs[i] = &values[i]
-		}
-		if err := rows.Scan(valuePtrs...); err != nil {
-			log.Error().Err(err).Str("request_id", requestID).Msg("lql query scan failed")
-			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "query_failed", "request_id": requestID})
+		ctx, cancel := database.BoundedContext(r.Context(), queryTimeout)
+		defer cancel()
+		if s.lqlCompiler == nil {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "lql_compiler_unavailable"})
 			return
 		}
-		row := make(map[string]any, len(columns))
-		for i, col := range columns {
-			if b, ok := values[i].([]byte); ok {
-				row[col] = string(b)
+		plan, err := s.lqlCompiler.Compile(ctx, LQLCompileRequest{
+			Source:     query,
+			Parameters: req.Parameters,
+			Limit:      req.Limit,
+			Target:     connection.Backend(),
+			Scope: LQLScope{
+				Collector:   scope.Name,
+				Environment: scope.Environment,
+			},
+		})
+		if err != nil {
+			var compileErr *LQLCompileError
+			if errors.As(err, &compileErr) && !compileErr.Unavailable {
+				writeJSON(w, http.StatusBadRequest, map[string]any{
+					"error":       "lql_compile_failed",
+					"diagnostics": compileErr.Diagnostics,
+				})
 			} else {
-				row[col] = values[i]
+				log.Error().Err(err).Str("request_id", requestID).Msg("lql compiler unavailable")
+				writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "lql_compiler_unavailable"})
 			}
+			return
 		}
-		result = append(result, row)
-		if len(result) >= req.Limit {
-			break
+		if strings.TrimSpace(plan.SQL) == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]any{
+				"error": "lql_compile_failed",
+				"diagnostics": []LQLDiagnostic{{
+					Code:     "empty_plan",
+					Severity: "error",
+					Message:  "compiler returned an empty parameterized plan",
+				}},
+			})
+			return
 		}
+		start := time.Now()
+		queryResult, err := connection.Query(ctx, plan.SQL, plan.Args...)
+		if err != nil {
+			log.Error().Err(err).Str("request_id", requestID).Msg("lql query failed")
+			writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "query_failed", "request_id": requestID})
+			return
+		}
+		if len(queryResult.Rows) > req.Limit {
+			queryResult.Rows = queryResult.Rows[:req.Limit]
+		}
+		result := make([]map[string]any, 0, len(queryResult.Rows))
+		for _, values := range queryResult.Rows {
+			row := make(map[string]any, len(queryResult.Columns))
+			for i, column := range queryResult.Columns {
+				if i < len(values) {
+					row[column] = values[i]
+				}
+			}
+			result = append(result, row)
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"connection":  connection.Metadata().Name,
+			"backend":     connection.Backend(),
+			"columns":     queryResult.Columns,
+			"rows":        result,
+			"duration_ms": time.Since(start).Milliseconds(),
+			"row_count":   len(result),
+		})
+
 	}
-	if err := rows.Err(); err != nil {
-		log.Error().Err(err).Str("request_id", requestID).Msg("lql query rows iteration failed")
-		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "query_failed", "request_id": requestID})
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{
-		"columns":     columns,
-		"rows":        result,
-		"duration_ms": time.Since(start).Milliseconds(),
-		"row_count":   len(result),
-	})
 }

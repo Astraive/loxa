@@ -47,6 +47,9 @@ type PublicHandlerSet interface {
 	HandleDLQDelete(http.ResponseWriter, *http.Request)
 	HandleTail(http.ResponseWriter, *http.Request)
 	HandleReplay(http.ResponseWriter, *http.Request)
+	HandleDatabaseConnections(http.ResponseWriter, *http.Request)
+	HandleDatabaseConnectionTest(http.ResponseWriter, *http.Request)
+	HandleDatabaseQuery(http.ResponseWriter, *http.Request)
 }
 
 // RouteProtector wraps an http.Handler with a permission check.
@@ -181,6 +184,9 @@ func BuildMux(ingestPath, healthPath, readyPath, metricsPath string, metricsEnab
 		"events:read",
 		"events:read",
 	)
+	dataRoute("GET", "/database/connections", http.HandlerFunc(handlers.HandleDatabaseConnections), "events:read", "events:read")
+	dataRoute("POST", "/database/connections/{name}/test", http.HandlerFunc(handlers.HandleDatabaseConnectionTest), "events:read", "events:read")
+	dataRoute("POST", "/database/query", http.HandlerFunc(handlers.HandleDatabaseQuery), "events:read", "events:read")
 	dataRoute("GET", "/schema/blueprint", http.HandlerFunc(handlers.HandleBlueprintList), "schema:read", "events:read")
 
 	// ── Tail (events:read) ───────────────────────────────────────────────
@@ -226,7 +232,7 @@ func BuildMux(ingestPath, healthPath, readyPath, metricsPath string, metricsEnab
 	}
 
 	// ── Metrics (protected by default) ───────────────────────────────────
-	if metricsEnabled && metricsHandler != nil {
+	if metricsEnabled && metricsHandler != nil && metricsPath != "" {
 		if protect != nil {
 			mux.Handle("GET "+metricsPath, protect(metricsHandler, "events:read"))
 		} else {

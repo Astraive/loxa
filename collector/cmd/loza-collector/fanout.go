@@ -43,6 +43,7 @@ type collectorFanoutOutput struct {
 	name            string
 	role            string
 	sinkType        string
+	connection      string
 	enabled         bool
 	duckDBPath      string
 	duckDBTable     string
@@ -107,6 +108,14 @@ func createFanoutSinks(cfg collectorConfig) ([]namedSink, *namedSink, []*sql.DB,
 			err  error
 		)
 
+		if output.connection != "" {
+			if err := applyFanoutConnection(&output, cfg); err != nil {
+				for _, fanoutDB := range dbs {
+					_ = fanoutDB.Close()
+				}
+				return nil, nil, nil, err
+			}
+		}
 		sinkType := output.sinkType
 		if sinkType == "" {
 			sinkType = fanoutSinkDuckDB

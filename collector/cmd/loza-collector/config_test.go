@@ -33,6 +33,29 @@ func validFileConfig() fileConfig {
 	return cfg
 }
 
+func TestValidateNamedDatabaseConnections(t *testing.T) {
+	cfg := validFileConfig()
+	cfg.Database.Connections = []collectorconfig.DatabaseConnectionConfig{
+		{Name: "local", Type: "duckdb", Enabled: true, Path: filepath.Join(t.TempDir(), "events.db")},
+	}
+	cfg.Storage.Connection = "local"
+	if err := validateFileConfig(cfg); err != nil {
+		t.Fatalf("valid named DuckDB connection rejected: %v", err)
+	}
+}
+
+func TestValidateNamedPostgresConnectionRequiresSecrets(t *testing.T) {
+	cfg := validFileConfig()
+	cfg.Database.Connections = []collectorconfig.DatabaseConnectionConfig{
+		{Name: "pg", Type: "postgres", Enabled: true, Host: "localhost", Database: "loza", UsernameEnv: "MISSING_USER", PasswordEnv: "MISSING_PASSWORD"},
+	}
+	cfg.Storage.Primary = "postgres"
+	cfg.Storage.Connection = "pg"
+	if err := validateFileConfig(cfg); err == nil || !strings.Contains(err.Error(), "username_env") {
+		t.Fatalf("expected missing postgres secret error, got %v", err)
+	}
+}
+
 func TestLoadCollectorConfigFromArgsPrecedence(t *testing.T) {
 	t.Setenv("COLLECTOR_ADDR", ":9001")
 	t.Setenv("DUCKDB_BATCH_SIZE", "20")

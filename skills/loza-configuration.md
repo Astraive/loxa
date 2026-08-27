@@ -50,6 +50,46 @@ privacy:
 
 Field names and supported sections are release-specific. The example is a secure contract pattern, not permission to copy unsupported fields into an older image.
 
+## Collector-managed database connections
+
+The `0.4.0` Collector keeps database credentials server-side. Configure named
+connections under `database.connections` and select the primary with
+`storage.connection`; supported backends are `duckdb`, `postgres`, and
+`clickhouse`.
+
+```yaml
+storage:
+  primary: postgres
+  connection: analytics
+
+database:
+  connections:
+    - name: analytics
+      type: postgres
+      enabled: true
+      host: postgres.internal
+      port: 5432
+      database: loza
+      username_env: LOZA_PG_USER
+      password_env: LOZA_PG_PASSWORD
+      ssl_mode: verify-full
+      table: events
+      raw_column: raw
+      connection_timeout: 5s
+      query_timeout: 10s
+```
+
+DuckDB uses a server-managed `path` and optional `driver`; it is not a TCP
+listener. PostgreSQL uses `host`/`port` and ClickHouse uses a `hosts`
+(`host:port`) list. Never put credentials or DSNs in browser state.
+
+Authenticated clients use `GET /collectors/{collector}/database/connections`,
+`POST /collectors/{collector}/database/connections/{name}/test`, and
+`POST /collectors/{collector}/database/query` with `events:read`. The query
+body contains a configured `connection` name and LQL source; arbitrary SQL,
+database targets, credentials, and direct browser database sockets are
+rejected.
+
 ## Independent secrets
 
 `auth.server_secret` protects key-record hashing. `storage.encryption_key_env` protects raw event persistence. They are different secrets and must not be reused. Keep API key secrets, DSNs, database passwords, and encryption keys in a secret manager or protected environment—not committed YAML, command arguments, URLs, or logs.

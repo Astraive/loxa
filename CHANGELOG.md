@@ -3,6 +3,14 @@
 All notable changes to the LOZA project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/0.2.0/).
+## [0.4.0] - 2026-08-27
+
+### Added
+
+- Add Collector-managed named DuckDB, PostgreSQL, and ClickHouse connections.
+- Add authenticated database metadata, connection-test, and LQL query APIs.
+- Add PostgreSQL LQL target and named target selection in the clients.
+
 
 ## [0.3.4] - 2026-08-26
 

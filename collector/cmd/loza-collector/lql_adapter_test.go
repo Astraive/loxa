@@ -32,7 +32,7 @@ func testLQLBinary(t *testing.T) string {
 
 func testLQLConfig(binary string) collectorConfig {
 	return collectorConfig{
-		lqlBinary: binary, lqlExpectedProtocol: 1, lqlExpectedCompiler: "0.4.1",
+		lqlBinary: binary, lqlExpectedProtocol: 1, lqlExpectedCompiler: "0.5.0",
 		lqlExpectedLanguage: "0.1", lqlStartupTimeout: 5e9, lqlCompileTimeout: 5e9,
 		lqlMaxConcurrent: 1,
 	}

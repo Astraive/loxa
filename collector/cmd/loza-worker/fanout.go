@@ -41,6 +41,7 @@ type workerFanoutOutput struct {
 	name            string
 	role            string
 	sinkType        string
+	connection      string
 	enabled         bool
 	duckDBPath      string
 	duckDBTable     string
@@ -94,6 +95,7 @@ func fanoutOutputsFromFile(outputs []collectorconfig.FanoutOutputConfig) []worke
 			name:            strings.TrimSpace(output.Name),
 			role:            strings.ToLower(strings.TrimSpace(output.Role)),
 			sinkType:        strings.ToLower(strings.TrimSpace(output.Type)),
+			connection:      strings.TrimSpace(output.Connection),
 			enabled:         output.Enabled,
 			duckDBPath:      strings.TrimSpace(output.DuckDB.Path),
 			duckDBTable:     strings.TrimSpace(output.DuckDB.Table),

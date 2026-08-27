@@ -3,13 +3,13 @@
 ## Version Strategy
 
 All components share the umbrella release version declared by the manifests
-in `release.yaml`. The current prepared release is `0.3.4`. Individual
+in `release.yaml`. The current prepared release is `0.4.0`. Individual
 component releases use the tags configured in each manifest, for example:
 
-- `v0.3.4` — full monorepo release
-- `collector-v0.3.4` — collector-only release
-- `py-v0.3.4` — Python SDK release
-- `rs-v0.3.4` — Rust SDK release
+- `v0.4.0` — full monorepo release
+- `collector-v0.4.0` — collector-only release
+- `py-v0.4.0` — Python SDK release
+- `rs-v0.4.0` — Rust SDK release
 
 ## Release Checklist
 

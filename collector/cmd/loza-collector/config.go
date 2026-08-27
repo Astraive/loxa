@@ -1060,8 +1060,11 @@ func validateFileConfig(fc fileConfig) error {
 			return errors.New("rate_limit.burst must be > 0")
 		}
 	}
-	if strings.TrimSpace(fc.Storage.Primary) != "duckdb" {
-		return errors.New("storage.primary must currently be duckdb")
+	if primary := strings.ToLower(strings.TrimSpace(fc.Storage.Primary)); primary != "duckdb" && primary != "postgres" && primary != "clickhouse" {
+		return errors.New("storage.primary must be duckdb, postgres, or clickhouse")
+	}
+	if err := validateDatabaseConnections(fc); err != nil {
+		return err
 	}
 	mode := strings.ToLower(strings.TrimSpace(fc.Reliability.Mode))
 	if mode != "direct" && mode != "spool" && mode != "queue" && mode != "hybrid" {
@@ -1224,6 +1227,26 @@ func validateFileConfig(fc fileConfig) error {
 			sinkType != fanoutSinkClickHouse && sinkType != fanoutSinkPostgres && sinkType != fanoutSinkS3 && sinkType != fanoutSinkGCS {
 			return fmt.Errorf("fanout.outputs[%d].type %q is not supported", i, sinkType)
 		}
+		if reference := strings.TrimSpace(output.Connection); reference != "" {
+			found := false
+			for _, connection := range fc.Database.Connections {
+				if strings.TrimSpace(connection.Name) != reference {
+					continue
+				}
+				found = true
+				referenceType := strings.ToLower(strings.TrimSpace(connection.Type))
+				if referenceType == "postgresql" {
+					referenceType = fanoutSinkPostgres
+				}
+				if referenceType != sinkType {
+					return fmt.Errorf("fanout.outputs[%d].connection %q type %q does not match output type %q", i, reference, referenceType, sinkType)
+				}
+				break
+			}
+			if !found {
+				return fmt.Errorf("fanout.outputs[%d].connection %q is not configured", i, reference)
+			}
+		}
 
 		if !output.Enabled {
 			continue
@@ -1376,6 +1399,99 @@ func validateFileConfig(fc fileConfig) error {
 	return nil
 }
 
+func validateDatabaseConnections(fc fileConfig) error {
+	seen := make(map[string]struct{}, len(fc.Database.Connections))
+	primary := strings.ToLower(strings.TrimSpace(fc.Storage.Primary))
+	selected := strings.TrimSpace(fc.Storage.Connection)
+	for i, conn := range fc.Database.Connections {
+		name := strings.TrimSpace(conn.Name)
+		if !configIdentPattern.MatchString(name) {
+			return fmt.Errorf("database.connections[%d].name must be a valid unique identifier", i)
+		}
+		if _, exists := seen[name]; exists {
+			return fmt.Errorf("database.connections[%d].name %q is duplicated", i, name)
+		}
+		seen[name] = struct{}{}
+		backend := strings.ToLower(strings.TrimSpace(conn.Type))
+		switch backend {
+		case "duckdb":
+			if strings.TrimSpace(conn.Path) == "" {
+				return fmt.Errorf("database.connections[%d].path must not be empty", i)
+			}
+			if driver := strings.TrimSpace(conn.Driver); driver != "" && driver != "duckdb" {
+				return fmt.Errorf("database.connections[%d].driver must be duckdb", i)
+			}
+		case "postgres", "postgresql":
+			if strings.TrimSpace(conn.Host) == "" {
+				return fmt.Errorf("database.connections[%d].host must not be empty", i)
+			}
+			if conn.Port == 0 {
+				conn.Port = 5432
+			}
+			if conn.Port < 1 || conn.Port > 65535 {
+				return fmt.Errorf("database.connections[%d].port must be between 1 and 65535", i)
+			}
+			if strings.TrimSpace(conn.Database) == "" {
+				return fmt.Errorf("database.connections[%d].database must not be empty", i)
+			}
+			if strings.TrimSpace(conn.UsernameEnv) == "" || strings.TrimSpace(conn.PasswordEnv) == "" {
+				return fmt.Errorf("database.connections[%d] requires username_env and password_env", i)
+			}
+			if value, ok := os.LookupEnv(strings.TrimSpace(conn.UsernameEnv)); !ok || strings.TrimSpace(value) == "" {
+				return fmt.Errorf("database.connections[%d].username_env must resolve to a non-empty value", i)
+			}
+			if value, ok := os.LookupEnv(strings.TrimSpace(conn.PasswordEnv)); !ok || strings.TrimSpace(value) == "" {
+				return fmt.Errorf("database.connections[%d].password_env must resolve to a non-empty value", i)
+			}
+			switch strings.ToLower(strings.TrimSpace(conn.SSLMode)) {
+			case "", "disable", "allow", "prefer", "require", "verify-ca", "verify-full":
+			default:
+				return fmt.Errorf("database.connections[%d].ssl_mode is invalid", i)
+			}
+		case "clickhouse":
+			if len(conn.Hosts) == 0 {
+				return fmt.Errorf("database.connections[%d].hosts must not be empty", i)
+			}
+			if strings.TrimSpace(conn.UsernameEnv) == "" || strings.TrimSpace(conn.PasswordEnv) == "" {
+				return fmt.Errorf("database.connections[%d] requires username_env and password_env", i)
+			}
+			if value, ok := os.LookupEnv(strings.TrimSpace(conn.UsernameEnv)); !ok || strings.TrimSpace(value) == "" {
+				return fmt.Errorf("database.connections[%d].username_env must resolve to a non-empty value", i)
+			}
+			if value, ok := os.LookupEnv(strings.TrimSpace(conn.PasswordEnv)); !ok || strings.TrimSpace(value) == "" {
+				return fmt.Errorf("database.connections[%d].password_env must resolve to a non-empty value", i)
+			}
+		default:
+			return fmt.Errorf("database.connections[%d].type %q is unsupported", i, conn.Type)
+		}
+		if conn.Table != "" && !validTableName(conn.Table) {
+			return fmt.Errorf("database.connections[%d].table is invalid", i)
+		}
+		if conn.RawColumn != "" && !configIdentPattern.MatchString(strings.TrimSpace(conn.RawColumn)) {
+			return fmt.Errorf("database.connections[%d].raw_column is invalid", i)
+		}
+		if conn.ConnectionTimeout < 0 || conn.QueryTimeout < 0 {
+			return fmt.Errorf("database.connections[%d] timeouts must not be negative", i)
+		}
+		if selected == name {
+			if backend == "postgresql" {
+				backend = "postgres"
+			}
+			if backend != primary {
+				return fmt.Errorf("storage.connection %q type %q does not match storage.primary %q", name, backend, primary)
+			}
+		}
+	}
+	if selected != "" {
+		if _, exists := seen[selected]; !exists {
+			return fmt.Errorf("storage.connection %q does not name a configured connection", selected)
+		}
+	} else if primary != "duckdb" {
+		return errors.New("non-duckdb storage.primary requires storage.connection")
+	}
+	return nil
+}
+
 func validateComponentRegistry(reg collectorconfig.ComponentRegistryConfig) error {
 	allowed := map[string]map[string]struct{}{
 		"receivers": {
@@ -1442,6 +1558,81 @@ func validateComponentRegistry(reg collectorconfig.ComponentRegistryConfig) erro
 		return err
 	}
 	return nil
+}
+
+func databaseConnectionsFromFile(connections []collectorconfig.DatabaseConnectionConfig) []databaseConnectionConfig {
+	out := make([]databaseConnectionConfig, 0, len(connections))
+	for _, conn := range connections {
+		backend := strings.ToLower(strings.TrimSpace(conn.Type))
+		if backend == "postgresql" {
+			backend = "postgres"
+		}
+		port := conn.Port
+		if backend == "postgres" && port == 0 {
+			port = 5432
+		}
+		username, password := "", ""
+		if conn.UsernameEnv != "" {
+			username = os.Getenv(conn.UsernameEnv)
+		}
+		if conn.PasswordEnv != "" {
+			password = os.Getenv(conn.PasswordEnv)
+		}
+		table := strings.TrimSpace(conn.Table)
+		if table == "" {
+			table = "events"
+		}
+		rawColumn := strings.TrimSpace(conn.RawColumn)
+		if rawColumn == "" {
+			rawColumn = "raw"
+		}
+		driver := strings.TrimSpace(conn.Driver)
+		if driver == "" && backend == "duckdb" {
+			driver = "duckdb"
+		}
+		connectionTimeout := conn.ConnectionTimeout
+		if connectionTimeout <= 0 {
+			connectionTimeout = 5 * time.Second
+		}
+		queryTimeout := conn.QueryTimeout
+		if queryTimeout <= 0 {
+			queryTimeout = 10 * time.Second
+		}
+		out = append(out, databaseConnectionConfig{
+			name:              strings.TrimSpace(conn.Name),
+			backend:           backend,
+			enabled:           conn.Enabled,
+			path:              strings.TrimSpace(conn.Path),
+			driver:            driver,
+			host:              strings.TrimSpace(conn.Host),
+			port:              port,
+			hosts:             append([]string(nil), conn.Hosts...),
+			database:          strings.TrimSpace(conn.Database),
+			username:          username,
+			password:          password,
+			sslMode:           strings.ToLower(strings.TrimSpace(conn.SSLMode)),
+			tls:               conn.TLS,
+			table:             table,
+			rawColumn:         rawColumn,
+			storeRaw:          conn.StoreRaw,
+			schema:            cloneStringMap(conn.Schema),
+			columnTypes:       cloneStringMap(conn.ColumnTypes),
+			connectionTimeout: connectionTimeout,
+			queryTimeout:      queryTimeout,
+		})
+	}
+	return out
+}
+
+func cloneStringMap(values map[string]string) map[string]string {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(values))
+	for key, value := range values {
+		out[key] = value
+	}
+	return out
 }
 
 func runtimeConfigFromFile(fc fileConfig) collectorConfig {
@@ -1528,8 +1719,10 @@ func runtimeConfigFromFile(fc fileConfig) collectorConfig {
 		healthPath:              fc.Routes.Health,
 		readyPath:               fc.Routes.Ready,
 		metricsPath:             fc.Routes.Metrics,
-		storagePrimary:          fc.Storage.Primary,
+		storagePrimary:          strings.ToLower(strings.TrimSpace(fc.Storage.Primary)),
+		storageConnection:       strings.TrimSpace(fc.Storage.Connection),
 		storageEncryptionKey:    fc.Storage.EncryptionKey,
+		databaseConnections:     databaseConnectionsFromFile(fc.Database.Connections),
 		duckDBPath:              fc.DuckDB.Path,
 		duckDBDriver:            fc.DuckDB.Driver,
 		duckDBTable:             fc.DuckDB.Table,
@@ -1694,6 +1887,7 @@ func fanoutOutputsFromFile(outputs []collectorconfig.FanoutOutputConfig) []colle
 			name:            strings.TrimSpace(output.Name),
 			role:            strings.ToLower(strings.TrimSpace(output.Role)),
 			sinkType:        strings.ToLower(strings.TrimSpace(output.Type)),
+			connection:      strings.TrimSpace(output.Connection),
 			enabled:         output.Enabled,
 			duckDBPath:      strings.TrimSpace(output.DuckDB.Path),
 			duckDBTable:     strings.TrimSpace(output.DuckDB.Table),

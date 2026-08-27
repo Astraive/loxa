@@ -52,7 +52,7 @@ services:
 
   cortex-cli:
     profiles: ["cli"]
-    image: astraive/loza-cli:0.3.4
+    image: astraive/loza-cli:0.4.0
     environment:
       LOZA_CORTEX_URL: http://cortex:9312
     depends_on:

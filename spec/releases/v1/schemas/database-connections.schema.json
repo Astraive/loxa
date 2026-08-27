@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec.loza.dev/releases/v1/schemas/database-connections.schema.json",
+  "title": "Collector database connection API envelopes",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/connectionsResponse"
+    },
+    {
+      "$ref": "#/$defs/testResponse"
+    },
+    {
+      "$ref": "#/$defs/queryResponse"
+    }
+  ],
+  "$defs": {
+    "connectionsResponse": {
+      "type": "object",
+      "required": ["connections"],
+      "properties": {
+        "connections": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/connection" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "connection": {
+      "type": "object",
+      "required": ["name", "backend", "enabled", "primary", "capabilities", "health"],
+      "properties": {
+        "name": { "type": "string" },
+        "backend": { "enum": ["duckdb", "postgres", "clickhouse"] },
+        "host": { "type": "string" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "path": { "type": "string" },
+        "database": { "type": "string" },
+        "table": { "type": "string" },
+        "enabled": { "type": "boolean" },
+        "primary": { "type": "boolean" },
+        "capabilities": { "type": "array", "items": { "type": "string" } },
+        "health": { "enum": ["healthy", "unhealthy", "unknown"] },
+        "last_test_at": { "type": "string" },
+        "last_test_error": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "testResponse": {
+      "type": "object",
+      "required": ["connection", "backend", "healthy", "duration_ms"],
+      "properties": {
+        "connection": { "type": "string" },
+        "backend": { "enum": ["duckdb", "postgres", "clickhouse"] },
+        "healthy": { "type": "boolean" },
+        "duration_ms": { "type": "integer", "minimum": 0 },
+        "error": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "queryResponse": {
+      "type": "object",
+      "required": ["connection", "backend", "columns", "rows", "row_count", "duration_ms"],
+      "properties": {
+        "connection": { "type": "string" },
+        "backend": { "enum": ["duckdb", "postgres", "clickhouse"] },
+        "columns": { "type": "array", "items": { "type": "string" } },
+        "rows": { "type": "array", "items": { "type": "object" } },
+        "row_count": { "type": "integer", "minimum": 0 },
+        "duration_ms": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

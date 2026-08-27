@@ -19,6 +19,7 @@ type Config struct {
 	RateLimit    RateLimitConfig         `yaml:"rate_limit"`
 	Routes       RoutesConfig            `yaml:"routes"`
 	Storage      StorageConfig           `yaml:"storage"`
+	Database     DatabaseConfig          `yaml:"database"`
 	DuckDB       DuckDBConfig            `yaml:"duckdb"`
 	LQL          LQLConfig               `yaml:"lql"`
 	Retention    RetentionConfig         `yaml:"retention"`
@@ -195,8 +196,40 @@ type RoutesConfig struct {
 
 type StorageConfig struct {
 	Primary          string `yaml:"primary"`
+	Connection       string `yaml:"connection"`
 	EncryptionKeyEnv string `yaml:"encryption_key_env"`
 	EncryptionKey    string `yaml:"-"`
+}
+
+// DatabaseConfig contains named, Collector-owned query connections.
+type DatabaseConfig struct {
+	Connections []DatabaseConnectionConfig `yaml:"connections"`
+}
+
+// DatabaseConnectionConfig describes one server-side database connection.
+// Secret values are referenced by environment variable names and are never
+// serialized in runtime metadata.
+type DatabaseConnectionConfig struct {
+	Name              string            `yaml:"name"`
+	Type              string            `yaml:"type"`
+	Enabled           bool              `yaml:"enabled"`
+	Path              string            `yaml:"path"`
+	Driver            string            `yaml:"driver"`
+	Host              string            `yaml:"host"`
+	Port              int               `yaml:"port"`
+	Hosts             []string          `yaml:"hosts"`
+	Database          string            `yaml:"database"`
+	UsernameEnv       string            `yaml:"username_env"`
+	PasswordEnv       string            `yaml:"password_env"`
+	SSLMode           string            `yaml:"ssl_mode"`
+	TLS               bool              `yaml:"tls"`
+	Table             string            `yaml:"table"`
+	RawColumn         string            `yaml:"raw_column"`
+	StoreRaw          bool              `yaml:"store_raw"`
+	Schema            map[string]string `yaml:"schema"`
+	ColumnTypes       map[string]string `yaml:"column_types"`
+	ConnectionTimeout time.Duration     `yaml:"connection_timeout"`
+	QueryTimeout      time.Duration     `yaml:"query_timeout"`
 }
 
 type DuckDBConfig struct {
@@ -355,6 +388,7 @@ type FanoutOutputConfig struct {
 	Name       string                 `yaml:"name"`
 	Role       string                 `yaml:"role"`
 	Type       string                 `yaml:"type"`
+	Connection string                 `yaml:"connection"`
 	Enabled    bool                   `yaml:"enabled"`
 	DuckDB     FanoutDuckDBConfig     `yaml:"duckdb"`
 	Loki       FanoutLokiConfig       `yaml:"loki"`

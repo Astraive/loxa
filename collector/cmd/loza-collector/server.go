@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/astraive/loza/collector/internal/auth"
+	"github.com/astraive/loza/collector/internal/database"
 	collectorevent "github.com/astraive/loza/collector/internal/event"
 	"github.com/astraive/loza/collector/internal/eventbus"
 	processing "github.com/astraive/loza/collector/internal/processing"
@@ -25,7 +26,6 @@ import (
 	kafkasink "github.com/astraive/loza/collector/internal/sinks/kafka"
 	storagepath "github.com/astraive/loza/collector/internal/storage"
 	publichttp "github.com/astraive/loza/collector/server/http"
-	_ "github.com/marcboeker/go-duckdb"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/time/rate"
 )
@@ -34,22 +34,33 @@ func runCollector(cfg collectorConfig) error {
 	cfg = withOwnershipProjections(cfg)
 
 	var (
-		db              *sql.DB
-		err             error
-		sink            collectorevent.Sink
-		hybridQueueSink collectorevent.Sink
-		secondarySinks  []namedSink
-		fallbackSink    *namedSink
-		fanoutDBs       []*sql.DB
-		schedulersStop  chan struct{}
-		schedWG         sync.WaitGroup
-		errCh           = make(chan error, 4)
-		bus             eventbus.Bus
+		db               *sql.DB
+		err              error
+		sink             collectorevent.Sink
+		hybridQueueSink  collectorevent.Sink
+		secondarySinks   []namedSink
+		fallbackSink     *namedSink
+		fanoutDBs        []*sql.DB
+		schedulersStop   chan struct{}
+		schedWG          sync.WaitGroup
+		errCh            = make(chan error, 4)
+		bus              eventbus.Bus
+		namedConnections map[string]database.Connection
+		namedMetadata    map[string]database.Metadata
 	)
 
 	if cfg.authEnabled && strings.TrimSpace(cfg.authServerSecret) == "" {
 		return errors.New("auth.enabled requires a resolved auth.server_secret")
 	}
+	namedConnections, namedMetadata, err = openNamedDatabaseConnections(context.Background(), cfg)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		for _, connection := range namedConnections {
+			_ = connection.Close(context.Background())
+		}
+	}()
 
 	if cfg.reliabilityMode == "queue" {
 		// Eventbus-based queue mode (pluggable: memory, redis, nats, kafka)
@@ -175,19 +186,35 @@ func runCollector(cfg collectorConfig) error {
 		return fmt.Errorf("failed to initialize dedupe store: %w", err)
 	}
 
+	var queryConnection database.Connection
+	if cfg.storageConnection != "" {
+		queryConnection = namedConnections[cfg.storageConnection]
+		if queryConnection == nil {
+			return fmt.Errorf("storage.connection %q is not enabled", cfg.storageConnection)
+		}
+	} else if db != nil {
+		queryConnection = &database.SQL{DB: db, Info: database.Metadata{
+			Name: "primary", Backend: "duckdb", Path: cfg.duckDBPath,
+			Table: cfg.duckDBTable, Enabled: true, Primary: true,
+			Capabilities: []string{"query", "health", "write"},
+		}}
+	}
 	state := &collectorState{
-		cfg:             cfg,
-		startedAt:       time.Now(),
-		ingestSink:      sink,
-		hybridQueueSink: hybridQueueSink,
-		secondarySinks:  secondarySinks,
-		fallbackSink:    fallbackSink,
-		rateLimiter:     rateLimiter,
-		rng:             rand.New(rand.NewSource(time.Now().UnixNano())),
-		dedupeSeenAt:    make(map[string]time.Time),
-		dedupeStore:     dedupeStore,
-		queryDB:         db,
-		eventBus:        bus,
+		cfg:                 cfg,
+		startedAt:           time.Now(),
+		ingestSink:          sink,
+		hybridQueueSink:     hybridQueueSink,
+		secondarySinks:      secondarySinks,
+		fallbackSink:        fallbackSink,
+		rateLimiter:         rateLimiter,
+		rng:                 rand.New(rand.NewSource(time.Now().UnixNano())),
+		dedupeSeenAt:        make(map[string]time.Time),
+		dedupeStore:         dedupeStore,
+		queryDB:             db,
+		queryConnection:     queryConnection,
+		databaseConnections: namedConnections,
+		databaseMetadata:    namedMetadata,
+		eventBus:            bus,
 	}
 	if err := initializeAuthState(state); err != nil {
 		return err

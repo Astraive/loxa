@@ -157,7 +157,6 @@ func loadWorkerConfigFromArgs(args []string) (workerConfig, error) {
 	return workerRuntimeConfig(fc), nil
 }
 
-
 func applyWorkerEnvOverrides(fc *workerFileConfig) error {
 	get := func(key string) (string, bool) {
 		v, ok := os.LookupEnv(key)
@@ -327,6 +326,46 @@ func validateWorkerConfig(fc workerFileConfig) error {
 			return errors.New("dedupe.backend must be memory or redis")
 		}
 	}
+	if err := validateWorkerDatabaseConnections(fc); err != nil {
+		return err
+	}
+	return nil
+}
+func validateWorkerDatabaseConnections(fc workerFileConfig) error {
+	seen := make(map[string]string, len(fc.Database.Connections))
+	for index, connection := range fc.Database.Connections {
+		name := strings.TrimSpace(connection.Name)
+		backend := strings.ToLower(strings.TrimSpace(connection.Type))
+		if name == "" {
+			return fmt.Errorf("database.connections[%d].name must not be empty", index)
+		}
+		if _, exists := seen[name]; exists {
+			return fmt.Errorf("database.connections[%d].name %q is duplicated", index, name)
+		}
+		if backend == "postgresql" {
+			backend = fanoutSinkPostgres
+		}
+		if backend != fanoutSinkDuckDB && backend != fanoutSinkPostgres && backend != fanoutSinkClickHouse {
+			return fmt.Errorf("database.connections[%d].type %q is unsupported", index, connection.Type)
+		}
+		seen[name] = backend
+	}
+	for index, output := range fc.Fanout.Outputs {
+		if strings.TrimSpace(output.Connection) == "" {
+			continue
+		}
+		referenceType, ok := seen[strings.TrimSpace(output.Connection)]
+		if !ok {
+			return fmt.Errorf("fanout.outputs[%d].connection %q is not configured", index, output.Connection)
+		}
+		outputType := strings.ToLower(strings.TrimSpace(output.Type))
+		if outputType == "" {
+			outputType = fanoutSinkDuckDB
+		}
+		if outputType != referenceType {
+			return fmt.Errorf("fanout.outputs[%d].connection type %q does not match output type %q", index, referenceType, outputType)
+		}
+	}
 	return nil
 }
 
@@ -358,7 +397,7 @@ func workerRuntimeConfig(fc workerFileConfig) workerConfig {
 		retryJitter:             fc.Retry.Jitter,
 		dlqEnabled:              fc.DeadLetter.Enabled,
 		dlqPath:                 fc.DeadLetter.Path,
-		fanoutOutputs:           fanoutOutputsFromFile(fc.Fanout.Outputs),
+		fanoutOutputs:           fanoutOutputsFromFileWithConnections(fc.Fanout.Outputs, fc.Database.Connections),
 		deliveryPolicy:          strings.ToLower(fc.Fanout.Delivery.Policy),
 		fallbackEnabled:         fc.Fanout.Delivery.Fallback.Enabled,
 		fallbackOnPrimaryFail:   fc.Fanout.Delivery.Fallback.OnPrimaryFailure,
