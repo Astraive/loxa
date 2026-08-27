@@ -203,6 +203,8 @@ jobs:
       - run: python -m pip install pyyaml
       - uses: actions/download-artifact@v4
         with:
+          pattern: loza-*
+          merge-multiple: true
           path: artifacts
       - name: Publish CLI release assets
         uses: softprops/action-gh-release@v2
