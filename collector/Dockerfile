@@ -1,5 +1,5 @@
 FROM golang:1.25-bookworm AS builder
-ARG LQL_VERSION=0.5.0
+ARG LQL_VERSION=0.5.1
 ARG TARGETARCH
 
 WORKDIR /build
@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential pkg-config ca-certificates protobuf-compiler libprotobuf-dev curl \
     && rm -rf /var/lib/apt/lists/*
 RUN case "$TARGETARCH" in \
-      amd64) lql_arch=x64; lql_sha256=78ea50015ae5a4f32ac374f0136c8edfca03eff0a14a456263870fb4a3e35358 ;; \
-      arm64) lql_arch=arm64; lql_sha256=5e1c4567badfaf05b6e465bc93a3acd19b7430cdec00de4f12aa04fb80dc3b89 ;; \
+      amd64) lql_arch=x64; lql_sha256=3e8eb6d42ea3cf864ca9af50dab37834ba8363e4a89253898e214746d047bd89 ;; \
+      arm64) lql_arch=arm64; lql_sha256=afd287f33b7167047ef66d35cd2e18d4338b98e78da423848651f5cfe2ea69af ;; \
       *) echo "unsupported TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
     esac && \
     curl --fail --location --retry 3 \
