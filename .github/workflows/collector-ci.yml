@@ -159,5 +159,16 @@ jobs:
         working-directory: .
         run: make proto
 
-      - name: Run queue and Redis integration tests
-        run: go test -tags=integration -run TestCollectorIntegration_ ./cmd/loza-collector
+      - name: Run database, queue, and Redis integration tests
+        env:
+          LOZA_TEST_POSTGRES_USER: loza
+          LOZA_TEST_POSTGRES_PASSWORD: loza
+          LOZA_TEST_POSTGRES_HOST: 127.0.0.1
+          LOZA_TEST_POSTGRES_PORT: 5432
+          LOZA_TEST_POSTGRES_DATABASE: loza
+          LOZA_TEST_POSTGRES_SSLMODE: disable
+          LOZA_TEST_CLICKHOUSE_USER: loza
+          LOZA_TEST_CLICKHOUSE_PASSWORD: loza
+          LOZA_TEST_CLICKHOUSE_HOSTS: 127.0.0.1:9000
+          LOZA_TEST_CLICKHOUSE_DATABASE: loza
+        run: go test -tags=integration -run 'TestCollectorIntegration_|TestNamedDatabaseConnectionsRoundTrip' ./cmd/loza-collector

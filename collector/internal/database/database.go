@@ -113,6 +113,10 @@ func (c *SQL) Query(ctx context.Context, query string, args ...any) (Result, err
 	}
 	return QuerySQLRows(rows, 0)
 }
+func (c *SQL) Exec(ctx context.Context, query string, args ...any) error {
+	_, err := c.DB.ExecContext(ctx, query, args...)
+	return err
+}
 func (c *SQL) Ping(ctx context.Context) error { return c.DB.PingContext(ctx) }
 func (c *SQL) Close(context.Context) error    { return c.DB.Close() }
 
@@ -130,6 +134,10 @@ func (c *Postgres) Query(ctx context.Context, query string, args ...any) (Result
 	}
 	return QueryPostgresRows(rows, 0)
 }
+func (c *Postgres) Exec(ctx context.Context, query string, args ...any) error {
+	_, err := c.Pool.Exec(ctx, query, args...)
+	return err
+}
 func (c *Postgres) Ping(ctx context.Context) error { return c.Pool.Ping(ctx) }
 func (c *Postgres) Close(context.Context) error    { c.Pool.Close(); return nil }
 
@@ -138,6 +146,9 @@ type ClickHouse struct {
 	Info Metadata
 }
 
+func (c *ClickHouse) Exec(ctx context.Context, query string, args ...any) error {
+	return c.Conn.Exec(ctx, query, args...)
+}
 func (c *ClickHouse) Backend() string    { return c.Info.Backend }
 func (c *ClickHouse) Metadata() Metadata { return c.Info }
 func (c *ClickHouse) Query(ctx context.Context, query string, args ...any) (Result, error) {
