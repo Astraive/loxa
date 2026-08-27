@@ -1,6 +1,6 @@
 name: loza
 kind: release
-version: 0.4.0
+version: 0.4.1
 description: Umbrella LOZA repository release
 license: MIT
 repository: https://github.com/Astraive/loza

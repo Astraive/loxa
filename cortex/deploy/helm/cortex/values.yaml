@@ -9,7 +9,7 @@ replicaCount: 2
 
 image:
   repository: loza-cortex
-  tag: "0.4.0"
+  tag: "0.4.1"
   digest: ""
   pullPolicy: IfNotPresent
 

@@ -3,6 +3,12 @@
 All notable changes to the LOZA project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/0.2.0/).
+## [0.4.1] - 2026-08-27
+
+### Fixed
+
+- Add real PostgreSQL and ClickHouse named-connection integration coverage.
+
 ## [0.4.0] - 2026-08-27
 
 ### Added

@@ -23,7 +23,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: cortex
-          image: ghcr.io/astraive/loza-cortex:0.4.0
+          image: ghcr.io/astraive/loza-cortex:0.4.1
           securityContext:
             capabilities:
               drop:

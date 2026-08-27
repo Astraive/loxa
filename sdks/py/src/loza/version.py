@@ -5,7 +5,7 @@ Falls back to a hardcoded default if the file cannot be found or parsed.
 
 from __future__ import annotations
 
-_FALLBACK_VERSION = "0.4.0"
+_FALLBACK_VERSION = "0.4.1"
 
 
 def _load_version() -> str:

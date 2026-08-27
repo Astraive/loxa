@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-const fallbackVersion = "0.4.0"
+const fallbackVersion = "0.4.1"
 
 var (
 	once    sync.Once
